@@ -9,7 +9,7 @@
  * 5. Resolve relative codemap paths to absolute
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import type { ProjectConfig, CodemapEntry } from "./project-config.js";
 
@@ -31,8 +31,9 @@ function findMonorepoRoot(startDir: string): string {
         if (pkg.workspaces) return dir;
       } catch { /* ignore parse errors */ }
     }
-    // Fallback: .git directory
-    if (existsSync(path.join(dir, ".git"))) return dir;
+    // Fallback: .git directory (not file — submodules use a .git file)
+    const gitPath = path.join(dir, ".git");
+    if (existsSync(gitPath) && statSync(gitPath).isDirectory()) return dir;
 
     const parent = path.dirname(dir);
     if (parent === dir) break; // reached filesystem root
