@@ -1,0 +1,17 @@
+{
+  "min_session_length": 10,
+  "learned_skills_path": ".claude/skills/learned/",
+  "patterns_to_detect": [
+    "error_resolution",
+    "debugging_techniques",
+    "workarounds",
+    "project_specific",
+    "cosmosdb_patterns",
+    "react_native_patterns"
+  ],
+  "ignore_patterns": [
+    "simple_typos",
+    "one_time_fixes",
+    "external_api_issues"
+  ]
+}
