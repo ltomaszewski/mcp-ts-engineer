@@ -45,7 +45,7 @@ mkdir my-project && cd my-project
 git init
 
 # 2. Add submodule
-git submodule add git@github.com:org/mcp-ts-engineer.git packages/mcp-ts-engineer
+git submodule add git@github.com:ltomaszewski/mcp-ts-engineer.git packages/mcp-ts-engineer
 
 # 3. Run bootstrap (scaffolds everything)
 bash packages/mcp-ts-engineer/scripts/bootstrap.sh
