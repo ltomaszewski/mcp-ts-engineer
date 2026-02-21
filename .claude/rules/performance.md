@@ -116,26 +116,26 @@ npm run build &
 
 ---
 
-## Agent Efficiency
+## MCP Tool Efficiency
 
-### Delegate Appropriately
+### Use the Right Tool
 
-| Task | Agent | Model |
-|------|-------|-------|
-| Planning | planner | Opus |
-| Implementation | eng-executor | Sonnet |
-| Review | code-reviewer | Sonnet |
-| Security | security-reviewer | Opus |
-| Build fixes | build-error-resolver | Haiku |
+| Task | MCP Tool |
+|------|----------|
+| Spec review | `mcp__ts-engineer__todo_reviewer` |
+| TDD implementation | `mcp__ts-engineer__todo_code_writer` |
+| Final audit + commit | `mcp__ts-engineer__finalize` |
+| Fix violations | `mcp__ts-engineer__audit_fix` |
+| PR review | `mcp__ts-engineer__pr_reviewer` |
 
-### Reduce Context Transfer
+### Provide Accurate Inputs
 
 ```markdown
-# GOOD: Specific task with context
-"Review session.manager.ts for cost tracking issues, focusing on budget enforcement"
+# GOOD: Specific spec path and files
+finalize({ files_changed: ["src/core/session/session.manager.ts"], spec_path: "docs/specs/..." })
 
-# BAD: Vague delegation
-"Check the session code"
+# BAD: Missing context
+finalize({ files_changed: [] })
 ```
 
 ---
@@ -143,7 +143,7 @@ npm run build &
 ## Troubleshooting
 
 ### Build Failures
-1. Use `build-error-resolver` agent
+1. Use `mcp__ts-engineer__audit_fix` to auto-fix violations
 2. Fix incrementally
 3. Verify after each fix
 

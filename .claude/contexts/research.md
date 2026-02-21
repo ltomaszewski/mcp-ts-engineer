@@ -76,8 +76,9 @@
 
 ---
 
-## Agents
+## MCP Tools
 
-- **Explore** — Multi-step investigation
-- **architect** — Design trade-offs
-- **planner** — Research → implementation
+| Task | MCP Tool |
+|------|----------|
+| Review and validate specs | `mcp__ts-engineer__todo_reviewer` |
+| Comprehensive PR review | `mcp__ts-engineer__pr_reviewer` |

@@ -161,10 +161,13 @@ npm test -- path/to/test.ts
 
 ---
 
-## Agent Support
+## MCP Tools
 
-- **eng-executor** - TDD implementation
-- **code-reviewer** - Catches missing tests
+| Task | MCP Tool |
+|------|----------|
+| TDD implementation from spec | `mcp__ts-engineer__todo_code_writer` |
+| Fix lint/type/test violations | `mcp__ts-engineer__audit_fix` |
+| Final audit + commit | `mcp__ts-engineer__finalize` |
 
 ---
 

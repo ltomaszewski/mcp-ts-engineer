@@ -1,142 +1,104 @@
-# Agent Orchestration
+# MCP Tool Orchestration
 
-Guidelines for effective use of specialized agents.
-
----
-
-## Available Agents
-
-| Agent | Purpose | Model | When to Use |
-|-------|---------|-------|-------------|
-| **planner** | Implementation planning | Opus | Complex features, multi-file changes |
-| **architect** | System design | Opus | Architectural decisions |
-| **code-reviewer** | Code quality | Sonnet | After writing/modifying code |
-| **security-reviewer** | Vulnerability analysis | Opus | Auth, input handling, sensitive data |
-| **build-error-resolver** | Fix build/type errors | Haiku | When build fails |
-| **refactor-cleaner** | Dead code removal | Sonnet | Cleanup, consolidation |
-| **doc-updater** | Documentation sync | Sonnet | After major changes |
-| **eng-executor** | TDD implementation | Sonnet | Feature implementation |
-| **audit-executor** | Code quality fixes | Sonnet | Lint/type fixes |
+Guidelines for effective use of MCP tools from `mcp-ts-engineer`.
 
 ---
 
-## Proactive Agent Usage
+## Available MCP Tools
 
-**Use agents WITHOUT waiting for user prompt:**
-
-| Trigger | Agent | Action |
-|---------|-------|--------|
-| Feature request | planner | Create implementation plan |
-| Code just written | code-reviewer | Review for quality |
-| Bug fix or new feature | eng-executor | TDD implementation |
-| Auth/security code | security-reviewer | Security analysis |
-| Build failure | build-error-resolver | Fix errors |
-| Architecture question | architect | Design decision |
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `mcp__ts-engineer__todo_reviewer` | Review and validate spec files | Before implementation, spec quality gate |
+| `mcp__ts-engineer__todo_code_writer` | TDD implementation from spec | Feature implementation from reviewed specs |
+| `mcp__ts-engineer__finalize` | Audit, test, codemap, commit | After implementation, final quality gate |
+| `mcp__ts-engineer__audit_fix` | Fix lint/type/test violations | Code quality cleanup |
+| `mcp__ts-engineer__pr_reviewer` | Comprehensive PR review | Before merging PRs |
+| `mcp__ts-engineer__echo_agent` | Test agent connectivity | Verify MCP server is working |
 
 ---
 
-## Delegation Principles
+## Proactive Tool Usage
 
-### Delegate When
+**Use MCP tools WITHOUT waiting for user prompt:**
 
-- Task is self-contained (clear input/output)
-- Different expertise needed
-- Tasks are parallelizable
-- Fresh context benefits the task
-
-### Keep Inline When
-
-- Small edits (< 3 files)
-- Quick fixes with clear scope
-- Needs full conversation context
-- Sequential dependency on previous work
+| Trigger | MCP Tool | Action |
+|---------|----------|--------|
+| New spec created | `todo_reviewer` | Validate spec structure and TDD coverage |
+| Spec reviewed and ready | `todo_code_writer` | TDD implementation from spec |
+| Code just written | `finalize` | Audit, test, update codemaps, commit |
+| Lint/type/test failures | `audit_fix` | Auto-fix violations |
+| PR ready for review | `pr_reviewer` | Comprehensive code review |
 
 ---
 
-## Parallel Execution
+## Spec-Driven Workflow
 
-**ALWAYS parallelize independent operations:**
-
-```markdown
-# GOOD: Launch 3 agents in parallel
-1. code-reviewer: Review recent changes
-2. security-reviewer: Audit auth handling
-3. audit-executor: Fix lint issues
-
-# BAD: Sequential when unnecessary
-First review, then security, then lint
-```
-
-**Parallel safety:**
-- Different files = safe to parallel
-- Same file = sequential only
-- Shared state = sequential only
-
----
-
-## Context Passing
-
-**Provide specific, actionable context:**
-
-```markdown
-# GOOD: Clear scope and context
-Task: Review src/core/session/session.manager.ts
-Focus: Cost tracking and budget enforcement
-Context: Users reported cost overruns
-
-# BAD: Vague delegation
-"Check the session code for issues"
-```
-
-**Include:**
-- Specific file paths
-- What to focus on
-- Relevant background
-- Success criteria
-
----
-
-## Agent Chaining
-
-For complex features, chain agents sequentially:
+Chain MCP tools for feature implementation:
 
 ```
-planner (Opus)
-    ↓ Implementation plan
-eng-executor (Sonnet)
-    ↓ Code + tests
-code-reviewer (Sonnet)
-    ↓ Review feedback
-audit-executor (Sonnet)
-    ↓ Fixed violations
+todo_reviewer
+    ↓ Validated spec (DRAFT → IN_REVIEW)
+todo_code_writer
+    ↓ Code + tests (IN_REVIEW → READY)
+finalize
+    ↓ Audit + codemaps + commit (READY → IMPLEMENTED)
 ```
+
+---
+
+## Tool Parameters
+
+### `todo_reviewer`
+- `spec_path` (required): Path to the spec markdown file
+- `iterations` (optional): Review-validate cycles (1-10, default 3)
+- `model` (optional): "opus" or "sonnet" (default "sonnet")
+
+### `todo_code_writer`
+- `spec_path` (required): Path to the spec markdown file
+- `max_phases` (optional): Implementation phases (1-10, default 5)
+- `model` (optional): "opus", "sonnet", or "haiku" (default "sonnet")
+
+### `finalize`
+- `files_changed` (required): List of modified file paths
+- `spec_path` (optional): Spec to mark as IMPLEMENTED
+- `skip_tests` (optional): Skip test execution
+- `skip_codemaps` (optional): Skip codemap updates
+
+### `audit_fix`
+- `project` (optional): Specific project to audit
+- `spec_path` (optional): Spec for context
+- `max_iteration_per_project` (optional): Fix iterations per project (1-10, default 3)
+
+### `pr_reviewer`
+- `pr` (required): PR number or URL
+- `mode` (optional): "review-only" or "review-fix" (default "review-only")
+- `budget` (optional): Cost budget limit
 
 ---
 
 ## Error Handling
 
-When agent fails:
+When an MCP tool fails:
 
-1. Check if scope was clear
-2. Verify context was sufficient
-3. Consider model upgrade (Haiku → Sonnet → Opus)
-4. Break task into smaller pieces
-5. Provide additional context and retry
+1. Check if input parameters were correct
+2. Verify the spec file exists and has correct format
+3. Check if the target project builds and tests pass
+4. Review MCP server logs for details
+5. Retry with adjusted parameters
 
 ---
 
 ## Best Practices
 
 **DO:**
-- Provide clear success criteria
-- Include relevant file paths
-- Specify expected output format
-- Parallelize when safe
-- Use appropriate model tier
+- Follow the spec lifecycle: DRAFT → IN_REVIEW → READY → IMPLEMENTED
+- Provide accurate `files_changed` to `finalize`
+- Use `todo_reviewer` before `todo_code_writer`
+- Run `audit_fix` when lint/type issues accumulate
+- Use `pr_reviewer` before merging
 
 **DON'T:**
-- Delegate vague tasks
-- Overload with unnecessary context
-- Mix unrelated tasks in one agent
-- Ignore agent recommendations
-- Skip code-reviewer after changes
+- Skip `todo_reviewer` and go straight to `todo_code_writer`
+- Forget to pass `spec_path` to `finalize` for spec workflows
+- Ignore `pr_reviewer` findings
+- Run `todo_code_writer` on DRAFT specs (review first)
