@@ -6,14 +6,77 @@ Comprehensive NestJS backend development guide - project setup, module architect
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Framework | NestJS | ^10.x |
-| API | GraphQL (Apollo) | ^12.x |
+| Framework | NestJS | ^11.x |
+| API | GraphQL (Yoga) | ^5.x |
 | Database | MongoDB (Mongoose) | ^8.x |
 | Authentication | Passport.js + JWT | ^10.x |
 | Validation | class-validator + class-transformer | ^0.14.x |
-| Configuration | @nestjs/config | ^3.x |
-| Testing | Jest + @nestjs/testing | ^29.x |
-| Rate Limiting | @nestjs/throttler | ^6.x |
+| Configuration | @nestjs/config | ^4.x |
+| Testing | Vitest + @nestjs/testing | ^4.x |
+| Linting | Biome | ^2.x |
+| Dev Runner | tsx (esbuild) | ^4.x |
+
+---
+
+## CRITICAL: Explicit Dependency Injection
+
+Dev mode uses `tsx` (esbuild) which does **not** support `emitDecoratorMetadata`. All NestJS code **must** use explicit decorators for DI and GraphQL types. This ensures code works across all environments (tsx, SWC, tsc).
+
+### Rules
+
+1. **Always use `@Inject(ServiceName)`** on every constructor service parameter
+2. **Always use `@Field(() => Type)`** with explicit type functions on GraphQL fields
+3. **`@InjectModel()`, `@InjectConnection()`** are already explicit — no change needed
+
+### Examples
+
+```typescript
+// CORRECT — works everywhere (tsx, SWC, tsc)
+@Controller("users")
+export class UserController {
+  constructor(
+    @Inject(UserService) private readonly userService: UserService,
+    @Inject(AuthService) private readonly authService: AuthService,
+  ) {}
+}
+
+// WRONG — breaks with tsx/esbuild (no decorator metadata emitted)
+@Controller("users")
+export class UserController {
+  constructor(
+    private readonly userService: UserService,
+    private readonly authService: AuthService,
+  ) {}
+}
+```
+
+```typescript
+// CORRECT — explicit GraphQL field types
+@ObjectType()
+export class UserOutput {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => Float)
+  score!: number;
+
+  @Field(() => Boolean)
+  isActive!: boolean;
+
+  @Field(() => Date)
+  createdAt!: Date;
+}
+
+// WRONG — relies on metadata for type inference
+@ObjectType()
+export class UserOutput {
+  @Field()
+  name!: string;
+}
+```
 
 ---
 
@@ -180,14 +243,9 @@ export {
       }),
       inject: [ConfigService],
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/generated/schema.graphql'),
-      sortSchema: true,
-      path: '/v3/graphql',
-      playground: false,
-      introspection: true,
-      context: ({ req }: { req: Request }) => ({ req }),
+    GraphQLModule.forRoot<YogaDriverConfig>({
+      driver: YogaDriver,
+      autoSchemaFile: true,
     }),
     // Feature modules
     AuthModule,
@@ -204,7 +262,9 @@ export class AppModule {}
 // modules/user/user.resolver.ts
 @Resolver(() => UserOutput)
 export class UserResolver {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    @Inject(UserService) private readonly userService: UserService,
+  ) {}
 
   @Query(() => UserOutput, { description: 'Get current user profile' })
   @UseGuards(GqlAuthGuard)
@@ -229,34 +289,34 @@ export class UserResolver {
 // modules/user/dto/create-user.input.ts
 @InputType()
 export class CreateUserInput {
-  @Field()
+  @Field(() => String)
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
-  @Field()
+  @Field(() => String)
   @IsEmail()
-  email: string;
+  email!: string;
 
-  @Field()
+  @Field(() => String)
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 // modules/user/dto/user.output.ts
 @ObjectType()
 export class UserOutput {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
-  @Field()
-  name: string;
+  @Field(() => String)
+  name!: string;
 
-  @Field()
-  email: string;
+  @Field(() => String)
+  email!: string;
 
-  @Field()
-  createdAt: Date;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 ```
 
@@ -271,7 +331,7 @@ export class UserOutput {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
-    private configService: ConfigService,
+    @Inject(ConfigService) private configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {
     super({
@@ -398,7 +458,7 @@ export class UserModule {}
 export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly kidService: KidService,
+    @Inject(KidService) private readonly kidService: KidService,
   ) {}
 
   async findById(id: string): Promise<UserDocument | null> {
@@ -446,16 +506,16 @@ async function bootstrap(): Promise<void> {
 ```typescript
 @InputType()
 export class CreateKidInput {
-  @Field()
+  @Field(() => String)
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
-  @Field()
+  @Field(() => String)
   @IsDateString()
-  birthDate: string;
+  birthDate!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   timezone?: string;
@@ -652,7 +712,9 @@ export class HealthModule {}
 // modules/health/health.controller.ts
 @Controller('health')
 export class HealthController {
-  constructor(private healthService: HealthService) {}
+  constructor(
+    @Inject(HealthService) private readonly healthService: HealthService,
+  ) {}
 
   @Get()
   async check(): Promise<HealthCheckResult> {
@@ -667,22 +729,22 @@ export class HealthController {
 
 ```bash
 # Development
-npm run dev                 # Start with hot-reload
+npm run dev                 # Start with hot-reload (tsx watch)
+npm run dev:local           # Start with in-memory MongoDB
 npm run start               # Start production
 npm run build               # Build for production
 
 # Testing
-npm test                    # Run all tests
+npm test                    # Run all tests (Vitest)
 npm run test:watch          # Watch mode
-npm run test:cov            # Coverage report
-npm test -- path/to/test    # Run specific test
+npm run test:coverage       # Coverage report
 
-# Linting
-npm run lint                # ESLint
-npm run lint:fix            # Fix issues
+# Linting & Formatting
+npm run lint                # Biome check
+npm run format              # Biome format
 
 # Type checking
-npx tsc --noEmit            # Type check without emit
+npm run type-check          # tsc --noEmit
 ```
 
 ---
@@ -776,6 +838,8 @@ export class FeatureModule {}
 
 | Anti-Pattern | Problem | Solution |
 |-------------|---------|----------|
+| Missing `@Inject()` on constructor params | DI breaks with tsx/esbuild (no metadata) | Always use `@Inject(ServiceName)` |
+| Missing `@Field(() => Type)` type function | GraphQL type inference fails with tsx | Always pass explicit type function |
 | Exporting everything | Breaks encapsulation | Export only facade service |
 | Resolvers in exports | Resolvers are entry points, not dependencies | Never export resolvers |
 | Duplicate schema registration | Multiple modules registering same schema | Use centralized SchemasModule |

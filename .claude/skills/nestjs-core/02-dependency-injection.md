@@ -51,7 +51,20 @@ export class TransientService {
 
 Favor constructor-based injection to enforce clear contracts.
 
+**CRITICAL:** Always use explicit `@Inject()` on every constructor service parameter. Dev mode uses `tsx` (esbuild) which does **not** support `emitDecoratorMetadata`, so NestJS cannot resolve types implicitly. This rule applies to ALL environments (dev, test, production) for consistency.
+
 ```typescript
+// CORRECT — explicit @Inject() on every service param
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(LoggerService) private readonly loggerService: LoggerService,
+  ) {}
+}
+
+// WRONG — breaks with tsx/esbuild (no decorator metadata)
 @Injectable()
 export class UsersService {
   constructor(
@@ -60,6 +73,9 @@ export class UsersService {
     private readonly loggerService: LoggerService
   ) {}
 }
+```
+
+**Note:** `@InjectModel()`, `@InjectConnection()`, and other Mongoose-specific decorators are already explicit and work correctly.
 ```
 
 ## Exporting Services Between Modules

@@ -1,22 +1,26 @@
 # GraphQL Type Definitions
 
+## CRITICAL: Always Use Explicit Type Functions
+
+Dev mode uses `tsx` (esbuild) which does **not** emit decorator metadata. **Every `@Field()` must include an explicit type function.** Never use bare `@Field()` without a type.
+
 ## @ObjectType
 
 Object types represent the structure of data returned from queries and mutations.
 
 ```typescript
-import { ObjectType, Field, Int, ID } from '@nestjs/graphql';
+import { ObjectType, Field, Int, Float, ID } from '@nestjs/graphql';
 
 @ObjectType({ description: 'User model' })
 export class User {
   @Field(() => ID)
-  id: number;
+  id!: number;
 
-  @Field()
-  name: string;
+  @Field(() => String)
+  name!: string;
 
-  @Field()
-  email: string;
+  @Field(() => String)
+  email!: string;
 
   @Field(() => Int, { nullable: true })
   age?: number;
@@ -54,13 +58,13 @@ import { IsEmail, MinLength, Min } from 'class-validator';
 
 @InputType()
 export class CreateUserInput {
-  @Field()
+  @Field(() => String)
   @MinLength(3)
-  name: string;
+  name!: string;
 
-  @Field()
+  @Field(() => String)
   @IsEmail()
-  email: string;
+  email!: string;
 
   @Field(() => Int, { nullable: true })
   @Min(0)
@@ -101,25 +105,28 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Field()
+  @Field(() => String)
   @Column()
-  name: string;
+  name!: string;
 
-  @Field()
+  @Field(() => String)
   @Column({ unique: true })
-  email: string;
+  email!: string;
 }
 ```
 
 ## Scalar Types
 
+**Always use the explicit type function form** — never bare `@Field()`.
+
 | TypeScript | GraphQL | Decorator |
 |------------|---------|-----------|
 | `number` | `Int` | `@Field(() => Int)` |
 | `number` | `Float` | `@Field(() => Float)` |
-| `string` | `String` | `@Field()` |
-| `boolean` | `Boolean` | `@Field()` |
+| `string` | `String` | `@Field(() => String)` |
+| `boolean` | `Boolean` | `@Field(() => Boolean)` |
 | `string` | `ID` | `@Field(() => ID)` |
+| `Date` | `Date` | `@Field(() => Date)` |
 
 ## Enum Types
 
@@ -179,10 +186,10 @@ export abstract class Node {
 @ObjectType({ implements: () => [Node] })
 export class User implements Node {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
-  @Field()
-  email: string;
+  @Field(() => String)
+  email!: string;
 }
 ```
 
@@ -195,29 +202,29 @@ Keep data reading (`@ObjectType`) and writing (`@InputType`) types separate:
 @ObjectType()
 export class User {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
-  @Field()
-  email: string;
+  @Field(() => String)
+  email!: string;
 
-  @Field()
-  createdAt: Date;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 // Input type for creating
 @InputType()
 export class CreateUserInput {
-  @Field()
-  email: string;
+  @Field(() => String)
+  email!: string;
 
-  @Field()
-  password: string;
+  @Field(() => String)
+  password!: string;
 }
 
 // Input type for updating
 @InputType()
 export class UpdateUserInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   email?: string;
 }
 ```

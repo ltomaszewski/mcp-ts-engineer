@@ -15,13 +15,15 @@
 
 | Package | Version | Notes |
 |---------|---------|-------|
-| NestJS | ^10.x | Core framework |
-| GraphQL (Apollo) | ^12.x | API layer |
+| NestJS | ^11.x | Core framework |
+| GraphQL (Yoga) | ^5.x | API layer |
 | MongoDB (Mongoose) | ^8.x | Database |
 | Passport.js + JWT | ^10.x | Authentication |
 | class-validator | ^0.14.x | DTO validation |
-| @nestjs/config | ^3.x | Configuration |
-| Jest | ^29.x | Testing |
+| @nestjs/config | ^4.x | Configuration |
+| Vitest | ^4.x | Testing |
+| Biome | ^2.x | Linting + formatting |
+| tsx | ^4.x | Dev runner (esbuild) |
 
 ---
 
@@ -42,6 +44,60 @@ src/
 2. **Facade pattern**: Each module exports ONE public service
 3. **Barrel files**: `index.ts` defines public API explicitly
 4. **Centralized schemas**: SchemasModule for shared Mongoose schemas
+5. **Explicit DI**: Always `@Inject(ServiceName)` — never rely on implicit type metadata
+
+---
+
+## CRITICAL: Explicit Dependency Injection
+
+Dev mode uses `tsx` (esbuild) which does **not** support `emitDecoratorMetadata`. All code **must** use explicit decorators:
+
+**ALWAYS:**
+- `@Inject(ServiceName)` on every constructor service parameter
+- `@Field(() => Type)` with explicit type function on all GraphQL `@ObjectType`/`@InputType` fields
+- `@InjectModel()`, `@InjectConnection()` for Mongoose (already explicit)
+
+```typescript
+// CORRECT
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(KidService) private readonly kidService: KidService,
+  ) {}
+}
+
+// WRONG — breaks with tsx/esbuild
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly kidService: KidService,  // no @Inject!
+  ) {}
+}
+```
+
+```typescript
+// CORRECT
+@ObjectType()
+export class UserOutput {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => Date)
+  createdAt!: Date;
+}
+
+// WRONG
+@ObjectType()
+export class UserOutput {
+  @Field()        // no explicit type!
+  name!: string;
+}
+```
 
 ---
 
@@ -101,21 +157,22 @@ apps/[app-name]/
 
 ```bash
 # Development
-npm run dev                 # Start with hot-reload
+npm run dev                 # Start with hot-reload (tsx watch)
+npm run dev:local           # Start with in-memory MongoDB
 npm run start               # Start production
 npm run build               # Build for production
 
 # Testing
-npm test                    # Run all tests
+npm test                    # Run all tests (Vitest)
 npm run test:watch          # Watch mode
-npm run test:cov            # Coverage report
+npm run test:coverage       # Coverage report
 
 # Type checking
-npx tsc --noEmit            # Check types
+npm run type-check          # tsc --noEmit
 
-# Linting
-npm run lint                # Run ESLint
-npm run lint:fix            # Fix issues
+# Linting & Formatting
+npm run lint                # Biome check
+npm run format              # Biome format
 ```
 
 ---
@@ -192,7 +249,7 @@ npm test
 npm test -- modules/auth/tests/auth.service.test.ts
 
 # With coverage
-npm run test:cov
+npm run test:coverage
 ```
 
 ---
@@ -222,7 +279,19 @@ npm run test:cov
 })
 ```
 
-### 4. GraphQL Schema Not Generated
+### 4. DI Fails — "Cannot read properties of undefined"
+
+**Cause:** Missing `@Inject()` on constructor params. tsx/esbuild doesn't emit decorator metadata.
+
+**Fix:** Add `@Inject(ServiceName)` to every constructor service parameter.
+
+### 5. GraphQL "Undefined type error"
+
+**Cause:** Missing explicit type in `@Field()`. esbuild doesn't emit type metadata.
+
+**Fix:** Use `@Field(() => String)`, `@Field(() => Float)`, etc. on all fields.
+
+### 6. GraphQL Schema Not Generated
 
 **Cause:** Missing or incorrect resolver decorators.
 
