@@ -199,6 +199,20 @@ describe('App template directories', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/swcrc.template'))).toBe(true)
   })
 
+  it('nestjs-server has health.resolver.ts.template for GraphQL Query root', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.resolver.ts.template'))).toBe(true)
+  })
+
+  it('nestjs-server health module registers HealthResolver', () => {
+    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.module.ts.template'), 'utf-8')
+    expect(content).toContain('HealthResolver')
+  })
+
+  it('nestjs-server includes @as-integrations/express5 dependency', () => {
+    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/package.json.template'), 'utf-8')
+    expect(content).toContain('@as-integrations/express5')
+  })
+
   it('expo-app has app/_layout.tsx.template', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'expo-app/app/_layout.tsx.template'))).toBe(true)
   })

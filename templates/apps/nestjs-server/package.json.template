@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.4.0",
+    "@as-integrations/express5": "^1.0.0",
     "@nestjs/apollo": "^13.0.0",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^4.0.0",
