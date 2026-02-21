@@ -30,7 +30,7 @@ import {
 describe("AuditFixInputSchema", () => {
   it("accepts valid input with all fields", () => {
     const input = {
-      project: "apps/bastion-server",
+      project: "apps/my-server",
       max_iteration_per_project: 5,
       max_total_cap: 15,
       cwd: "/path/to/workspace",
@@ -83,8 +83,8 @@ describe("AuditPlanSchema", () => {
   it("accepts valid plan with multiple projects", () => {
     const plan = {
       projects: [
-        { path: "apps/bastion-server", reason: "TypeScript violations", priority: 1 },
-        { path: "apps/bastion-app", reason: "ESLint errors", priority: 2 },
+        { path: "apps/my-server", reason: "TypeScript violations", priority: 1 },
+        { path: "apps/my-app", reason: "ESLint errors", priority: 2 },
       ],
     };
     const result = AuditPlanSchema.safeParse(plan);
@@ -204,7 +204,7 @@ describe("CommitResultSchema", () => {
 describe("ProjectResultSchema", () => {
   it("accepts valid project result", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: 2,
       total_fixes: 10,
       final_audit_status: "pass" as const,
@@ -218,7 +218,7 @@ describe("ProjectResultSchema", () => {
 
   it("rejects negative iterations", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: -1,
       total_fixes: 0,
       final_audit_status: "fail" as const,
@@ -239,7 +239,7 @@ describe("AuditFixOutputSchema", () => {
       total_iterations: 4,
       project_results: [
         {
-          project_path: "apps/bastion-server",
+          project_path: "apps/my-server",
           iterations: 2,
           total_fixes: 5,
           final_audit_status: "pass" as const,
@@ -283,8 +283,8 @@ describe("AuditFixOutputSchema", () => {
 describe("TestStepInputSchema", () => {
   it("accepts valid test input with all required fields", () => {
     const input = {
-      project_path: "apps/bastion-server",
-      workspaces: ["apps/bastion-server"],
+      project_path: "apps/my-server",
+      workspaces: ["apps/my-server"],
       cwd: "/path/to/workspace",
     };
     const result = TestStepInputSchema.safeParse(input);
@@ -297,7 +297,7 @@ describe("TestStepInputSchema", () => {
   it("accepts test input with multiple workspaces", () => {
     const input = {
       project_path: ".",
-      workspaces: ["apps/bastion-server", "packages/utils"],
+      workspaces: ["apps/my-server", "packages/utils"],
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(true);
@@ -305,8 +305,8 @@ describe("TestStepInputSchema", () => {
 
   it("accepts test input without cwd (optional)", () => {
     const input = {
-      project_path: "apps/bastion-server",
-      workspaces: ["apps/bastion-server"],
+      project_path: "apps/my-server",
+      workspaces: ["apps/my-server"],
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(true);
@@ -315,7 +315,7 @@ describe("TestStepInputSchema", () => {
   it("rejects empty project_path", () => {
     const input = {
       project_path: "",
-      workspaces: ["apps/bastion-server"],
+      workspaces: ["apps/my-server"],
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(false);
@@ -323,7 +323,7 @@ describe("TestStepInputSchema", () => {
 
   it("rejects empty workspaces array", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       workspaces: [],
     };
     const result = TestStepInputSchema.safeParse(input);
@@ -332,8 +332,8 @@ describe("TestStepInputSchema", () => {
 
   it("rejects workspaces with empty strings", () => {
     const input = {
-      project_path: "apps/bastion-server",
-      workspaces: ["apps/bastion-server", ""],
+      project_path: "apps/my-server",
+      workspaces: ["apps/my-server", ""],
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(false);
@@ -341,7 +341,7 @@ describe("TestStepInputSchema", () => {
 
   it("rejects missing project_path", () => {
     const input = {
-      workspaces: ["apps/bastion-server"],
+      workspaces: ["apps/my-server"],
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(false);
@@ -349,7 +349,7 @@ describe("TestStepInputSchema", () => {
 
   it("rejects missing workspaces", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
     };
     const result = TestStepInputSchema.safeParse(input);
     expect(result.success).toBe(false);
@@ -363,7 +363,7 @@ describe("TestResultSchema", () => {
       tests_total: 150,
       tests_failed: 0,
       failure_summary: "",
-      workspaces_tested: ["apps/bastion-server"],
+      workspaces_tested: ["apps/my-server"],
     };
     const parsed = TestResultSchema.safeParse(result);
     expect(parsed.success).toBe(true);
@@ -375,7 +375,7 @@ describe("TestResultSchema", () => {
       tests_total: 150,
       tests_failed: 5,
       failure_summary: "5 tests failed in auth module",
-      workspaces_tested: ["apps/bastion-server", "packages/utils"],
+      workspaces_tested: ["apps/my-server", "packages/utils"],
     };
     const parsed = TestResultSchema.safeParse(result);
     expect(parsed.success).toBe(true);
@@ -472,7 +472,7 @@ describe("AuditFixInputSchema - Extended Fields", () => {
     const input = {
       skip_tests: true,
       spec_path: "docs/specs/feature.md",
-      project: "apps/bastion-server",
+      project: "apps/my-server",
     };
     const result = AuditFixInputSchema.safeParse(input);
     expect(result.success).toBe(true);
@@ -482,7 +482,7 @@ describe("AuditFixInputSchema - Extended Fields", () => {
 describe("EngStepInputSchema - Extended Fields", () => {
   it("accepts optional test_failure_summary", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       audit_summary: "5 violations found",
       files_with_issues: ["src/file.ts"],
       iteration_number: 1,
@@ -497,7 +497,7 @@ describe("EngStepInputSchema - Extended Fields", () => {
 
   it("accepts optional spec_path", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       audit_summary: "5 violations found",
       files_with_issues: ["src/file.ts"],
       iteration_number: 1,
@@ -512,7 +512,7 @@ describe("EngStepInputSchema - Extended Fields", () => {
 
   it("accepts both test_failure_summary and spec_path", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       audit_summary: "5 violations found",
       files_with_issues: ["src/file.ts"],
       iteration_number: 1,
@@ -525,7 +525,7 @@ describe("EngStepInputSchema - Extended Fields", () => {
 
   it("accepts input without new optional fields (backward compatibility)", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       audit_summary: "5 violations found",
       files_with_issues: ["src/file.ts"],
       iteration_number: 1,
@@ -538,7 +538,7 @@ describe("EngStepInputSchema - Extended Fields", () => {
 describe("ProjectResultSchema - Extended Fields", () => {
   it("accepts tests_passed as true", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: 2,
       total_fixes: 10,
       final_audit_status: "pass" as const,
@@ -556,7 +556,7 @@ describe("ProjectResultSchema - Extended Fields", () => {
 
   it("accepts tests_passed as false", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: 2,
       total_fixes: 10,
       final_audit_status: "warn" as const,
@@ -574,7 +574,7 @@ describe("ProjectResultSchema - Extended Fields", () => {
 
   it("accepts tests_passed as null (tests skipped)", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: 2,
       total_fixes: 10,
       final_audit_status: "pass" as const,
@@ -592,7 +592,7 @@ describe("ProjectResultSchema - Extended Fields", () => {
 
   it("accepts result without tests_passed (backward compatibility)", () => {
     const result = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       iterations: 2,
       total_fixes: 10,
       final_audit_status: "pass" as const,
@@ -607,17 +607,17 @@ describe("ProjectResultSchema - Extended Fields", () => {
 
 describe("LintScanInputSchema", () => {
   it("validates project_path is required with minimum 1 character", () => {
-    const input = { project_path: "apps/bastion-server" };
+    const input = { project_path: "apps/my-server" };
     const result = LintScanInputSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.project_path).toBe("apps/bastion-server");
+      expect(result.data.project_path).toBe("apps/my-server");
     }
   });
 
   it("accepts optional cwd field", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       cwd: "/path/to/workspace",
     };
     const result = LintScanInputSchema.safeParse(input);
@@ -698,14 +698,14 @@ describe("LintScanResultSchema", () => {
 describe("LintFixInputSchema", () => {
   it("validates required fields: project_path, lint_report, files_with_lint_errors", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Full lint output with errors...",
       files_with_lint_errors: ["src/file1.ts", "src/file2.ts"],
     };
     const result = LintFixInputSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.project_path).toBe("apps/bastion-server");
+      expect(result.data.project_path).toBe("apps/my-server");
       expect(result.data.lint_report).toBe("Full lint output with errors...");
       expect(result.data.files_with_lint_errors).toEqual(["src/file1.ts", "src/file2.ts"]);
     }
@@ -713,7 +713,7 @@ describe("LintFixInputSchema", () => {
 
   it("accepts optional cwd field", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Lint errors",
       files_with_lint_errors: ["src/file.ts"],
       cwd: "/workspace/monorepo",
@@ -797,17 +797,17 @@ describe("VulnerabilitiesBySeveritySchema", () => {
 
 describe("DepsScanStepInputSchema", () => {
   it("accepts valid project_path", () => {
-    const input = { project_path: "apps/bastion-server" };
+    const input = { project_path: "apps/my-server" };
     const result = DepsScanStepInputSchema.safeParse(input);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.project_path).toBe("apps/bastion-server");
+      expect(result.data.project_path).toBe("apps/my-server");
     }
   });
 
   it("accepts project_path with cwd", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       cwd: "/workspace",
     };
     const result = DepsScanStepInputSchema.safeParse(input);
@@ -881,7 +881,7 @@ describe("DepsScanStepResultSchema", () => {
 describe("DepsFixStepInputSchema", () => {
   it("accepts valid input with all required fields", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       vulnerabilities_found: 10,
     };
     const result = DepsFixStepInputSchema.safeParse(input);
@@ -893,7 +893,7 @@ describe("DepsFixStepInputSchema", () => {
 
   it("rejects negative vulnerabilities_found", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       vulnerabilities_found: -3,
     };
     const result = DepsFixStepInputSchema.safeParse(input);

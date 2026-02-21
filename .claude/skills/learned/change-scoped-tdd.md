@@ -2,7 +2,7 @@
 
 **Extracted:** 2026-01-27
 **Context:** When planning, reviewing, or validating test coverage for any feature spec or todo
-**Project:** bastion-mono
+**Project:** mcp-ts-engineer
 
 ## Problem
 

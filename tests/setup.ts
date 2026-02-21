@@ -1,5 +1,5 @@
 /**
- * Jest ESM setup file for MCP Software House Server tests.
+ * Jest ESM setup file for mcp-ts-engineer tests.
  *
  * This file is loaded before tests run and configures the test environment.
  */

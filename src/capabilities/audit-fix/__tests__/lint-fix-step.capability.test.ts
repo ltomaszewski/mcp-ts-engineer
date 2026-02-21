@@ -33,7 +33,7 @@ describe("Lint Fix Step Capability", () => {
 
   it("preparePromptInput builds correct input object", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Error: unused import in file1.ts",
       files_with_lint_errors: ["src/file1.ts", "src/file2.ts"],
       cwd: "/monorepo",
@@ -45,7 +45,7 @@ describe("Lint Fix Step Capability", () => {
     );
 
     expect(result).toMatchObject({
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import in file1.ts",
       filesWithLintErrors: ["src/file1.ts", "src/file2.ts"],
       cwd: "/monorepo",
@@ -54,7 +54,7 @@ describe("Lint Fix Step Capability", () => {
 
   it("processResult parses <lint_fix_result> XML with valid JSON", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Error: unused import",
       files_with_lint_errors: ["src/file1.ts"],
     };
@@ -85,7 +85,7 @@ describe("Lint Fix Step Capability", () => {
 
   it("processResult uses structured output when available", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Error: unused import",
       files_with_lint_errors: ["src/file1.ts"],
     };
@@ -115,7 +115,7 @@ describe("Lint Fix Step Capability", () => {
 
   it("processResult returns fallback on malformed XML", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Error: unused import",
       files_with_lint_errors: ["src/file1.ts"],
     };
@@ -140,7 +140,7 @@ describe("Lint Fix Step Capability", () => {
 
   it("processResult extracts status, files_modified, and summary", () => {
     const input = {
-      project_path: "apps/bastion-server",
+      project_path: "apps/my-server",
       lint_report: "Error: console.log in file",
       files_with_lint_errors: ["src/test.ts"],
     };

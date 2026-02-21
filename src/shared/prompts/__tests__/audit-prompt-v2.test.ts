@@ -31,13 +31,13 @@ describe("shared audit prompt builder", () => {
   it("scan mode includes project path", () => {
     const input: AuditPromptInput = {
       mode: "scan",
-      projectPath: "/workspace/apps/bastion-server",
+      projectPath: "/workspace/apps/my-server",
       detectedTechnologies: ["nestjs"],
     };
 
     const result = buildAuditPromptV2(input);
 
-    expect(result.userPrompt).toContain("/workspace/apps/bastion-server");
+    expect(result.userPrompt).toContain("/workspace/apps/my-server");
   });
 
   it("scan mode excludes spec-specific fields", () => {

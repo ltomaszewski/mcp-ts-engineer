@@ -11,10 +11,10 @@ describe("depsScanPrompts", () => {
 
   describe("build()", () => {
     it("userPrompt includes projectPath", () => {
-      const input = { projectPath: "apps/bastion-server", cwd: "/workspace" };
+      const input = { projectPath: "apps/my-server", cwd: "/workspace" };
       const result = promptVersion.build(input);
 
-      expect(result.userPrompt).toContain("apps/bastion-server");
+      expect(result.userPrompt).toContain("apps/my-server");
       expect(result.userPrompt).toContain("<project_path>");
     });
 

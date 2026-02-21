@@ -1,6 +1,6 @@
 # React Native Project Architecture
 
-**Bastion Monorepo Mobile App Standards**
+**Monorepo Mobile App Standards**
 
 > **Source**: `/.claude/knowledge-base/react-native-mobile-architecture.md`
 
@@ -213,7 +213,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 ```typescript
 // src/features/auth/api/hooks.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LoginDocument } from '@bastion/server-client';
+import { LoginDocument } from '@app/server-client';
 
 import { executeGraphQL } from '@/api/graphql-client';
 import { useAuthStore } from '@/stores/auth.store';

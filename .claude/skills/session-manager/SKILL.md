@@ -180,7 +180,7 @@ After compact:
 ## Progress Summary
 
 ### Completed
-- [x] Created analytics module - apps/bastion-server/src/modules/analytics/
+- [x] Created analytics module - apps/my-server/src/modules/analytics/
 - [x] Added getStats resolver
 - [x] Unit tests passing (12/12)
 
@@ -209,8 +209,8 @@ After compact:
 Fix integration test mocks - see failing test at analytics.resolver.spec.ts:45
 
 ### Context to Load
-- @apps/bastion-server/src/modules/analytics/
-- @apps/bastion-server/src/modules/core/core.service.ts
+- @apps/my-server/src/modules/analytics/
+- @apps/my-server/src/modules/core/core.service.ts
 
 ### Remaining Work
 1. Fix integration tests

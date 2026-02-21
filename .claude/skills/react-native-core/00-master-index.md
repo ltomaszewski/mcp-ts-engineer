@@ -35,14 +35,14 @@ This modular knowledge base is organized for LLM context window efficiency. Use 
 
 - **[10-upgrade-guide.md](10-upgrade-guide.md)** — Version upgrade process, breaking changes, compatibility checks, and migration guidance.
 
-### Project Architecture (Bastion Monorepo)
+### Project Architecture
 - **[11-project-architecture.md](11-project-architecture.md)** — Project-specific patterns: NativeWind styling, Zustand stores, TanStack Query, feature modules, file placement rules, and naming conventions. **READ THIS FIRST for project work.**
 
 ---
 
 ## 🎯 Quick Reference by Use Case
 
-### "I'm working on the Bastion mobile app" (START HERE)
+### "I'm working on the mobile app" (START HERE)
 → **11-project-architecture.md** (NativeWind, Zustand, TanStack Query, One Hook Per Screen)
 
 ### "I'm new to React Native"

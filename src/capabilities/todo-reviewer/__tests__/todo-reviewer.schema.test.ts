@@ -180,7 +180,7 @@ describe("ReviewSummarySchema", () => {
   const validSummary = {
     status: "IN_REVIEW",
     spec_path: "docs/specs/feature.md",
-    target_app: "bastion-server",
+    target_app: "my-server",
     corrections_applied: 3,
     blockers_remaining: 0,
     warnings: 1,
@@ -364,7 +364,7 @@ describe("TddValidateStepInputSchema", () => {
   const validReviewSummary = {
     status: "IN_REVIEW" as const,
     spec_path: "docs/specs/feature.md",
-    target_app: "bastion-server",
+    target_app: "my-server",
     corrections_applied: 0,
     blockers_remaining: 0,
     warnings: 0,
@@ -400,7 +400,7 @@ describe("CommitStepInputSchema", () => {
   const validReviewSummary = {
     status: "IN_REVIEW" as const,
     spec_path: "docs/specs/feature.md",
-    target_app: "bastion-server",
+    target_app: "my-server",
     corrections_applied: 0,
     blockers_remaining: 0,
     warnings: 0,
@@ -854,7 +854,7 @@ describe("TddScanStepInputSchema", () => {
   const validReviewSummary = {
     status: "IN_REVIEW" as const,
     spec_path: "docs/specs/feature.md",
-    target_app: "bastion-server",
+    target_app: "my-server",
     corrections_applied: 0,
     blockers_remaining: 0,
     warnings: 0,

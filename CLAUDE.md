@@ -1,10 +1,10 @@
-# MCP Software House Server
+# MCP TypeScript Engineer
 
-AI assistant instructions for the MCP Software House Server development.
+AI assistant instructions for the mcp-ts-engineer package development.
 
 ## Overview
 
-**MCP Software House Server** - An MCP server that orchestrates multi-agent software development workflows using the Claude Agent SDK.
+**mcp-ts-engineer** - A generic MCP server for multi-agent software engineering workflows using the Claude Agent SDK. Designed to be imported as a git submodule into any monorepo.
 
 **Purpose**: Coordinate specialized agents (planner, implementer, reviewer, tester) to handle complex feature development with proper planning, execution, and quality gates.
 
@@ -13,7 +13,7 @@ AI assistant instructions for the MCP Software House Server development.
 ### Directory Structure
 
 ```
-apps/bastion-mcp-software-house/
+packages/mcp-ts-engineer/
 ├── src/
 │   ├── config/                          # Configuration constants
 │   │   ├── constants.ts                 # SERVER_INFO, PROVIDER_CONFIG, etc.
@@ -475,20 +475,14 @@ All configuration lives in `src/config/constants.ts`:
 
 **Issue**: Claude Code CLI agents may autonomously change their working directory during execution, causing file writes to nested duplicate paths.
 
-**Symptom**: Files created in paths like `apps/bastion-app/apps/bastion-app/src/...` instead of correct `apps/bastion-app/src/...`
+**Symptom**: Files created in nested duplicate paths like `target/target/src/...` instead of correct `target/src/...`
 
 **Root Cause**:
-- MCP server correctly passes `cwd` parameter (e.g., `/Users/user/Desktop/monorepo`)
+- MCP server correctly passes `cwd` parameter
 - Claude Code CLI agent receives correct working directory
 - During execution, agent autonomously runs `cd` commands or changes directory context
-- When file paths in spec reference `apps/bastion-app/...`, agent may interpret this as a subdirectory
+- When file paths in spec reference relative paths, agent may interpret them as subdirectories
 - File writes with relative paths then create nested duplicates
-
-**Evidence** (Session 94c033d99ab654a84beba76ff8642147, 2026-02-01):
-```
-Turn 24: "Error: File does not exist. Current working directory:
-  /Users/ltomaszewski/Desktop/bastion-mono/apps/bastion-app/apps/bastion-app"
-```
 
 **Impact**:
 - Duplicate files created in both correct and nested locations
@@ -497,7 +491,7 @@ Turn 24: "Error: File does not exist. Current working directory:
 
 **Mitigation**:
 1. **Prevention**: Phase engineering prompts explicitly instruct agents to avoid directory changes and use absolute paths
-2. **Detection**: Add `.gitignore` entries for common nested patterns (e.g., `apps/bastion-app/apps/`)
+2. **Detection**: Add `.gitignore` entries for common nested patterns
 3. **Cleanup**: Remove nested directories after execution if detected
 
 **Related Files**:
@@ -548,7 +542,7 @@ DRAFT  ──→  IN_REVIEW  ──→  READY  ──→  IMPLEMENTED
 The status is stored in the spec's metadata header:
 
 ```markdown
-**App**: bastion-mcp-software-house
+**App**: mcp-ts-engineer
 **Status**: IN_REVIEW
 **Created**: 2026-02-02
 ```
@@ -567,7 +561,5 @@ The `updateSpecStatus` helper in `src/core/utils/spec-status.ts` handles the reg
 
 ## References
 
-- Root monorepo: `/CLAUDE.md`
-- Coding style: `/.claude/rules/coding-style.md`
-- Testing: `/.claude/rules/testing.md`
-- Agent patterns: `/.claude/rules/agents.md`
+- Package root: `CLAUDE.md` (this file)
+- Skills: `.claude/skills/`

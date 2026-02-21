@@ -30,7 +30,7 @@ describe("auditFixDepsFixStepCapability", () => {
   describe("preparePromptInput", () => {
     it("extracts projectPath, vulnerabilitiesFound, and cwd correctly", () => {
       const input = {
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         vulnerabilities_found: 10,
         cwd: "/workspace",
       };
@@ -39,7 +39,7 @@ describe("auditFixDepsFixStepCapability", () => {
       const result = auditFixDepsFixStepCapability.preparePromptInput(input, mockContext);
 
       expect(result).toEqual({
-        projectPath: "apps/bastion-server",
+        projectPath: "apps/my-server",
         vulnerabilitiesFound: 10,
         cwd: "/workspace",
       });

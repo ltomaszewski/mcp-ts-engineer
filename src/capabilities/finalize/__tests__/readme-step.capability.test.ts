@@ -163,7 +163,7 @@ describe("finalizeReadmeStepCapability", () => {
     it("parses valid readme_result XML block", async () => {
       const readmeResult = {
         updated: true,
-        readmes_changed: ["apps/bastion-server/README.md", "packages/types/README.md"],
+        readmes_changed: ["apps/my-server/README.md", "packages/types/README.md"],
         summary: "Updated 2 READMEs with new API endpoints",
       };
       const content = `README updates complete.\n<readme_result>${JSON.stringify(readmeResult)}</readme_result>`;
@@ -249,7 +249,7 @@ describe("finalizeReadmeStepCapability", () => {
       const readmeResult = {
         updated: true,
         readmes_changed: [
-          "apps/bastion-server/README.md",
+          "apps/my-server/README.md",
           "apps/mcp-ts-engineer/README.md",
           "packages/utils/README.md",
         ],
@@ -258,7 +258,7 @@ describe("finalizeReadmeStepCapability", () => {
       const content = `<readme_result>${JSON.stringify(readmeResult)}</readme_result>`;
       const aiResult = createMockAiResult(content);
       const input: ReadmeStepInput = {
-        files_changed: ["package.json", "apps/bastion-server/package.json"],
+        files_changed: ["package.json", "apps/my-server/package.json"],
       };
       const context = createMockContext();
 

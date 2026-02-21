@@ -39,11 +39,11 @@ describe("buildAuditUserPrompt", () => {
 
   it("produces project-scoped prompt when projectPath provided", () => {
     const result = buildAuditUserPrompt({
-      projectPath: "/workspace/apps/bastion-app",
+      projectPath: "/workspace/apps/my-app",
     });
 
     expect(result).toContain("Scan all TypeScript files");
-    expect(result).toContain("/workspace/apps/bastion-app");
+    expect(result).toContain("/workspace/apps/my-app");
     expect(result).not.toContain("Files to audit:");
     expect(result).not.toContain("Only audit the files listed above");
   });
@@ -59,10 +59,10 @@ describe("buildAuditUserPrompt", () => {
   it("passes cwd through to prompt", () => {
     const result = buildAuditUserPrompt({
       filesChanged: ["src/test.ts"],
-      cwd: "/workspace/apps/bastion-server",
+      cwd: "/workspace/apps/my-server",
     });
 
-    expect(result).toContain("Working directory: /workspace/apps/bastion-server");
+    expect(result).toContain("Working directory: /workspace/apps/my-server");
   });
 
   it("returns BuiltPrompt with systemPrompt and userPrompt", () => {

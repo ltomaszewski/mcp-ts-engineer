@@ -17,8 +17,8 @@ describe("classifyPath", () => {
       expect(classifyPath(".claude/rules/bar.md")).toBe("valid");
     });
 
-    it("recognizes apps/bastion-server/src/main.ts as valid", () => {
-      expect(classifyPath("apps/bastion-server/src/main.ts")).toBe("valid");
+    it("recognizes apps/my-server/src/main.ts as valid", () => {
+      expect(classifyPath("apps/my-server/src/main.ts")).toBe("valid");
     });
 
     it("recognizes packages/types/src/index.ts as valid", () => {
@@ -142,8 +142,8 @@ describe("correctPath", () => {
 
   describe("no correction needed", () => {
     it("leaves valid monorepo paths unchanged", () => {
-      expect(correctPath("apps/bastion-server/src/main.ts", target)).toBe(
-        "apps/bastion-server/src/main.ts"
+      expect(correctPath("apps/my-server/src/main.ts", target)).toBe(
+        "apps/my-server/src/main.ts"
       );
     });
 

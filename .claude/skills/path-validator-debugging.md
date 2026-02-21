@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MCP software-house `todo_reviewer` capability validates file paths in spec documents. This guide documents known false positive patterns, the fix implemented, and how to work around remaining edge cases.
+The mcp-ts-engineer `todo_reviewer` capability validates file paths in spec documents. This guide documents known false positive patterns, the fix implemented, and how to work around remaining edge cases.
 
 ## Path Validation Flow
 
@@ -43,7 +43,7 @@ Paths are classified as:
 
 ```markdown
 <!-- GOOD: Full path -->
-| `apps/bastion-app/src/stores/app.store.ts` | MODIFY | Add fields |
+| `apps/my-app/src/stores/app.store.ts` | MODIFY | Add fields |
 
 <!-- AVOID: Bare filename (filtered out) -->
 | `app.store.ts` | MODIFY | Add fields |
@@ -89,6 +89,6 @@ Paths are classified as:
 
 ## Source Files
 
-- Validation: `apps/bastion-mcp-software-house/src/core/utils/spec-path-utils.ts`
-- Tests: `apps/bastion-mcp-software-house/src/core/utils/__tests__/spec-path-utils.test.ts`
-- Capability: `apps/bastion-mcp-software-house/src/capabilities/todo-reviewer/todo-reviewer.capability.ts`
+- Validation: `src/core/utils/spec-path-utils.ts`
+- Tests: `src/core/utils/__tests__/spec-path-utils.test.ts`
+- Capability: `src/capabilities/todo-reviewer/todo-reviewer.capability.ts`

@@ -83,7 +83,7 @@ describe("auditFixEngStepCapability", () => {
   describe("preparePromptInput", () => {
     it("builds fix-mode input with audit summary and files with issues", () => {
       const input: EngStepInput = {
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         audit_summary: "Found 3 race conditions",
         files_with_issues: ["src/service.ts", "src/hook.ts"],
         iteration_number: 1,
@@ -96,7 +96,7 @@ describe("auditFixEngStepCapability", () => {
         context,
       ) as Record<string, unknown>;
 
-      expect(result.projectPath).toBe("apps/bastion-server");
+      expect(result.projectPath).toBe("apps/my-server");
       expect(result.auditSummary).toBe("Found 3 race conditions");
       expect(result.filesWithIssues).toEqual(["src/service.ts", "src/hook.ts"]);
       expect(result.iterationNumber).toBe(1);

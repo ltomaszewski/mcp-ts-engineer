@@ -493,11 +493,11 @@ describe("todoReviewerCapability", () => {
 
 | Path | Action |
 |------|--------|
-| apps/bastion-server/src/modules/user/user.service.ts | MODIFY |
+| apps/my-server/src/modules/user/user.service.ts | MODIFY |
 | packages/types/src/api/user.types.ts | CREATE |
 
 \`\`\`typescript
-// apps/bastion-server/src/modules/user/user.resolver.ts
+// apps/my-server/src/modules/user/user.resolver.ts
 export class UserResolver {}
 \`\`\`
       `;
@@ -506,7 +506,7 @@ export class UserResolver {}
 
       const reviewJson = JSON.stringify({
         ...VALID_REVIEW_SUMMARY,
-        target_app: "bastion-server",
+        target_app: "my-server",
       });
       const aiContent = `<review_summary>${reviewJson}</review_summary>`;
       const aiResult = createMockAiResult(aiContent);
@@ -556,7 +556,7 @@ export const useAuth = () => {}
 
       const reviewJson = JSON.stringify({
         ...VALID_REVIEW_SUMMARY,
-        target_app: "bastion-app",
+        target_app: "my-app",
       });
       const aiContent = `<review_summary>${reviewJson}</review_summary>`;
       const aiResult = createMockAiResult(aiContent);
@@ -576,12 +576,12 @@ export const useAuth = () => {}
 
       // Verify spec file was updated with corrected paths (deterministic correction)
       const updatedContent = readFileSync(specPath, "utf-8");
-      expect(updatedContent).toContain("apps/bastion-app/src/modules/user/user.service.ts");
-      expect(updatedContent).toContain("apps/bastion-app/src/modules/auth/auth.service.ts");
-      expect(updatedContent).toContain("apps/bastion-app/src/hooks/useAuth.ts");
+      expect(updatedContent).toContain("apps/my-app/src/modules/user/user.service.ts");
+      expect(updatedContent).toContain("apps/my-app/src/modules/auth/auth.service.ts");
+      expect(updatedContent).toContain("apps/my-app/src/hooks/useAuth.ts");
 
       // Verify original patterns were replaced (check table row format)
-      expect(updatedContent).toMatch(/\|\s+apps\/bastion-app\/src\/modules\/user\/user\.service\.ts\s+\|/);
+      expect(updatedContent).toMatch(/\|\s+apps\/my-app\/src\/modules\/user\/user\.service\.ts\s+\|/);
       expect(updatedContent).not.toMatch(/\|\s+src\/modules\/user\/user\.service\.ts\s+\|/);
 
       expect(result.status).toBe("success");
@@ -613,7 +613,7 @@ export const App = () => {}
 
       const reviewJson = JSON.stringify({
         ...VALID_REVIEW_SUMMARY,
-        target_app: "bastion-server",
+        target_app: "my-server",
       });
       const aiContent = `<review_summary>${reviewJson}</review_summary>`;
       const aiResult = createMockAiResult(aiContent);

@@ -9,7 +9,7 @@ import { lintFixPromptV1 } from "../prompts/lint-fix.v1.js";
 describe("Lint Fix Prompt (v1)", () => {
   it("returns BuiltPrompt with correct structure", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts"],
     };
@@ -23,7 +23,7 @@ describe("Lint Fix Prompt (v1)", () => {
 
   it("uses claude_code preset for systemPrompt", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts"],
     };
@@ -38,20 +38,20 @@ describe("Lint Fix Prompt (v1)", () => {
 
   it("includes project path in userPrompt", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts"],
     };
 
     const result = lintFixPromptV1.build(input);
 
-    expect(result.userPrompt).toContain("apps/bastion-server");
+    expect(result.userPrompt).toContain("apps/my-server");
     expect(result.userPrompt).toContain("<project_path>");
   });
 
   it("includes lint report in userPrompt", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import in file1.ts\nWarning: console.log in file2.ts",
       filesWithLintErrors: ["src/file1.ts", "src/file2.ts"],
     };
@@ -64,7 +64,7 @@ describe("Lint Fix Prompt (v1)", () => {
 
   it("includes files with lint errors in userPrompt", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts", "src/file2.ts", "src/utils/helper.ts"],
     };
@@ -79,7 +79,7 @@ describe("Lint Fix Prompt (v1)", () => {
 
   it("instructs to fix ONLY lint issues (not TypeScript errors)", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts"],
     };
@@ -93,7 +93,7 @@ describe("Lint Fix Prompt (v1)", () => {
 
   it("includes <lint_fix_result> output format", () => {
     const input = {
-      projectPath: "apps/bastion-server",
+      projectPath: "apps/my-server",
       lintReport: "Error: unused import",
       filesWithLintErrors: ["src/file1.ts"],
     };

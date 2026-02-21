@@ -14,7 +14,7 @@ describe("detectWorkspace (shared)", () => {
   it("reads package.json and returns technologies", () => {
     // Using the current package.json path as test data
     const result = detectWorkspace(
-      "/Users/ltomaszewski/Desktop/bastion-mono/apps/mcp-ts-engineer",
+      "/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer",
     );
 
     expect(result.technologies).toBeInstanceOf(Array);
@@ -40,7 +40,7 @@ describe("detectWorkspace (shared)", () => {
 
   it("detectWorkspaceTechnologies returns array", () => {
     const result = detectWorkspaceTechnologies(
-      "/Users/ltomaszewski/Desktop/bastion-mono/apps/mcp-ts-engineer",
+      "/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer",
     );
 
     expect(result).toBeInstanceOf(Array);

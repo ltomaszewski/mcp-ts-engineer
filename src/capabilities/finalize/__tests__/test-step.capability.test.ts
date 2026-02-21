@@ -132,7 +132,7 @@ describe("finalizeTestStepCapability", () => {
   describe("preparePromptInput", () => {
     it("extracts workspaces and cwd", () => {
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server", "packages/core"],
+        workspaces: ["apps/my-server", "packages/core"],
         cwd: "/some/path",
       };
       const context = createMockContext();
@@ -140,21 +140,21 @@ describe("finalizeTestStepCapability", () => {
       const result = finalizeTestStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        workspaces: ["apps/bastion-server", "packages/core"],
+        workspaces: ["apps/my-server", "packages/core"],
         cwd: "/some/path",
       });
     });
 
     it("handles missing cwd", () => {
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
       const result = finalizeTestStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
         cwd: undefined,
       });
     });
@@ -164,13 +164,13 @@ describe("finalizeTestStepCapability", () => {
     it("parses valid test_result XML block", async () => {
       const testResult = {
         passed: true,
-        workspaces_tested: ["apps/bastion-server", "packages/core"],
+        workspaces_tested: ["apps/my-server", "packages/core"],
         summary: "All tests passed",
       };
       const content = `Tests complete.\n<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server", "packages/core"],
+        workspaces: ["apps/my-server", "packages/core"],
       };
       const context = createMockContext();
 
@@ -183,7 +183,7 @@ describe("finalizeTestStepCapability", () => {
       const content = "No test result block here.";
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -198,7 +198,7 @@ describe("finalizeTestStepCapability", () => {
       const content = `<test_result>not valid json</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -215,7 +215,7 @@ describe("finalizeTestStepCapability", () => {
       const content = `<test_result>${JSON.stringify(invalidResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -227,13 +227,13 @@ describe("finalizeTestStepCapability", () => {
     it("handles failed tests", async () => {
       const testResult = {
         passed: false,
-        workspaces_tested: ["apps/bastion-server"],
+        workspaces_tested: ["apps/my-server"],
         summary: "3 tests failed",
       };
       const content = `<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -252,7 +252,7 @@ describe("finalizeTestStepCapability", () => {
       const content = `<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 

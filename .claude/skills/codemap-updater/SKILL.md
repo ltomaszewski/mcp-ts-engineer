@@ -75,14 +75,14 @@ Generate codemaps in `.claude/codemaps/`:
 ### Pattern 1: Server Codemap
 
 ```markdown
-# bastion-server Codemap
+# my-server Codemap
 
 **Updated:** 2026-02-20 12:00
 **Files:** 10
 
 ## Structure
 
-apps/bastion-server/src/
+apps/my-server/src/
 ├── modules/
 │   ├── auth/
 │   └── user/

@@ -133,8 +133,8 @@ describe("auditFixTestStepCapability", () => {
   describe("preparePromptInput", () => {
     it("extracts project_path, workspaces, and cwd", () => {
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server", "packages/core"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server", "packages/core"],
         cwd: "/some/path",
       };
       const context = createMockContext();
@@ -142,24 +142,24 @@ describe("auditFixTestStepCapability", () => {
       const result = auditFixTestStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server", "packages/core"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server", "packages/core"],
         cwd: "/some/path",
       });
     });
 
     it("handles missing cwd", () => {
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
       const result = auditFixTestStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
         cwd: undefined,
       });
     });
@@ -188,13 +188,13 @@ describe("auditFixTestStepCapability", () => {
         tests_total: 150,
         tests_failed: 0,
         failure_summary: "",
-        workspaces_tested: ["apps/bastion-server", "packages/core"],
+        workspaces_tested: ["apps/my-server", "packages/core"],
       };
       const content = `Tests complete.\n<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server", "packages/core"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server", "packages/core"],
       };
       const context = createMockContext();
 
@@ -212,13 +212,13 @@ describe("auditFixTestStepCapability", () => {
         tests_total: 150,
         tests_failed: 5,
         failure_summary: "5 tests failed in auth module:\n- test1\n- test2",
-        workspaces_tested: ["apps/bastion-server"],
+        workspaces_tested: ["apps/my-server"],
       };
       const content = `<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -234,8 +234,8 @@ describe("auditFixTestStepCapability", () => {
       const content = "No test result block here. Tests ran but output was malformed.";
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -252,8 +252,8 @@ describe("auditFixTestStepCapability", () => {
       const content = `<test_result>not valid json</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -274,8 +274,8 @@ describe("auditFixTestStepCapability", () => {
       const content = `<test_result>${JSON.stringify(invalidResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -297,8 +297,8 @@ describe("auditFixTestStepCapability", () => {
       const content = `<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
       };
       const context = createMockContext();
 
@@ -314,13 +314,13 @@ describe("auditFixTestStepCapability", () => {
         tests_total: 200,
         tests_failed: 0,
         failure_summary: "",
-        workspaces_tested: ["apps/bastion-server", "packages/types", "packages/utils"],
+        workspaces_tested: ["apps/my-server", "packages/types", "packages/utils"],
       };
       const content = `<test_result>${JSON.stringify(testResult)}</test_result>`;
       const aiResult = createMockAiResult(content);
       const input: TestStepInput = {
         project_path: ".",
-        workspaces: ["apps/bastion-server", "packages/types", "packages/utils"],
+        workspaces: ["apps/my-server", "packages/types", "packages/utils"],
       };
       const context = createMockContext();
 

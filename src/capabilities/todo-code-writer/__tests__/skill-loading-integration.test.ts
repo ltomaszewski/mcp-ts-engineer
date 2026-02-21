@@ -3,7 +3,7 @@
  *
  * Validates that detectWorkspace + resolveSkillsFromTechnologies + prompt builders
  * produce different, correct skill sets depending on which project's package.json
- * is being analyzed (bastion-server, bastion-app, mcp-ts-engineer, etc.).
+ * is being analyzed (e.g. NestJS server, React Native app, MCP server, etc.).
  *
  * Uses mocked package.json content that mirrors the real monorepo projects.
  */
@@ -34,8 +34,8 @@ const { phaseAuditPromptV2 } = await import("../prompts/phase-audit.v2.js");
 // Real-world package.json data from monorepo projects
 // ---------------------------------------------------------------------------
 
-/** apps/bastion-server/package.json (NestJS GraphQL backend) */
-const BASTION_SERVER_PKG = {
+/** Example NestJS GraphQL backend package.json */
+const EXAMPLE_SERVER_PKG = {
   dependencies: {
     "@apollo/server": "4.0.0",
     "@nestjs/apollo": "12.0.0",
@@ -67,8 +67,8 @@ const BASTION_SERVER_PKG = {
   },
 };
 
-/** apps/bastion-app/package.json (React Native/Expo mobile app) */
-const BASTION_APP_PKG = {
+/** Example React Native/Expo mobile app package.json */
+const EXAMPLE_APP_PKG = {
   dependencies: {
     "@react-native-community/netinfo": "11.0.0",
     "@sentry/react-native": "6.0.0",
@@ -100,7 +100,7 @@ const BASTION_APP_PKG = {
 };
 
 /** apps/mcp-ts-engineer/package.json (MCP server with Agent SDK) */
-const MCP_SOFTWARE_HOUSE_PKG = {
+const MCP_TS_ENGINEER_PKG = {
   dependencies: {
     "@anthropic-ai/claude-agent-sdk": "0.1.0",
     "@modelcontextprotocol/sdk": "1.22.0",
@@ -167,23 +167,23 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("Dynamic Skill Loading — Cross-Project Integration", () => {
-  describe("bastion-server (NestJS backend)", () => {
-    beforeEach(() => mockPackageJson(BASTION_SERVER_PKG));
+  describe("example-server (NestJS backend)", () => {
+    beforeEach(() => mockPackageJson(EXAMPLE_SERVER_PKG));
 
     it("detects nestjs technology tag", () => {
-      const result = detectWorkspace("/apps/bastion-server");
+      const result = detectWorkspace("/apps/example-server");
       expect(result.technologies).toContain("nestjs");
     });
 
     it("does NOT detect react-native or expo", () => {
-      const result = detectWorkspace("/apps/bastion-server");
+      const result = detectWorkspace("/apps/example-server");
       expect(result.technologies).not.toContain("react-native");
       expect(result.technologies).not.toContain("expo");
       expect(result.technologies).not.toContain("react");
     });
 
     it("resolves correct NestJS skill set", () => {
-      const result = detectWorkspace("/apps/bastion-server");
+      const result = detectWorkspace("/apps/example-server");
       const skills = resolveSkillsFromTechnologies(
         result.technologies,
         result.dependencies,
@@ -209,9 +209,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("eng prompt includes nestjs skills but NOT race-conditions or component-check", () => {
-      const result = detectWorkspace("/apps/bastion-server");
+      const result = detectWorkspace("/apps/example-server");
       const prompt = phaseEngPromptV2.build({
-        specPath: "docs/specs/bastion-server/feature.md",
+        specPath: "docs/specs/example-server/feature.md",
         phasePlan: MOCK_PHASE_PLAN,
         currentPhaseNumber: 1,
         detectedTechnologies: result.technologies,
@@ -233,9 +233,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("audit prompt includes nestjs skills", () => {
-      const result = detectWorkspace("/apps/bastion-server");
+      const result = detectWorkspace("/apps/example-server");
       const prompt = phaseAuditPromptV2.build({
-        specPath: "docs/specs/bastion-server/feature.md",
+        specPath: "docs/specs/example-server/feature.md",
         phaseNumber: 1,
         filesModified: ["src/modules/auth/auth.service.ts"],
         engSummary: "Implemented auth feature",
@@ -249,11 +249,11 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
   });
 
-  describe("bastion-app (React Native/Expo mobile)", () => {
-    beforeEach(() => mockPackageJson(BASTION_APP_PKG));
+  describe("example-app (React Native/Expo mobile)", () => {
+    beforeEach(() => mockPackageJson(EXAMPLE_APP_PKG));
 
     it("detects react-native and expo technology tags", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       expect(result.technologies).toContain("react-native");
       expect(result.technologies).toContain("expo");
       expect(result.technologies).toContain("zustand");
@@ -261,17 +261,17 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("does NOT include standalone react tag (react-native implies react)", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       expect(result.technologies).not.toContain("react");
     });
 
     it("does NOT detect nestjs", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       expect(result.technologies).not.toContain("nestjs");
     });
 
     it("resolves comprehensive mobile skill set", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       const skills = resolveSkillsFromTechnologies(
         result.technologies,
         result.dependencies,
@@ -308,9 +308,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("eng prompt includes race-conditions AND component-check for react-native", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       const prompt = phaseEngPromptV2.build({
-        specPath: "docs/specs/bastion-app/feature.md",
+        specPath: "docs/specs/example-app/feature.md",
         phasePlan: MOCK_PHASE_PLAN,
         currentPhaseNumber: 1,
         detectedTechnologies: result.technologies,
@@ -333,9 +333,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("audit prompt includes mobile skills", () => {
-      const result = detectWorkspace("/apps/bastion-app");
+      const result = detectWorkspace("/apps/example-app");
       const prompt = phaseAuditPromptV2.build({
-        specPath: "docs/specs/bastion-app/feature.md",
+        specPath: "docs/specs/example-app/feature.md",
         phaseNumber: 1,
         filesModified: ["src/features/sleep/hooks/useSleepTimer.ts"],
         engSummary: "Implemented sleep timer",
@@ -351,7 +351,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
   });
 
   describe("mcp-ts-engineer (MCP + Agent SDK)", () => {
-    beforeEach(() => mockPackageJson(MCP_SOFTWARE_HOUSE_PKG));
+    beforeEach(() => mockPackageJson(MCP_TS_ENGINEER_PKG));
 
     it("does NOT detect any framework technology tags", () => {
       const result = detectWorkspace("/apps/mcp-ts-engineer");
@@ -411,7 +411,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       expect(skills).toContain("claude-agent-sdk");
     });
 
-    it("has same skill set as mcp-software-house (both have @modelcontextprotocol/sdk)", () => {
+    it("has same skill set as mcp-ts-engineer (both have @modelcontextprotocol/sdk)", () => {
       // Both MCP projects have @modelcontextprotocol/sdk → claude-agent-sdk
       const executorResult = detectWorkspace("/apps/mcp-agents-executor");
       const executorSkills = resolveSkillsFromTechnologies(
@@ -419,7 +419,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
         executorResult.dependencies,
       );
 
-      mockPackageJson(MCP_SOFTWARE_HOUSE_PKG);
+      mockPackageJson(MCP_TS_ENGINEER_PKG);
       const swResult = detectWorkspace("/apps/mcp-ts-engineer");
       const swSkills = resolveSkillsFromTechnologies(
         swResult.technologies,
@@ -472,16 +472,16 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
   describe("Cross-project skill set differentiation", () => {
     it("server and app produce completely different skill sets", () => {
       // Server
-      mockPackageJson(BASTION_SERVER_PKG);
-      const serverResult = detectWorkspace("/apps/bastion-server");
+      mockPackageJson(EXAMPLE_SERVER_PKG);
+      const serverResult = detectWorkspace("/apps/example-server");
       const serverSkills = resolveSkillsFromTechnologies(
         serverResult.technologies,
         serverResult.dependencies,
       );
 
       // App
-      mockPackageJson(BASTION_APP_PKG);
-      const appResult = detectWorkspace("/apps/bastion-app");
+      mockPackageJson(EXAMPLE_APP_PKG);
+      const appResult = detectWorkspace("/apps/example-app");
       const appSkills = resolveSkillsFromTechnologies(
         appResult.technologies,
         appResult.dependencies,
@@ -512,17 +512,17 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("MCP projects have minimal skill sets compared to app projects", () => {
-      // MCP software house
-      mockPackageJson(MCP_SOFTWARE_HOUSE_PKG);
+      // MCP ts-engineer
+      mockPackageJson(MCP_TS_ENGINEER_PKG);
       const mcpResult = detectWorkspace("/apps/mcp-ts-engineer");
       const mcpSkills = resolveSkillsFromTechnologies(
         mcpResult.technologies,
         mcpResult.dependencies,
       );
 
-      // Bastion app
-      mockPackageJson(BASTION_APP_PKG);
-      const appResult = detectWorkspace("/apps/bastion-app");
+      // Example app
+      mockPackageJson(EXAMPLE_APP_PKG);
+      const appResult = detectWorkspace("/apps/example-app");
       const appSkills = resolveSkillsFromTechnologies(
         appResult.technologies,
         appResult.dependencies,
@@ -546,9 +546,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
         detectedDependencies: utilsResult.dependencies,
       });
 
-      // Complex project (bastion-app)
-      mockPackageJson(BASTION_APP_PKG);
-      const appResult = detectWorkspace("/apps/bastion-app");
+      // Complex project (example-app)
+      mockPackageJson(EXAMPLE_APP_PKG);
+      const appResult = detectWorkspace("/apps/example-app");
       const appPrompt = phaseEngPromptV2.build({
         specPath: "docs/specs/feature.md",
         phasePlan: MOCK_PHASE_PLAN,
@@ -566,7 +566,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
 
   describe("preparePromptInput integration via capabilities", () => {
     it("end-to-end: NestJS workspace → capability detects and passes technologies", async () => {
-      mockPackageJson(BASTION_SERVER_PKG);
+      mockPackageJson(EXAMPLE_SERVER_PKG);
       const { phaseEngStepCapability } = await import(
         "../phase-eng-step.capability.js"
       );
@@ -582,10 +582,10 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       };
 
       const input = {
-        spec_path: "docs/specs/bastion-server/feature.md",
+        spec_path: "docs/specs/example-server/feature.md",
         phase_plan: MOCK_PHASE_PLAN,
         current_phase_number: 1,
-        cwd: "/apps/bastion-server",
+        cwd: "/apps/example-server",
       };
 
       const promptInput = phaseEngStepCapability.preparePromptInput(
@@ -599,7 +599,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("end-to-end: React Native workspace → capability detects and passes technologies", async () => {
-      mockPackageJson(BASTION_APP_PKG);
+      mockPackageJson(EXAMPLE_APP_PKG);
       const { phaseEngStepCapability } = await import(
         "../phase-eng-step.capability.js"
       );
@@ -615,10 +615,10 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       };
 
       const input = {
-        spec_path: "docs/specs/bastion-app/feature.md",
+        spec_path: "docs/specs/example-app/feature.md",
         phase_plan: MOCK_PHASE_PLAN,
         current_phase_number: 1,
-        cwd: "/apps/bastion-app",
+        cwd: "/apps/example-app",
       };
 
       const promptInput = phaseEngStepCapability.preparePromptInput(
@@ -634,7 +634,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
     });
 
     it("end-to-end: audit capability detects workspace for RN project", async () => {
-      mockPackageJson(BASTION_APP_PKG);
+      mockPackageJson(EXAMPLE_APP_PKG);
       const { phaseAuditStepCapability } = await import(
         "../phase-audit-step.capability.js"
       );
@@ -650,11 +650,11 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       };
 
       const input = {
-        spec_path: "docs/specs/bastion-app/feature.md",
+        spec_path: "docs/specs/example-app/feature.md",
         phase_number: 1,
         files_modified: ["src/features/sleep/hooks/useSleepTimer.ts"],
         eng_summary: "Implemented sleep timer",
-        cwd: "/apps/bastion-app",
+        cwd: "/apps/example-app",
       };
 
       const promptInput = phaseAuditStepCapability.preparePromptInput(
@@ -669,10 +669,10 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
   });
 
   describe("DEPENDENCY_SKILL_MAP completeness", () => {
-    it("maps all dependencies from bastion-server that have skills", () => {
+    it("maps all dependencies from example-server that have skills", () => {
       const serverDeps = [
-        ...Object.keys(BASTION_SERVER_PKG.dependencies),
-        ...Object.keys(BASTION_SERVER_PKG.devDependencies),
+        ...Object.keys(EXAMPLE_SERVER_PKG.dependencies),
+        ...Object.keys(EXAMPLE_SERVER_PKG.devDependencies),
       ];
 
       // These server deps should have skill mappings
@@ -691,10 +691,10 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       }
     });
 
-    it("maps all dependencies from bastion-app that have skills", () => {
+    it("maps all dependencies from example-app that have skills", () => {
       const appDeps = [
-        ...Object.keys(BASTION_APP_PKG.dependencies),
-        ...Object.keys(BASTION_APP_PKG.devDependencies),
+        ...Object.keys(EXAMPLE_APP_PKG.dependencies),
+        ...Object.keys(EXAMPLE_APP_PKG.devDependencies),
       ];
 
       const expectedMapped = [
@@ -727,8 +727,8 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
 
     it("maps @modelcontextprotocol/sdk to claude-agent-sdk", () => {
       const mcpDeps = [
-        ...Object.keys(MCP_SOFTWARE_HOUSE_PKG.dependencies),
-        ...Object.keys(MCP_SOFTWARE_HOUSE_PKG.devDependencies),
+        ...Object.keys(MCP_TS_ENGINEER_PKG.dependencies),
+        ...Object.keys(MCP_TS_ENGINEER_PKG.devDependencies),
       ];
 
       expect(mcpDeps).toContain("@modelcontextprotocol/sdk");
@@ -747,9 +747,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
   });
 
   describe("Conditional engineering rules per project", () => {
-    it("bastion-server: testing + export (NO race-conditions, NO component-check)", () => {
-      mockPackageJson(BASTION_SERVER_PKG);
-      const result = detectWorkspace("/apps/bastion-server");
+    it("example-server: testing + export (NO race-conditions, NO component-check)", () => {
+      mockPackageJson(EXAMPLE_SERVER_PKG);
+      const result = detectWorkspace("/apps/example-server");
       const prompt = phaseEngPromptV2.build({
         specPath: "test.md",
         phasePlan: MOCK_PHASE_PLAN,
@@ -764,9 +764,9 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       expect(prompt.userPrompt).not.toContain("<component_check>");
     });
 
-    it("bastion-app: ALL four rule sections", () => {
-      mockPackageJson(BASTION_APP_PKG);
-      const result = detectWorkspace("/apps/bastion-app");
+    it("example-app: ALL four rule sections", () => {
+      mockPackageJson(EXAMPLE_APP_PKG);
+      const result = detectWorkspace("/apps/example-app");
       const prompt = phaseEngPromptV2.build({
         specPath: "test.md",
         phasePlan: MOCK_PHASE_PLAN,
@@ -781,8 +781,8 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
       expect(prompt.userPrompt).toContain("<component_check>");
     });
 
-    it("mcp-software-house: testing + export only", () => {
-      mockPackageJson(MCP_SOFTWARE_HOUSE_PKG);
+    it("mcp-ts-engineer: testing + export only", () => {
+      mockPackageJson(MCP_TS_ENGINEER_PKG);
       const result = detectWorkspace("/apps/mcp-ts-engineer");
       const prompt = phaseEngPromptV2.build({
         specPath: "test.md",

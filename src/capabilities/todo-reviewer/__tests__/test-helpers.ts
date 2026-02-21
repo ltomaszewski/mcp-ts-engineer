@@ -79,7 +79,7 @@ export function createMockAiResult(content: string): AIQueryResult {
 export const VALID_REVIEW_SUMMARY: ReviewSummary = {
   status: "IN_REVIEW",
   spec_path: "docs/specs/feature.md",
-  target_app: "bastion-server",
+  target_app: "my-server",
   corrections_applied: 2,
   blockers_remaining: 0,
   warnings: 1,

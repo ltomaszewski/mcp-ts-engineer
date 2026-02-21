@@ -10,7 +10,7 @@ describe("TDD Scan Prompt v1", () => {
   const validReviewSummary: ReviewSummary = {
     status: "IN_REVIEW",
     spec_path: "docs/specs/feature.md",
-    target_app: "bastion-server",
+    target_app: "my-server",
     corrections_applied: 0,
     blockers_remaining: 0,
     warnings: 0,

@@ -29,13 +29,13 @@ describe("auditFixDepsScanStepCapability", () => {
 
   describe("preparePromptInput", () => {
     it("extracts projectPath and cwd correctly", () => {
-      const input = { project_path: "apps/bastion-server", cwd: "/workspace" };
+      const input = { project_path: "apps/my-server", cwd: "/workspace" };
       const mockContext = {} as never;
 
       const result = auditFixDepsScanStepCapability.preparePromptInput(input, mockContext);
 
       expect(result).toEqual({
-        projectPath: "apps/bastion-server",
+        projectPath: "apps/my-server",
         cwd: "/workspace",
       });
     });

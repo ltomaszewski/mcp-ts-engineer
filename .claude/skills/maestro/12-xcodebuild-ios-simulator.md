@@ -21,7 +21,7 @@ The `.app` file will be located at:
 
 Example:
 ```
-ios/build/Build/Products/Release-iphonesimulator/Bastion.app
+ios/build/Build/Products/Release-iphonesimulator/MyApp.app
 ```
 
 ---

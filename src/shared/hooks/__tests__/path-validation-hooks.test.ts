@@ -14,11 +14,11 @@ import {
 describe('createPathDuplicationBlockerHook', () => {
   it('blocks apps/X/apps/X pattern', () => {
     const hook = createPathDuplicationBlockerHook();
-    const result = hook({ file_path: 'apps/bastion-server/apps/bastion-server/src/test.ts' });
+    const result = hook({ file_path: 'apps/my-server/apps/my-server/src/test.ts' });
 
     expect(result.decision).toBe('block');
     expect(result.reason).toContain('Path duplication detected');
-    expect(result.reason).toContain('/apps/bastion-server/');
+    expect(result.reason).toContain('/apps/my-server/');
   });
 
   it('blocks packages/X/packages/X pattern', () => {
@@ -33,7 +33,7 @@ describe('createPathDuplicationBlockerHook', () => {
   it('blocks apps/X/packages/Y/apps/X pattern (deeply nested duplication)', () => {
     const hook = createPathDuplicationBlockerHook();
     const result = hook({
-      file_path: 'apps/bastion-server/packages/types/apps/bastion-server/test.ts',
+      file_path: 'apps/my-server/packages/types/apps/my-server/test.ts',
     });
 
     expect(result.decision).toBe('block');
@@ -43,7 +43,7 @@ describe('createPathDuplicationBlockerHook', () => {
   it('blocks packages/X/apps/Y/packages/X pattern', () => {
     const hook = createPathDuplicationBlockerHook();
     const result = hook({
-      file_path: 'packages/utils/apps/bastion-app/packages/utils/index.ts',
+      file_path: 'packages/utils/apps/my-app/packages/utils/index.ts',
     });
 
     expect(result.decision).toBe('block');
@@ -52,7 +52,7 @@ describe('createPathDuplicationBlockerHook', () => {
 
   it('allows apps/X/src/Y.ts (valid monorepo path)', () => {
     const hook = createPathDuplicationBlockerHook();
-    const result = hook({ file_path: 'apps/bastion-server/src/modules/user/user.service.ts' });
+    const result = hook({ file_path: 'apps/my-server/src/modules/user/user.service.ts' });
 
     expect(result.decision).toBe('continue');
   });
@@ -67,7 +67,7 @@ describe('createPathDuplicationBlockerHook', () => {
   it('allows deeply nested valid paths without duplication', () => {
     const hook = createPathDuplicationBlockerHook();
     const result = hook({
-      file_path: 'apps/bastion-server/src/modules/auth/guards/jwt-auth.guard.ts',
+      file_path: 'apps/my-server/src/modules/auth/guards/jwt-auth.guard.ts',
     });
 
     expect(result.decision).toBe('continue');
@@ -89,7 +89,7 @@ describe('createPathDuplicationBlockerHook', () => {
 
   it('allows paths with similar but non-identical segments', () => {
     const hook = createPathDuplicationBlockerHook();
-    const result = hook({ file_path: 'apps/bastion-server/src/app/app.module.ts' });
+    const result = hook({ file_path: 'apps/my-server/src/app/app.module.ts' });
 
     expect(result.decision).toBe('continue');
   });
@@ -105,7 +105,7 @@ describe('createPathDuplicationBlockerHook', () => {
   it('handles paths with special characters', () => {
     const hook = createPathDuplicationBlockerHook();
     const result = hook({
-      file_path: 'apps/bastion-server-v2/apps/bastion-server-v2/src/test.ts',
+      file_path: 'apps/my-server-v2/apps/my-server-v2/src/test.ts',
     });
 
     expect(result.decision).toBe('block');

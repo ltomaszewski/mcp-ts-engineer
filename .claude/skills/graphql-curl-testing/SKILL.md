@@ -5,7 +5,7 @@ description: GraphQL API testing with curl - authentication flow, protected endp
 
 # GraphQL curl Testing
 
-> Tested curl commands for validating and debugging the Bastion GraphQL API.
+> Tested curl commands for validating and debugging GraphQL APIs.
 
 ---
 
@@ -46,10 +46,10 @@ description: GraphQL API testing with curl - authentication flow, protected endp
 BASE_URL="http://localhost:3001/v3/graphql"
 
 # Development
-BASE_URL="https://bastion-server-dev.azurewebsites.net/v3/graphql"
+BASE_URL="https://my-server-dev.azurewebsites.net/v3/graphql"
 
 # Production
-BASE_URL="https://bastion-server-prod.azurewebsites.net/v3/graphql"
+BASE_URL="https://my-server-prod.azurewebsites.net/v3/graphql"
 ```
 
 ### Shell Variable Escaping

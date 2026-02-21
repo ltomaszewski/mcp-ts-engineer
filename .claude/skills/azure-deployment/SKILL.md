@@ -1,18 +1,18 @@
 ---
 name: azure-deployment
-description: Azure App Service deployment - zip deploy, webapp commands, environment configuration. Use when deploying bastion-server to Azure, configuring app settings, or troubleshooting deployments.
+description: Azure App Service deployment - zip deploy, webapp commands, environment configuration. Use when deploying my-server to Azure, configuring app settings, or troubleshooting deployments.
 ---
 
 # Azure App Service Deployment
 
-> Deploy bastion-server to Azure App Service with fast zip deployment.
+> Deploy my-server to Azure App Service with fast zip deployment.
 
 ---
 
 ## When to Use
 
 **LOAD THIS SKILL** when user is:
-- Deploying bastion-server to Azure
+- Deploying my-server to Azure
 - Configuring Azure App Service settings
 - Troubleshooting deployment issues
 - Viewing Azure logs
@@ -42,7 +42,7 @@ description: Azure App Service deployment - zip deploy, webapp commands, environ
 ### Deploy to Development
 
 ```bash
-cd apps/bastion-server
+cd apps/my-server
 
 # 1. Build
 npm run build
@@ -53,8 +53,8 @@ zip -r deploy.zip dist node_modules package.json staticWebPage \
 
 # 3. Deploy
 az webapp deploy \
-  --resource-group bastion-server-rg \
-  --name bastion-server-dev \
+  --resource-group my-server-rg \
+  --name my-server-dev \
   --src-path deploy.zip \
   --type zip \
   --async true
@@ -66,7 +66,7 @@ rm deploy.zip
 ### Deploy to Production
 
 ```bash
-cd apps/bastion-server
+cd apps/my-server
 
 # 1. Build
 npm run build
@@ -77,8 +77,8 @@ zip -r deploy.zip dist node_modules package.json staticWebPage \
 
 # 3. Deploy
 az webapp deploy \
-  --resource-group bastion-server-rg \
-  --name bastion-server-prod \
+  --resource-group my-server-rg \
+  --name my-server-prod \
   --src-path deploy.zip \
   --type zip \
   --async true
@@ -92,7 +92,7 @@ rm deploy.zip
 ```bash
 # Wait ~30-60 seconds, then:
 curl -s -o /dev/null -w "%{http_code}" \
-  https://bastion-server-dev.azurewebsites.net/v3/graphql \
+  https://my-server-dev.azurewebsites.net/v3/graphql \
   -X POST -H "Content-Type: application/json" \
   -d '{"query":"{ __typename }"}'
 # Should return: 200
@@ -102,24 +102,24 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 ```bash
 az webapp log tail \
-  --name bastion-server-dev \
-  --resource-group bastion-server-rg
+  --name my-server-dev \
+  --resource-group my-server-rg
 ```
 
 ### Restart App
 
 ```bash
 az webapp restart \
-  --name bastion-server-dev \
-  --resource-group bastion-server-rg
+  --name my-server-dev \
+  --resource-group my-server-rg
 ```
 
 ### View Environment Variables
 
 ```bash
 az webapp config appsettings list \
-  --name bastion-server-dev \
-  --resource-group bastion-server-rg \
+  --name my-server-dev \
+  --resource-group my-server-rg \
   --output table
 ```
 
@@ -127,8 +127,8 @@ az webapp config appsettings list \
 
 ```bash
 az webapp config appsettings set \
-  --name bastion-server-dev \
-  --resource-group bastion-server-rg \
+  --name my-server-dev \
+  --resource-group my-server-rg \
   --settings KEY="value"
 ```
 
@@ -136,8 +136,8 @@ az webapp config appsettings set \
 
 ```bash
 az webapp log download \
-  --name bastion-server-dev \
-  --resource-group bastion-server-rg \
+  --name my-server-dev \
+  --resource-group my-server-rg \
   --log-file /tmp/logs.zip
 
 unzip /tmp/logs.zip -d /tmp/app-logs
@@ -186,8 +186,8 @@ az webapp deploy --src-path deploy.zip --type zip --async true
 
 | Environment | Resource Group | App Service | URL |
 |-------------|----------------|-------------|-----|
-| Development | `bastion-server-rg` | `bastion-server-dev` | https://bastion-server-dev.azurewebsites.net |
-| Production | `bastion-server-rg` | `bastion-server-prod` | https://bastion-server-prod.azurewebsites.net |
+| Development | `my-server-rg` | `my-server-dev` | https://my-server-dev.azurewebsites.net |
+| Production | `my-server-rg` | `my-server-prod` | https://my-server-prod.azurewebsites.net |
 
 | Task | Command |
 |------|---------|

@@ -92,7 +92,7 @@ describe("PrReviewerInputSchema", () => {
 
     it("accepts all fields together", () => {
       const result = PrReviewerInputSchema.safeParse({
-        pr: "https://github.com/bastion/repo/pull/404",
+        pr: "https://github.com/myorg/repo/pull/404",
         mode: "review-fix",
         incremental: true,
         budget: 12.0,

@@ -12,13 +12,13 @@ describe("depsFixPrompts", () => {
   describe("build()", () => {
     it("userPrompt includes projectPath and vulnerabilitiesFound", () => {
       const input = {
-        projectPath: "apps/bastion-server",
+        projectPath: "apps/my-server",
         vulnerabilitiesFound: 10,
         cwd: "/workspace",
       };
       const result = promptVersion.build(input);
 
-      expect(result.userPrompt).toContain("apps/bastion-server");
+      expect(result.userPrompt).toContain("apps/my-server");
       expect(result.userPrompt).toContain("10");
       expect(result.userPrompt).toContain("<project_path>");
       expect(result.userPrompt).toContain("<vulnerabilities_found>");

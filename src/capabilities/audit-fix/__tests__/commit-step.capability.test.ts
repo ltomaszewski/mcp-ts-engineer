@@ -80,7 +80,7 @@ describe("auditFixCommitStepCapability", () => {
   describe("preparePromptInput", () => {
     it("builds commit input with project_path and files_changed", () => {
       const input: CommitStepInput = {
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         files_changed: ["src/service.ts", "src/utils.ts"],
         audit_summary: "Fixed 3 race conditions",
         cwd: "/path/to/monorepo",
@@ -90,7 +90,7 @@ describe("auditFixCommitStepCapability", () => {
       const result = auditFixCommitStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        projectPath: "apps/bastion-server",
+        projectPath: "apps/my-server",
         filesChanged: ["src/service.ts", "src/utils.ts"],
         auditSummary: "Fixed 3 race conditions",
         sessionId: "test-session",
@@ -100,7 +100,7 @@ describe("auditFixCommitStepCapability", () => {
 
     it("includes sessionId from context.session.id", () => {
       const input: CommitStepInput = {
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         files_changed: ["src/service.ts"],
         audit_summary: "Fixed 2 issues",
       };

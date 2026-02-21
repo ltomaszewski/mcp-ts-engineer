@@ -16,32 +16,32 @@ describe("extractFilePaths", () => {
 # Implementation
 
 \`\`\`typescript
-// apps/bastion-app/src/components/Button.tsx
+// apps/my-app/src/components/Button.tsx
 export const Button = () => <View />
 \`\`\`
       `;
 
       const paths = extractFilePaths(content);
-      expect(paths).toContain("apps/bastion-app/src/components/Button.tsx");
+      expect(paths).toContain("apps/my-app/src/components/Button.tsx");
     });
 
     it("extracts multiple paths from single code block", () => {
       const content = `
 \`\`\`typescript
-// apps/bastion-app/src/hooks/useAuth.ts
+// apps/my-app/src/hooks/useAuth.ts
 // packages/types/src/api/auth.types.ts
 \`\`\`
       `;
 
       const paths = extractFilePaths(content);
-      expect(paths).toContain("apps/bastion-app/src/hooks/useAuth.ts");
+      expect(paths).toContain("apps/my-app/src/hooks/useAuth.ts");
       expect(paths).toContain("packages/types/src/api/auth.types.ts");
     });
 
     it("extracts paths from multiple code blocks", () => {
       const content = `
 \`\`\`typescript
-// apps/bastion-server/src/auth.ts
+// apps/my-server/src/auth.ts
 \`\`\`
 
 \`\`\`typescript
@@ -50,7 +50,7 @@ export const Button = () => <View />
       `;
 
       const paths = extractFilePaths(content);
-      expect(paths).toContain("apps/bastion-server/src/auth.ts");
+      expect(paths).toContain("apps/my-server/src/auth.ts");
       expect(paths).toContain("packages/utils/src/format.ts");
     });
   });
@@ -60,12 +60,12 @@ export const Button = () => <View />
       const content = `
 | Path | Action |
 |------|--------|
-| apps/bastion-app/src/screens/LoginScreen.tsx | CREATE |
+| apps/my-app/src/screens/LoginScreen.tsx | CREATE |
 | packages/types/src/models/user.ts | UPDATE |
       `;
 
       const paths = extractFilePaths(content);
-      expect(paths).toContain("apps/bastion-app/src/screens/LoginScreen.tsx");
+      expect(paths).toContain("apps/my-app/src/screens/LoginScreen.tsx");
       expect(paths).toContain("packages/types/src/models/user.ts");
     });
 
@@ -73,12 +73,12 @@ export const Button = () => <View />
       const content = `
 | Action | Path | Purpose |
 |--------|------|---------|
-| CREATE | apps/bastion-server/src/modules/auth/auth.service.ts | Auth service |
+| CREATE | apps/my-server/src/modules/auth/auth.service.ts | Auth service |
       `;
 
       const paths = extractFilePaths(content);
       expect(paths).toContain(
-        "apps/bastion-server/src/modules/auth/auth.service.ts"
+        "apps/my-server/src/modules/auth/auth.service.ts"
       );
     });
   });
@@ -86,10 +86,10 @@ export const Button = () => <View />
   describe("inline code", () => {
     it("extracts paths from inline code blocks", () => {
       const content =
-        "Update the file `apps/bastion-app/src/config.ts` to include the new settings.";
+        "Update the file `apps/my-app/src/config.ts` to include the new settings.";
 
       const paths = extractFilePaths(content);
-      expect(paths).toContain("apps/bastion-app/src/config.ts");
+      expect(paths).toContain("apps/my-app/src/config.ts");
     });
 
     it("extracts multiple inline paths", () => {
@@ -162,13 +162,13 @@ import { useState } from 'react-native'
 
     it("deduplicates repeated paths", () => {
       const content = `
-- \`apps/bastion-app/src/config.ts\`
-- \`apps/bastion-app/src/config.ts\`
+- \`apps/my-app/src/config.ts\`
+- \`apps/my-app/src/config.ts\`
       `;
 
       const paths = extractFilePaths(content);
       expect(
-        paths.filter((p: string) => p === "apps/bastion-app/src/config.ts")
+        paths.filter((p: string) => p === "apps/my-app/src/config.ts")
       ).toHaveLength(1);
     });
   });
@@ -218,9 +218,9 @@ import { useState } from 'react-native'
     describe("extension whitelist", () => {
       it("extracts paths with valid extensions", () => {
         const content =
-          "`apps/bastion-app/src/file.ts` and `packages/types/index.json`";
+          "`apps/my-app/src/file.ts` and `packages/types/index.json`";
         const paths = extractFilePaths(content);
-        expect(paths).toContain("apps/bastion-app/src/file.ts");
+        expect(paths).toContain("apps/my-app/src/file.ts");
         expect(paths).toContain("packages/types/index.json");
       });
 
@@ -245,9 +245,9 @@ import { useState } from 'react-native'
       });
 
       it("extracts filenames with path prefix", () => {
-        const content = "`apps/bastion-app/src/stores/app.store.ts`";
+        const content = "`apps/my-app/src/stores/app.store.ts`";
         const paths = extractFilePaths(content);
-        expect(paths).toContain("apps/bastion-app/src/stores/app.store.ts");
+        expect(paths).toContain("apps/my-app/src/stores/app.store.ts");
       });
     });
 
@@ -271,10 +271,10 @@ import { bar } from '../bar.js';
 
       it("extracts inline paths but not TypeScript imports from code blocks", () => {
         const content = `
-Modify \`apps/bastion-app/src/config.ts\`:
+Modify \`apps/my-app/src/config.ts\`:
 
 \`\`\`typescript
-import { User } from '@bastion/types';
+import { User } from '@app/types';
 import { format } from './utils/date.ts';
 export const config = { apiUrl: 'https://api.example.com/v1/users' };
 \`\`\`
@@ -284,7 +284,7 @@ Also update \`packages/types/src/index.ts\`.
 
         const paths = extractFilePaths(content);
         // Should extract inline code paths
-        expect(paths).toContain("apps/bastion-app/src/config.ts");
+        expect(paths).toContain("apps/my-app/src/config.ts");
         expect(paths).toContain("packages/types/src/index.ts");
         // Should NOT extract import paths from code block (they're not in comments)
         // and should NOT match code block content as inline code
@@ -299,16 +299,16 @@ describe("validateSpecPaths", () => {
   describe("valid paths", () => {
     it("returns valid for paths starting with apps/", () => {
       const paths = [
-        "apps/bastion-app/src/components/Button.tsx",
-        "apps/bastion-server/src/auth.ts",
+        "apps/my-app/src/components/Button.tsx",
+        "apps/my-server/src/auth.ts",
       ];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
       expect(result.valid).toContain(
-        "apps/bastion-app/src/components/Button.tsx"
+        "apps/my-app/src/components/Button.tsx"
       );
-      expect(result.valid).toContain("apps/bastion-server/src/auth.ts");
+      expect(result.valid).toContain("apps/my-server/src/auth.ts");
       expect(result.correctable).toEqual([]);
       expect(result.uncorrectable).toEqual([]);
     });
@@ -319,7 +319,7 @@ describe("validateSpecPaths", () => {
         "packages/utils/src/format.ts",
       ];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
       expect(result.valid).toContain("packages/types/src/models/user.ts");
       expect(result.valid).toContain("packages/utils/src/format.ts");
@@ -332,7 +332,7 @@ describe("validateSpecPaths", () => {
     it("returns correctable for paths starting with src/", () => {
       const paths = ["src/components/Button.tsx", "src/hooks/useAuth.ts"];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
       expect(result.valid).toEqual([]);
       expect(result.correctable).toContain("src/components/Button.tsx");
@@ -343,7 +343,7 @@ describe("validateSpecPaths", () => {
     it("returns correctable for paths starting with ./", () => {
       const paths = ["./config.ts", "./utils/helper.ts"];
 
-      const result = validateSpecPaths(paths, "bastion-server");
+      const result = validateSpecPaths(paths, "my-server");
 
       expect(result.valid).toEqual([]);
       expect(result.correctable).toContain("./config.ts");
@@ -359,7 +359,7 @@ describe("validateSpecPaths", () => {
         "/home/user/app/config.ts",
       ];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
       expect(result.valid).toEqual([]);
       expect(result.correctable).toEqual([]);
@@ -370,7 +370,7 @@ describe("validateSpecPaths", () => {
     it("returns uncorrectable for parent directory references", () => {
       const paths = ["../sibling/file.ts", "../../parent/config.ts"];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
       expect(result.valid).toEqual([]);
       expect(result.correctable).toEqual([]);
@@ -382,14 +382,14 @@ describe("validateSpecPaths", () => {
   describe("mixed validation results", () => {
     it("correctly categorizes mixed path types", () => {
       const paths = [
-        "apps/bastion-app/src/valid.ts",
+        "apps/my-app/src/valid.ts",
         "src/correctable.ts",
         "/Users/dev/uncorrectable.ts",
       ];
 
-      const result = validateSpecPaths(paths, "bastion-app");
+      const result = validateSpecPaths(paths, "my-app");
 
-      expect(result.valid).toContain("apps/bastion-app/src/valid.ts");
+      expect(result.valid).toContain("apps/my-app/src/valid.ts");
       expect(result.correctable).toContain("src/correctable.ts");
       expect(result.uncorrectable).toContain("/Users/dev/uncorrectable.ts");
     });
@@ -406,14 +406,14 @@ export const Button = () => <View />
 \`\`\`
       `;
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toContain(
-        "apps/bastion-app/src/components/Button.tsx"
+        "apps/my-app/src/components/Button.tsx"
       );
       expect(result.corrections).toContainEqual({
         original: "src/components/Button.tsx",
-        corrected: "apps/bastion-app/src/components/Button.tsx",
+        corrected: "apps/my-app/src/components/Button.tsx",
       });
       expect(result.uncorrectable).toEqual([]);
     });
@@ -426,13 +426,13 @@ export const Button = () => <View />
 | src/user.ts | UPDATE |
       `;
 
-      const result = correctSpecPaths(content, "bastion-server");
+      const result = correctSpecPaths(content, "my-server");
 
       expect(result.correctedContent).toContain(
-        "apps/bastion-server/src/auth.ts"
+        "apps/my-server/src/auth.ts"
       );
       expect(result.correctedContent).toContain(
-        "apps/bastion-server/src/user.ts"
+        "apps/my-server/src/user.ts"
       );
       expect(result.corrections).toHaveLength(2);
     });
@@ -442,15 +442,15 @@ export const Button = () => <View />
     it("corrects ./foo.ts to apps/{target}/foo.ts", () => {
       const content = "Update `./config.ts` and `./utils/helper.ts`.";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
-      expect(result.correctedContent).toContain("apps/bastion-app/config.ts");
+      expect(result.correctedContent).toContain("apps/my-app/config.ts");
       expect(result.correctedContent).toContain(
-        "apps/bastion-app/utils/helper.ts"
+        "apps/my-app/utils/helper.ts"
       );
       expect(result.corrections).toContainEqual({
         original: "./config.ts",
-        corrected: "apps/bastion-app/config.ts",
+        corrected: "apps/my-app/config.ts",
       });
     });
   });
@@ -459,14 +459,14 @@ export const Button = () => <View />
     it("preserves apps/ paths unchanged", () => {
       const content = `
 \`\`\`typescript
-// apps/bastion-app/src/components/Button.tsx
+// apps/my-app/src/components/Button.tsx
 \`\`\`
       `;
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toContain(
-        "apps/bastion-app/src/components/Button.tsx"
+        "apps/my-app/src/components/Button.tsx"
       );
       expect(result.corrections).toEqual([]);
       expect(result.uncorrectable).toEqual([]);
@@ -475,7 +475,7 @@ export const Button = () => <View />
     it("preserves packages/ paths unchanged", () => {
       const content = "Import from `packages/types/src/index.ts`.";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toContain("packages/types/src/index.ts");
       expect(result.corrections).toEqual([]);
@@ -487,7 +487,7 @@ export const Button = () => <View />
     it("returns uncorrectable absolute paths without modifying content", () => {
       const content = "See `/Users/dev/project/src/file.ts` for details.";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toBe(content);
       expect(result.corrections).toEqual([]);
@@ -497,7 +497,7 @@ export const Button = () => <View />
     it("returns uncorrectable parent directory references", () => {
       const content = "Import from `../sibling/file.ts`.";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toBe(content);
       expect(result.corrections).toEqual([]);
@@ -510,17 +510,17 @@ export const Button = () => <View />
       const content = `
 Files to update:
 - \`src/valid.ts\`
-- \`apps/bastion-app/src/already-valid.ts\`
+- \`apps/my-app/src/already-valid.ts\`
 - \`/Users/dev/uncorrectable.ts\`
       `;
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toContain(
-        "apps/bastion-app/src/valid.ts"
+        "apps/my-app/src/valid.ts"
       );
       expect(result.correctedContent).toContain(
-        "apps/bastion-app/src/already-valid.ts"
+        "apps/my-app/src/already-valid.ts"
       );
       expect(result.corrections).toHaveLength(1);
       expect(result.uncorrectable).toContain("/Users/dev/uncorrectable.ts");
@@ -531,7 +531,7 @@ Files to update:
     it("handles content with no file paths", () => {
       const content = "This is just a description with no file paths.";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toBe(content);
       expect(result.corrections).toEqual([]);
@@ -541,7 +541,7 @@ Files to update:
     it("handles empty content", () => {
       const content = "";
 
-      const result = correctSpecPaths(content, "bastion-app");
+      const result = correctSpecPaths(content, "my-app");
 
       expect(result.correctedContent).toBe("");
       expect(result.corrections).toEqual([]);

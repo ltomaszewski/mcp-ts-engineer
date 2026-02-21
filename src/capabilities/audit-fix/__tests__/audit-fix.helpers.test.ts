@@ -116,8 +116,8 @@ describe("fallback values", () => {
 
 describe("deriveWorkspacesFromProject", () => {
   it("returns single workspace from project path", () => {
-    const result = deriveWorkspacesFromProject("apps/bastion-server");
-    expect(result).toEqual(["apps/bastion-server"]);
+    const result = deriveWorkspacesFromProject("apps/my-server");
+    expect(result).toEqual(["apps/my-server"]);
   });
 
   it("returns single workspace for packages", () => {
@@ -131,8 +131,8 @@ describe("deriveWorkspacesFromProject", () => {
   });
 
   it("handles nested paths", () => {
-    const result = deriveWorkspacesFromProject("apps/bastion-server/src");
-    expect(result).toEqual(["apps/bastion-server/src"]);
+    const result = deriveWorkspacesFromProject("apps/my-server/src");
+    expect(result).toEqual(["apps/my-server/src"]);
   });
 });
 

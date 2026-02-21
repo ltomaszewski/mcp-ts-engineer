@@ -1,6 +1,6 @@
-# MCP Software House
+# MCP TypeScript Engineer
 
-> MCP server for software development agent orchestration using Claude Agent SDK
+> Generic MCP server for multi-agent software engineering workflows using Claude Agent SDK
 
 ## Overview
 
@@ -273,7 +273,7 @@ export function registerAllCapabilities(registry: CapabilityRegistry): void {
 
 Logs are persisted to a user-scoped directory to ensure logs remain accessible across git worktrees and project clones.
 
-**Default Location**: `~/.claude/bastion-mcp-software-house/logs/`
+**Default Location**: `~/.claude/mcp-ts-engineer/logs/`
 
 **Environment Variable Override**: Set `LOG_DIR` to customize the log directory:
 ```bash
@@ -289,7 +289,7 @@ export LOG_DIR=~/my-logs  # Tilde expansion supported
 
 **Tilde Expansion**: The `~` character is expanded to your home directory. Supports both Unix (`/home/user`) and Windows (`C:\Users\user`) paths.
 
-**Migration Note**: Logs from the package-relative `logs/` directory are not automatically migrated. To preserve old logs, manually copy `apps/bastion-mcp-software-house/logs/` contents to the new persistent directory.
+**Migration Note**: Logs from the package-relative `logs/` directory are not automatically migrated. To preserve old logs, manually copy them to the new persistent directory.
 
 **Cleanup Note**: Logs accumulate indefinitely. Manually delete old logs when disk space is a concern.
 
@@ -307,4 +307,4 @@ All configuration constants are in `src/config/constants.ts`:
 
 ## License
 
-Private - Part of bastion-mono monorepo
+MIT

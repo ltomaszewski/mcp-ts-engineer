@@ -115,12 +115,12 @@ describe("Fallback constants", () => {
 describe("detectWorkspaces", () => {
   it("extracts unique workspace paths from file paths", () => {
     const files = [
-      "apps/bastion-server/src/index.ts",
-      "apps/bastion-server/src/routes/api.ts",
-      "apps/bastion-client/src/main.ts",
+      "apps/my-server/src/index.ts",
+      "apps/my-server/src/routes/api.ts",
+      "apps/my-client/src/main.ts",
     ];
     const result = detectWorkspaces(files);
-    expect(result).toEqual(["apps/bastion-server", "apps/bastion-client"]);
+    expect(result).toEqual(["apps/my-server", "apps/my-client"]);
   });
 
   it("handles nested workspace paths", () => {
@@ -145,23 +145,23 @@ describe("detectWorkspaces", () => {
 
   it("handles duplicate workspace paths", () => {
     const files = [
-      "apps/bastion-server/src/index.ts",
-      "apps/bastion-server/src/routes/api.ts",
-      "apps/bastion-server/test/api.test.ts",
+      "apps/my-server/src/index.ts",
+      "apps/my-server/src/routes/api.ts",
+      "apps/my-server/test/api.test.ts",
     ];
     const result = detectWorkspaces(files);
-    expect(result).toEqual(["apps/bastion-server"]);
+    expect(result).toEqual(["apps/my-server"]);
   });
 
   it("handles mixed root and workspace files", () => {
     const files = [
       "README.md",
-      "apps/bastion-server/src/index.ts",
+      "apps/my-server/src/index.ts",
       "packages/utils/src/helpers.ts",
       "tsconfig.json",
     ];
     const result = detectWorkspaces(files);
-    expect(result).toEqual(["apps/bastion-server", "packages/utils"]);
+    expect(result).toEqual(["apps/my-server", "packages/utils"]);
   });
 
   it("returns empty array for empty input", () => {
@@ -172,9 +172,9 @@ describe("detectWorkspaces", () => {
   it("detects workspaces from paths with package.json pattern", () => {
     const files = [
       "apps/mcp-ts-engineer/src/index.ts",
-      "apps/bastion-server/src/main.ts",
+      "apps/my-server/src/main.ts",
     ];
     const result = detectWorkspaces(files);
-    expect(result).toEqual(["apps/mcp-ts-engineer", "apps/bastion-server"]);
+    expect(result).toEqual(["apps/mcp-ts-engineer", "apps/my-server"]);
   });
 });

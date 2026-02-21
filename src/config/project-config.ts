@@ -16,7 +16,7 @@ export interface CodemapEntry {
  * All project-specific values are injected here; the framework itself is generic.
  */
 export interface ProjectConfig {
-  /** MCP server display name (e.g. "BastionTsEngineer") */
+  /** MCP server display name (e.g. "MyTsEngineer") */
   serverName: string;
   /** MCP server version */
   serverVersion: string;

@@ -85,7 +85,7 @@ describe("auditFixAuditStepCapability", () => {
   describe("preparePromptInput", () => {
     it("builds project-scoped input with projectPath and cwd", () => {
       const input: AuditStepInput = {
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         cwd: "/path/to/monorepo",
       };
       const context = createMockContext();
@@ -93,7 +93,7 @@ describe("auditFixAuditStepCapability", () => {
       const result = auditFixAuditStepCapability.preparePromptInput(input, context);
 
       expect(result).toEqual({
-        projectPath: "apps/bastion-server",
+        projectPath: "apps/my-server",
         cwd: "/path/to/monorepo",
       });
     });

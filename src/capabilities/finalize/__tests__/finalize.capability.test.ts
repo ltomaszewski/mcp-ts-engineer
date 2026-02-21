@@ -176,7 +176,7 @@ describe("finalizeCapability", () => {
       };
       const testResult = {
         passed: true,
-        workspaces_tested: ["apps/bastion-server"],
+        workspaces_tested: ["apps/my-server"],
         summary: "All tests passed",
       };
       const codemapResult = {
@@ -199,15 +199,15 @@ describe("finalizeCapability", () => {
       });
 
       const input: FinalizeInput = {
-        files_changed: ["apps/bastion-server/src/file.ts"],
+        files_changed: ["apps/my-server/src/file.ts"],
         skip_tests: false,
         skip_codemaps: false,
         skip_readmes: false,
       };
 
       const finalizePlan = {
-        workspaces: ["apps/bastion-server"],
-        codemap_areas: ["bastion-server"],
+        workspaces: ["apps/my-server"],
+        codemap_areas: ["my-server"],
       };
       const aiResult = createMockAiResult(
         `<finalize_plan>${JSON.stringify(finalizePlan)}</finalize_plan>`
@@ -216,22 +216,22 @@ describe("finalizeCapability", () => {
       const result = await finalizeCapability.processResult(input, aiResult, context);
 
       expect(context.invokeCapability).toHaveBeenCalledWith("finalize_audit_step", {
-        files_changed: ["apps/bastion-server/src/file.ts"],
+        files_changed: ["apps/my-server/src/file.ts"],
         cwd: undefined,
       });
       expect(context.invokeCapability).toHaveBeenCalledWith("finalize_test_step", {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
         cwd: undefined,
       });
       expect(context.invokeCapability).toHaveBeenCalledWith("finalize_codemap_step", {
-        files_changed: ["apps/bastion-server/src/file.ts"],
+        files_changed: ["apps/my-server/src/file.ts"],
         cwd: undefined,
       });
       expect(context.invokeCapability).toHaveBeenCalledWith("finalize_commit_step", {
         audit_summary: "Fixed 2 issues",
         codemap_summary: "Updated 1 codemap",
         readme_summary: "No README changes",
-        files_affected: ["apps/bastion-server/src/file.ts", ".claude/codemaps/feature.md"],
+        files_affected: ["apps/my-server/src/file.ts", ".claude/codemaps/feature.md"],
         cwd: undefined,
       });
 
@@ -321,14 +321,14 @@ describe("finalizeCapability", () => {
       });
 
       const input: FinalizeInput = {
-        files_changed: ["apps/bastion-server/src/file.ts"],
+        files_changed: ["apps/my-server/src/file.ts"],
         skip_tests: false,
         skip_codemaps: true,
         skip_readmes: false,
       };
 
       const finalizePlan = {
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
         codemap_areas: [],
       };
       const aiResult = createMockAiResult(
@@ -396,7 +396,7 @@ describe("finalizeCapability", () => {
       };
       const testResult = {
         passed: false,
-        workspaces_tested: ["apps/bastion-server"],
+        workspaces_tested: ["apps/my-server"],
         summary: "3 tests failed",
       };
       const commitResult = {
@@ -413,7 +413,7 @@ describe("finalizeCapability", () => {
       });
 
       const input: FinalizeInput = {
-        files_changed: ["apps/bastion-server/src/file.ts"],
+        files_changed: ["apps/my-server/src/file.ts"],
         skip_tests: false,
         skip_codemaps: true,
         skip_readmes: false,

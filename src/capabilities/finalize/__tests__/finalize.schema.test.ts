@@ -183,13 +183,13 @@ describe("FinalizeInputSchema", () => {
 describe("FinalizePlanSchema", () => {
   it("accepts valid plan with workspace and codemap arrays", () => {
     const result = FinalizePlanSchema.safeParse({
-      workspaces: ["apps/bastion-server"],
+      workspaces: ["apps/my-server"],
       codemap_areas: ["server"],
     });
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.workspaces).toEqual(["apps/bastion-server"]);
+      expect(result.data.workspaces).toEqual(["apps/my-server"]);
       expect(result.data.codemap_areas).toEqual(["server"]);
     }
   });
@@ -230,7 +230,7 @@ describe("FinalizePlanSchema", () => {
 
   it("rejects non-array workspaces", () => {
     const result = FinalizePlanSchema.safeParse({
-      workspaces: "apps/bastion-server",
+      workspaces: "apps/my-server",
       codemap_areas: [],
     });
 
@@ -324,7 +324,7 @@ describe("TestResultSchema", () => {
   it("accepts passed=true with workspaces", () => {
     const result = TestResultSchema.safeParse({
       passed: true,
-      workspaces_tested: ["apps/bastion-server", "packages/core"],
+      workspaces_tested: ["apps/my-server", "packages/core"],
       summary: "All tests passed",
     });
 
@@ -334,7 +334,7 @@ describe("TestResultSchema", () => {
   it("accepts passed=false", () => {
     const result = TestResultSchema.safeParse({
       passed: false,
-      workspaces_tested: ["apps/bastion-server"],
+      workspaces_tested: ["apps/my-server"],
       summary: "Tests failed",
     });
 
@@ -416,7 +416,7 @@ describe("ReadmeResultSchema", () => {
   it("accepts valid result with all fields", () => {
     const result = ReadmeResultSchema.safeParse({
       updated: true,
-      readmes_changed: ["apps/bastion-server/README.md", "packages/types/README.md"],
+      readmes_changed: ["apps/my-server/README.md", "packages/types/README.md"],
       summary: "Updated 2 READMEs",
     });
 
@@ -537,7 +537,7 @@ describe("AuditStepInputSchema", () => {
 describe("TestStepInputSchema", () => {
   it("accepts valid input", () => {
     const result = TestStepInputSchema.safeParse({
-      workspaces: ["apps/bastion-server"],
+      workspaces: ["apps/my-server"],
       cwd: "/some/path",
     });
 
@@ -546,7 +546,7 @@ describe("TestStepInputSchema", () => {
 
   it("accepts without cwd", () => {
     const result = TestStepInputSchema.safeParse({
-      workspaces: ["apps/bastion-server"],
+      workspaces: ["apps/my-server"],
     });
 
     expect(result.success).toBe(true);

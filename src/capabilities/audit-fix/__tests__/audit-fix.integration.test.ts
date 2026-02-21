@@ -98,8 +98,8 @@ describe("Audit-Fix Integration", () => {
     it("accepts valid test step input", () => {
       const capability = registry.getCapability("audit_fix_test_step");
       const result = capability!.inputSchema.safeParse({
-        project_path: "apps/bastion-server",
-        workspaces: ["apps/bastion-server"],
+        project_path: "apps/my-server",
+        workspaces: ["apps/my-server"],
         cwd: "/path",
       });
       expect(result.success).toBe(true);
@@ -109,7 +109,7 @@ describe("Audit-Fix Integration", () => {
       const capability = registry.getCapability("audit_fix_test_step");
       const result = capability!.inputSchema.safeParse({
         project_path: "",
-        workspaces: ["apps/bastion-server"],
+        workspaces: ["apps/my-server"],
       });
       expect(result.success).toBe(false);
     });
@@ -117,7 +117,7 @@ describe("Audit-Fix Integration", () => {
     it("rejects empty workspaces array", () => {
       const capability = registry.getCapability("audit_fix_test_step");
       const result = capability!.inputSchema.safeParse({
-        project_path: "apps/bastion-server",
+        project_path: "apps/my-server",
         workspaces: [],
       });
       expect(result.success).toBe(false);
@@ -154,7 +154,7 @@ describe("Audit-Fix Integration", () => {
       const result = capability!.inputSchema.safeParse({
         skip_tests: false,
         spec_path: "docs/specs/feature.md",
-        project: "apps/bastion-server",
+        project: "apps/my-server",
       });
       expect(result.success).toBe(true);
     });
