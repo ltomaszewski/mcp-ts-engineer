@@ -189,6 +189,10 @@ templates/apps/
 │   ├── jest.config.js.template       # Jest (jest-expo preset)
 │   ├── jest.setup.js.template        # Native module mocks
 │   ├── biome.json.template           # Excludes .expo/, ios/, android/
+│   ├── assets/icon.png                # 1024x1024 placeholder (iOS icon)
+│   ├── assets/splash.png              # 1284x2778 placeholder (splash screen)
+│   ├── assets/adaptive-icon.png       # 1024x1024 placeholder (Android icon)
+│   ├── assets/favicon.png             # 48x48 placeholder (web favicon)
 │   ├── app/_layout.tsx.template
 │   ├── app/index.tsx.template
 │   ├── app/+not-found.tsx.template

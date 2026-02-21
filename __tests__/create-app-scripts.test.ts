@@ -203,6 +203,13 @@ describe('App template directories', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'expo-app/app/_layout.tsx.template'))).toBe(true)
   })
 
+  it('expo-app has placeholder asset PNGs referenced by app.json', () => {
+    const assets = ['icon.png', 'splash.png', 'adaptive-icon.png', 'favicon.png']
+    for (const asset of assets) {
+      expect(existsSync(join(APPS_TEMPLATES_DIR, `expo-app/assets/${asset}`))).toBe(true)
+    }
+  })
+
   it('mcp-server has src/server.ts.template', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'mcp-server/src/server.ts.template'))).toBe(true)
   })
