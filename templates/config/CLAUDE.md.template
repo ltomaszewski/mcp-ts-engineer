@@ -131,9 +131,9 @@ docs/specs/{project}/todo/YYYY-MM-DD-slug.md
 ```
 
 1. Create or import spec → `docs/specs/{project}/todo/`
-2. Review spec → `mcp__ts-engineer__todo_reviewer`
-3. Implement → `mcp__ts-engineer__todo_code_writer`
-4. Finalize → `mcp__ts-engineer__finalize`
+2. Review spec → `mcp__{{MCP_KEY}}__todo_reviewer`
+3. Implement → `mcp__{{MCP_KEY}}__todo_code_writer`
+4. Finalize → `mcp__{{MCP_KEY}}__finalize`
 
 ---
 
@@ -153,12 +153,12 @@ Use `/issue-capture` to create GitHub issues from conversation context.
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__ts-engineer__todo_reviewer` | Review and validate spec files |
-| `mcp__ts-engineer__todo_code_writer` | TDD implementation from spec |
-| `mcp__ts-engineer__finalize` | Audit, test, codemap, commit |
-| `mcp__ts-engineer__audit_fix` | Fix lint/type/test violations |
-| `mcp__ts-engineer__pr_reviewer` | Comprehensive PR review |
-| `mcp__ts-engineer__echo_agent` | Test agent connectivity |
+| `mcp__{{MCP_KEY}}__todo_reviewer` | Review and validate spec files |
+| `mcp__{{MCP_KEY}}__todo_code_writer` | TDD implementation from spec |
+| `mcp__{{MCP_KEY}}__finalize` | Audit, test, codemap, commit |
+| `mcp__{{MCP_KEY}}__audit_fix` | Fix lint/type/test violations |
+| `mcp__{{MCP_KEY}}__pr_reviewer` | Comprehensive PR review |
+| `mcp__{{MCP_KEY}}__echo_agent` | Test agent connectivity |
 
 ---
 
@@ -213,7 +213,7 @@ turbo run build && turbo run test && turbo run lint
 ## CI/CD
 
 ```yaml
-# .github/workflows/ci.yml
+# .github/workflows/ci.yml ({{REPO_OWNER}}/{{REPO_NAME}})
 name: CI
 on: [push, pull_request]
 jobs:

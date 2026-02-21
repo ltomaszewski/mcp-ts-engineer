@@ -219,16 +219,17 @@ Standard ignores: node_modules, dist, build, .env, .turbo, coverage, .DS_Store, 
 | Directories | `mkdir -p` |
 | Labels | `gh label create --force` |
 
-### 2. `scripts/update.sh` (135 lines)
+### 2. `scripts/update.sh` (156 lines)
 
 Run after `git submodule update --remote`.
 
 **Flow**:
 1. Detect paths (same algorithm as bootstrap)
-2. Ensure `.claude/` subdirectories exist
-3. Re-create missing command/rule/context/skill symlinks (don't remove existing)
-4. Discover new projects → create missing `docs/specs/{project}/todo/`
-5. Rebuild submodule: `npm install && npm run build`
+2. Ensure `.claude/` subdirectories exist (commands, skills, rules, contexts, codemaps, hooks)
+3. Re-create missing command/rule/context/skill symlinks (don't remove existing, warn on regular file/dir conflicts)
+4. Re-check `scripts/setup-worktree.sh` symlink
+5. Discover new projects → create missing `docs/specs/{project}/todo/`
+6. Rebuild submodule: `npm install && npm run build`
 
 ### 3. `scripts/setup-issue-labels.sh` (102 lines)
 
@@ -260,7 +261,7 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 
 | Command | Lines | Purpose |
 |---------|-------|---------|
-| `worktree-add.md` | 112 | Create isolated git worktree with auto-cleanup of merged worktrees |
+| `worktree-add.md` | 111 | Create isolated git worktree with auto-cleanup of merged worktrees |
 | `issue-capture.md` | 292 | Capture session context as structured GitHub issue |
 | `issue-implement.md` | 553 | End-to-end pipeline: import → worktree → review → implement → finalize → PR |
 | `issue-to-todo.md` | 237 | Import GitHub issue to local spec file |
@@ -388,6 +389,12 @@ The generated CLAUDE.md includes these auto-populated sections:
 | Node.js fallback with interpolated variables | Uses `process.env` for all dynamic values |
 | No `pipefail` | Added `set -eo pipefail` to all scripts |
 | Inconsistent root detection across scripts | All 4 scripts use identical algorithm |
+| bootstrap.sh catch block used `$pkg` shell interpolation in JS | Replaced with `process.env.PKG_FALLBACK` |
+| update.sh missing `codemaps/hooks` dir creation | Added to `mkdir -p` list |
+| update.sh silently skipped existing skill dirs | Added WARNING message (matches bootstrap.sh) |
+| update.sh missing setup-worktree.sh symlink re-check | Added symlink verification step |
+| CLAUDE.md.template missing 3 placeholders | Added `{{MCP_KEY}}`, `{{REPO_OWNER}}`, `{{REPO_NAME}}` |
+| worktree-add.md duplicate `</output>` tag | Removed extraneous closing tag |
 
 ### Dependencies
 

@@ -141,12 +141,29 @@ describe("todoReviewerCapability", () => {
   describe("processResult (single iteration)", () => {
     let context: CapabilityContext;
     let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let tempDir: string;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      const { mkdtempSync, mkdirSync, writeFileSync } = await import("fs");
+      const { tmpdir } = await import("os");
+      const { join } = await import("path");
+
+      tempDir = mkdtempSync(join(tmpdir(), "todo-reviewer-unit-"));
+      mkdirSync(join(tempDir, "docs", "specs"), { recursive: true });
+      writeFileSync(
+        join(tempDir, "docs", "specs", "feature.md"),
+        "# Test Spec\n\nSimple spec for unit testing.\n",
+        "utf-8",
+      );
+
       context = createMockContext();
       mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
+    });
 
+    afterEach(async () => {
+      const { rmSync } = await import("fs");
+      if (tempDir) rmSync(tempDir, { recursive: true, force: true });
     });
 
     it("calls invokeCapability for tdd_validate and commit steps", async () => {
@@ -162,6 +179,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -195,6 +213,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -215,6 +234,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -236,6 +256,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -255,6 +276,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -277,6 +299,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -296,12 +319,36 @@ describe("todoReviewerCapability", () => {
   describe("processResult (multiple iterations)", () => {
     let context: CapabilityContext;
     let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let tempDir: string;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      const { mkdtempSync, mkdirSync, writeFileSync } = await import("fs");
+      const { execSync } = await import("child_process");
+      const { tmpdir } = await import("os");
+      const { join } = await import("path");
+
+      tempDir = mkdtempSync(join(tmpdir(), "todo-reviewer-multi-"));
+      mkdirSync(join(tempDir, "docs", "specs"), { recursive: true });
+      writeFileSync(
+        join(tempDir, "docs", "specs", "feature.md"),
+        "# Test Spec\n\nSimple spec for unit testing.\n",
+        "utf-8",
+      );
+
+      // Init as git repo and commit the spec so fileNeedsCommit() returns false
+      execSync("git init && git add -A && git commit -m 'init'", {
+        cwd: tempDir,
+        stdio: "pipe",
+      });
+
       context = createMockContext();
       mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
+    });
 
+    afterEach(async () => {
+      const { rmSync } = await import("fs");
+      if (tempDir) rmSync(tempDir, { recursive: true, force: true });
     });
 
     it("exits early when no changes detected after iteration 1", async () => {
@@ -339,6 +386,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 3,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -384,6 +432,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 3,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);
@@ -432,6 +481,7 @@ describe("todoReviewerCapability", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 2,
+        cwd: tempDir,
       };
 
       const result = await todoReviewerCapability.processResult(input, aiResult, context);

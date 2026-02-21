@@ -46,7 +46,7 @@ echo "Submodule:     $SUBMODULE_REL"
 cd "$MONOREPO_ROOT"
 
 # --- Ensure directories exist ---
-mkdir -p .claude/commands .claude/skills .claude/rules .claude/contexts
+mkdir -p .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks
 
 # --- Helper: create symlink ---
 symlink_file() {
@@ -101,13 +101,34 @@ for skill_dir in "$SUBMODULE_DIR/.claude/skills"/*/; do
   [[ -d "$skill_dir" ]] || continue
   skill_name="$(basename "$skill_dir")"
   dest=".claude/skills/$skill_name"
-  if [[ -L "$dest" ]] || [[ -d "$dest" ]]; then
+  if [[ -L "$dest" ]]; then
+    continue
+  elif [[ -d "$dest" ]]; then
+    echo "  WARNING: $dest exists as regular directory, skipping"
     continue
   fi
   rel_src="$(relpath "$skill_dir" ".claude/skills")"
   ln -s "$rel_src" "$dest"
   echo "  NEW: .claude/skills/$skill_name"
 done
+
+# --- Re-check setup-worktree.sh symlink ---
+echo ""
+echo "--- Checking setup-worktree.sh symlink ---"
+WORKTREE_SCRIPT_DEST="scripts/setup-worktree.sh"
+if [[ -L "$WORKTREE_SCRIPT_DEST" ]]; then
+  : # symlink exists
+elif [[ -f "$WORKTREE_SCRIPT_DEST" ]]; then
+  echo "  WARNING: $WORKTREE_SCRIPT_DEST exists as regular file, skipping"
+else
+  mkdir -p scripts
+  WORKTREE_SCRIPT_SRC="$SUBMODULE_DIR/scripts/setup-worktree.sh"
+  if [[ -f "$WORKTREE_SCRIPT_SRC" ]]; then
+    WORKTREE_REL="$(relpath "$WORKTREE_SCRIPT_SRC" "scripts")"
+    ln -s "$WORKTREE_REL" "$WORKTREE_SCRIPT_DEST"
+    echo "  NEW: $WORKTREE_SCRIPT_DEST"
+  fi
+fi
 
 # --- Discover new projects ---
 echo ""

@@ -196,20 +196,10 @@ describe("phaseEngStepCapability", () => {
       ).toBeDefined();
     });
 
-    it("has appendSystemPrompt with dev context", () => {
+    it("has appendSystemPrompt set to undefined (lazy-loaded at runtime via buildDevContext)", () => {
       const append =
         phaseEngStepCapability.defaultRequestOptions?.appendSystemPrompt;
-      expect(append).toBeDefined();
-      expect(typeof append).toBe("string");
-      expect((append as string).length).toBeGreaterThan(0);
-    });
-
-    it("appendSystemPrompt contains expected dev context keywords", () => {
-      const append = (phaseEngStepCapability.defaultRequestOptions
-        ?.appendSystemPrompt ?? "") as string;
-      expect(append).toContain("TDD");
-      expect(append).toContain("Write working code first");
-      expect(append).toContain("Development Context");
+      expect(append).toBeUndefined();
     });
 
     it("includes path validation hooks in defaultRequestOptions", () => {

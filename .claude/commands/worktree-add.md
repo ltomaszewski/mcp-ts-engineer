@@ -109,4 +109,3 @@ Created:
 | Remove fails | Warn, continue to next |
 | Create fails | Stop, show git error |
 </errors>
-</output>

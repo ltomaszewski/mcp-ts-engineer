@@ -28,8 +28,20 @@ describe("todo-reviewer integration tests", () => {
   let promptLoader: PromptLoader;
   let logger: Logger;
   let mockAIProvider: AIProvider;
+  let tempDir: string;
 
   beforeEach(async () => {
+    const fs = await import("fs");
+    const os = await import("os");
+
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "todo-reviewer-int-"));
+    fs.mkdirSync(path.join(tempDir, "docs", "specs"), { recursive: true });
+    fs.writeFileSync(
+      path.join(tempDir, "docs", "specs", "feature.md"),
+      "# Test Spec\n\nSimple spec for integration testing.\n",
+      "utf-8",
+    );
+
     sessionManager = new SessionManager();
     costTracker = new CostTracker();
     costReportWriter = new CostReportWriter(path.join(LOGS_TESTS_DIR, "reports"));
@@ -73,6 +85,8 @@ describe("todo-reviewer integration tests", () => {
 
   afterEach(async () => {
     await diskWriter.closeAll();
+    const fs = await import("fs");
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   // ---------------------------------------------------------------------------
@@ -85,6 +99,7 @@ describe("todo-reviewer integration tests", () => {
         spec_path: "docs/specs/feature.md",
         model: "opus",
         iterations: 1,
+        cwd: tempDir,
       });
 
       // Should NOT return "not found" error
@@ -217,6 +232,7 @@ describe("todo-reviewer integration tests", () => {
         spec_path: "docs/specs/feature.md",
         iterations: 1,
         model: "opus",
+        cwd: tempDir,
       });
 
       // Verify orchestration succeeded (internal capabilities were invoked)
