@@ -58,7 +58,7 @@ git add -A && git commit -m "chore: initial monorepo setup"
 
 The bootstrap script auto-detects project name, repo owner/name, and discovered workspaces. It generates:
 
-- **Root monorepo files**: `package.json` (turbo + npm workspaces), `turbo.json`, `tsconfig.json`, `.gitignore`
+- **Root monorepo files**: `package.json` (turbo + npm workspaces), `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `biome.json`, `.gitignore`
 - **MCP configuration**: `.mcp.json` (server registration), `ts-engineer.config.json` (server settings)
 - **Claude Code environment**: `CLAUDE.md`, symlinked commands/skills/rules/contexts
 - **Project infrastructure**: `.claude/codemaps/` (per project), `docs/specs/` (spec directories), GitHub labels
@@ -155,8 +155,10 @@ All consuming repos follow a fixed schema:
 
 - **Package manager**: npm with workspaces (`apps/*`, `packages/*`)
 - **Build orchestration**: Turborepo (`turbo.json`)
+- **Testing**: Vitest (`vitest.config.ts` — native TypeScript, zero-config monorepo discovery)
+- **Linting/Formatting**: Biome (`biome.json` — single Rust binary, replaces ESLint + Prettier)
 - **Node.js**: ≥22.0.0
-- **Root deps**: Only repo tools (turbo, husky, commitlint)
+- **Root deps**: Only repo tools (turbo, vitest, biome, husky, commitlint)
 - **App/package deps**: Installed in the workspace that uses them
 
 ## CI/CD
@@ -177,7 +179,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx turbo run build test lint type-check
+      - run: npx turbo run build test lint format:check type-check
 ```
 
 ## Development
