@@ -1,6 +1,18 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.3/schema.json",
-  "files": {
-    "includes": ["**", "!dist/**"]
-  }
+	"$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
+	"files": {
+		"includes": ["**", "!dist"]
+	},
+	"javascript": {
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		}
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"useImportType": "off"
+			}
+		}
+	}
 }

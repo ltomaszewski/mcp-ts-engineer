@@ -170,7 +170,7 @@ The template system is fully registry-driven — **no script changes needed**:
 
 | Script | expo-app | nestjs-server | mcp-server |
 |---|---|---|---|
-| `dev` | `expo start` | `ts-node-dev --respawn ...` | `tsx src/index.ts` |
+| `dev` | `expo start` | `tsx watch src/main.ts` | `tsx src/index.ts` |
 | `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` |
 | `start` | — | `node dist/main.js` | `node build/index.js` |
 | `test` | `jest` | `vitest run` | `vitest run` |

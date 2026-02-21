@@ -1,24 +1,24 @@
-import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Injectable } from "@nestjs/common";
+import { InjectConnection } from "@nestjs/mongoose";
+import { Connection } from "mongoose";
 
 @Injectable()
 export class HealthService {
-  constructor(@InjectConnection() private readonly connection: Connection) {}
+	constructor(@InjectConnection() private readonly connection: Connection) {}
 
-  async checkMongoDB(): Promise<string> {
-    const stateMap: Record<number, string> = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting',
-    };
+	async checkMongoDB(): Promise<string> {
+		const stateMap: Record<number, string> = {
+			0: "disconnected",
+			1: "connected",
+			2: "connecting",
+			3: "disconnecting",
+		};
 
-    try {
-      await this.connection.db?.admin().ping();
-      return stateMap[this.connection.readyState] ?? 'unknown';
-    } catch {
-      return 'error';
-    }
-  }
+		try {
+			await this.connection.db?.admin().ping();
+			return stateMap[this.connection.readyState] ?? "unknown";
+		} catch {
+			return "error";
+		}
+	}
 }

@@ -1,34 +1,34 @@
-import { Field, ObjectType, Query, Resolver } from '@nestjs/graphql';
-import { HealthService } from './health.service';
+import { Field, ObjectType, Query, Resolver } from "@nestjs/graphql";
+import { HealthService } from "./health.service";
 
 @ObjectType()
 class HealthStatus {
-  @Field()
-  status!: string;
+	@Field()
+	status!: string;
 
-  @Field()
-  timestamp!: string;
+	@Field()
+	timestamp!: string;
 
-  @Field()
-  uptime!: number;
+	@Field()
+	uptime!: number;
 
-  @Field()
-  mongodb!: string;
+	@Field()
+	mongodb!: string;
 }
 
 @Resolver()
 export class HealthResolver {
-  constructor(private readonly healthService: HealthService) {}
+	constructor(private readonly healthService: HealthService) {}
 
-  @Query(() => HealthStatus)
-  async health(): Promise<HealthStatus> {
-    const mongoStatus = await this.healthService.checkMongoDB();
+	@Query(() => HealthStatus)
+	async health(): Promise<HealthStatus> {
+		const mongoStatus = await this.healthService.checkMongoDB();
 
-    return {
-      status: mongoStatus === 'connected' ? 'ok' : 'degraded',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      mongodb: mongoStatus,
-    };
-  }
+		return {
+			status: mongoStatus === "connected" ? "ok" : "degraded",
+			timestamp: new Date().toISOString(),
+			uptime: process.uptime(),
+			mongodb: mongoStatus,
+		};
+	}
 }
