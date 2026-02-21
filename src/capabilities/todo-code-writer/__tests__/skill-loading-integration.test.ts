@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Integration tests for dynamic skill loading across monorepo projects.
  *
@@ -8,18 +9,19 @@
  * Uses mocked package.json content that mirrors the real monorepo projects.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
 // ---------------------------------------------------------------------------
 // Mock fs before importing modules under test (ESM mocking)
 // ---------------------------------------------------------------------------
-const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
+const { mockReadFileSync } = vi.hoisted(() => ({
+  mockReadFileSync: vi.fn<(path: string, encoding: string) => string>(),
+}));
 
-jest.unstable_mockModule("fs", () => ({
+vi.mock("fs", () => ({
   readFileSync: mockReadFileSync,
-  writeFileSync: jest.fn(),
-  existsSync: jest.fn().mockReturnValue(false),
-  promises: { readFile: jest.fn(), writeFile: jest.fn() },
+  writeFileSync: vi.fn(),
+  existsSync: vi.fn().mockReturnValue(false),
+  promises: { readFile: vi.fn(), writeFile: vi.fn() },
 }));
 
 // Dynamic imports after mock setup
@@ -159,7 +161,7 @@ const MOCK_PHASE_PLAN = {
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -578,7 +580,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
         getSessionCost: () => ({ totalCostUsd: 0 }),
         promptVersion: "v2",
         providerName: "ClaudeProvider",
-        invokeCapability: jest.fn(),
+        invokeCapability: vi.fn(),
       };
 
       const input = {
@@ -611,7 +613,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
         getSessionCost: () => ({ totalCostUsd: 0 }),
         promptVersion: "v2",
         providerName: "ClaudeProvider",
-        invokeCapability: jest.fn(),
+        invokeCapability: vi.fn(),
       };
 
       const input = {
@@ -646,7 +648,7 @@ describe("Dynamic Skill Loading — Cross-Project Integration", () => {
         getSessionCost: () => ({ totalCostUsd: 0 }),
         promptVersion: "v2",
         providerName: "ClaudeProvider",
-        invokeCapability: jest.fn(),
+        invokeCapability: vi.fn(),
       };
 
       const input = {

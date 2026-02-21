@@ -1,16 +1,18 @@
+import { vi } from "vitest";
 /**
  * Tests for workspace technology detection.
  * Verifies AC-3.1 through AC-3.9.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
 // ---------------------------------------------------------------------------
 // Mock fs before importing the module under test (ESM mocking)
 // ---------------------------------------------------------------------------
-const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
+const { mockReadFileSync } = vi.hoisted(() => ({
+  mockReadFileSync: vi.fn<(path: string, encoding: string) => string>(),
+}));
 
-jest.unstable_mockModule("fs", () => ({
+vi.mock("fs", () => ({
   readFileSync: mockReadFileSync,
 }));
 
@@ -28,7 +30,7 @@ function mockPackageJson(content: Record<string, unknown>): void {
 }
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------

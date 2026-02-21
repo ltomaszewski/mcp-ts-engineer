@@ -3,7 +3,6 @@
  * Validates JSONL logging with rotation.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { FeedbackLogger } from "../services/feedback-logger.js";
 import fs from "fs/promises";
 import path from "path";

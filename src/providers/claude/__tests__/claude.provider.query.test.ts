@@ -1,8 +1,8 @@
+import { vi, type Mock } from "vitest";
 /**
  * Tests for ClaudeProvider.query() method.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { ClaudeProvider } from "../claude.provider.js";
 import type { AIQueryRequest } from "../../../core/ai-provider/ai-provider.types.js";
 import { AIProviderError } from "../../../core/errors.js";
@@ -710,7 +710,7 @@ describe("ClaudeProvider", () => {
 
       await provider.query({ prompt: "Test" });
 
-      const calledOptions = (mockQuery as jest.Mock).mock.calls[0][0].options;
+      const calledOptions = (mockQuery as Mock).mock.calls[0][0].options;
       expect(calledOptions).not.toHaveProperty("settingSources");
     });
 

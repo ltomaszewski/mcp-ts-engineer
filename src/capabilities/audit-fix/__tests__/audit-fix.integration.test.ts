@@ -3,7 +3,6 @@
  * Tests capability registration, test step invocation flow, and skip_tests behavior.
  */
 
-import { describe, it, expect, beforeEach } from "@jest/globals";
 import { CapabilityRegistry } from "../../../core/capability-registry/capability-registry.js";
 import { SessionManager } from "../../../core/session/session.manager.js";
 import { CostTracker } from "../../../core/cost/cost.tracker.js";

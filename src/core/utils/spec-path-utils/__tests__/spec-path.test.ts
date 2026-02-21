@@ -3,7 +3,6 @@
  * Tests new patterns for docs/, .claude/, and internal directories.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { classifyPath } from "../spec-path-validation.js";
 import { correctPath } from "../spec-path-correction.js";
 

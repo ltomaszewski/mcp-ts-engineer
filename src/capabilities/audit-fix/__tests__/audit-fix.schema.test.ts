@@ -3,7 +3,6 @@
  * Validates all schemas with valid input, defaults, boundary values, and invalid input.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   AuditFixInputSchema,
   AuditPlanSchema,

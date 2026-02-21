@@ -3,7 +3,6 @@
  * Tests prompt structure, content, and required instructions.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { depsFixPrompts, DEPS_FIX_CURRENT_VERSION } from "../prompts/index.js";
 
 describe("depsFixPrompts", () => {

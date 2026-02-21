@@ -2,7 +2,6 @@
  * Tests for commit-step sub-capability definition (Session 3).
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { commitStepCapability } from "../commit-step.capability.js";
 import type { CommitStepInput } from "../todo-reviewer.schema.js";
 import {

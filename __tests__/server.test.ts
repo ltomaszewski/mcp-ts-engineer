@@ -2,10 +2,9 @@
  * Tests for MCP server factory.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { createServer } from "../../src/server.js";
-import { CapabilityRegistry } from "../../src/core/capability-registry/index.js";
+import { createServer } from "../src/server.js";
+import { CapabilityRegistry } from "../src/core/capability-registry/index.js";
 
 describe("createServer", () => {
   it("returns server context with McpServer instance", () => {

@@ -193,9 +193,11 @@ describe('setup-worktree.sh specifics', () => {
 
 describe('Config templates', () => {
   const EXPECTED_TEMPLATES = [
+    'biome.json.template',
     'package.json.template',
     'turbo.json.template',
     'tsconfig.json.template',
+    'vitest.config.ts.template',
     'gitignore.template',
     'mcp.json.template',
     'ts-engineer.config.json.template',

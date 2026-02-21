@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Shared test helpers for Claude Provider tests.
  *
@@ -11,7 +12,6 @@
  * - BetaToolUseBlock: { type: 'tool_use', id: string, name: string, input: unknown }
  */
 
-import { jest } from "@jest/globals";
 
 /**
  * SDK message types matching the real Claude Agent SDK.
@@ -191,7 +191,7 @@ export function userMsg(
 
 /** Create a mock query function that yields the given messages */
 export function createMockQuery(messages: MockSDKMessage[]) {
-  return jest.fn(async function* () {
+  return vi.fn(async function* () {
     for (const message of messages) {
       yield message;
     }

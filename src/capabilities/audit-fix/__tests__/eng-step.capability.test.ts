@@ -1,11 +1,10 @@
+import { vi } from "vitest";
 /**
  * Tests for eng-step sub-capability definition (AC-6).
  * Tests preparePromptInput calls detectWorkspace() and builds fix-mode input,
  * processResult parses XML and structured output, fallback on parse failure.
  */
 
-import { describe, it, expect } from "@jest/globals";
-import { jest } from "@jest/globals";
 import { auditFixEngStepCapability } from "../eng-step.capability.js";
 import type { EngStepInput } from "../audit-fix.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -41,7 +40,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
   };
 }
 

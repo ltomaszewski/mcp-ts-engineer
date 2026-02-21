@@ -1,9 +1,8 @@
+import { vi } from "vitest";
 /**
  * Tests for codemap-step sub-capability definition.
  */
 
-import { describe, it, expect } from "@jest/globals";
-import { jest } from "@jest/globals";
 import { finalizeCodemapStepCapability } from "../codemap-step.capability.js";
 import type { CodemapStepInput } from "../finalize.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -39,7 +38,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
   };
 }
 

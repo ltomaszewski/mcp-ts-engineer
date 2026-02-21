@@ -2,7 +2,6 @@
  * Tests for redaction utility.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { redactSensitive } from "../redact.js";
 
 describe("redactSensitive", () => {

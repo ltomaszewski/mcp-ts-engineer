@@ -3,7 +3,6 @@
  * Validates spec mode and fix mode behaviors.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { buildEngPromptV2, type EngPromptInput } from "../eng-prompt.v2.js";
 import { DEV_CONTEXT_APPEND_PROMPT } from "../dev-context.js";
 

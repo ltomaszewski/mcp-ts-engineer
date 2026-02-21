@@ -7,7 +7,6 @@
  * - Separation of orchestration logic from capability definition
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   parseReviewFromAiContent,
   validateTddResult,

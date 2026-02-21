@@ -1,15 +1,17 @@
+import { vi } from "vitest";
 /**
  * Tests for git utility functions.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
 // ---------------------------------------------------------------------------
 // Mock child_process before importing the module under test (ESM mocking)
 // ---------------------------------------------------------------------------
-const mockExecSync = jest.fn<(cmd: string, opts: unknown) => Buffer>();
+const { mockExecSync } = vi.hoisted(() => ({
+  mockExecSync: vi.fn<(cmd: string, opts: unknown) => Buffer>(),
+}));
 
-jest.unstable_mockModule("node:child_process", () => ({
+vi.mock("node:child_process", () => ({
   execSync: mockExecSync,
 }));
 
@@ -19,7 +21,7 @@ const { hasUncommittedChanges, isFileTracked, fileNeedsCommit } = await import(
 );
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("git-utils", () => {

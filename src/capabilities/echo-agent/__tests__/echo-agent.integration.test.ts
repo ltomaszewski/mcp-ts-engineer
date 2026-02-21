@@ -1,9 +1,9 @@
+import { vi, type Mock } from "vitest";
 /**
  * Integration tests for echo-agent capability.
  * Tests full invocation flow through CapabilityRegistry.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import { CapabilityRegistry } from "../../../core/capability-registry/index.js";
 import { SessionManager } from "../../../core/session/session.manager.js";
 import { CostTracker } from "../../../core/cost/cost.tracker.js";
@@ -44,7 +44,7 @@ describe("echo-agent integration tests", () => {
 
     // Mock AI provider with controlled responses
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response text",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.000123,
@@ -220,7 +220,7 @@ describe("echo-agent integration tests", () => {
     });
 
     it("creates separate session for each invocation", async () => {
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "Response",
         usage: { inputTokens: 50, outputTokens: 25, totalTokens: 75 },
         costUsd: 0.0001,
@@ -341,7 +341,7 @@ describe("echo-agent integration tests", () => {
 
   describe("error handling", () => {
     it("handles AI provider errors gracefully", async () => {
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockRejectedValue(
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockRejectedValue(
         new Error("AI provider error")
       );
 
@@ -422,8 +422,8 @@ describe("echo-agent integration tests", () => {
 
   describe("session log file lifecycle", () => {
     it("opens and closes session log file for successful invocation", async () => {
-      const openSessionSpy = jest.spyOn(diskWriter, "openSession");
-      const closeSessionSpy = jest.spyOn(diskWriter, "closeSession");
+      const openSessionSpy = vi.spyOn(diskWriter, "openSession");
+      const closeSessionSpy = vi.spyOn(diskWriter, "closeSession");
 
       const input = {
         prompt: "Session log test",
@@ -442,9 +442,9 @@ describe("echo-agent integration tests", () => {
     });
 
     it("closes session log file even when invocation fails", async () => {
-      const closeSessionSpy = jest.spyOn(diskWriter, "closeSession");
+      const closeSessionSpy = vi.spyOn(diskWriter, "closeSession");
 
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockRejectedValue(
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockRejectedValue(
         new Error("AI provider error")
       );
 
@@ -460,7 +460,7 @@ describe("echo-agent integration tests", () => {
 
   describe("invocation logging to disk", () => {
     it("writes log entries with sessionId to disk during successful invocation", async () => {
-      const writeSpy = jest.spyOn(diskWriter, "write");
+      const writeSpy = vi.spyOn(diskWriter, "write");
 
       const input = {
         prompt: "Logging test",
@@ -497,7 +497,7 @@ describe("echo-agent integration tests", () => {
     });
 
     it("writes ai.execution_trace debug log when trace exists", async () => {
-      const writeSpy = jest.spyOn(diskWriter, "write");
+      const writeSpy = vi.spyOn(diskWriter, "write");
 
       const input = {
         prompt: "Trace test",
@@ -524,10 +524,10 @@ describe("echo-agent integration tests", () => {
     });
 
     it("does not write ai.execution_trace when trace is missing", async () => {
-      const writeSpy = jest.spyOn(diskWriter, "write");
+      const writeSpy = vi.spyOn(diskWriter, "write");
 
       // Mock AI provider without trace
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.001,
@@ -664,7 +664,7 @@ describe("echo-agent integration tests", () => {
       );
 
       // Verify customAgentTools is undefined (not set in echo-agent defaults)
-      const queryMock = mockAIProvider.query as jest.Mock;
+      const queryMock = mockAIProvider.query as Mock;
       const lastCallArgs = queryMock.mock.calls[queryMock.mock.calls.length - 1];
       const queryCall = lastCallArgs?.[0] as any;
       expect(queryCall?.customAgentTools).toBeUndefined();

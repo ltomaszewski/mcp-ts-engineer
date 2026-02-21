@@ -2,7 +2,6 @@
  * Tests for spec path utilities.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   extractFilePaths,
   validateSpecPaths,

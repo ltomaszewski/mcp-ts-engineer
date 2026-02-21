@@ -3,7 +3,6 @@
  * Validates spec mode and scan mode behaviors.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { buildAuditPromptV2, type AuditPromptInput } from "../audit-prompt.v2.js";
 import { REVIEW_CONTEXT_APPEND_PROMPT } from "../review-context.js";
 

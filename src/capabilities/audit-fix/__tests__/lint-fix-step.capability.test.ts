@@ -3,7 +3,6 @@
  * Tests capability metadata, options, prompt preparation, and result processing.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { auditFixLintFixStepCapability } from "../lint-fix-step.capability.js";
 
 describe("Lint Fix Step Capability", () => {

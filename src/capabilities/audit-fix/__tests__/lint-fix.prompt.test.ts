@@ -3,7 +3,6 @@
  * Tests prompt structure, content, and output format instructions.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { lintFixPromptV1 } from "../prompts/lint-fix.v1.js";
 
 describe("Lint Fix Prompt (v1)", () => {

@@ -2,7 +2,6 @@
  * Tests for todo-code-writer Zod schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   TodoCodeWriterInputSchema,
   PhasePlanSchema,

@@ -2,7 +2,6 @@
  * Tests for tdd-scan-step sub-capability definition.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { tddScanStepCapability } from "../tdd-scan-step.capability.js";
 import type { TddScanStepInput } from "../todo-reviewer.schema.js";
 import {

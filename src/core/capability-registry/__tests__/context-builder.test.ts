@@ -1,8 +1,8 @@
+import { vi, type Mock } from "vitest";
 /**
  * Unit tests for context-builder — model extraction from child responses.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { createCapabilityContext } from "../context-builder.js";
 import type { CapabilityDefinition } from "../capability-registry.types.js";
 import type { CapabilityRegistryDeps } from "../capability-registry.js";
@@ -11,7 +11,7 @@ import { z } from "zod";
 
 describe("createCapabilityContext - model extraction", () => {
   let mockDeps: CapabilityRegistryDeps;
-  let mockSelfInvoke: jest.Mock<(name: string, input: unknown) => Promise<McpToolResponse>>;
+  let mockSelfInvoke: Mock<(name: string, input: unknown) => Promise<McpToolResponse>>;
   let mockCapability: CapabilityDefinition;
 
   beforeEach(() => {
@@ -28,25 +28,25 @@ describe("createCapabilityContext - model extraction", () => {
 
     mockDeps = {
       sessionManager: {
-        getSession: jest.fn(() => mockSession),
-        propagateChildCost: jest.fn(),
+        getSession: vi.fn(() => mockSession),
+        propagateChildCost: vi.fn(),
       } as any,
       costTracker: {
-        getSessionSummary: jest.fn(() => ({
+        getSessionSummary: vi.fn(() => ({
           totalCostUsd: 0.05,
           totalInputTokens: 200,
           totalOutputTokens: 100,
           totalTurns: 2,
           operationCount: 2,
         })),
-        recordChildCost: jest.fn(),
+        recordChildCost: vi.fn(),
       } as any,
       logger: {
-        withContext: jest.fn(() => ({
-          info: jest.fn(),
-          debug: jest.fn(),
-          error: jest.fn(),
-          warn: jest.fn(),
+        withContext: vi.fn(() => ({
+          info: vi.fn(),
+          debug: vi.fn(),
+          error: vi.fn(),
+          warn: vi.fn(),
         })),
       } as any,
       costReportWriter: {} as any,
@@ -55,7 +55,7 @@ describe("createCapabilityContext - model extraction", () => {
       aiProvider: {} as any,
     };
 
-    mockSelfInvoke = jest.fn();
+    mockSelfInvoke = vi.fn();
 
     mockCapability = {
       id: "test-capability",

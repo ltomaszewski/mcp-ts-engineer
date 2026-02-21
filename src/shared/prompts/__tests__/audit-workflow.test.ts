@@ -3,7 +3,6 @@
  * Validates file-scoped and project-scoped modes.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   AUDIT_WORKFLOW,
   buildAuditUserPrompt,

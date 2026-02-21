@@ -2,7 +2,6 @@
  * Tests for updateSpecStatus helper.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { writeFile, readFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { updateSpecStatus } from "../spec-status.js";

@@ -1,8 +1,8 @@
+import { vi } from "vitest";
 /**
  * Tests for ClaudeProvider PresetTools and appendSystemPrompt handling.
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import { ClaudeProvider } from "../claude.provider.js";
 import {
   textBlock,
@@ -23,7 +23,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -57,7 +57,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -91,7 +91,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -125,7 +125,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -162,7 +162,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -194,7 +194,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -228,7 +228,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;
@@ -264,7 +264,7 @@ describe("ClaudeProvider", () => {
       ];
 
       let capturedOptions: Record<string, unknown> | undefined;
-      const mockQuery = jest.fn(
+      const mockQuery = vi.fn(
         async function* (params: {
           prompt: string;
           options: Record<string, unknown>;

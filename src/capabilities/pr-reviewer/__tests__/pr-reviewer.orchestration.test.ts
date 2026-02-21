@@ -3,7 +3,6 @@
  * Validates pure functions (no mocks needed).
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   createInitialState,
   getDefaultBudget,

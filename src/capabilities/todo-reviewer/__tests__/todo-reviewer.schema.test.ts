@@ -2,7 +2,6 @@
  * Tests for todo-reviewer Zod schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   TodoReviewerInputSchema,
   ReviewSummarySchema,

@@ -3,7 +3,6 @@
  * Updated to match the agnostic spec writer prompts (v1).
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { v1 as reviewV1 } from "../prompts/v1.js";
 import { v1 as tddValidateV1 } from "../prompts/tdd-validate-step.v1.js";
 import { v1 as commitV1 } from "../prompts/commit-step.v1.js";

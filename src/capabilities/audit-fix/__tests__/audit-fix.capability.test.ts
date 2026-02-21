@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Tests for audit-fix orchestrator capability (AC-6, AC-7, AC-8).
  * Tests orchestrator loop logic with mocked sub-capabilities:
@@ -9,7 +10,6 @@
  * - Aggregate output
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import { auditFixCapability } from "../audit-fix.capability.js";
 import type { AuditFixInput } from "../audit-fix.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -50,7 +50,7 @@ function createMockContext(
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn(async (capabilityId: string) => {
+    invokeCapability: vi.fn(async (capabilityId: string) => {
       const results = invokeResults[capabilityId];
       if (!results) return {};
 

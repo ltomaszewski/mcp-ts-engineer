@@ -1,8 +1,8 @@
+import { vi, type Mock } from "vitest";
 /**
  * Tests for todo-code-writer orchestrator CapabilityDefinition.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { todoCodeWriterCapability } from "../todo-code-writer.capability.js";
 import type { TodoCodeWriterInput } from "../todo-code-writer.schema.js";
 import type { CapabilityContext } from "../../../core/capability-registry/capability-registry.types.js";
@@ -38,7 +38,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0.5, totalInputTokens: 1000, totalOutputTokens: 2000, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
   };
 }
 
@@ -218,11 +218,11 @@ describe("todoCodeWriterCapability", () => {
 
   describe("processResult orchestration", () => {
     let context: CapabilityContext;
-    let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let mockInvoke: Mock<CapabilityContext["invokeCapability"]>;
 
     beforeEach(() => {
       context = createMockContext();
-      mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
+      mockInvoke = vi.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
     });
 
@@ -402,11 +402,11 @@ describe("todoCodeWriterCapability", () => {
 
   describe("retry and halt logic", () => {
     let context: CapabilityContext;
-    let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let mockInvoke: Mock<CapabilityContext["invokeCapability"]>;
 
     beforeEach(() => {
       context = createMockContext();
-      mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
+      mockInvoke = vi.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
     });
 

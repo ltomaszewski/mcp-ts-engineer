@@ -1,10 +1,9 @@
+import { vi } from "vitest";
 /**
  * Tests for test-step sub-capability definition (audit-fix).
  * Validates capability metadata, prompt preparation, and result processing.
  */
 
-import { describe, it, expect } from "@jest/globals";
-import { jest } from "@jest/globals";
 import { auditFixTestStepCapability } from "../test-step.capability.js";
 import type { TestStepInput } from "../audit-fix.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -40,7 +39,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
   };
 }
 

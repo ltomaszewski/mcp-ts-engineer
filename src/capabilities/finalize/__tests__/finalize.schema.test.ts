@@ -2,7 +2,6 @@
  * Tests for finalize Zod schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   FinalizeInputSchema,
   FinalizePlanSchema,

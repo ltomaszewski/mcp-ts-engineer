@@ -2,7 +2,6 @@
  * Tests for SessionManager - session lifecycle and recursion detection.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { SessionManager } from "../session.manager.js";
 import type { CostEntry } from "../../cost/cost.types.js";
 

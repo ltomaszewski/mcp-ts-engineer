@@ -2,7 +2,6 @@
  * Tests for configuration constants.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   getServerInfo,
   BLOCKED_TOOLS,
@@ -39,8 +38,8 @@ import {
   PROVIDER_CONFIG,
   getCommitTag,
   getDefaultLogDir,
-} from "../../src/config/constants.js";
-import { deriveLogDir, getProjectConfig } from "../../src/config/project-config.js";
+} from "../src/config/constants.js";
+import { deriveLogDir, getProjectConfig } from "../src/config/project-config.js";
 
 describe("CONFIG", () => {
   describe("getServerInfo()", () => {

@@ -2,7 +2,6 @@
  * Tests for tdd-fix-step sub-capability definition.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { tddFixStepCapability } from "../tdd-fix-step.capability.js";
 import type { TddFixStepInput } from "../todo-reviewer.schema.js";
 import { createMockContext } from "./test-helpers.js";

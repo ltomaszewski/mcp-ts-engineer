@@ -3,7 +3,6 @@
  * Tests capability definition, metadata, and result processing.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { auditFixDepsFixStepCapability } from "../deps-fix-step.capability.js";
 
 describe("auditFixDepsFixStepCapability", () => {

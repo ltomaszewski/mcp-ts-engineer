@@ -329,7 +329,7 @@ Back to RED → GREEN → REFACTOR → Next test
 
 ---
 
-## Jest Fundamentals
+## Vitest Fundamentals
 
 ### Test Structure: Arrange-Act-Assert
 
@@ -351,7 +351,7 @@ describe('Calculator', () => {
 });
 ```
 
-### Common Jest Matchers
+### Common Vitest Matchers
 
 | Matcher | Use Case | Example |
 |---------|----------|---------|
@@ -392,11 +392,11 @@ interface PaymentGateway {
 }
 
 describe('PaymentService', () => {
-  let mockGateway: jest.Mocked<PaymentGateway>;
+  let mockGateway: Mocked<PaymentGateway>;
   let service: PaymentService;
 
   beforeEach(() => {
-    mockGateway = { charge: jest.fn() };
+    mockGateway = { charge: vi.fn() };
     service = new PaymentService(mockGateway);
   });
 

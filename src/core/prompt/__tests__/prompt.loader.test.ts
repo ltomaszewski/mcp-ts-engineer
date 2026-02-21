@@ -3,7 +3,6 @@
  * Validates version loading, current version resolution, and error handling.
  */
 
-import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import { PromptLoader } from "../prompt.loader.js";
 import type { PromptVersion, PromptRegistry } from "../prompt.types.js";
 import {

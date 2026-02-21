@@ -1,8 +1,8 @@
+import { vi } from "vitest";
 /**
  * Tests for finalize orchestrator capability.
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import { finalizeCapability } from "../finalize.capability.js";
 import type { FinalizeInput } from "../finalize.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -40,7 +40,7 @@ function createMockContext(
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn(async (capabilityId: string) => {
+    invokeCapability: vi.fn(async (capabilityId: string) => {
       return invokeCapabilityResults[capabilityId];
     }),
   };

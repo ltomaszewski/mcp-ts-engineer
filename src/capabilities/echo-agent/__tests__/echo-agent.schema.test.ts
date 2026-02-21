@@ -2,7 +2,6 @@
  * Tests for echo-agent Zod schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { EchoAgentInputSchema, EchoAgentOutputSchema } from "../echo-agent.schema.js";
 
 describe("EchoAgentInputSchema", () => {

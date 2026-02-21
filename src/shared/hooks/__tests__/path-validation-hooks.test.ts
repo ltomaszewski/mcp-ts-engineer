@@ -5,7 +5,6 @@
  * and blocks path duplications like apps/X/apps/X or packages/Y/packages/Y.
  */
 
-import { describe, it, expect } from '@jest/globals';
 import {
   createPathDuplicationBlockerHook,
   buildPathValidationHooks,

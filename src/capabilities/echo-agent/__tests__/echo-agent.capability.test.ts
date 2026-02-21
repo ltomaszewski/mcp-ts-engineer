@@ -2,7 +2,6 @@
  * Tests for echo-agent CapabilityDefinition.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { echoAgentCapability } from "../echo-agent.capability.js";
 import type { EchoAgentInput } from "../echo-agent.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";

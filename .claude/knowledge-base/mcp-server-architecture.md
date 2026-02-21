@@ -154,7 +154,7 @@ apps/mcp-server/
 ├── build/                                # Compiled output (gitignored)
 ├── package.json
 ├── tsconfig.json
-├── jest.config.js
+├── vitest.config.ts
 └── README.md
 ```
 
@@ -852,7 +852,6 @@ registry.registerCapability(myCapability); // Add this
 
 ```typescript
 // __tests__/my-capability.capability.test.ts
-import { describe, it, expect } from '@jest/globals';
 import { myCapability } from '../my-capability.capability.js';
 
 describe('myCapability', () => {

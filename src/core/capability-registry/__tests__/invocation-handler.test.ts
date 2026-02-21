@@ -1,8 +1,8 @@
+import { vi } from "vitest";
 /**
  * Tests for invocation-handler - model injection in MCP responses.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { handleCapabilityInvocation } from "../invocation-handler.js";
 import {
   generateSpecHash,
@@ -47,7 +47,7 @@ describe("invocation-handler - _model injection", () => {
     const logger = new Logger({ diskWriter });
 
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         model: "claude-3-5-sonnet-20241022",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
@@ -276,7 +276,7 @@ describe("invocation-handler - _model injection", () => {
     it("extracts model from costSummary.byModel map in error response", async () => {
       // This test verifies the implementation detail:
       // When there's an error after AI query, the model should be extracted from costSummary.byModel
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValueOnce({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValueOnce({
         content: "AI response",
         model: "opus",
         usage: { inputTokens: 200, outputTokens: 100, totalTokens: 300 },
@@ -370,7 +370,7 @@ describe("invocation-handler - _model injection", () => {
       );
 
       // Spy on writeSessionToReport to verify commitSha is passed
-      const writeSessionSpy = jest.spyOn(deps.costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(deps.costReportWriter, "writeSessionToReport");
 
       const response = await handleCapabilityInvocation(
         "test-commit-sha",
@@ -603,7 +603,7 @@ describe("invocation-handler - _model injection", () => {
 
   describe("Metadata Capture", () => {
     it("finalizeInvocation passes metadata to writeSessionToReport", async () => {
-      const writeSessionSpy = jest.spyOn(deps.costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(deps.costReportWriter, "writeSessionToReport");
 
       const response = await handleCapabilityInvocation(
         "test-model-injection",
@@ -628,7 +628,7 @@ describe("invocation-handler - _model injection", () => {
     });
 
     it("buildErrorResponse writes error session to cost report", async () => {
-      const writeSessionSpy = jest.spyOn(deps.costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(deps.costReportWriter, "writeSessionToReport");
 
       // Create capability that throws error
       const errorCapability: CapabilityDefinition = {
@@ -683,7 +683,7 @@ describe("invocation-handler - _model injection", () => {
 
     it("error session writing is non-fatal - does not throw if writer fails", async () => {
       // Mock writeSessionToReport to throw
-      jest.spyOn(deps.costReportWriter, "writeSessionToReport").mockRejectedValueOnce(
+      vi.spyOn(deps.costReportWriter, "writeSessionToReport").mockRejectedValueOnce(
         new Error("Write failed")
       );
 
@@ -733,10 +733,10 @@ describe("invocation-handler - _model injection", () => {
     });
 
     it("buildErrorResponse does not write cost report when totalCostUsd is 0", async () => {
-      const writeSessionSpy = jest.spyOn(deps.costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(deps.costReportWriter, "writeSessionToReport");
 
       // Mock cost tracker to return zero costs
-      jest.spyOn(deps.costTracker, "getSessionSummary").mockReturnValue({
+      vi.spyOn(deps.costTracker, "getSessionSummary").mockReturnValue({
         byModel: {},
         totalInputTokens: 0,
         totalOutputTokens: 0,
@@ -793,7 +793,7 @@ describe("invocation-handler - _model injection", () => {
   describe("Cache Metrics Extraction (AC-2, AC-10)", () => {
     it("buildCostEntry includes cache tokens when present (AC-2)", async () => {
       // Mock AI provider to return cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response with cache",
         model: "claude-3-5-sonnet-20241022",
         usage: {
@@ -850,7 +850,7 @@ describe("invocation-handler - _model injection", () => {
 
     it("buildCostEntry omits cache tokens when undefined (AC-2, AC-10)", async () => {
       // Mock AI provider WITHOUT cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response without cache",
         model: "claude-3-5-sonnet-20241022",
         usage: {

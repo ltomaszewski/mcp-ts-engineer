@@ -2,7 +2,6 @@
  * Tests for todo-code-writer helper functions.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   parseXmlBlock,
   parseJsonSafe,

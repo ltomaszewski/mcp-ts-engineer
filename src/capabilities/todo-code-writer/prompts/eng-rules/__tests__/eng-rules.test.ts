@@ -3,7 +3,6 @@
  * Verifies AC-1.1 through AC-1.7 and skill-loading module.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   RACE_CONDITIONS_RULES,
   TESTING_REQUIREMENTS_RULES,

@@ -2,7 +2,6 @@
  * Tests for readme prompt v1.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { readmePromptV1 } from "../prompts/readme.v1.js";
 import { readmePrompts, README_CURRENT_VERSION } from "../prompts/index.js";
 

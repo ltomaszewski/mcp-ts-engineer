@@ -2,7 +2,6 @@
  * Tests for framework error classes.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   FrameworkError,
   AIProviderError,

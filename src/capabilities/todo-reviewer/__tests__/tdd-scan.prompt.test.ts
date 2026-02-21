@@ -2,7 +2,6 @@
  * Tests for TDD scan prompt builder.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { v1 } from "../prompts/tdd-scan.v1.js";
 import type { ReviewSummary } from "../todo-reviewer.schema.js";
 

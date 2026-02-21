@@ -1,9 +1,9 @@
+import { vi } from "vitest";
 /**
  * Shared test fixtures and factory helpers for todo-reviewer tests.
  * @internal Test utility only
  */
 
-import { jest } from "@jest/globals";
 import type { ReviewSummary, TddSummary, CommitResult, TddScanStepResult, TddFixStepResult } from "../todo-reviewer.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
 import type { CapabilityContext } from "../../../core/capability-registry/capability-registry.types.js";
@@ -44,7 +44,7 @@ export function createMockContext(
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
     ...overrides,
   };
 }

@@ -3,7 +3,6 @@
  * based on detected technologies.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { phaseEngPromptV2 } from "../phase-eng.v2.js";
 import type { PhasePlan } from "../../todo-code-writer.schema.js";
 

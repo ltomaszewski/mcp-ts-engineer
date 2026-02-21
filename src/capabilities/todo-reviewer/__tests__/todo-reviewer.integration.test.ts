@@ -1,9 +1,9 @@
+import { vi, type Mock } from "vitest";
 /**
  * Integration tests for todo-reviewer capability.
  * Tests full invocation flow through CapabilityRegistry.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import { CapabilityRegistry } from "../../../core/capability-registry/index.js";
 import { SessionManager } from "../../../core/session/session.manager.js";
 import { CostTracker } from "../../../core/cost/cost.tracker.js";
@@ -50,7 +50,7 @@ describe("todo-reviewer integration tests", () => {
     logger = new Logger({ diskWriter });
 
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response text",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.05,
@@ -195,11 +195,11 @@ describe("todo-reviewer integration tests", () => {
   describe("MCP tool visibility", () => {
     it("should only expose todo_reviewer as MCP tool, not internal sub-capabilities", () => {
       interface MockServer {
-        registerTool: jest.Mock;
+        registerTool: Mock;
       }
 
       const mockServer: MockServer = {
-        registerTool: jest.fn(),
+        registerTool: vi.fn(),
       };
 
       // Bind registered capabilities to mock MCP server

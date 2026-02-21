@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Integration tests for cost report writing in error paths and shutdown scenarios.
  * Validates that cost reports are correctly written to disk when:
@@ -6,7 +7,6 @@
  * 3. Error path reports include child session costs
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFile, access, readdir } from "fs/promises";
@@ -51,7 +51,7 @@ describe("Cost Report Integration - Error Path & Shutdown", () => {
     logger = new Logger({ diskWriter });
 
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response from processResult error test",
         model: "claude-3-5-sonnet-20241022",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
@@ -366,7 +366,7 @@ describe("Cost Report Integration - Error Path & Shutdown", () => {
   describe("Cache Metrics End-to-End Propagation (AC-14)", () => {
     it("propagates cache metrics from AIQueryResult through CostTracker to cost reports", async () => {
       // Mock AI provider to return cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response with cache metrics",
         model: "claude-3-5-sonnet-20241022",
         usage: {

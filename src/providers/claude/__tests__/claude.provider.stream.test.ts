@@ -2,7 +2,6 @@
  * Tests for ClaudeProvider.stream() method.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { ClaudeProvider } from "../claude.provider.js";
 import {
   textBlock,

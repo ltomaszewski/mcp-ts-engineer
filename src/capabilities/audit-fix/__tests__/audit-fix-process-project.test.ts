@@ -1,9 +1,9 @@
+import { vi, type MockInstance } from "vitest";
 /**
  * Integration tests for lint phase execution in processProject orchestration.
  * Tests that lint scan and lint fix steps are invoked in the correct order.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { processProject } from "../audit-fix-process-project.js";
 import type { CapabilityContext } from "../../../core/capability-registry/capability-registry.types.js";
 import type {
@@ -15,10 +15,10 @@ import type {
 
 describe("Process Project - Lint Integration", () => {
   let mockContext: CapabilityContext;
-  let invokeSpy: jest.MockedFunction<typeof mockContext.invokeCapability>;
+  let invokeSpy: MockInstance<typeof mockContext.invokeCapability>;
 
   beforeEach(() => {
-    invokeSpy = jest.fn<typeof mockContext.invokeCapability>();
+    invokeSpy = vi.fn<typeof mockContext.invokeCapability>();
     mockContext = {
       invokeCapability: invokeSpy,
     } as unknown as CapabilityContext;

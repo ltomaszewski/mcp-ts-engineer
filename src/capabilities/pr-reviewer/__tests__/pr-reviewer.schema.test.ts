@@ -3,7 +3,6 @@
  * Validates input/output schemas for the pr_reviewer capability.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   PrReviewerInputSchema,
   PrReviewerOutputSchema,

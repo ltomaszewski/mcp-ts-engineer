@@ -1,10 +1,9 @@
+import { vi, type Mock } from "vitest";
 /**
  * Tests for audit-fix helper functions (AC-9).
  * Tests discoverProjects() logic and fallback value verification.
  */
 
-import { describe, it, expect } from "@jest/globals";
-import { jest } from "@jest/globals";
 import {
   discoverProjects,
   AUDIT_STEP_RESULT_FALLBACK,
@@ -163,7 +162,7 @@ describe("invokeTestStep", () => {
       getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
       promptVersion: "v1",
       providerName: "ClaudeProvider",
-      invokeCapability: jest.fn<() => Promise<unknown>>(),
+      invokeCapability: vi.fn<() => Promise<unknown>>(),
     };
   }
 
@@ -177,7 +176,7 @@ describe("invokeTestStep", () => {
       workspaces_tested: ["apps/test"],
     };
 
-    (mockContext.invokeCapability as jest.Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
+    (mockContext.invokeCapability as Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
 
     const result = await invokeTestStep(
       "apps/test",
@@ -204,7 +203,7 @@ describe("invokeTestStep", () => {
       workspaces_tested: ["apps/test1", "apps/test2"],
     };
 
-    (mockContext.invokeCapability as jest.Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
+    (mockContext.invokeCapability as Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
 
     const result = await invokeTestStep(
       ".",
@@ -231,7 +230,7 @@ describe("invokeTestStep", () => {
       workspaces_tested: ["packages/utils"],
     };
 
-    (mockContext.invokeCapability as jest.Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
+    (mockContext.invokeCapability as Mock<() => Promise<unknown>>).mockResolvedValue(mockResult);
 
     const result = await invokeTestStep(
       "packages/utils",

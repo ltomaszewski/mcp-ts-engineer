@@ -1,18 +1,18 @@
+import { vi, type MockInstance } from "vitest";
 /**
  * Tests for structured Logger.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from "@jest/globals";
 import { Logger, createLogger } from "../logger.js";
 
 describe("Logger", () => {
   let logger: Logger;
-  let mockStderr: jest.SpiedFunction<typeof console.error>;
+  let mockStderr: MockInstance<typeof console.error>;
 
   beforeEach(() => {
     logger = createLogger();
     // Spy on console.error to capture stderr output
-    mockStderr = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockStderr = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(async () => {

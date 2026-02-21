@@ -77,14 +77,16 @@ packages/mcp-ts-engineer/
 │   │   └── index.ts                     # Capability registration hub
 │   ├── server.ts                        # MCP server factory
 │   └── index.ts                         # Entry point (minimal)
-├── tests/                               # Additional tests
-│   ├── setup.ts                         # Jest ESM setup
-│   └── unit/                            # Unit tests
-│       ├── config.test.ts               # Config tests
-│       └── server.test.ts               # Server factory tests
-├── jest.config.js                       # Jest ESM configuration
+├── __tests__/                           # Root-level tests
+│   ├── bootstrap-scripts.test.ts        # Bootstrap script tests
+│   ├── config.test.ts                   # Config tests
+│   ├── postinstall.test.ts              # Postinstall tests
+│   └── server.test.ts                   # Server factory tests
+├── vitest.config.ts                     # Vitest configuration
+├── vitest.setup.ts                      # Vitest setup file
+├── tsconfig.json                        # TypeScript config (IDE)
+├── tsconfig.build.json                  # TypeScript config (build)
 ├── package.json                         # ESM package config
-├── tsconfig.json                        # TypeScript config
 ├── README.md                            # User documentation
 └── CLAUDE.md                            # This file (dev instructions)
 ```
@@ -151,7 +153,7 @@ interface CapabilityDefinition {
 - **MCP SDK**: `@modelcontextprotocol/sdk` for MCP server
 - **Agent SDK**: `@anthropic-ai/claude-agent-sdk` for Claude agents
 - **Validation**: Zod for input schema validation
-- **Testing**: Jest with ESM support
+- **Testing**: Vitest
 - **TypeScript**: Strict mode with Node16 module resolution
 
 ## Development Commands
@@ -221,10 +223,10 @@ Follow monorepo standards from root `CLAUDE.md`:
 
 ## Testing
 
-- **Unit tests**: Jest with ES modules
+- **Unit tests**: Vitest
 - **Coverage target**: 80% lines/statements/functions
-- **Test location**: `__tests__/` directories next to source files, plus `tests/` at root
-- **ESM Note**: Branch coverage threshold lowered due to ESM mocking limitations
+- **Test location**: `__tests__/` directories (co-located next to source, plus root-level)
+- **Note**: Branch coverage threshold lowered to 25% due to mocking limitations
 
 ### Running Tests
 
@@ -238,8 +240,8 @@ npm run test:coverage     # With coverage report
 
 | Module | Test Location | Coverage |
 |--------|--------------|----------|
-| Config constants | `tests/unit/config.test.ts` | All constants including PROVIDER_CONFIG |
-| Server factory | `tests/unit/server.test.ts` | Server initialization |
+| Config constants | `__tests__/config.test.ts` | All constants including PROVIDER_CONFIG |
+| Server factory | `__tests__/server.test.ts` | Server initialization |
 | Logger | `src/core/logger/__tests__/` | Logger, disk-writer, redact |
 | AI provider | `src/core/ai-provider/__tests__/` | Provider factory |
 | Session manager | `src/core/session/__tests__/` | Session lifecycle |

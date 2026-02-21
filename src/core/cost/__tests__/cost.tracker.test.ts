@@ -2,7 +2,6 @@
  * Tests for CostTracker - cost recording and aggregation.
  */
 
-import { describe, it, expect, beforeEach } from "@jest/globals";
 import { CostTracker } from "../cost.tracker.js";
 import type { CostEntry } from "../cost.types.js";
 

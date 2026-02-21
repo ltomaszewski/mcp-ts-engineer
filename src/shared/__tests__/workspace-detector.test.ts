@@ -3,7 +3,6 @@
  * Verifies detection still works after moving from capability-specific location.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   detectWorkspace,
   detectWorkspaceTechnologies,

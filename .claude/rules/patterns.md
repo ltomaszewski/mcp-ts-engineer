@@ -169,13 +169,13 @@ type SessionInput = z.infer<typeof sessionSchema>
 ```typescript
 describe('SessionService', () => {
   let service: SessionService
-  let mockStore: jest.Mocked<SessionStore>
+  let mockStore: Mocked<SessionStore>
 
   beforeEach(() => {
     mockStore = {
-      get: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
+      get: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
     }
     service = new SessionService(mockStore, mockLogger)
   })

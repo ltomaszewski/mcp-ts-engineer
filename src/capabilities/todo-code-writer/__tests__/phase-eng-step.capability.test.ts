@@ -1,20 +1,22 @@
+import { vi } from "vitest";
 /**
  * Tests for phase-eng-step sub-capability definition.
  * Updated for v2: workspace detection, skill loading, prompt version v2.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 
 // ---------------------------------------------------------------------------
 // Mock fs before importing (workspace-detector uses fs.readFileSync)
 // ---------------------------------------------------------------------------
-const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
+const { mockReadFileSync } = vi.hoisted(() => ({
+  mockReadFileSync: vi.fn<(path: string, encoding: string) => string>(),
+}));
 
-jest.unstable_mockModule("fs", () => ({
+vi.mock("fs", () => ({
   readFileSync: mockReadFileSync,
-  writeFileSync: jest.fn(),
-  existsSync: jest.fn().mockReturnValue(false),
-  promises: { readFile: jest.fn(), writeFile: jest.fn() },
+  writeFileSync: vi.fn(),
+  existsSync: vi.fn().mockReturnValue(false),
+  promises: { readFile: vi.fn(), writeFile: vi.fn() },
 }));
 
 // Dynamic import after mock setup (required for ESM mocking)
@@ -33,7 +35,7 @@ interface MockCapabilityContext {
   getSessionCost: () => Record<string, number>;
   promptVersion: string;
   providerName: string;
-  invokeCapability: ReturnType<typeof jest.fn>;
+  invokeCapability: ReturnType<typeof vi.fn>;
 }
 
 function createMockContext(): MockCapabilityContext {
@@ -66,7 +68,7 @@ function createMockContext(): MockCapabilityContext {
     }),
     promptVersion: "v2",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn(),
+    invokeCapability: vi.fn(),
   };
 }
 
@@ -113,7 +115,7 @@ function mockPackageJson(content: Record<string, unknown>): void {
 }
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   // Default: NestJS workspace
   mockPackageJson({
     dependencies: { "@nestjs/core": "11.0.0", "class-validator": "0.14.0" },

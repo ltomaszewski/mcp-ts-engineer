@@ -2,7 +2,6 @@
  * Tests for cost report Zod schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   DailyCostReportSchema,
   SessionCostEntrySchema,

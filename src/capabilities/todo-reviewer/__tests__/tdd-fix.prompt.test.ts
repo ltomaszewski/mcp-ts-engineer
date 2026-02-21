@@ -2,7 +2,6 @@
  * Tests for TDD fix prompt builder.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { v1 } from "../prompts/tdd-fix.v1.js";
 import type { TddScanStepResult } from "../todo-reviewer.schema.js";
 

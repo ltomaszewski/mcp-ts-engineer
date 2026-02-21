@@ -1,9 +1,9 @@
+import { vi } from "vitest";
 /**
  * Unit tests for path fix step capability.
  * Tests capability metadata, prompt preparation, and result processing.
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import { pathFixStepCapability } from "../path-fix-step.capability.js";
 import type {
   PathFixStepInput,
@@ -39,7 +39,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<(capabilityName: string, input: unknown) => Promise<unknown>>().mockResolvedValue({}),
+    invokeCapability: vi.fn<(capabilityName: string, input: unknown) => Promise<unknown>>().mockResolvedValue({}),
   };
 }
 

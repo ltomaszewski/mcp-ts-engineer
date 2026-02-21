@@ -2,7 +2,6 @@
  * Unit tests for PathFixStepInput and PathFixStepOutput schemas.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   PathFixStepInputSchema,
   PathFixStepOutputSchema,

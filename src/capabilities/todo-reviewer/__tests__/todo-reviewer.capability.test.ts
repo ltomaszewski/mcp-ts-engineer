@@ -1,8 +1,8 @@
+import { vi, type Mock } from "vitest";
 /**
  * Tests for todo-reviewer orchestrator CapabilityDefinition.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import { todoReviewerCapability, ValidationError } from "../todo-reviewer.capability.js";
 import type { TodoReviewerInput } from "../todo-reviewer.schema.js";
 import type { CapabilityContext } from "../../../core/capability-registry/capability-registry.types.js";
@@ -140,7 +140,7 @@ describe("todoReviewerCapability", () => {
 
   describe("processResult (single iteration)", () => {
     let context: CapabilityContext;
-    let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let mockInvoke: Mock<CapabilityContext["invokeCapability"]>;
     let tempDir: string;
 
     beforeEach(async () => {
@@ -157,7 +157,7 @@ describe("todoReviewerCapability", () => {
       );
 
       context = createMockContext();
-      mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
+      mockInvoke = vi.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
     });
 
@@ -318,7 +318,7 @@ describe("todoReviewerCapability", () => {
 
   describe("processResult (multiple iterations)", () => {
     let context: CapabilityContext;
-    let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let mockInvoke: Mock<CapabilityContext["invokeCapability"]>;
     let tempDir: string;
 
     beforeEach(async () => {
@@ -342,7 +342,7 @@ describe("todoReviewerCapability", () => {
       });
 
       context = createMockContext();
-      mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
+      mockInvoke = vi.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
     });
 
@@ -502,9 +502,9 @@ describe("todoReviewerCapability", () => {
 
   describe("processResult (path validation integration)", () => {
     let context: CapabilityContext;
-    let mockInvoke: jest.Mock<CapabilityContext["invokeCapability"]>;
+    let mockInvoke: Mock<CapabilityContext["invokeCapability"]>;
     let tempDir: string;
-    let warnSpy: jest.Mock;
+    let warnSpy: Mock;
 
     beforeEach(async () => {
       const { mkdtempSync } = await import("fs");
@@ -516,9 +516,9 @@ describe("todoReviewerCapability", () => {
 
       // Setup mock context with spy on logger.warn
       context = createMockContext();
-      mockInvoke = jest.fn<CapabilityContext["invokeCapability"]>();
+      mockInvoke = vi.fn<CapabilityContext["invokeCapability"]>();
       context.invokeCapability = mockInvoke;
-      warnSpy = jest.fn();
+      warnSpy = vi.fn();
       context.logger.warn = warnSpy;
     });
 

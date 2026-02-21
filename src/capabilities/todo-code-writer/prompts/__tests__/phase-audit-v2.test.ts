@@ -2,7 +2,6 @@
  * Tests for phase-audit.v2.ts - skill loading in audit prompts.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { phaseAuditPromptV2 } from "../phase-audit.v2.js";
 
 describe("phaseAuditPromptV2", () => {

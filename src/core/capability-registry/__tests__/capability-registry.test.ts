@@ -1,9 +1,9 @@
+import { vi, type Mock, type MockInstance } from "vitest";
 /**
  * Tests for CapabilityRegistry - Phase 5a.
  * Tests capability registration, context injection, AIQueryRequest validation, and MCP binding.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import path from "path";
 import { fileURLToPath } from "url";
 import { CapabilityRegistry } from "../capability-registry.js";
@@ -42,7 +42,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     logger = new Logger({ diskWriter }); // Pass diskWriter for spy tests
 
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.001,
@@ -68,7 +68,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     mockServer = {
-      registerTool: jest.fn(),
+      registerTool: vi.fn(),
     } as unknown as McpServer;
   });
 
@@ -243,7 +243,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0]?.text).toContain("ValidationError");
-      expect(result.content[0]?.text).toContain("String must contain at least 1 character");
+      expect(result.content[0]?.text).toContain("Too small: expected string to have >=1 characters");
     });
 
     it("rejects invocation when server is shutting down", async () => {
@@ -292,7 +292,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("creates CapabilityContext with all required fields", async () => {
-      const preparePromptInputSpy = jest.fn(testCapability.preparePromptInput);
+      const preparePromptInputSpy = vi.fn(testCapability.preparePromptInput);
       testCapability.preparePromptInput = preparePromptInputSpy;
 
       // Don't re-register, testCapability is already registered in beforeEach
@@ -563,8 +563,8 @@ describe("CapabilityRegistry - Phase 5a", () => {
   describe("error boundaries", () => {
     it("continues operation when costReportWriter fails", async () => {
       const failingWriter = {
-        writeSessionToReport: jest.fn<CostReportWriter["writeSessionToReport"]>().mockRejectedValue(new Error("Disk full")),
-        getDailyTotalCost: jest.fn<CostReportWriter["getDailyTotalCost"]>().mockResolvedValue(0),
+        writeSessionToReport: vi.fn<CostReportWriter["writeSessionToReport"]>().mockRejectedValue(new Error("Disk full")),
+        getDailyTotalCost: vi.fn<CostReportWriter["getDailyTotalCost"]>().mockResolvedValue(0),
       } as unknown as CostReportWriter;
 
       const registryWithFailingWriter = new CapabilityRegistry({
@@ -610,7 +610,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
 
   describe("session log file lifecycle", () => {
     it("opens session log file when handling capability invocation", async () => {
-      const openSessionSpy = jest.spyOn(diskWriter, "openSession");
+      const openSessionSpy = vi.spyOn(diskWriter, "openSession");
 
       const testCap: CapabilityDefinition = {
         id: "test-session-log",
@@ -640,7 +640,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("closes session log file after successful invocation", async () => {
-      const closeSessionSpy = jest.spyOn(diskWriter, "closeSession");
+      const closeSessionSpy = vi.spyOn(diskWriter, "closeSession");
 
       const testCap: CapabilityDefinition = {
         id: "test-session-close",
@@ -670,7 +670,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("closes session log file after failed invocation", async () => {
-      const closeSessionSpy = jest.spyOn(diskWriter, "closeSession");
+      const closeSessionSpy = vi.spyOn(diskWriter, "closeSession");
 
       // Create a capability that throws an error during processResult
       const failingCap: CapabilityDefinition = {
@@ -718,7 +718,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("merges pending costs and writes reports", async () => {
-      const writeSessionSpy = jest.spyOn(costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(costReportWriter, "writeSessionToReport");
 
       const session = sessionManager.createSession("test-cap");
       const invocationId = sessionManager.startInvocation(session.id, "test-cap");
@@ -741,7 +741,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("passes child cost entries when writing reports", async () => {
-      const writeSessionSpy = jest.spyOn(costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(costReportWriter, "writeSessionToReport");
 
       const session = sessionManager.createSession("parent-cap");
       const invocationId = sessionManager.startInvocation(session.id, "parent-cap");
@@ -776,7 +776,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("closes disk writer", async () => {
-      const closeAllSpy = jest.spyOn(diskWriter, "closeAll");
+      const closeAllSpy = vi.spyOn(diskWriter, "closeAll");
 
       await registry.gracefulShutdown();
 
@@ -784,7 +784,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("writes cost reports for completed sessions with costs", async () => {
-      const writeSessionSpy = jest.spyOn(costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(costReportWriter, "writeSessionToReport");
 
       // Create 1 active session with costs
       const activeSession = sessionManager.createSession("active-cap");
@@ -826,7 +826,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
     });
 
     it("skips sessions with zero costs", async () => {
-      const writeSessionSpy = jest.spyOn(costReportWriter, "writeSessionToReport");
+      const writeSessionSpy = vi.spyOn(costReportWriter, "writeSessionToReport");
 
       // Create completed session with zero costs
       const sessionNoCosts = sessionManager.createSession("no-costs-cap");
@@ -855,7 +855,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
 
   describe("invocation lifecycle logging", () => {
     let testCapability: CapabilityDefinition;
-    let writeSpy: jest.SpiedFunction<DiskWriter["write"]>;
+    let writeSpy: MockInstance<DiskWriter["write"]>;
 
     beforeEach(() => {
       testCapability = {
@@ -898,7 +898,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
 
       registry.registerCapability(testCapability);
 
-      writeSpy = jest.spyOn(diskWriter, "write");
+      writeSpy = vi.spyOn(diskWriter, "write");
     });
 
     it("logs invocation start with sessionId and capability name", async () => {
@@ -1041,7 +1041,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
 
     it("does not log execution trace when trace is missing", async () => {
       // Mock AI provider without trace
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.001,
@@ -1162,7 +1162,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
       };
 
       // Clear previous calls
-      (mockServer.registerTool as jest.Mock).mockClear();
+      (mockServer.registerTool as Mock).mockClear();
 
       registry.registerCapability(internalTool);
       registry.bindToMcpServer(mockServer);
@@ -1219,7 +1219,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
       };
 
       // Clear previous calls
-      (mockServer.registerTool as jest.Mock).mockClear();
+      (mockServer.registerTool as Mock).mockClear();
 
       registry.registerCapability(publicTool);
       registry.registerCapability(internalTool);
@@ -1266,7 +1266,7 @@ describe("CapabilityRegistry - Phase 5a", () => {
       };
 
       // Clear previous calls
-      (mockServer.registerTool as jest.Mock).mockClear();
+      (mockServer.registerTool as Mock).mockClear();
 
       registry.registerCapability(defaultVisibilityTool);
       registry.bindToMcpServer(mockServer);

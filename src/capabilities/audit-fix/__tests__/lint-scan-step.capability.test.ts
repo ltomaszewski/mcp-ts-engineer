@@ -3,7 +3,6 @@
  * Tests capability definition, metadata, and result processing.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { auditFixLintScanStepCapability } from "../lint-scan-step.capability.js";
 import type { LintScanResult } from "../audit-fix.schema.js";
 

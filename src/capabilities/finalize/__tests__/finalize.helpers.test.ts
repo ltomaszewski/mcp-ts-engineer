@@ -2,7 +2,6 @@
  * Tests for finalize helper functions.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import {
   parseXmlBlock,
   parseJsonSafe,

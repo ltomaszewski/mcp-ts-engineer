@@ -1,11 +1,10 @@
+import { vi } from "vitest";
 /**
  * Tests for commit-step sub-capability definition (AC-7).
  * Tests preparePromptInput builds commit input, processResult handles
  * structured output and XML fallback, returns fallback on failure.
  */
 
-import { describe, it, expect } from "@jest/globals";
-import { jest } from "@jest/globals";
 import { auditFixCommitStepCapability } from "../commit-step.capability.js";
 import type { CommitStepInput } from "../audit-fix.schema.js";
 import type { AIQueryResult } from "../../../core/ai-provider/ai-provider.types.js";
@@ -41,7 +40,7 @@ function createMockContext(): CapabilityContext {
     getSessionCost: () => ({ totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, totalTurns: 0 }),
     promptVersion: "v1",
     providerName: "ClaudeProvider",
-    invokeCapability: jest.fn<CapabilityContext["invokeCapability"]>(),
+    invokeCapability: vi.fn<CapabilityContext["invokeCapability"]>(),
   };
 }
 

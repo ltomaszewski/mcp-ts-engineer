@@ -1,9 +1,9 @@
+import { vi, type Mock } from "vitest";
 /**
  * Unit tests for spec path orchestration.
  * Tests three-tier correction: deterministic → filesystem → AI.
  */
 
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { join } from "path";
 import { ValidationError } from "../../../errors.js";
 import type { CapabilityContext } from "../../../capability-registry/capability-registry.types.js";
@@ -12,15 +12,17 @@ import type { PathFixStepOutput } from "../spec-path.schema.js";
 // ---------------------------------------------------------------------------
 // Mock fs before importing (ESM mocking pattern)
 // ---------------------------------------------------------------------------
-const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
-const mockWriteFileSync = jest.fn<(path: string, data: string) => void>();
-const mockExistsSync = jest.fn<(path: string) => boolean>();
+const { mockReadFileSync, mockWriteFileSync, mockExistsSync } = vi.hoisted(() => ({
+  mockReadFileSync: vi.fn<(path: string, encoding: string) => string>(),
+  mockWriteFileSync: vi.fn<(path: string, data: string) => void>(),
+  mockExistsSync: vi.fn<(path: string) => boolean>(),
+}));
 
-jest.unstable_mockModule("fs", () => ({
+vi.mock("fs", () => ({
   readFileSync: mockReadFileSync,
   writeFileSync: mockWriteFileSync,
   existsSync: mockExistsSync,
-  promises: { readFile: jest.fn(), writeFile: jest.fn() },
+  promises: { readFile: vi.fn(), writeFile: vi.fn() },
 }));
 
 // Dynamic import after mock setup (required for ESM mocking)
@@ -31,19 +33,19 @@ const { validateAndCorrectSpecPaths } = await import(
 describe("validateAndCorrectSpecPaths", () => {
   let mockContext: CapabilityContext;
   let mockLogger: any;
-  let mockInvokeCapability: jest.Mock<(capabilityName: string, input: unknown) => Promise<unknown>>;
+  let mockInvokeCapability: Mock<(capabilityName: string, input: unknown) => Promise<unknown>>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     mockLogger = {
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      debug: jest.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
     };
 
-    mockInvokeCapability = jest.fn<(capabilityName: string, input: unknown) => Promise<unknown>>();
+    mockInvokeCapability = vi.fn<(capabilityName: string, input: unknown) => Promise<unknown>>();
 
     mockContext = {
       session: {

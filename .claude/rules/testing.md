@@ -91,7 +91,7 @@ describe('CostTracker', () => {
 
   afterEach(() => {
     // Clean up
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 })
 
@@ -106,9 +106,9 @@ let sharedTracker: CostTracker // Different tests modify this
 ### External Services
 
 ```typescript
-jest.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  default: jest.fn().mockImplementation(() => ({
-    messages: { create: jest.fn() },
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    messages: { create: vi.fn() },
   })),
 }))
 ```
@@ -117,12 +117,12 @@ jest.mock('@anthropic-ai/claude-agent-sdk', () => ({
 
 ```typescript
 beforeEach(() => {
-  jest.useFakeTimers()
-  jest.setSystemTime(new Date('2024-01-15T22:00:00Z'))
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2024-01-15T22:00:00Z'))
 })
 
 afterEach(() => {
-  jest.useRealTimers()
+  vi.useRealTimers()
 })
 ```
 

@@ -2,7 +2,6 @@
  * Tests for parseXmlBlock and parseJsonSafe helper functions.
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { parseXmlBlock, parseJsonSafe } from "../todo-reviewer.capability.js";
 import { TddSummarySchema } from "../todo-reviewer.schema.js";
 import type { TddSummary } from "../todo-reviewer.schema.js";

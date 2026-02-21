@@ -1,8 +1,8 @@
+import { vi } from "vitest";
 /**
  * Shared test helpers for CapabilityRegistry tests.
  */
 
-import { jest } from "@jest/globals";
 import path from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
@@ -42,7 +42,7 @@ export async function createTestContext(): Promise<TestContext> {
   const logger = new Logger({ diskWriter });
 
   const mockAIProvider: AIProvider = {
-    query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+    query: vi.fn<AIProvider["query"]>().mockResolvedValue({
       content: "AI response",
       usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
       costUsd: 0.001,
@@ -68,7 +68,7 @@ export async function createTestContext(): Promise<TestContext> {
   });
 
   const mockServer = {
-    registerTool: jest.fn(),
+    registerTool: vi.fn(),
   } as unknown as McpServer;
 
   return {

@@ -1,9 +1,9 @@
+import { vi } from "vitest";
 /**
  * Integration tests for cost propagation through invokeCapability().
  * Tests child-to-parent cost propagation across nested capability invocations.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import path from "path";
 import { fileURLToPath } from "url";
 import { CapabilityRegistry } from "../capability-registry.js";
@@ -39,7 +39,7 @@ describe("Cost Propagation Integration", () => {
     logger = new Logger({ diskWriter });
 
     mockAIProvider = {
-      query: jest.fn<AIProvider["query"]>().mockResolvedValue({
+      query: vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.01,
@@ -528,7 +528,7 @@ describe("Cost Propagation Integration", () => {
   describe("Model propagation from child responses", () => {
     it("propagates child model through MCP response", async () => {
       // Configure mockAIProvider to return haiku model
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.01,
@@ -618,7 +618,7 @@ describe("Cost Propagation Integration", () => {
 
     it("falls back to default model when child response omits _model", async () => {
       // Configure mockAIProvider to NOT return model field
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response",
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
         costUsd: 0.01,
@@ -942,7 +942,7 @@ describe("Cost Propagation Integration", () => {
     it("propagates cost before failure when child throws error after partial work", async () => {
       // Mock AI provider to track call count
       let callCount = 0;
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockImplementation(async () => {
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockImplementation(async () => {
         callCount++;
         return {
           content: "AI response",
@@ -1122,7 +1122,7 @@ describe("Cost Propagation Integration", () => {
   describe("Child cost with cache metrics and prompt version", () => {
     it("end-to-end child cost propagation with cache metrics and prompt version (AC-14)", async () => {
       // Configure mockAIProvider to return cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response with cache",
         usage: {
           inputTokens: 1500,
@@ -1291,7 +1291,7 @@ describe("Cost Propagation Integration", () => {
       // causing parent to see undefined _cache_read_input_tokens → totalTokensIn = inputTokens only.
 
       // Configure mockAIProvider to return cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response with cache",
         usage: {
           inputTokens: 2000,
@@ -1398,7 +1398,7 @@ describe("Cost Propagation Integration", () => {
 
     it("omits cache metrics in child session when zero or undefined (AC-10, AC-14)", async () => {
       // Configure mockAIProvider to return NO cache metrics
-      mockAIProvider.query = jest.fn<AIProvider["query"]>().mockResolvedValue({
+      mockAIProvider.query = vi.fn<AIProvider["query"]>().mockResolvedValue({
         content: "AI response without cache",
         usage: {
           inputTokens: 1000,

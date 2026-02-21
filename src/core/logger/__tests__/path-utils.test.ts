@@ -1,4 +1,3 @@
-import { describe, it, expect } from '@jest/globals';
 import * as os from 'os';
 import * as path from 'path';
 import { resolveLogPath } from '../path-utils.js';

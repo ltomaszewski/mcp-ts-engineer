@@ -2,7 +2,6 @@
  * Tests for tdd-validate-step sub-capability definition (Session 2).
  */
 
-import { describe, it, expect } from "@jest/globals";
 import { tddValidateStepCapability } from "../tdd-validate-step.capability.js";
 import type { TddValidateStepInput } from "../todo-reviewer.schema.js";
 import {
