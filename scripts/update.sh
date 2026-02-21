@@ -23,7 +23,7 @@ echo "Submodule:     $SUBMODULE_REL"
 cd "$MONOREPO_ROOT"
 
 # --- Ensure directories exist ---
-mkdir -p .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks
+mkdir -p .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks .claude/knowledge-base .claude/agents
 
 # --- Update command symlinks ---
 echo ""
@@ -68,6 +68,24 @@ for skill_dir in "$SUBMODULE_DIR/.claude/skills"/*/; do
   rel_src="$(relpath "$skill_dir" ".claude/skills")"
   ln -s "$rel_src" "$dest"
   echo "  NEW: .claude/skills/$skill_name"
+done
+
+# --- Update knowledge-base symlinks ---
+echo ""
+echo "--- Updating knowledge-base symlinks ---"
+for kb_file in "$SUBMODULE_DIR/.claude/knowledge-base"/*.md; do
+  [[ -f "$kb_file" ]] || continue
+  kb_name="$(basename "$kb_file")"
+  symlink_file "$kb_file" ".claude/knowledge-base/$kb_name"
+done
+
+# --- Update agent symlinks ---
+echo ""
+echo "--- Updating agent symlinks ---"
+for agent_file in "$SUBMODULE_DIR/.claude/agents"/*.md; do
+  [[ -f "$agent_file" ]] || continue
+  agent_name="$(basename "$agent_file")"
+  symlink_file "$agent_file" ".claude/agents/$agent_name"
 done
 
 # --- Re-check setup-worktree.sh symlink ---

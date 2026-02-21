@@ -205,6 +205,14 @@ Use `/issue-capture` to create GitHub issues from conversation context.
 
 ---
 
+## Knowledge Base
+
+Architecture guides and templates available in `.claude/knowledge-base/`:
+
+{{KNOWLEDGE_BASE_LISTING}}
+
+---
+
 ## Maintenance
 
 When adding new apps or packages:

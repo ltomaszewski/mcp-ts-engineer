@@ -116,7 +116,7 @@ scaffold_file "biome.json" "$TEMPLATE_DIR/biome.json.template"
 echo ""
 echo "--- Creating directories ---"
 
-for dir in apps packages .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks scripts docs; do
+for dir in apps packages .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks .claude/knowledge-base .claude/agents scripts docs; do
   mkdir -p "$dir"
 done
 echo "  Directories ready"
@@ -320,6 +320,23 @@ else
     CODEMAPS_TABLE+="| $proj | \`.claude/codemaps/$proj.md\` |"$'\n'
   done
 
+  # Build knowledge base listing
+  KB_LISTING=""
+  for kb_file in "$SUBMODULE_DIR/.claude/knowledge-base"/*.md; do
+    [[ -f "$kb_file" ]] || continue
+    kb_name="$(basename "$kb_file")"
+    [[ "$kb_name" == "README.md" ]] && continue
+    # Extract first heading as description
+    kb_title="$(head -5 "$kb_file" | grep '^# ' | head -1 | sed 's/^# //')"
+    [[ -z "$kb_title" ]] && kb_title="$kb_name"
+    KB_LISTING+="| [$kb_title](.claude/knowledge-base/$kb_name) | \`.claude/knowledge-base/$kb_name\` |"$'\n'
+  done
+  if [[ -n "$KB_LISTING" ]]; then
+    KB_LISTING="| Guide | Path |"$'\n'"|-------|------|"$'\n'"$KB_LISTING"
+  else
+    KB_LISTING="_No knowledge base guides available._"$'\n'
+  fi
+
   # Read template and replace placeholders
   TEMPLATE="$(cat "$TEMPLATE_DIR/CLAUDE.md.template")"
   TEMPLATE="${TEMPLATE//\{\{PROJECT_NAME\}\}/$PASCAL_NAME}"
@@ -333,6 +350,7 @@ else
   export _PACKAGES_SECTION="$PACKAGES_SECTION"
   export _SKILLS_LISTING="$SKILLS_LISTING"
   export _CODEMAPS_TABLE="$CODEMAPS_TABLE"
+  export _KB_LISTING="$KB_LISTING"
 
   python3 -c "
 import os
@@ -343,13 +361,14 @@ replacements = {
     '{{PACKAGES_SECTION}}': os.environ.get('_PACKAGES_SECTION', ''),
     '{{SKILLS_LISTING}}': os.environ.get('_SKILLS_LISTING', ''),
     '{{CODEMAPS_TABLE}}': os.environ.get('_CODEMAPS_TABLE', ''),
+    '{{KNOWLEDGE_BASE_LISTING}}': os.environ.get('_KB_LISTING', ''),
 }
 for k, v in replacements.items():
     content = content.replace(k, v)
 open('CLAUDE.md', 'w').write(content)
 "
 
-  unset _DIR_STRUCTURE _PROJECT_COMMANDS _PACKAGES_SECTION _SKILLS_LISTING _CODEMAPS_TABLE
+  unset _DIR_STRUCTURE _PROJECT_COMMANDS _PACKAGES_SECTION _SKILLS_LISTING _CODEMAPS_TABLE _KB_LISTING
   echo "  Created: CLAUDE.md"
 fi
 
@@ -423,6 +442,26 @@ for skill_dir in "$SUBMODULE_DIR/.claude/skills"/*/; do
   SKILLS_LINKED=$((SKILLS_LINKED + 1))
 done
 echo "  Skills: $SKILLS_LINKED symlinked"
+
+# Knowledge base
+KB_LINKED=0
+for kb_file in "$SUBMODULE_DIR/.claude/knowledge-base"/*.md; do
+  [[ -f "$kb_file" ]] || continue
+  kb_name="$(basename "$kb_file")"
+  symlink_file "$kb_file" ".claude/knowledge-base/$kb_name"
+  KB_LINKED=$((KB_LINKED + 1))
+done
+echo "  Knowledge base: $KB_LINKED symlinked"
+
+# Agents
+AGENTS_LINKED=0
+for agent_file in "$SUBMODULE_DIR/.claude/agents"/*.md; do
+  [[ -f "$agent_file" ]] || continue
+  agent_name="$(basename "$agent_file")"
+  symlink_file "$agent_file" ".claude/agents/$agent_name"
+  AGENTS_LINKED=$((AGENTS_LINKED + 1))
+done
+echo "  Agents: $AGENTS_LINKED symlinked"
 
 # =============================================================================
 # Step 18: Generate codemaps
@@ -592,7 +631,7 @@ echo ""
 echo "  Generated:"
 echo "    - package.json, turbo.json, tsconfig.json, vitest.config.ts, biome.json, .gitignore"
 echo "    - .mcp.json, ts-engineer.config.json, CLAUDE.md"
-echo "    - .claude/ symlinks (commands, skills, rules, contexts)"
+echo "    - .claude/ symlinks (commands, skills, rules, contexts, knowledge-base, agents)"
 echo "    - .claude/codemaps/ (per project)"
 echo "    - docs/specs/ (per project)"
 echo "    - scripts/setup-worktree.sh (symlink)"
