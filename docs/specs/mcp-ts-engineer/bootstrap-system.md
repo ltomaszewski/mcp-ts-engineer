@@ -178,12 +178,16 @@ Standard ignores: node_modules, dist, build, .env, .turbo, coverage, .DS_Store, 
  9. Create docs/specs/{project}/todo/ per discovered project
 10. Generate/merge .mcp.json:
     - If exists: use jq (or node fallback via env vars) to add ts-engineer entry
-    - If new: create from heredoc
+    - If new: generate from mcp.json.template via sed ({{BIN_PATH}})
 11. Generate ts-engineer.config.json (skip if exists):
-    - serverName, logDir, commitTag, codemaps array
+    - Generate from ts-engineer.config.json.template
+    - sed for single-line: {{SERVER_NAME}}, {{SERVER_NAME_LOWER}}
+    - python3 + env vars for multiline: {{CODEMAPS_ENTRIES}}
 12. Generate CLAUDE.md (skip if exists):
-    - Template-based with multiline replacement via python3 + env vars
-    - Sections: directory structure, project commands, packages, skills, codemaps
+    - Generate from CLAUDE.md.template
+    - bash substitution for single-line: {{PROJECT_NAME}}, {{MCP_KEY}}
+    - python3 + env vars for multiline: {{DIRECTORY_STRUCTURE}}, {{PROJECT_COMMANDS}},
+      {{PACKAGES_SECTION}}, {{SKILLS_LISTING}}, {{CODEMAPS_TABLE}}
 13. Symlink scripts/setup-worktree.sh → submodule's scripts/setup-worktree.sh
 14. Create symlinks for .claude/commands/ → submodule (per file)
 15. Create symlinks for .claude/rules/ → submodule (per file)
@@ -278,6 +282,20 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 | `mcp.json.template` | `{{BIN_PATH}}` |
 | `ts-engineer.config.json.template` | `{{SERVER_NAME}}`, `{{SERVER_NAME_LOWER}}`, `{{CODEMAPS_ENTRIES}}` |
 | `CLAUDE.md.template` | `{{PROJECT_NAME}}`, `{{MCP_KEY}}`, `{{DIRECTORY_STRUCTURE}}`, `{{PROJECT_COMMANDS}}`, `{{PACKAGES_SECTION}}`, `{{SKILLS_LISTING}}`, `{{CODEMAPS_TABLE}}` |
+
+**Template Convention** — All generated config files MUST use templates from `templates/config/`. No inline heredoc generation.
+
+| Placeholder type | Method | Example |
+|-----------------|--------|---------|
+| Single-line | `sed "s\|{{KEY}}\|$VALUE\|g"` | `{{REPO_NAME}}`, `{{BIN_PATH}}`, `{{SERVER_NAME}}` |
+| Multiline | `python3` + `os.environ.get()` | `{{CODEMAPS_ENTRIES}}`, `{{DIRECTORY_STRUCTURE}}` |
+| Static (no placeholders) | `cp` via `scaffold_file` helper | `turbo.json.template`, `tsconfig.json.template` |
+
+Rules:
+- Every generated config file has a corresponding `.template` file as single source of truth
+- Never generate file content inline — always read from template and replace placeholders
+- Multiline replacements use environment variables (never shell expansion in python3)
+- If a new config file is added, add a template first
 
 ### 7. Codemap Generation
 
