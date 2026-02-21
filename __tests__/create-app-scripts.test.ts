@@ -208,9 +208,9 @@ describe('App template directories', () => {
     expect(content).toContain('HealthResolver')
   })
 
-  it('nestjs-server includes @as-integrations/express5 dependency', () => {
+  it('nestjs-server includes @graphql-yoga/nestjs dependency', () => {
     const content = readFileSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/package.json.template'), 'utf-8')
-    expect(content).toContain('@as-integrations/express5')
+    expect(content).toContain('@graphql-yoga/nestjs')
   })
 
   it('expo-app has app/_layout.tsx.template', () => {

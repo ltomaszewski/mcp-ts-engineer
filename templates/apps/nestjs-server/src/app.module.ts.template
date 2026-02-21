@@ -1,4 +1,4 @@
-import { ApolloDriver, type ApolloDriverConfig } from "@nestjs/apollo";
+import { YogaDriver, type YogaDriverConfig } from "@graphql-yoga/nestjs";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { GraphQLModule } from "@nestjs/graphql";
@@ -18,10 +18,9 @@ import { HealthModule } from "./modules/health/health.module";
 			}),
 			inject: [ConfigService],
 		}),
-		GraphQLModule.forRoot<ApolloDriverConfig>({
-			driver: ApolloDriver,
+		GraphQLModule.forRoot<YogaDriverConfig>({
+			driver: YogaDriver,
 			autoSchemaFile: true,
-			playground: true,
 		}),
 		HealthModule,
 	],

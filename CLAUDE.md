@@ -257,7 +257,7 @@ Defined in `templates/apps/registry.json`:
 | Type | Label | Test Runner | Key Stack |
 |------|-------|-------------|-----------|
 | `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
-| `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Apollo), MongoDB (Mongoose), JWT auth |
+| `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth |
 | `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
 
 **Test runner rationale**:

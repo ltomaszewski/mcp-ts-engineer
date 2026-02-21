@@ -21,7 +21,7 @@ async function bootstrap(): Promise<void> {
 
 	await app.listen(port);
 	logger.log(`Server running on http://localhost:${port}`);
-	logger.log(`GraphQL playground: http://localhost:${port}/graphql`);
+	logger.log(`GraphQL endpoint: http://localhost:${port}/graphql`);
 }
 
 void bootstrap();

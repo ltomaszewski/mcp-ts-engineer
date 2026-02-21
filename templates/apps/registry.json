@@ -6,7 +6,7 @@
     },
     "nestjs-server": {
       "label": "NestJS Backend",
-      "description": "NestJS v11, GraphQL (Apollo), MongoDB (Mongoose), JWT auth"
+      "description": "NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth"
     },
     "mcp-server": {
       "label": "MCP Server (Claude Agent SDK)",
