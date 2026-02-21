@@ -41,7 +41,7 @@ xcodebuild -destination "id=$UDID" ...
 ```bash
 # ❌ WRONG - May find old/stale .app files
 find ~/Library/Developer/Xcode/DerivedData -name "*.app"
-# Could return: OldProject.app, StaleApp.app, etc.
+# Could return: OldProject.app, OldProject.app, etc.
 ```
 
 **Solution**: Use custom `-derivedDataPath` for isolated, predictable builds.
@@ -172,7 +172,3 @@ xcrun simctl install "$UDID" "$APP_PATH"
 
 ---
 
-## Related Files
-
-- `scripts/run-e2e-tests.sh` - E2E test runner using these patterns (project-specific)
-- `docs/E2E_SETUP.md` - Full troubleshooting guide (project-specific)

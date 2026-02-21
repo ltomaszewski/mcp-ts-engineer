@@ -5,13 +5,6 @@
 
 ---
 
-## Quick Navigation (Codemaps)
-
-> Codemaps live at the **monorepo root**: `<monorepo>/.claude/codemaps/`
-> Read relevant codemaps to understand architecture before reviewing.
-
----
-
 ## Behavior
 
 - Review systematically (security → quality → style)
@@ -104,5 +97,5 @@ git diff HEAD~1 --name-only
 git diff HEAD~1 -- path/to/file.ts
 
 # Security scan
-Grep: "console.log|api_key|password|secret" in src/
+grep -r "console.log\|api_key\|password\|secret" src/
 ```

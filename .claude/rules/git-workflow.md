@@ -27,27 +27,15 @@ Commit conventions, PR process, and version control practices.
 | `perf` | Performance improvement |
 | `ci` | CI/CD changes |
 
-### Scopes
-
-| Scope | Package |
-|-------|---------|
-| `core` | Core application code |
-| `types` | packages/types |
-| `utils` | packages/utils |
-| `config` | packages/config |
-| `mono` | Root/monorepo config |
-
-> Adapt scopes to match your project's package structure.
-
 ### Examples
 
 ```bash
-feat(core): add user analytics endpoint
-fix(core): resolve input validation on login
-refactor(types): consolidate user interfaces
-docs(core): update API schema documentation
-test(core): add E2E tests for user flow
-chore(mono): upgrade dependencies
+feat(core): add session cost tracking
+fix(provider): resolve timeout in claude provider
+refactor(registry): consolidate capability binding
+docs: update capability creation guide
+test(echo-agent): add integration tests
+chore: upgrade dependencies
 ```
 
 ---
@@ -60,9 +48,9 @@ chore(mono): upgrade dependencies
 
 Examples:
 ```
-feat/PROJ-123-user-analytics
-fix/PROJ-456-input-validation
-refactor/PROJ-789-user-types
+feat/123-session-analytics
+fix/456-cost-tracking
+refactor/789-prompt-versioning
 ```
 
 For quick fixes without ticket:
@@ -87,7 +75,7 @@ chore/update-deps
 ```bash
 git checkout main
 git pull origin main
-git checkout -b feat/PROJ-123-new-feature
+git checkout -b feat/123-new-feature
 ```
 
 ### 3. TDD Approach
@@ -104,11 +92,11 @@ npm test -- --watch
 
 ```bash
 # Small, focused commits
-git add src/modules/feature/
-git commit -m "feat(core): add feature service"
+git add src/core/session/
+git commit -m "feat(session): add cost aggregation"
 
-git add src/modules/feature/__tests__/
-git commit -m "test(core): add feature service tests"
+git add src/core/session/__tests__/
+git commit -m "test(session): add cost aggregation tests"
 ```
 
 ### 5. Code Review
@@ -121,7 +109,7 @@ git commit -m "test(core): add feature service tests"
 ### 6. Create PR
 
 ```bash
-gh pr create --title "feat(core): add user analytics" --body "..."
+gh pr create --title "feat(core): add session analytics" --body "..."
 ```
 
 ---
@@ -130,10 +118,8 @@ gh pr create --title "feat(core): add user analytics" --body "..."
 
 ### Before Creating PR
 
-- [ ] All tests pass (`turbo run test`)
-- [ ] Lint clean (`turbo run lint`)
-- [ ] Types check (`turbo run type-check`)
-- [ ] Build succeeds (`turbo run build`)
+- [ ] All tests pass (`npm test`)
+- [ ] Types check (`npm run build`)
 - [ ] Code reviewed (via agent)
 - [ ] No console.logs in production code
 
@@ -149,20 +135,11 @@ gh pr create --title "feat(core): add user analytics" --body "..."
 ## Testing
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
-- [ ] E2E tests added/updated (if applicable)
 
 ## Test Plan
 1. [Step to verify]
 2. [Step to verify]
 ```
-
-### PR Review Checklist
-
-- [ ] Changes match PR description
-- [ ] Tests cover new functionality
-- [ ] No security issues (use security-reviewer)
-- [ ] Database compatibility (for data layer changes)
-- [ ] Breaking changes documented
 
 ---
 
@@ -196,18 +173,12 @@ git diff
 # Stage specific files
 git add path/to/file.ts
 
-# Interactive staging
-git add -p
-
 # Amend last commit (before push)
 git commit --amend
 
 # Rebase on main
 git fetch origin
 git rebase origin/main
-
-# Squash last N commits
-git rebase -i HEAD~N
 
 # Undo last commit (keep changes)
 git reset --soft HEAD~1
@@ -229,7 +200,6 @@ git worktree add .worktrees/feature-name -b feat/feature-name
 # Work in worktree
 cd .worktrees/feature-name
 npm install
-turbo run build
 
 # Remove when done
 git worktree remove .worktrees/feature-name
@@ -248,10 +218,10 @@ git pull origin main
 git checkout -b hotfix/critical-bug
 
 # Fix, test, commit
-git commit -m "fix(core): resolve critical auth bug"
+git commit -m "fix(core): resolve critical session bug"
 
 # Create PR with expedited review
-gh pr create --label "hotfix" --title "fix(core): critical auth bug"
+gh pr create --label "hotfix" --title "fix(core): critical session bug"
 ```
 
 ### Reverting Changes

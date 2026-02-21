@@ -1,6 +1,6 @@
 # MCP Server Architecture Guide — Capability-Based Framework
 
-> **Architecture Evolution Note**: This guide describes the **capability-based framework architecture** recommended for all MCP servers. The previous layered architecture (`tools/`, `schemas/`, `types/`, `utils/` as flat folders) is an older pattern. For new projects, this capability-based guide takes precedence.
+> **Architecture Evolution Note**: This guide describes the **capability-based framework architecture** used by `mcp-server` and recommended for all new MCP servers. The previous layered architecture (`tools/`, `schemas/`, `types/`, `utils/` as flat folders) is still used by the `mcp-agents-executor` project and documented in its own CLAUDE.md. For the Software House project, this capability-based guide takes precedence.
 
 **References:**
 - [MCP Best Practices Guide](https://modelcontextprotocol.info/docs/best-practices/)

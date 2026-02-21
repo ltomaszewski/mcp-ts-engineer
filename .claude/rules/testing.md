@@ -7,9 +7,9 @@ Test-driven development and verification standards.
 ## Coverage Target: 80%
 
 Across all test types:
-1. **Unit Tests** - Functions, services, hooks, utilities
-2. **Integration Tests** - API resolvers, database operations
-3. **E2E Tests** - Critical user flows (Maestro for mobile)
+1. **Unit Tests** - Functions, services, utilities
+2. **Integration Tests** - API operations, framework integration
+3. **E2E Tests** - Critical user/client flows
 
 ---
 
@@ -27,106 +27,49 @@ Across all test types:
 **Workflow:**
 ```bash
 # 1. Write test
-npm test -- --watch path/to/test
+npm test -- --watch
 
 # 2. See it fail (RED)
 # 3. Implement feature
 # 4. See it pass (GREEN)
 
 # 5. Verify coverage
-npm test -- --coverage
+npm run test:coverage
 ```
 
 ---
 
-## Test Structure by App
-
-### Server (NestJS)
+## Test Structure
 
 ```
-src/modules/user/
+src/module/
   __tests__/
-    user.service.spec.ts    # Unit: service methods
-    user.resolver.spec.ts   # Integration: GraphQL resolver
+    module.test.ts          # Unit: service methods
+    module.integration.test.ts  # Integration tests
 ```
 
 **Unit test pattern:**
 ```typescript
-describe('UserService', () => {
-  let service: UserService
-  let mockModel: MockModel<User>
+describe('SessionManager', () => {
+  let manager: SessionManager
 
   beforeEach(() => {
-    mockModel = createMockModel()
-    service = new UserService(mockModel)
+    manager = new SessionManager()
   })
 
-  describe('findById', () => {
-    it('returns user when found', async () => {
-      mockModel.findById.mockResolvedValue(mockUser)
-      const result = await service.findById('123')
-      expect(result).toEqual(mockUser)
+  describe('createSession', () => {
+    it('returns session with valid ID', () => {
+      const session = manager.createSession('echo_agent')
+      expect(session.id).toBeDefined()
+      expect(session.capability).toBe('echo_agent')
     })
 
-    it('returns null when not found', async () => {
-      mockModel.findById.mockResolvedValue(null)
-      const result = await service.findById('invalid')
-      expect(result).toBeNull()
+    it('throws when max depth exceeded', () => {
+      expect(() => manager.createSession('test', { depth: 100 }))
+        .toThrow()
     })
   })
 })
-```
-
-### Mobile (React Native)
-
-```
-src/features/example/
-  __tests__/
-    useExampleTimer.test.ts     # Hook tests
-    ActionButton.test.tsx       # Component tests
-```
-
-**Component test pattern:**
-```typescript
-import { render, screen, userEvent } from '@testing-library/react-native'
-
-describe('ActionButton', () => {
-  it('triggers action on press', async () => {
-    const onStart = jest.fn()
-    render(<ActionButton onStart={onStart} />)
-
-    await userEvent.press(screen.getByText('Start'))
-
-    expect(onStart).toHaveBeenCalled()
-  })
-
-  it('shows active state', () => {
-    render(<ActionButton isActive />)
-    expect(screen.getByText('Stop')).toBeVisible()
-  })
-})
-```
-
-### E2E Tests (Maestro)
-
-```
-.maestro/
-  flows/
-    sleep/
-      start-session.yaml
-      end-session.yaml
-```
-
-**Flow pattern:**
-```yaml
-appId: com.example.app
----
-- launchApp
-- tapOn: "Start"
-- assertVisible: "Session started"
-- waitForAnimationToEnd
-- tapOn: "Stop"
-- assertVisible: "Session saved"
 ```
 
 ---
@@ -141,7 +84,7 @@ appId: com.example.app
 
 ```typescript
 // GOOD - isolated
-describe('UserService', () => {
+describe('CostTracker', () => {
   beforeEach(() => {
     // Fresh setup each test
   })
@@ -153,36 +96,20 @@ describe('UserService', () => {
 })
 
 // BAD - shared state
-let sharedUser: User // Different tests modify this
+let sharedTracker: CostTracker // Different tests modify this
 ```
 
 ---
 
 ## Mocking Patterns
 
-### MongoDB/Mongoose
+### External Services
 
 ```typescript
-const mockModel = {
-  findById: jest.fn(),
-  findOne: jest.fn(),
-  create: jest.fn(),
-  updateOne: jest.fn(),
-}
-
-jest.mock('@nestjs/mongoose', () => ({
-  InjectModel: () => () => mockModel,
-}))
-```
-
-### External APIs
-
-```typescript
-jest.mock('@/services/appleAuth', () => ({
-  verifyIdentityToken: jest.fn().mockResolvedValue({
-    sub: 'apple-user-id',
-    email: 'test@example.com',
-  }),
+jest.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  default: jest.fn().mockImplementation(() => ({
+    messages: { create: jest.fn() },
+  })),
 }))
 ```
 
@@ -223,24 +150,20 @@ afterEach(() => {
 npm test
 
 # Watch mode
-npm test -- --watch
+npm run test:watch
 
 # Coverage report
-npm test -- --coverage
+npm run test:coverage
 
 # Single file
 npm test -- path/to/test.ts
-
-# E2E (if applicable)
-npm run test:e2e
 ```
 
 ---
 
 ## Agent Support
 
-- **tdd-guide** - Use proactively for new features
-- **maestro-executor** - E2E test creation
+- **eng-executor** - TDD implementation
 - **code-reviewer** - Catches missing tests
 
 ---
@@ -251,4 +174,3 @@ Before PR:
 - [ ] All tests pass
 - [ ] Coverage >= 80%
 - [ ] No skipped tests without justification
-- [ ] E2E covers critical paths

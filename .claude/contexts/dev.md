@@ -5,13 +5,6 @@
 
 ---
 
-## Quick Navigation (Codemaps)
-
-> Codemaps live at the **monorepo root**: `<monorepo>/.claude/codemaps/`
-> Use the codemap-updater skill or `/update-codemaps` to generate/refresh them.
-
----
-
 ## Behavior
 
 - Write working code first, optimize later
@@ -53,11 +46,17 @@
 ## Quick Commands
 
 ```bash
-# Run tests in watch mode
-npm test -- --watch
+# Build
+npm run build
 
-# Type check
-npm run type-check
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Development mode with auto-reload
+npm run dev
 
 # Full verification
 npm run build && npm test

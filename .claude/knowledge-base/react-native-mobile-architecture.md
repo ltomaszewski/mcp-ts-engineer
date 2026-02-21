@@ -351,7 +351,7 @@ export function LoginScreen() {
       <View className="flex-1 justify-center px-6 py-12">
         <View className="mb-8">
           <Text className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</Text>
-          <Text className="text-lg text-gray-600">Sign in to your account</Text>
+          <Text className="text-lg text-gray-600">Sign in to your App account</Text>
         </View>
 
         {formError && (
@@ -547,7 +547,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
 ```typescript
 // src/features/auth/api/hooks.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LoginDocument, SignupDocument } from '@org/server-client';
+import { LoginDocument, SignupDocument } from '@app/my-server-client';
 
 import { executeGraphQL } from '@/api/graphql-client';
 import { useAuthStore } from '@/stores/auth.store';
@@ -779,7 +779,7 @@ const config = getDefaultConfig(projectRoot);
 
 // Exclude other apps from bundling
 config.resolver.blockList = [
-  /apps\/server\/.*/,
+  /apps\/my-server\/.*/,
   /apps\/other-app\/.*/,
 ];
 
@@ -887,7 +887,7 @@ describe('LoginForm', () => {
 
 ```yaml
 # .maestro/auth/login-flow.yaml
-appId: com.example.app
+appId: com.app.app
 ---
 - launchApp
 - assertVisible: "Welcome Back"
@@ -1104,18 +1104,11 @@ Track component duplication issues here. These should be resolved:
 
 | Issue | Status | Spec Location |
 |-------|--------|---------------|
-| `Input.tsx` vs `CustomTextInput.tsx` | TODO | `docs/specs/app/todo/input-component-merge.md` |
+| `Input.tsx` vs `CustomTextInput.tsx` | TODO | `docs/specs/my-app/todo/input-component-merge.md` |
 
 **When adding new tech debt:**
-1. Create spec in `docs/specs/app/todo/YYYY-MM-DD-description.md`
+1. Create spec in `docs/specs/my-app/todo/YYYY-MM-DD-description.md`
 2. Add row to this table
 3. Set status: TODO → IN_PROGRESS → DONE (then remove row)
 
 ---
-
-## Related Documentation
-
-- `docs/MELLOW_MOBILE_TECH_STACK_2025.md` - Full tech stack details
-- `docs/MOBILE_FILE_ORGANIZATION.md` - Detailed file organization guide
-- `.claude/skills/` - Individual technology skill guides
-- `docs/specs/app/todo/` - Pending component work and tech debt
