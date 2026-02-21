@@ -1,0 +1,53 @@
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+
+const logger = new Logger('LocalServer');
+
+async function startMongoMemoryServer(): Promise<MongoMemoryReplSet> {
+  logger.log('Starting in-memory MongoDB...');
+  const mongoServer = await MongoMemoryReplSet.create({
+    replSet: { count: 1, storageEngine: 'wiredTiger' },
+  });
+  const uri = mongoServer.getUri();
+  logger.log(`In-memory MongoDB started: ${uri}`);
+  return mongoServer;
+}
+
+async function bootstrap(): Promise<void> {
+  const mongoServer = await startMongoMemoryServer();
+  process.env.MONGODB_URI = mongoServer.getUri();
+
+  const { AppModule } = await import('../src/app.module');
+
+  const app = await NestFactory.create(AppModule);
+  const port = Number(process.env.PORT) || {{PORT}};
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.enableCors();
+
+  await app.listen(port);
+  logger.log(`Local server running on http://localhost:${port}`);
+  logger.log(`GraphQL playground: http://localhost:${port}/graphql`);
+  logger.log('Using in-memory MongoDB (data resets on restart)');
+
+  const shutdown = async (signal: string): Promise<void> => {
+    logger.log(`Received ${signal}, shutting down...`);
+    await app.close();
+    await mongoServer.stop();
+    logger.log('Cleanup complete');
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+}
+
+void bootstrap();
