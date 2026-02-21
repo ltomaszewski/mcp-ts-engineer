@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import type { ProjectConfig, CodemapEntry } from "./project-config.js";
+import { deriveLogDir } from "./project-config.js";
 
 const CONFIG_FILENAME = "ts-engineer.config.json";
 
@@ -56,10 +57,11 @@ export function loadProjectConfig(): ProjectConfig {
   const submodulePath = path.resolve(import.meta.dirname, "../..");
   const monorepoRoot = findMonorepoRoot(submodulePath);
 
+  const defaultServerName = "McpTsEngineer";
   const defaults: ProjectConfig = {
-    serverName: "McpTsEngineer",
+    serverName: defaultServerName,
     serverVersion: "1.0.0",
-    logDir: "~/.claude/mcp-ts-engineer/logs/",
+    logDir: deriveLogDir(defaultServerName),
     commitTag: "[ts-engineer]",
     monorepoRoot,
     submodulePath,
@@ -74,10 +76,16 @@ export function loadProjectConfig(): ProjectConfig {
   try {
     const raw = JSON.parse(readFileSync(configPath, "utf-8")) as Partial<ProjectConfig>;
 
+    // Auto-derive logDir from serverName when config has serverName but no logDir.
+    // This ensures each project gets isolated logs even without explicit logDir.
+    const effectiveLogDir = raw.logDir
+      ?? (raw.serverName ? deriveLogDir(raw.serverName) : defaults.logDir);
+
     // Merge — config file values override defaults
     const merged: ProjectConfig = {
       ...defaults,
       ...raw,
+      logDir: effectiveLogDir,
       // Always use auto-detected paths (config file can't override these)
       monorepoRoot,
       submodulePath,

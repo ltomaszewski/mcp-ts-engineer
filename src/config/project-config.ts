@@ -39,13 +39,30 @@ export interface ProjectConfig {
 }
 
 /**
+ * Derive a log directory path from a server name.
+ * Converts PascalCase/camelCase to kebab-case for filesystem-friendly paths.
+ *
+ * @example
+ * "BastionTsEngineer" → "~/.claude/bastion-ts-engineer/logs/"
+ * "MellowTsEngineer"  → "~/.claude/mellow-ts-engineer/logs/"
+ * "McpTsEngineer"     → "~/.claude/mcp-ts-engineer/logs/"
+ */
+export function deriveLogDir(serverName: string): string {
+  const kebab = serverName
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+  return `~/.claude/${kebab}/logs/`;
+}
+
+/**
  * Default configuration — generic, no project-specific values.
  * Consuming apps SHOULD call initProjectConfig() with their own config.
  */
 const DEFAULT_CONFIG: ProjectConfig = {
   serverName: "McpTsEngineer",
   serverVersion: "1.0.0",
-  logDir: "~/.claude/mcp-ts-engineer/logs/",
+  logDir: deriveLogDir("McpTsEngineer"),
   commitTag: "[ts-engineer]",
   monorepoRoot: process.cwd(),
   submodulePath: process.cwd(),

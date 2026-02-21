@@ -38,7 +38,9 @@ import {
   ALLOW_HTTP_MCP_SERVERS,
   PROVIDER_CONFIG,
   getCommitTag,
+  getDefaultLogDir,
 } from "../../src/config/constants.js";
+import { deriveLogDir, getProjectConfig } from "../../src/config/project-config.js";
 
 describe("CONFIG", () => {
   describe("getServerInfo()", () => {
@@ -325,6 +327,49 @@ describe("CONFIG", () => {
 
     it("returns bracket format for git grep", () => {
       expect(getCommitTag()).toMatch(/^\[.+\]$/);
+    });
+  });
+
+  describe("deriveLogDir()", () => {
+    it("converts PascalCase to kebab-case log path", () => {
+      expect(deriveLogDir("BastionTsEngineer")).toBe("~/.claude/bastion-ts-engineer/logs/");
+    });
+
+    it("converts default McpTsEngineer correctly", () => {
+      expect(deriveLogDir("McpTsEngineer")).toBe("~/.claude/mcp-ts-engineer/logs/");
+    });
+
+    it("converts MellowTsEngineer correctly", () => {
+      expect(deriveLogDir("MellowTsEngineer")).toBe("~/.claude/mellow-ts-engineer/logs/");
+    });
+
+    it("produces different paths for different server names", () => {
+      const bastionDir = deriveLogDir("BastionTsEngineer");
+      const mellowDir = deriveLogDir("MellowTsEngineer");
+      const defaultDir = deriveLogDir("McpTsEngineer");
+
+      expect(bastionDir).not.toBe(mellowDir);
+      expect(bastionDir).not.toBe(defaultDir);
+      expect(mellowDir).not.toBe(defaultDir);
+    });
+
+    it("handles single word name", () => {
+      expect(deriveLogDir("Engineer")).toBe("~/.claude/engineer/logs/");
+    });
+
+    it("handles already lowercase name", () => {
+      expect(deriveLogDir("myserver")).toBe("~/.claude/myserver/logs/");
+    });
+  });
+
+  describe("Log directory isolation", () => {
+    it("default config logDir matches deriveLogDir output", () => {
+      const config = getProjectConfig();
+      expect(config.logDir).toBe(deriveLogDir(config.serverName));
+    });
+
+    it("getDefaultLogDir() returns project-config derived path", () => {
+      expect(getDefaultLogDir()).toBe(deriveLogDir("McpTsEngineer"));
     });
   });
 });
