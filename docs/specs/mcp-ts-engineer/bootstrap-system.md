@@ -434,7 +434,7 @@ The generated CLAUDE.md includes these auto-populated sections:
 
 ### Automated Tests (`tests/unit/bootstrap-scripts.test.ts`)
 
-65 tests covering all 4 scripts + templates + commands:
+68 tests covering all 4 scripts + templates + commands:
 
 **Per-script (all 4)**: exists, shebang, `set -eo pipefail`, `bash -n` syntax, no `readlink -f`, no `declare -A`
 
@@ -446,7 +446,7 @@ The generated CLAUDE.md includes these auto-populated sections:
 
 **setup-worktree.sh specifics**: pre-resolution root detection, `npm install`, turbo build, plugin tsconfigs, `setup-worktree-extra.sh` extension point
 
-**Templates**: all 5 exist, correct placeholders, no CI/CD section, no unused templates
+**Templates**: all 7 exist, correct placeholders, no CI/CD section, no extra templates
 
 **Commands**: all 4 exist, no `mcp__software-house__` refs, correct `mcp__ts-engineer__` prefix
 
@@ -456,4 +456,4 @@ The generated CLAUDE.md includes these auto-populated sections:
 - Fresh repo: All files generated correctly (7 root files, 4+8+3+37 symlinks, codemaps, specs)
 - Idempotency: Second run skips all existing files, creates 0 new symlinks
 - Content: `.mcp.json` correct bin path, `ts-engineer.config.json` correct codemaps, architecture codemap clean
-- Automated: 65/65 tests pass
+- Automated: 69/69 tests pass

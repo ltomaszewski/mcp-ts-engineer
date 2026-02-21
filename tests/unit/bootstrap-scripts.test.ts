@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, readdirSync } from 'fs'
 import { execSync } from 'child_process'
 import { join } from 'path'
 
@@ -257,6 +257,11 @@ describe('Config templates', () => {
   it('gitignore.template has no placeholders', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'gitignore.template'), 'utf-8')
     expect(content).not.toMatch(/\{\{.*?\}\}/)
+  })
+
+  it('contains no extra template files', () => {
+    const actual = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.template')).sort()
+    expect(actual).toEqual([...EXPECTED_TEMPLATES].sort())
   })
 })
 
