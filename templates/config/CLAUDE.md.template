@@ -1,0 +1,240 @@
+# {{PROJECT_NAME}}
+
+Turborepo monorepo with npm workspaces.
+
+## Directory Structure
+
+```
+{{DIRECTORY_STRUCTURE}}
+```
+
+---
+
+## Key Principles
+
+**DO:**
+- Keep apps independent — each app should build/test/deploy on its own
+- Extract shared types and utilities to `packages/`
+- Install dependencies in the package that uses them (not root)
+- Use turbo for all build/test/lint orchestration
+- Run commands via workspace flags: `npm run X -w apps/my-app`
+
+**DON'T:**
+- Add application dependencies to root `package.json`
+- Import directly between apps (use shared packages)
+- Skip turbo — always run tasks through `turbo run`
+- Commit build artifacts (dist/, build/, coverage/)
+
+---
+
+## Monorepo Tooling
+
+**Turborepo** orchestrates builds across workspaces with dependency-aware caching.
+
+```bash
+# Build all
+turbo run build
+
+# Build specific workspace
+turbo run build --filter=my-app
+
+# Dev mode (all)
+turbo run dev
+
+# Run tests
+turbo run test
+```
+
+**npm workspaces** manage dependency resolution.
+
+```bash
+# Install dep in a specific workspace
+npm install zod -w apps/my-app
+
+# Run script in workspace
+npm run test -w apps/my-app
+
+# Install all dependencies
+npm install
+```
+
+---
+
+## Dependency Placement Rules
+
+**CRITICAL**: Dependencies go in the package that uses them.
+
+| Location | What Goes Here |
+|----------|---------------|
+| Root `package.json` | Repo tools ONLY: turbo, husky, commitlint |
+| `apps/*/package.json` | All app-specific dependencies |
+| `packages/*/package.json` | All package-specific dependencies |
+
+```bash
+# CORRECT — install in the app that uses it
+npm install express -w apps/my-server
+
+# WRONG — never install app deps at root
+npm install express
+```
+
+---
+
+## Git Worktrees
+
+Worktrees need setup because `node_modules/` and `dist/` are gitignored.
+
+```bash
+# Create worktree (via Claude Code command)
+/worktree-add my-feature
+
+# Manual setup (if needed)
+cd .worktrees/my-feature
+./scripts/setup-worktree.sh
+```
+
+The `setup-worktree.sh` script runs `npm install` + `turbo run build` automatically.
+
+---
+
+## Build and Development
+
+### Root Commands
+
+```bash
+npm run build        # Build all workspaces via turbo
+npm run dev          # Dev mode for all workspaces
+npm run test         # Test all workspaces
+npm run lint         # Lint all workspaces
+npm run type-check   # Type-check all workspaces
+npm run clean        # Clean all build artifacts
+```
+
+### Per-Project Commands
+
+{{PROJECT_COMMANDS}}
+
+---
+
+## Shared Packages
+
+{{PACKAGES_SECTION}}
+
+---
+
+## Documentation-Driven Development
+
+Follow the spec workflow: **spec → review → implement → finalize**.
+
+```
+docs/specs/{project}/todo/YYYY-MM-DD-slug.md
+```
+
+1. Create or import spec → `docs/specs/{project}/todo/`
+2. Review spec → `mcp__ts-engineer__todo_reviewer`
+3. Implement → `mcp__ts-engineer__todo_code_writer`
+4. Finalize → `mcp__ts-engineer__finalize`
+
+---
+
+## Deferred Tasks
+
+Save implementation tasks as specs:
+
+```
+docs/specs/{project}/todo/YYYY-MM-DD-description.md
+```
+
+Use `/issue-capture` to create GitHub issues from conversation context.
+
+---
+
+## Available MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__ts-engineer__todo_reviewer` | Review and validate spec files |
+| `mcp__ts-engineer__todo_code_writer` | TDD implementation from spec |
+| `mcp__ts-engineer__finalize` | Audit, test, codemap, commit |
+| `mcp__ts-engineer__audit_fix` | Fix lint/type/test violations |
+| `mcp__ts-engineer__pr_reviewer` | Comprehensive PR review |
+| `mcp__ts-engineer__echo_agent` | Test agent connectivity |
+
+---
+
+## Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/worktree-add` | Create isolated git worktree |
+| `/issue-capture` | Capture session context as GitHub issue |
+| `/issue-implement` | End-to-end implementation pipeline |
+| `/issue-to-todo` | Import GitHub issue to local spec |
+
+---
+
+## Available Skills
+
+{{SKILLS_LISTING}}
+
+---
+
+## Codemaps
+
+{{CODEMAPS_TABLE}}
+
+---
+
+## Maintenance
+
+When adding new apps or packages:
+1. Run `bash packages/mcp-ts-engineer/scripts/update.sh`
+2. Create codemap: `.claude/codemaps/{project}.md`
+3. Add GitHub labels: `bash packages/mcp-ts-engineer/scripts/setup-issue-labels.sh`
+4. Create spec directory: `mkdir -p docs/specs/{project}/todo/`
+
+---
+
+## Long-term Maintenance
+
+```bash
+# Check outdated dependencies
+npm outdated
+
+# Type safety
+turbo run type-check
+
+# Full verification
+turbo run build && turbo run test && turbo run lint
+```
+
+---
+
+## CI/CD
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: turbo run build test lint type-check
+```
+
+---
+
+## Cleanup
+
+- Never commit `node_modules/`, `dist/`, `build/`, `coverage/`, `.turbo/`
+- Remove temp files: `rm -rf .tmp/ *.tmp`
+- Clean all: `npm run clean`

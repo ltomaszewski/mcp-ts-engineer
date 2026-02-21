@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Turbo
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp files
+.tmp/
+*.tmp
+
+# Worktrees
+.worktrees/
+
+# Logs
+logs/
+*.log
+
+# Debug
+npm-debug.log*
