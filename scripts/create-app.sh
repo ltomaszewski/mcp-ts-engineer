@@ -135,6 +135,11 @@ while IFS= read -r -d '' template_file; do
       dest_rel="$(dirname "$dest_rel")/.env.example"
     fi
 
+    # Special case: nvmrc.template → .nvmrc (add dot prefix)
+    if [[ "$(basename "$dest_rel")" == "nvmrc" ]]; then
+      dest_rel="$(dirname "$dest_rel")/.nvmrc"
+    fi
+
     dest_file="apps/$APP_NAME/$dest_rel"
     mkdir -p "$(dirname "$dest_file")"
 
