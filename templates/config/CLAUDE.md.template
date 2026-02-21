@@ -27,6 +27,23 @@ Turborepo monorepo with npm workspaces.
 
 ---
 
+## Tooling Stack
+
+| Tool | Purpose | Config |
+|------|---------|--------|
+| **Turborepo** | Build orchestration, caching | `turbo.json` |
+| **Vitest** | Testing (replaces Jest) | `vitest.config.ts` |
+| **Biome** | Linting + formatting (replaces ESLint/Prettier) | `biome.json` |
+| **TypeScript** | Type checking | `tsconfig.json` |
+| **Husky** | Git hooks | `.husky/` |
+| **Commitlint** | Commit message validation | `commitlintrc` |
+
+**Testing with Vitest**: Native TypeScript support, no ts-jest needed. Uses `projects` config for monorepo workspace discovery.
+
+**Linting/Formatting with Biome**: Single Rust binary, zero npm deps. Runs lint + format in one pass. 10-25x faster than ESLint + Prettier.
+
+---
+
 ## Monorepo Tooling
 
 **Turborepo** orchestrates builds across workspaces with dependency-aware caching.
@@ -66,7 +83,7 @@ npm install
 
 | Location | What Goes Here |
 |----------|---------------|
-| Root `package.json` | Repo tools ONLY: turbo, husky, commitlint |
+| Root `package.json` | Repo tools ONLY: turbo, vitest, biome, husky, commitlint |
 | `apps/*/package.json` | All app-specific dependencies |
 | `packages/*/package.json` | All package-specific dependencies |
 
@@ -104,8 +121,10 @@ The `setup-worktree.sh` script runs `npm install` + `turbo run build` automatica
 ```bash
 npm run build        # Build all workspaces via turbo
 npm run dev          # Dev mode for all workspaces
-npm run test         # Test all workspaces
-npm run lint         # Lint all workspaces
+npm run test         # Test all workspaces (Vitest)
+npm run lint         # Lint all workspaces (Biome)
+npm run format       # Format all workspaces (Biome)
+npm run format:check # Check formatting (CI)
 npm run type-check   # Type-check all workspaces
 npm run clean        # Clean all build artifacts
 ```
@@ -205,7 +224,7 @@ npm outdated
 turbo run type-check
 
 # Full verification
-turbo run build && turbo run test && turbo run lint
+turbo run build && turbo run test && turbo run lint && turbo run format:check
 ```
 
 ---

@@ -133,6 +133,12 @@ else
   echo "  Exists, skipping: .gitignore"
 fi
 
+# vitest.config.ts
+scaffold_file "vitest.config.ts" "$TEMPLATE_DIR/vitest.config.ts.template"
+
+# biome.json
+scaffold_file "biome.json" "$TEMPLATE_DIR/biome.json.template"
+
 # =============================================================================
 # Step 7: Create directories
 # =============================================================================
@@ -655,7 +661,7 @@ echo "  MCP key:     $MCP_KEY"
 echo "  Projects:    ${#PROJECTS[@]} discovered"
 echo ""
 echo "  Generated:"
-echo "    - package.json, turbo.json, tsconfig.json, .gitignore"
+echo "    - package.json, turbo.json, tsconfig.json, vitest.config.ts, biome.json, .gitignore"
 echo "    - .mcp.json, ts-engineer.config.json, CLAUDE.md"
 echo "    - .claude/ symlinks (commands, skills, rules, contexts)"
 echo "    - .claude/codemaps/ (per project)"

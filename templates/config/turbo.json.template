@@ -22,6 +22,14 @@
       "outputs": [],
       "cache": true
     },
+    "format": {
+      "outputs": [],
+      "cache": false
+    },
+    "format:check": {
+      "outputs": [],
+      "cache": true
+    },
     "type-check": {
       "outputs": [],
       "cache": true,

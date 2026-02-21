@@ -66,12 +66,16 @@ Bootstrap generates a **standard schema** that all consuming repos follow.
     "dev": "turbo run dev",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky"
   },
   "devDependencies": {
     "turbo": "^2.8.0",
+    "vitest": "^3.2.0",
+    "@biomejs/biome": "^2.3.0",
     "husky": "^9.1.7",
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0"
@@ -92,9 +96,48 @@ Bootstrap generates a **standard schema** that all consuming repos follow.
     "dev": { "cache": false, "persistent": true, "dependsOn": ["^build"] },
     "test": { "dependsOn": ["^build"], "outputs": ["coverage/**"], "cache": true },
     "lint": { "outputs": [], "cache": true },
+    "format": { "outputs": [], "cache": false },
+    "format:check": { "outputs": [], "cache": true },
     "type-check": { "outputs": [], "cache": true, "dependsOn": ["^build"] },
     "clean": { "cache": false }
   }
+}
+```
+
+### Root `vitest.config.ts`
+
+```typescript
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    projects: ['apps/*', 'packages/*'],
+    coverage: {
+      provider: 'v8',
+      thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
+    },
+  },
+})
+```
+
+### Root `biome.json`
+
+```json
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "organizeImports": { "enabled": true },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": { "noExcessiveCognitiveComplexity": "warn" },
+      "suspicious": { "noExplicitAny": "warn" }
+    }
+  },
+  "javascript": { "formatter": { "quoteStyle": "single", "trailingCommas": "all", "semicolons": "asNeeded" } },
+  "files": { "ignore": ["node_modules", "dist", "build", "coverage", ".turbo", "*.min.js"] }
 }
 ```
 
@@ -122,7 +165,7 @@ Standard ignores: node_modules, dist, build, .env, .turbo, coverage, .DS_Store, 
 
 | In the submodule (shared, versioned) | In the host repo (generated/symlinked) |
 |--------------------------------------|----------------------------------------|
-| `scripts/bootstrap.sh` | `package.json`, `turbo.json`, `tsconfig.json` (generated) |
+| `scripts/bootstrap.sh` | `package.json`, `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `biome.json` (generated) |
 | `scripts/update.sh` | `.mcp.json` (generated/merged) |
 | `scripts/setup-issue-labels.sh` | `ts-engineer.config.json` (generated) |
 | `scripts/setup-worktree.sh` | `scripts/setup-worktree.sh` → symlink |
@@ -170,7 +213,7 @@ Standard ignores: node_modules, dist, build, .env, .turbo, coverage, .DS_Store, 
  4. Auto-detect repo-owner/name from `git remote get-url origin`
  5. Derive: BIN_PATH="${SUBMODULE_REL}/build/bin.js", MCP_KEY="ts-engineer"
  6. Scaffold monorepo root files (skip if exist):
-    - package.json, turbo.json, tsconfig.json, .gitignore
+    - package.json, turbo.json, tsconfig.json, vitest.config.ts, biome.json, .gitignore
  7. Create directories:
     - apps/, packages/, .claude/{commands,skills,rules,contexts,codemaps,hooks}, scripts/, docs/
  8. Discover projects: scan apps/*/package.json + packages/*/package.json
@@ -208,7 +251,7 @@ Standard ignores: node_modules, dist, build, .env, .turbo, coverage, .DS_Store, 
 
 | File type | Strategy |
 |-----------|----------|
-| Monorepo root files (package.json, turbo.json, etc.) | Skip if exists |
+| Monorepo root files (package.json, turbo.json, vitest.config.ts, biome.json, etc.) | Skip if exists |
 | Config files (.mcp.json, ts-engineer.config.json, CLAUDE.md) | .mcp.json merges, others skip if exist |
 | Symlinks (commands, skills, rules, contexts, setup-worktree.sh) | Skip if symlink exists, warn if regular file |
 | Codemaps | Skip if exists (repo-specific content) |
@@ -271,13 +314,15 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 
 ### 6. Templates (`templates/config/`)
 
-7 template files used by bootstrap for config generation:
+9 template files used by bootstrap for config generation:
 
 | Template | Placeholders |
 |----------|-------------|
 | `package.json.template` | `{{REPO_NAME}}` |
 | `turbo.json.template` | (none — static) |
 | `tsconfig.json.template` | (none — static) |
+| `vitest.config.ts.template` | (none — static) |
+| `biome.json.template` | (none — static) |
 | `gitignore.template` | (none — static) |
 | `mcp.json.template` | `{{BIN_PATH}}` |
 | `ts-engineer.config.json.template` | `{{SERVER_NAME}}`, `{{SERVER_NAME_LOWER}}`, `{{CODEMAPS_ENTRIES}}` |
@@ -289,7 +334,7 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 |-----------------|--------|---------|
 | Single-line | `sed "s\|{{KEY}}\|$VALUE\|g"` | `{{REPO_NAME}}`, `{{BIN_PATH}}`, `{{SERVER_NAME}}` |
 | Multiline | `python3` + `os.environ.get()` | `{{CODEMAPS_ENTRIES}}`, `{{DIRECTORY_STRUCTURE}}` |
-| Static (no placeholders) | `cp` via `scaffold_file` helper | `turbo.json.template`, `tsconfig.json.template` |
+| Static (no placeholders) | `cp` via `scaffold_file` helper | `turbo.json.template`, `tsconfig.json.template`, `vitest.config.ts.template`, `biome.json.template` |
 
 Rules:
 - Every generated config file has a corresponding `.template` file as single source of truth
@@ -318,6 +363,8 @@ my-monorepo/
 ├── package.json                 ← generated (turbo + workspaces)
 ├── turbo.json                   ← generated (standard tasks)
 ├── tsconfig.json                ← generated (base config)
+├── vitest.config.ts             ← generated (test config — projects discovery)
+├── biome.json                   ← generated (lint + format config)
 ├── .gitignore                   ← generated
 ├── .mcp.json                    ← generated/merged
 ├── ts-engineer.config.json      ← generated
@@ -366,18 +413,19 @@ The generated CLAUDE.md includes these auto-populated sections:
 
 1. **Project Overview** — name, directory structure
 2. **Key Principles** — DO/DON'T for monorepo hygiene
-3. **Monorepo Tooling** — turbo.json, npm workspaces commands
-4. **Dependency Placement Rules** — root = only repo tools, apps/packages = all deps
-5. **Git Worktrees** — setup-worktree.sh reference, `/worktree-add` command
-6. **Build and Development Commands** — per-project commands auto-generated
-7. **Shared Packages** — listing per discovered `packages/*`
-8. **Documentation-Driven Development** — spec workflow reference
-9. **Deferred Tasks** — `docs/specs/{app}/todo/` pattern
-10. **Available MCP Tools** — table of `mcp__ts-engineer__*` tools
-11. **Available Commands** — table of `/worktree-add`, `/issue-capture`, etc.
-12. **Available Skills** — auto-generated listing of all symlinked skills
-13. **Codemaps** — table of all generated codemaps
-14. **Maintenance** — when adding new apps/packages
+3. **Tooling Stack** — Vitest (testing), Biome (lint/format), Turborepo, TypeScript, Husky, Commitlint
+4. **Monorepo Tooling** — turbo.json, npm workspaces commands
+5. **Dependency Placement Rules** — root = only repo tools (turbo, vitest, biome, husky, commitlint), apps/packages = all deps
+6. **Git Worktrees** — setup-worktree.sh reference, `/worktree-add` command
+7. **Build and Development Commands** — per-project commands auto-generated
+8. **Shared Packages** — listing per discovered `packages/*`
+9. **Documentation-Driven Development** — spec workflow reference
+10. **Deferred Tasks** — `docs/specs/{app}/todo/` pattern
+11. **Available MCP Tools** — table of `mcp__ts-engineer__*` tools
+12. **Available Commands** — table of `/worktree-add`, `/issue-capture`, etc.
+13. **Available Skills** — auto-generated listing of all symlinked skills
+14. **Codemaps** — table of all generated codemaps
+15. **Maintenance** — when adding new apps/packages
 
 ---
 
@@ -446,14 +494,14 @@ The generated CLAUDE.md includes these auto-populated sections:
 
 **setup-worktree.sh specifics**: pre-resolution root detection, `npm install`, turbo build, plugin tsconfigs, `setup-worktree-extra.sh` extension point
 
-**Templates**: all 7 exist, correct placeholders, no CI/CD section, no extra templates
+**Templates**: all 9 exist, correct placeholders, no CI/CD section, no extra templates
 
 **Commands**: all 4 exist, no `mcp__software-house__` refs, correct `mcp__ts-engineer__` prefix
 
 ### Test Results (2026-02-21)
 
 - Syntax: All 4 scripts pass `bash -n`
-- Fresh repo: All files generated correctly (7 root files, 4+8+3+37 symlinks, codemaps, specs)
+- Fresh repo: All files generated correctly (9 root files, 4+8+3+37 symlinks, codemaps, specs)
 - Idempotency: Second run skips all existing files, creates 0 new symlinks
 - Content: `.mcp.json` correct bin path, `ts-engineer.config.json` correct codemaps, architecture codemap clean
 - Automated: 69/69 tests pass
