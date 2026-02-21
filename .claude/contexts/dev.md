@@ -37,11 +37,15 @@
 5. Commit → Atomic, descriptive commits
 ```
 
-## Agent Support
+## MCP Tools
 
-- **eng-executor** - TDD implementation
-- **build-error-resolver** - Fix build failures
-- **code-reviewer** - Review after changes
+| Task | MCP Tool |
+|------|----------|
+| TDD implementation from spec | `mcp__ts-engineer__todo_code_writer` |
+| Review and validate specs | `mcp__ts-engineer__todo_reviewer` |
+| Audit, test, codemap, commit | `mcp__ts-engineer__finalize` |
+| Fix lint/type/test violations | `mcp__ts-engineer__audit_fix` |
+| Comprehensive PR review | `mcp__ts-engineer__pr_reviewer` |
 
 ## Quick Commands
 

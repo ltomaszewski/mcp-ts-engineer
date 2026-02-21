@@ -64,11 +64,13 @@
 ```
 ```
 
-## Agent Support
+## MCP Tools
 
-- **code-reviewer** - Quality review
-- **security-reviewer** - Security audit
-- **architect** - Design review
+| Task | MCP Tool |
+|------|----------|
+| Comprehensive PR review | `mcp__ts-engineer__pr_reviewer` |
+| Review and validate specs | `mcp__ts-engineer__todo_reviewer` |
+| Fix lint/type/test violations | `mcp__ts-engineer__audit_fix` |
 
 ## Review Summary Format
 
