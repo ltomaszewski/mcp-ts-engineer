@@ -1,0 +1,7 @@
+import { z } from 'zod';
+
+export const EchoInputSchema = z.object({
+  message: z.string().min(1).max(10000).describe('The message to echo back'),
+});
+
+export type EchoInput = z.infer<typeof EchoInputSchema>;

@@ -1,0 +1,16 @@
+{
+  "appTypes": {
+    "expo-app": {
+      "label": "React Native (Expo)",
+      "description": "Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query"
+    },
+    "nestjs-server": {
+      "label": "NestJS Backend",
+      "description": "NestJS v11, GraphQL (Apollo), MongoDB (Mongoose), JWT auth"
+    },
+    "mcp-server": {
+      "label": "MCP Server (Claude Agent SDK)",
+      "description": "MCP server with Claude Agent SDK, ESM, Vitest"
+    }
+  }
+}

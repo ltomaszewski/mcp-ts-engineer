@@ -6,7 +6,9 @@ const SCRIPTS_DIR = join(process.cwd(), 'scripts')
 const TEMPLATES_DIR = join(process.cwd(), 'templates/config')
 
 const SCRIPTS = [
+  '_common.sh',
   'bootstrap.sh',
+  'create-app.sh',
   'update.sh',
   'setup-issue-labels.sh',
   'setup-worktree.sh',
@@ -57,21 +59,12 @@ describe('Bootstrap scripts', () => {
 describe('bootstrap.sh specifics', () => {
   const content = readFileSync(join(SCRIPTS_DIR, 'bootstrap.sh'), 'utf-8')
 
-  it('guards against monorepo root resolving to /', () => {
-    expect(content).toMatch(/MONOREPO_ROOT.*==.*"\/"/)
+  it('sources _common.sh', () => {
+    expect(content).toContain('source "$SCRIPT_DIR/_common.sh"')
   })
 
-  it('uses python3 sys.argv for relpath (no string interpolation)', () => {
-    expect(content).toMatch(/sys\.argv\[1\].*sys\.argv\[2\]/)
-  })
-
-  it('uses process.env in Node.js fallbacks (no shell interpolation)', () => {
-    // All node -e blocks should use process.env, not template literals
-    const nodeBlocks = content.match(/node -e "[\s\S]*?"/g) || []
-    expect(nodeBlocks.length).toBeGreaterThan(0)
-    for (const block of nodeBlocks) {
-      expect(block).toContain('process.env')
-    }
+  it('delegates monorepo root detection to _common.sh', () => {
+    expect(content).toContain('detect_monorepo_root')
   })
 
   it('uses env vars for CLAUDE.md multiline replacement', () => {
@@ -109,12 +102,12 @@ describe('bootstrap.sh specifics', () => {
 describe('update.sh specifics', () => {
   const content = readFileSync(join(SCRIPTS_DIR, 'update.sh'), 'utf-8')
 
-  it('guards against monorepo root resolving to /', () => {
-    expect(content).toMatch(/MONOREPO_ROOT.*==.*"\/"/)
+  it('sources _common.sh', () => {
+    expect(content).toContain('source "$SCRIPT_DIR/_common.sh"')
   })
 
-  it('uses python3 sys.argv for relpath', () => {
-    expect(content).toMatch(/sys\.argv\[1\].*sys\.argv\[2\]/)
+  it('delegates monorepo root detection to _common.sh', () => {
+    expect(content).toContain('detect_monorepo_root')
   })
 
   it('creates all required .claude subdirectories', () => {

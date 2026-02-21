@@ -1,0 +1,24 @@
+import { describe, expect, it } from 'vitest';
+import { EchoInputSchema } from '../echo.schema.js';
+
+describe('EchoInputSchema', () => {
+  it('accepts valid input', () => {
+    const result = EchoInputSchema.safeParse({ message: 'hello' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects empty message', () => {
+    const result = EchoInputSchema.safeParse({ message: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing message', () => {
+    const result = EchoInputSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects message exceeding max length', () => {
+    const result = EchoInputSchema.safeParse({ message: 'x'.repeat(10001) });
+    expect(result.success).toBe(false);
+  });
+});

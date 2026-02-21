@@ -1,0 +1,6 @@
+import { Redirect } from 'expo-router';
+import type React from 'react';
+
+export default function NotFoundScreen(): React.ReactElement {
+  return <Redirect href="/" />;
+}

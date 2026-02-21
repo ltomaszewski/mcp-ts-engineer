@@ -5,38 +5,15 @@ set -eo pipefail
 # update.sh — Re-sync host repo after submodule update
 # =============================================================================
 
-# --- Portable relative path ---
-relpath() {
-  python3 -c "import os.path,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))" "$1" "$2"
-}
-
 # --- Detect paths ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUBMODULE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Find monorepo root (same algorithm as bootstrap.sh)
-MONOREPO_ROOT="$SUBMODULE_DIR"
-while [[ "$MONOREPO_ROOT" != "/" ]]; do
-  PARENT="$(dirname "$MONOREPO_ROOT")"
-  if [[ -f "$PARENT/package.json" ]] && grep -q '"workspaces"' "$PARENT/package.json" 2>/dev/null; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  if [[ -d "$PARENT/packages" ]] || [[ -d "$PARENT/apps" ]]; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  if [[ -d "$PARENT/.git" ]]; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  MONOREPO_ROOT="$PARENT"
-done
+# --- Source shared functions ---
+source "$SCRIPT_DIR/_common.sh"
 
-if [[ "$MONOREPO_ROOT" == "/" ]]; then
-  echo "ERROR: Could not detect monorepo root. Run from within a git repository."
-  exit 1
-fi
+# --- Detect monorepo root ---
+detect_monorepo_root "$SUBMODULE_DIR"
 
 SUBMODULE_REL="$(relpath "$SUBMODULE_DIR" "$MONOREPO_ROOT")"
 
@@ -47,25 +24,6 @@ cd "$MONOREPO_ROOT"
 
 # --- Ensure directories exist ---
 mkdir -p .claude/commands .claude/skills .claude/rules .claude/contexts .claude/codemaps .claude/hooks
-
-# --- Helper: create symlink ---
-symlink_file() {
-  local src="$1"
-  local dest="$2"
-  local dest_dir
-  dest_dir="$(dirname "$dest")"
-  local rel_src
-  rel_src="$(relpath "$src" "$dest_dir")"
-
-  if [[ -L "$dest" ]]; then
-    return 0
-  elif [[ -f "$dest" ]] || [[ -d "$dest" ]]; then
-    echo "  WARNING: $dest exists as regular file/dir, skipping"
-    return 0
-  fi
-  ln -s "$rel_src" "$dest"
-  echo "  NEW: $dest"
-}
 
 # --- Update command symlinks ---
 echo ""

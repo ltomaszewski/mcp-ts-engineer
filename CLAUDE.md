@@ -81,7 +81,22 @@ packages/mcp-ts-engineer/
 │   ├── bootstrap-scripts.test.ts        # Bootstrap script tests
 │   ├── config.test.ts                   # Config tests
 │   ├── postinstall.test.ts              # Postinstall tests
+│   ├── create-app-scripts.test.ts       # Create-app script tests
 │   └── server.test.ts                   # Server factory tests
+├── scripts/
+│   ├── _common.sh                       # Shared shell functions
+│   ├── bootstrap.sh                     # Initial monorepo setup
+│   ├── create-app.sh                    # App scaffold script
+│   ├── update.sh                        # Re-sync after submodule update
+│   ├── setup-issue-labels.sh            # GitHub label setup
+│   └── setup-worktree.sh               # Git worktree setup
+├── templates/
+│   ├── config/                          # Monorepo root config templates
+│   └── apps/                            # App scaffold templates
+│       ├── registry.json                # App type registry
+│       ├── expo-app/                    # React Native (Expo) template
+│       ├── nestjs-server/               # NestJS backend template
+│       └── mcp-server/                  # MCP server template
 ├── vitest.config.ts                     # Vitest configuration
 ├── vitest.setup.ts                      # Vitest setup file
 ├── tsconfig.json                        # TypeScript config (IDE)
@@ -146,6 +161,177 @@ interface CapabilityDefinition {
 - Aborts in-flight queries, waits for cost aggregation
 - Closes sessions, writes cost reports, flushes logs
 - SIGINT/SIGTERM handlers in entry point
+
+## App Scaffold System
+
+The `create-app.sh` script scaffolds new apps in the monorepo from templates. It is registry-driven: adding a new app type requires only a new template directory and a registry entry — no script changes.
+
+### Architecture
+
+```
+scripts/
+├── _common.sh           # Shared functions (sourced by all scripts)
+├── create-app.sh        # Main scaffold script
+├── bootstrap.sh         # Initial monorepo setup (sources _common.sh)
+└── update.sh            # Re-sync after submodule update (sources _common.sh)
+
+templates/apps/
+├── registry.json        # App type definitions (label, description)
+├── expo-app/            # React Native (Expo) template
+│   ├── package.json.template
+│   ├── tsconfig.json.template
+│   ├── app.json.template
+│   ├── babel.config.js.template
+│   ├── metro.config.js.template
+│   ├── tailwind.config.js.template
+│   ├── nativewind-env.d.ts.template
+│   ├── global.css.template
+│   ├── jest.config.js.template       # Jest (jest-expo preset)
+│   ├── jest.setup.js.template        # Native module mocks
+│   ├── biome.json.template           # Excludes .expo/, ios/, android/
+│   ├── app/_layout.tsx.template
+│   ├── app/index.tsx.template
+│   ├── app/+not-found.tsx.template
+│   └── src/.gitkeep
+├── nestjs-server/       # NestJS backend template
+│   ├── package.json.template
+│   ├── tsconfig.json.template
+│   ├── tsconfig.build.json.template
+│   ├── swcrc.template               # → .swcrc (dot-prefix auto-added)
+│   ├── vitest.config.ts.template     # unplugin-swc for decorators
+│   ├── vitest.setup.ts.template      # reflect-metadata import
+│   ├── env.example.template          # → .env.example (dot-prefix auto-added)
+│   ├── biome.json.template           # Excludes dist/
+│   ├── src/main.ts.template
+│   ├── src/app.module.ts.template
+│   └── src/modules/health/           # Health check module with tests
+└── mcp-server/          # MCP server template
+    ├── package.json.template
+    ├── tsconfig.json.template
+    ├── vitest.config.ts.template
+    ├── vitest.setup.ts.template
+    ├── biome.json.template            # Excludes build/
+    ├── src/index.ts.template          # stdio entry point
+    ├── src/server.ts.template         # McpServer factory
+    └── src/capabilities/echo/         # Echo tool with tests
+```
+
+### Usage
+
+```bash
+# CLI
+bash packages/mcp-ts-engineer/scripts/create-app.sh \
+  --type <app-type> --name <app-name> [--port <port>]
+
+# Claude Code command (interactive)
+/create-app
+/create-app expo-app my-mobile
+/create-app nestjs-server my-api
+/create-app mcp-server my-agent
+```
+
+### Script Flow (`create-app.sh`)
+
+1. **Parse args**: `--type`, `--name`, optional `--port` (default: 3001)
+2. **Source `_common.sh`**, detect monorepo root
+3. **Validate**: type exists in `registry.json`, name matches `/^[a-z][a-z0-9-]*$/`, `apps/<name>` doesn't exist
+4. **Derive placeholders**: `APP_NAME`, `PACKAGE_NAME`, `PASCAL_NAME`, `EXPO_SLUG`, `BUNDLE_ID`, `PORT`
+5. **Walk `templates/apps/<type>/`** recursively:
+   - `.template` files → copy with suffix stripped, run `sed` placeholder replacement
+   - `swcrc.template` → `.swcrc` (dot-prefix)
+   - `env.example.template` → `.env.example` (dot-prefix)
+   - Other files (`.gitkeep`) → copy as-is
+6. **Create `docs/specs/<name>/todo/`**
+7. **Run `npm install`** (workspace auto-discovery)
+8. **Run `update.sh`** (regenerate codemaps, symlinks)
+9. **Print summary** with next steps
+
+### Available App Types
+
+Defined in `templates/apps/registry.json`:
+
+| Type | Label | Test Runner | Key Stack |
+|------|-------|-------------|-----------|
+| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
+| `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Apollo), MongoDB (Mongoose), JWT auth |
+| `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
+
+**Test runner rationale**:
+- **expo-app + Jest**: `jest-expo` provides 100+ native module mocks. `vitest-react-native` is still experimental.
+- **nestjs-server + Vitest**: `unplugin-swc` is officially recommended by NestJS. 3-4x faster than Jest.
+- **mcp-server + Vitest**: Standard ESM setup, no special plugins needed.
+
+### Template Placeholders
+
+All `.template` files use `{{PLACEHOLDER}}` syntax (processed via `sed`):
+
+| Placeholder | Source | Example |
+|---|---|---|
+| `{{APP_NAME}}` | `--name` arg | `my-app` |
+| `{{PACKAGE_NAME}}` | `@${REPO_NAME}/${APP_NAME}` | `@my-project/my-app` |
+| `{{PASCAL_NAME}}` | PascalCase of APP_NAME | `MyApp` |
+| `{{EXPO_SLUG}}` | Same as APP_NAME | `my-app` |
+| `{{BUNDLE_ID}}` | `com.${REPO}.${APP}` (stripped hyphens) | `com.myproject.myapp` |
+| `{{PORT}}` | `--port` or `3001` | `3001` |
+
+### Per-App Biome Config
+
+Each app gets a minimal `biome.json` with **only** app-specific file exclusions. Biome 2.x walks up to find the root `biome.json` for all rules, so apps inherit formatting/linting rules automatically:
+- `expo-app`: excludes `.expo/`, `ios/`, `android/`
+- `nestjs-server`: excludes `dist/`
+- `mcp-server`: excludes `build/`
+
+### Per-App Scripts (Consistent Across Types)
+
+| Script | expo-app | nestjs-server | mcp-server |
+|---|---|---|---|
+| `dev` | `expo start` | `ts-node-dev --respawn ...` | `tsx src/index.ts` |
+| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` |
+| `start` | — | `node dist/main.js` | `node build/index.js` |
+| `test` | `jest` | `vitest run` | `vitest run` |
+| `test:watch` | `jest --watch` | `vitest` | `vitest` |
+| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` |
+| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
+| `lint` | `biome check .` | `biome check .` | `biome check .` |
+| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
+| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` |
+
+### Adding a New App Type
+
+The system is fully registry-driven. **No script changes needed**:
+
+1. Create template directory: `mkdir -p templates/apps/<type>/src`
+2. Add entry to `templates/apps/registry.json`:
+   ```json
+   { "my-type": { "label": "My Framework", "description": "Short description" } }
+   ```
+3. Add template files with `.template` suffix, using `{{PLACEHOLDER}}` markers
+4. Special naming: `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`
+5. Non-template files (`.gitkeep`) are copied as-is
+6. Add tests in `__tests__/create-app-scripts.test.ts`
+
+### Shared Shell Functions (`_common.sh`)
+
+All scripts source `scripts/_common.sh` for shared utilities:
+
+| Function | Purpose |
+|----------|---------|
+| `relpath()` | Portable relative path via python3 (no `readlink -f`) |
+| `to_pascal_case()` | `kebab-case` → `PascalCase` |
+| `detect_monorepo_root()` | Walk-up detection with `/` guard, sets `$MONOREPO_ROOT` |
+| `read_pkg_field()` | Read JSON field via jq (preferred) or node fallback |
+| `symlink_file()` | Idempotent symlink creation (skip if exists) |
+
+### Test Coverage
+
+Tests in `__tests__/create-app-scripts.test.ts`:
+- `_common.sh` and `create-app.sh` exist, have shebang, pass `bash -n`
+- `_common.sh` contains all shared functions
+- `create-app.sh` sources `_common.sh`, validates name, handles dot-prefix files
+- `registry.json` exists, valid JSON, contains all three app types
+- Each template dir has `package.json.template` with `{{PACKAGE_NAME}}`
+- Each template dir has `tsconfig.json.template` and `biome.json.template`
+- Correct test runner config per type (Jest for expo, Vitest for nestjs/mcp)
 
 ## Technology Stack
 

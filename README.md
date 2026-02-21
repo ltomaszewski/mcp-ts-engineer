@@ -24,8 +24,10 @@ your-monorepo/
 │   ├── .claude/skills/           ← 35+ skill directories
 │   ├── .claude/rules/            ← coding guidelines
 │   ├── .claude/contexts/         ← context modes
-│   ├── scripts/                  ← bootstrap, update, setup scripts
-│   └── templates/config/         ← config file templates
+│   ├── scripts/                  ← bootstrap, create-app, update scripts
+│   └── templates/
+│       ├── config/               ← monorepo root config templates
+│       └── apps/                 ← app scaffold templates (expo, nestjs, mcp)
 ├── .claude/commands/             → symlinks to submodule
 ├── .claude/skills/               → symlinks to submodule
 ├── .claude/rules/                → symlinks to submodule
@@ -73,6 +75,112 @@ The bootstrap script auto-detects project name, repo owner/name, and discovered 
 --repo-name "repo"     GitHub repo name (override auto-detection)
 ```
 
+## Creating Apps
+
+Scaffold new apps inside `apps/` from built-in templates using `create-app.sh` or the `/create-app` Claude Code command.
+
+### Command Line
+
+```bash
+bash packages/mcp-ts-engineer/scripts/create-app.sh \
+  --type <app-type> --name <app-name> [--port <port>]
+```
+
+### Claude Code Command
+
+```
+/create-app expo-app my-mobile
+/create-app nestjs-server my-api --port 3002
+/create-app mcp-server my-agent
+```
+
+Or just `/create-app` — it will ask for type and name interactively.
+
+### Available App Types
+
+| Type | Label | Test Runner | Key Stack |
+|------|-------|-------------|-----------|
+| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
+| `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Apollo), MongoDB (Mongoose), JWT auth |
+| `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
+
+**Why Jest for Expo?** `jest-expo` provides 100+ native module mocks out of the box. `vitest-react-native` is still experimental — Jest remains the safer choice for React Native.
+
+**Why Vitest for NestJS?** Officially recommended by NestJS with `unplugin-swc` for decorator metadata. 3-4x faster than Jest.
+
+### What It Creates
+
+```
+apps/<name>/
+├── package.json          # Deps and scripts (workspace-aware)
+├── tsconfig.json         # TypeScript config
+├── biome.json            # Biome exclude rules (inherits root)
+├── [test config]         # jest.config.js or vitest.config.ts
+├── src/                  # Source code with starter files
+└── ...                   # Type-specific config files
+```
+
+The script also:
+1. Creates `docs/specs/<name>/todo/` for spec-driven development
+2. Runs `npm install` to register the new workspace
+3. Runs `update.sh` to regenerate codemaps and symlinks
+
+### Template Placeholders
+
+All `.template` files use `{{PLACEHOLDER}}`:
+
+| Placeholder | Source | Example |
+|---|---|---|
+| `{{APP_NAME}}` | `--name` arg | `my-app` |
+| `{{PACKAGE_NAME}}` | `@${repo}/${name}` | `@my-project/my-app` |
+| `{{PASCAL_NAME}}` | PascalCase of name | `MyApp` |
+| `{{EXPO_SLUG}}` | Same as name | `my-app` |
+| `{{BUNDLE_ID}}` | `com.${repo}.${name}` (no hyphens) | `com.myproject.myapp` |
+| `{{PORT}}` | `--port` or `3001` | `3001` |
+
+### Adding a New App Type
+
+The template system is fully registry-driven — **no script changes needed**:
+
+1. Create template directory:
+   ```bash
+   mkdir -p templates/apps/my-type/src
+   ```
+
+2. Add entry to `templates/apps/registry.json`:
+   ```json
+   {
+     "appTypes": {
+       "my-type": {
+         "label": "My Framework",
+         "description": "Short description of the stack"
+       }
+     }
+   }
+   ```
+
+3. Add template files with `.template` suffix. Use `{{PLACEHOLDER}}` for variable substitution.
+
+4. Special file naming:
+   - `swcrc.template` → `.swcrc` (dot-prefix added automatically)
+   - `env.example.template` → `.env.example` (dot-prefix added automatically)
+   - Non-`.template` files (e.g., `.gitkeep`) are copied as-is
+
+### Per-App Scripts (Consistent Across All Types)
+
+| Script | expo-app | nestjs-server | mcp-server |
+|---|---|---|---|
+| `dev` | `expo start` | `ts-node-dev --respawn ...` | `tsx src/index.ts` |
+| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` |
+| `start` | — | `node dist/main.js` | `node build/index.js` |
+| `test` | `jest` | `vitest run` | `vitest run` |
+| `test:watch` | `jest --watch` | `vitest` | `vitest` |
+| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` |
+| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
+| `lint` | `biome check .` | `biome check .` | `biome check .` |
+| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
+| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` |
+
 ## For Collaborators
 
 ```bash
@@ -106,6 +214,7 @@ The update script re-syncs symlinks, discovers new projects, and rebuilds the su
 
 | Command | Purpose |
 |---------|---------|
+| `/create-app [type] [name]` | Scaffold a new app from a template (interactive if args omitted) |
 | `/worktree-add <purpose>` | Create isolated git worktree with auto-cleanup of merged worktrees |
 | `/issue-capture` | Capture session context as a structured GitHub issue |
 | `/issue-implement <number>` | End-to-end pipeline: import → worktree → review → implement → finalize → PR |

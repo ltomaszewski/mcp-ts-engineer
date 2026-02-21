@@ -5,11 +5,6 @@ set -eo pipefail
 # bootstrap.sh — Scaffold monorepo + Claude Code environment for mcp-ts-engineer
 # =============================================================================
 
-# --- Portable relative path (avoids python3 injection) ---
-relpath() {
-  python3 -c "import os.path,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))" "$1" "$2"
-}
-
 # --- Parse arguments ---
 REPO_OWNER=""
 REPO_NAME_ARG=""
@@ -26,30 +21,11 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUBMODULE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Find monorepo root: walk up until we find workspaces, apps/, packages/, or .git
-MONOREPO_ROOT="$SUBMODULE_DIR"
-while [[ "$MONOREPO_ROOT" != "/" ]]; do
-  PARENT="$(dirname "$MONOREPO_ROOT")"
-  if [[ -f "$PARENT/package.json" ]] && grep -q '"workspaces"' "$PARENT/package.json" 2>/dev/null; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  if [[ -d "$PARENT/packages" ]] || [[ -d "$PARENT/apps" ]]; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  if [[ -d "$PARENT/.git" ]]; then
-    MONOREPO_ROOT="$PARENT"
-    break
-  fi
-  MONOREPO_ROOT="$PARENT"
-done
+# --- Source shared functions ---
+source "$SCRIPT_DIR/_common.sh"
 
-# Guard: never operate on filesystem root
-if [[ "$MONOREPO_ROOT" == "/" ]]; then
-  echo "ERROR: Could not detect monorepo root. Run from within a git repository."
-  exit 1
-fi
+# --- Detect monorepo root ---
+detect_monorepo_root "$SUBMODULE_DIR"
 
 # Compute relative path from monorepo root to submodule
 SUBMODULE_REL="$(relpath "$SUBMODULE_DIR" "$MONOREPO_ROOT")"
@@ -59,11 +35,6 @@ echo "Submodule:     $SUBMODULE_REL"
 
 # --- Auto-detect project name ---
 DIR_NAME="$(basename "$MONOREPO_ROOT")"
-
-# Convert to PascalCase: my-project → MyProject
-to_pascal_case() {
-  echo "$1" | sed 's/[-_]/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1' | tr -d ' '
-}
 
 PASCAL_NAME="$(to_pascal_case "$DIR_NAME")"
 REPO_NAME="$DIR_NAME"
@@ -405,24 +376,6 @@ fi
 echo ""
 echo "--- Symlinking .claude/ content ---"
 
-# Helper: create symlink for a file
-symlink_file() {
-  local src="$1"
-  local dest="$2"
-  local dest_dir
-  dest_dir="$(dirname "$dest")"
-  local rel_src
-  rel_src="$(relpath "$src" "$dest_dir")"
-
-  if [[ -L "$dest" ]]; then
-    return 0  # Already a symlink
-  elif [[ -f "$dest" ]]; then
-    echo "  WARNING: $dest exists as regular file, skipping"
-    return 0
-  fi
-  ln -s "$rel_src" "$dest"
-}
-
 # Commands
 COMMANDS_LINKED=0
 for cmd_file in "$SUBMODULE_DIR/.claude/commands"/*.md; do
@@ -476,30 +429,6 @@ echo "  Skills: $SKILLS_LINKED symlinked"
 # =============================================================================
 echo ""
 echo "--- Generating codemaps ---"
-
-# Helper: check if jq is available
-HAS_JQ=false
-if command -v jq &>/dev/null; then
-  HAS_JQ=true
-fi
-
-read_pkg_field() {
-  local pkg_file="$1"
-  local field="$2"
-  if $HAS_JQ; then
-    jq -r "$field // \"\"" "$pkg_file" 2>/dev/null || echo ""
-  else
-    # Convert jq path to JS property: .name → name, .description → description
-    local js_field="${field#.}"
-    PKG_FILE_ENV="$pkg_file" FIELD_ENV="$js_field" node -e "
-      try {
-        const p = JSON.parse(require('fs').readFileSync(process.env.PKG_FILE_ENV, 'utf8'));
-        const v = p[process.env.FIELD_ENV];
-        console.log(typeof v === 'object' ? JSON.stringify(v) : v || '');
-      } catch(e) { console.log(''); }
-    " 2>/dev/null || echo ""
-  fi
-}
 
 for proj in "${PROJECTS[@]}"; do
   CODEMAP_FILE=".claude/codemaps/$proj.md"

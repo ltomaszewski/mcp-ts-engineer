@@ -1,0 +1,49 @@
+import { Test } from '@nestjs/testing';
+import { HealthController } from '../health.controller';
+import { HealthService } from '../health.service';
+
+describe('HealthController', () => {
+  let controller: HealthController;
+  let healthService: { checkMongoDB: ReturnType<typeof vi.fn> };
+
+  beforeEach(async () => {
+    healthService = { checkMongoDB: vi.fn() };
+
+    const module = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [{ provide: HealthService, useValue: healthService }],
+    }).compile();
+
+    controller = module.get<HealthController>(HealthController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('returns ok when MongoDB is connected', async () => {
+    healthService.checkMongoDB.mockResolvedValue('connected');
+    const result = await controller.check();
+    expect(result.status).toBe('ok');
+    expect(result.mongodb).toBe('connected');
+  });
+
+  it('returns degraded when MongoDB is disconnected', async () => {
+    healthService.checkMongoDB.mockResolvedValue('disconnected');
+    const result = await controller.check();
+    expect(result.status).toBe('degraded');
+    expect(result.mongodb).toBe('disconnected');
+  });
+
+  it('includes ISO timestamp', async () => {
+    healthService.checkMongoDB.mockResolvedValue('connected');
+    const result = await controller.check();
+    expect(new Date(result.timestamp).toISOString()).toBe(result.timestamp);
+  });
+
+  it('includes positive uptime', async () => {
+    healthService.checkMongoDB.mockResolvedValue('connected');
+    const result = await controller.check();
+    expect(result.uptime).toBeGreaterThan(0);
+  });
+});

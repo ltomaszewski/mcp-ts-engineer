@@ -1,0 +1,13 @@
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { registerCapabilities } from './capabilities/index.js';
+
+export function createServer(): McpServer {
+  const server = new McpServer({
+    name: '{{APP_NAME}}',
+    version: '0.1.0',
+  });
+
+  registerCapabilities(server);
+
+  return server;
+}

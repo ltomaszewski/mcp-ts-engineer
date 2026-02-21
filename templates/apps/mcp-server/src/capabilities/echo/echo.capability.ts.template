@@ -1,0 +1,15 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { EchoInputSchema } from './echo.schema.js';
+
+export function registerEcho(server: McpServer): void {
+  server.tool(
+    'echo',
+    'Echo back the provided message',
+    EchoInputSchema.shape,
+    async ({ message }) => {
+      return {
+        content: [{ type: 'text', text: message }],
+      };
+    },
+  );
+}

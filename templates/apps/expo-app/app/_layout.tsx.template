@@ -1,0 +1,29 @@
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import type React from 'react';
+import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import '../global.css';
+
+void SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout(): React.ReactElement {
+  void SplashScreen.hideAsync();
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <View className="flex-1 bg-white dark:bg-black">
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="index" />
+          </Stack>
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}

@@ -1,0 +1,13 @@
+import type React from 'react';
+import { Text, View } from 'react-native';
+
+export default function HomeScreen(): React.ReactElement {
+  return (
+    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
+      <Text className="text-2xl font-bold text-black dark:text-white">
+        {{PASCAL_NAME}}
+      </Text>
+      <Text className="mt-2 text-gray-500">Welcome to your new app</Text>
+    </View>
+  );
+}

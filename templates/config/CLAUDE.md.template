@@ -185,6 +185,7 @@ Use `/issue-capture` to create GitHub issues from conversation context.
 
 | Command | Purpose |
 |---------|---------|
+| `/create-app` | Scaffold a new app from a template (expo, nestjs, mcp) |
 | `/worktree-add` | Create isolated git worktree |
 | `/issue-capture` | Capture session context as GitHub issue |
 | `/issue-implement` | End-to-end implementation pipeline |
