@@ -32,9 +32,15 @@ Generate token-lean architecture documentation for quick codebase navigation wit
 - Include absolute paths
 - Overwrite without showing diff when changes > 30%
 
+## Output Location
+
+> **Important:** Codemaps are generated at the **monorepo root** (`.claude/codemaps/`), NOT inside this submodule.
+> This is because codemaps serve the entire monorepo and are referenced by multiple projects.
+> When this package is used as a submodule, the codemap-updater writes to `<monorepo-root>/.claude/codemaps/`.
+
 ## Output Structure
 
-Generate codemaps in `.claude/codemaps/`:
+Generate codemaps in `<monorepo-root>/.claude/codemaps/`:
 
 | File | Content | Scan Target |
 |------|---------|-------------|
