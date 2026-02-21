@@ -210,29 +210,6 @@ turbo run build && turbo run test && turbo run lint
 
 ---
 
-## CI/CD
-
-```yaml
-# .github/workflows/ci.yml ({{REPO_OWNER}}/{{REPO_NAME}})
-name: CI
-on: [push, pull_request]
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: turbo run build test lint type-check
-```
-
----
-
 ## Cleanup
 
 - Never commit `node_modules/`, `dist/`, `build/`, `coverage/`, `.turbo/`

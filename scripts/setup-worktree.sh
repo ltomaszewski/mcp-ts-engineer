@@ -1,20 +1,11 @@
 #!/bin/bash
 set -eo pipefail
 
-# Resolve symlinks portably (macOS readlink has no -f flag)
-resolve_symlink() {
-  local target="$1"
-  while [[ -L "$target" ]]; do
-    local dir
-    dir="$(cd "$(dirname "$target")" && pwd)"
-    target="$(readlink "$target")"
-    [[ "$target" != /* ]] && target="$dir/$target"
-  done
-  echo "$(cd "$(dirname "$target")" && pwd)"
-}
-
-SCRIPT_SOURCE="$(resolve_symlink "${BASH_SOURCE[0]}")"
-WORKTREE_ROOT="$(cd "$SCRIPT_SOURCE/.." && pwd)"
+# Determine worktree root from the symlink's own location (pre-resolution).
+# The symlink lives at MONOREPO_ROOT/scripts/setup-worktree.sh, so go up one
+# level from the symlink's directory — NOT the resolved real file.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKTREE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$WORKTREE_ROOT"
 
 echo "Setting up worktree: $WORKTREE_ROOT"

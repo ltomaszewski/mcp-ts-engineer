@@ -323,7 +323,7 @@ else
   PACKAGES_SECTION=""
   for pkg in "${PACKAGES[@]}"; do
     [[ "$pkg" == "mcp-ts-engineer" ]] && continue
-    PKG_NAME="$(PKG_FILE="packages/$pkg/package.json" PKG_FALLBACK="$pkg" node -e "try{console.log(JSON.parse(require('fs').readFileSync(process.env.PKG_FILE,'utf8')).name)}catch(e){console.log(process.env.PKG_FALLBACK)}" 2>/dev/null || echo "$pkg")"
+    PKG_NAME="$(PKG_FILE_ENV="packages/$pkg/package.json" PKG_FALLBACK="$pkg" node -e "try{console.log(JSON.parse(require('fs').readFileSync(process.env.PKG_FILE_ENV,'utf8')).name)}catch(e){console.log(process.env.PKG_FALLBACK)}" 2>/dev/null || echo "$pkg")"
     PACKAGES_SECTION+="### $pkg"$'\n'
     PACKAGES_SECTION+="- Workspace: \`packages/$pkg\`"$'\n'
     PACKAGES_SECTION+="- Package name: \`$PKG_NAME\`"$'\n\n'
@@ -358,8 +358,6 @@ else
   TEMPLATE="$(cat "$TEMPLATE_DIR/CLAUDE.md.template")"
   TEMPLATE="${TEMPLATE//\{\{PROJECT_NAME\}\}/$PASCAL_NAME}"
   TEMPLATE="${TEMPLATE//\{\{MCP_KEY\}\}/$MCP_KEY}"
-  TEMPLATE="${TEMPLATE//\{\{REPO_OWNER\}\}/${REPO_OWNER:-unknown}}"
-  TEMPLATE="${TEMPLATE//\{\{REPO_NAME\}\}/${REPO_NAME_ARG:-$REPO_NAME}}"
 
   # Write template, then replace multiline placeholders via environment variables
   echo "$TEMPLATE" > CLAUDE.md

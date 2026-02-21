@@ -46,14 +46,6 @@ git clone --recurse-submodules git@github.com:org/my-project.git
 cd my-project && npm install
 ```
 
-### CI (GitHub Actions)
-
-```yaml
-- uses: actions/checkout@v4
-  with:
-    submodules: recursive
-```
-
 ---
 
 ## Fixed Monorepo Schema
@@ -243,12 +235,12 @@ Creates:
 
 Uses bash 3.2-compatible `for pair in "label color"` syntax (no associative arrays).
 
-### 4. `scripts/setup-worktree.sh` (47 lines)
+### 4. `scripts/setup-worktree.sh` (37 lines)
 
 Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across all consuming repos.
 
 **Flow**:
-1. Resolve symlinks portably (loop with `readlink` — no `-f` flag, works on macOS)
+1. Determine worktree root from symlink's own location (pre-resolution) — uses `dirname "${BASH_SOURCE[0]}"` directly, NOT symlink resolution
 2. `cd` to worktree root
 3. `npm install`
 4. `npx turbo run build`
@@ -275,7 +267,7 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 
 ### 6. Templates (`templates/config/`)
 
-7 template files used by bootstrap for config generation:
+5 template files used by bootstrap for config generation (`.mcp.json` and `ts-engineer.config.json` are generated inline by the script):
 
 | Template | Placeholders |
 |----------|-------------|
@@ -283,9 +275,7 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 | `turbo.json.template` | (none — static) |
 | `tsconfig.json.template` | (none — static) |
 | `gitignore.template` | (none — static) |
-| `mcp.json.template` | `{{BIN_PATH}}` |
-| `ts-engineer.config.json.template` | `{{SERVER_NAME}}`, `{{SERVER_NAME_LOWER}}`, `{{CODEMAPS_ENTRIES}}` |
-| `CLAUDE.md.template` | `{{PROJECT_NAME}}`, `{{MCP_KEY}}`, `{{REPO_OWNER}}`, `{{REPO_NAME}}`, `{{DIRECTORY_STRUCTURE}}`, `{{PROJECT_COMMANDS}}`, `{{PACKAGES_SECTION}}`, `{{SKILLS_LISTING}}`, `{{CODEMAPS_TABLE}}` |
+| `CLAUDE.md.template` | `{{PROJECT_NAME}}`, `{{MCP_KEY}}`, `{{DIRECTORY_STRUCTURE}}`, `{{PROJECT_COMMANDS}}`, `{{PACKAGES_SECTION}}`, `{{SKILLS_LISTING}}`, `{{CODEMAPS_TABLE}}` |
 
 ### 7. Codemap Generation
 
@@ -368,7 +358,6 @@ The generated CLAUDE.md includes these auto-populated sections:
 12. **Available Skills** — auto-generated listing of all symlinked skills
 13. **Codemaps** — table of all generated codemaps
 14. **Maintenance** — when adding new apps/packages
-15. **CI/CD** — GitHub Actions workflow example
 
 ---
 
@@ -393,8 +382,12 @@ The generated CLAUDE.md includes these auto-populated sections:
 | update.sh missing `codemaps/hooks` dir creation | Added to `mkdir -p` list |
 | update.sh silently skipped existing skill dirs | Added WARNING message (matches bootstrap.sh) |
 | update.sh missing setup-worktree.sh symlink re-check | Added symlink verification step |
-| CLAUDE.md.template missing 3 placeholders | Added `{{MCP_KEY}}`, `{{REPO_OWNER}}`, `{{REPO_NAME}}` |
+| CLAUDE.md.template missing `{{MCP_KEY}}` placeholder | Added `{{MCP_KEY}}` |
 | worktree-add.md duplicate `</output>` tag | Removed extraneous closing tag |
+| setup-worktree.sh resolved to submodule dir instead of monorepo root | Removed `resolve_symlink`, uses `dirname "${BASH_SOURCE[0]}"` directly (pre-resolution) |
+| bootstrap.sh env var naming inconsistency (`PKG_FILE` vs `PKG_FILE_ENV`) | Renamed to `PKG_FILE_ENV` for consistency |
+| Unused template files (`mcp.json.template`, `ts-engineer.config.json.template`) | Removed — bootstrap generates these inline |
+| CLAUDE.md template included CI/CD section | Removed CI/CD section and unused `{{REPO_OWNER}}`, `{{REPO_NAME}}` placeholders |
 
 ### Dependencies
 
@@ -408,6 +401,8 @@ The generated CLAUDE.md includes these auto-populated sections:
 
 ## Verification Checklist
 
+### Manual Verification
+
 1. **Fresh repo test**: `mkdir test && cd test && git init`, add submodule, run bootstrap → all files created
 2. **Existing repo test**: Run bootstrap on repo with existing projects → skips existing files, merges .mcp.json
 3. **Idempotency test**: Run bootstrap twice → second run prints "Exists, skipping" for all config files
@@ -417,9 +412,28 @@ The generated CLAUDE.md includes these auto-populated sections:
 7. **Label test**: `gh label list` shows project labels for all discovered projects
 8. **Codemap test**: `.claude/codemaps/` contains one file per project with correct deps
 
+### Automated Tests (`tests/unit/bootstrap-scripts.test.ts`)
+
+65 tests covering all 4 scripts + templates + commands:
+
+**Per-script (all 4)**: exists, shebang, `set -eo pipefail`, `bash -n` syntax, no `readlink -f`, no `declare -A`
+
+**bootstrap.sh specifics**: root `/` guard, `sys.argv` relpath, `process.env` in all node fallbacks, env var CLAUDE.md replacement, consistent `PKG_FILE_ENV` naming, `mcp-ts-engineer` skip, `find` flag order, `MCP_KEY="ts-engineer"`
+
+**update.sh specifics**: root `/` guard, `sys.argv` relpath, `.claude/` subdirectory creation, `setup-worktree.sh` re-check, submodule rebuild
+
+**setup-issue-labels.sh specifics**: project/type/status/priority labels, `mcp-ts-engineer` skip
+
+**setup-worktree.sh specifics**: pre-resolution root detection, `npm install`, turbo build, plugin tsconfigs, `setup-worktree-extra.sh` extension point
+
+**Templates**: all 5 exist, correct placeholders, no CI/CD section, no unused templates
+
+**Commands**: all 4 exist, no `mcp__software-house__` refs, correct `mcp__ts-engineer__` prefix
+
 ### Test Results (2026-02-21)
 
 - Syntax: All 4 scripts pass `bash -n`
 - Fresh repo: All files generated correctly (7 root files, 4+8+3+37 symlinks, codemaps, specs)
 - Idempotency: Second run skips all existing files, creates 0 new symlinks
 - Content: `.mcp.json` correct bin path, `ts-engineer.config.json` correct codemaps, architecture codemap clean
+- Automated: 65/65 tests pass
