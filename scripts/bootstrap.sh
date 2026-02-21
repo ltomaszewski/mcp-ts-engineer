@@ -611,22 +611,23 @@ else
 fi
 
 # =============================================================================
-# Step 19: Build submodule
-# =============================================================================
-echo ""
-echo "--- Building submodule ---"
-
-(cd "$SUBMODULE_DIR" && npm install && npm run build)
-echo "  Submodule built"
-
-# =============================================================================
-# Step 20: npm install at root
+# Step 19: Install root dependencies (must run before submodule build so
+#          lifecycle scripts like husky are available)
 # =============================================================================
 echo ""
 echo "--- Installing root dependencies ---"
 
 npm install
 echo "  Root dependencies installed"
+
+# =============================================================================
+# Step 20: Build submodule
+# =============================================================================
+echo ""
+echo "--- Building submodule ---"
+
+(cd "$SUBMODULE_DIR" && npm run build)
+echo "  Submodule built"
 
 # =============================================================================
 # Step 21: Setup GitHub labels
