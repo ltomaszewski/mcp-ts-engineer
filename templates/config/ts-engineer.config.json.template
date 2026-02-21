@@ -1,0 +1,11 @@
+{
+  "serverName": "{{SERVER_NAME}}",
+  "logDir": "logs/{{SERVER_NAME_LOWER}}",
+  "commitTag": "{{SERVER_NAME}}",
+  "codemaps": [
+{{CODEMAPS_ENTRIES}}
+  ],
+  "review": {
+    "checklist": []
+  }
+}

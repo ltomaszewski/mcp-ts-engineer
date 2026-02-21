@@ -267,7 +267,7 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 
 ### 6. Templates (`templates/config/`)
 
-5 template files used by bootstrap for config generation (`.mcp.json` and `ts-engineer.config.json` are generated inline by the script):
+7 template files used by bootstrap for config generation:
 
 | Template | Placeholders |
 |----------|-------------|
@@ -275,6 +275,8 @@ Symlinked from `scripts/setup-worktree.sh` at the monorepo root. Shared across a
 | `turbo.json.template` | (none — static) |
 | `tsconfig.json.template` | (none — static) |
 | `gitignore.template` | (none — static) |
+| `mcp.json.template` | `{{BIN_PATH}}` |
+| `ts-engineer.config.json.template` | `{{SERVER_NAME}}`, `{{SERVER_NAME_LOWER}}`, `{{CODEMAPS_ENTRIES}}` |
 | `CLAUDE.md.template` | `{{PROJECT_NAME}}`, `{{MCP_KEY}}`, `{{DIRECTORY_STRUCTURE}}`, `{{PROJECT_COMMANDS}}`, `{{PACKAGES_SECTION}}`, `{{SKILLS_LISTING}}`, `{{CODEMAPS_TABLE}}` |
 
 ### 7. Codemap Generation
@@ -386,7 +388,7 @@ The generated CLAUDE.md includes these auto-populated sections:
 | worktree-add.md duplicate `</output>` tag | Removed extraneous closing tag |
 | setup-worktree.sh resolved to submodule dir instead of monorepo root | Removed `resolve_symlink`, uses `dirname "${BASH_SOURCE[0]}"` directly (pre-resolution) |
 | bootstrap.sh env var naming inconsistency (`PKG_FILE` vs `PKG_FILE_ENV`) | Renamed to `PKG_FILE_ENV` for consistency |
-| Unused template files (`mcp.json.template`, `ts-engineer.config.json.template`) | Removed — bootstrap generates these inline |
+| bootstrap.sh generated `.mcp.json` and `ts-engineer.config.json` inline | Refactored to use templates (consistent with other files) |
 | CLAUDE.md template included CI/CD section | Removed CI/CD section and unused `{{REPO_OWNER}}`, `{{REPO_NAME}}` placeholders |
 
 ### Dependencies

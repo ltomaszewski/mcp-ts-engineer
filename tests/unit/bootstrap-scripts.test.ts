@@ -197,6 +197,8 @@ describe('Config templates', () => {
     'turbo.json.template',
     'tsconfig.json.template',
     'gitignore.template',
+    'mcp.json.template',
+    'ts-engineer.config.json.template',
     'CLAUDE.md.template',
   ] as const
 
@@ -207,6 +209,18 @@ describe('Config templates', () => {
   it('package.json.template has {{REPO_NAME}} placeholder', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'package.json.template'), 'utf-8')
     expect(content).toContain('{{REPO_NAME}}')
+  })
+
+  it('mcp.json.template has {{BIN_PATH}} placeholder', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'mcp.json.template'), 'utf-8')
+    expect(content).toContain('{{BIN_PATH}}')
+  })
+
+  it('ts-engineer.config.json.template has required placeholders', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ts-engineer.config.json.template'), 'utf-8')
+    expect(content).toContain('{{SERVER_NAME}}')
+    expect(content).toContain('{{SERVER_NAME_LOWER}}')
+    expect(content).toContain('{{CODEMAPS_ENTRIES}}')
   })
 
   it('CLAUDE.md.template has required placeholders', () => {
@@ -228,11 +242,6 @@ describe('Config templates', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'CLAUDE.md.template'), 'utf-8')
     expect(content).not.toContain('## CI/CD')
     expect(content).not.toContain('ci.yml')
-  })
-
-  it('no unused templates exist (mcp.json.template, ts-engineer.config.json.template)', () => {
-    expect(existsSync(join(TEMPLATES_DIR, 'mcp.json.template'))).toBe(false)
-    expect(existsSync(join(TEMPLATES_DIR, 'ts-engineer.config.json.template'))).toBe(false)
   })
 
   it('turbo.json.template has no placeholders', () => {

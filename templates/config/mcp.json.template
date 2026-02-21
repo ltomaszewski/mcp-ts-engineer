@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ts-engineer": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["{{BIN_PATH}}"],
+      "env": {}
+    }
+  }
+}

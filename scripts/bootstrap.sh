@@ -222,18 +222,7 @@ if [[ -f ".mcp.json" ]]; then
     "
   fi
 else
-  cat > .mcp.json << MCPEOF
-{
-  "mcpServers": {
-    "$MCP_KEY": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["$BIN_PATH"],
-      "env": {}
-    }
-  }
-}
-MCPEOF
+  sed "s|{{BIN_PATH}}|$BIN_PATH|g" "$TEMPLATE_DIR/mcp.json.template" > .mcp.json
   echo "  Created: .mcp.json"
 fi
 
@@ -262,19 +251,19 @@ else
   fi
   CODEMAPS_ENTRIES="$CODEMAPS_ENTRIES    { \"name\": \"architecture\", \"path\": \".claude/codemaps/architecture.md\" }"
 
-  cat > ts-engineer.config.json << CFGEOF
-{
-  "serverName": "$SERVER_NAME",
-  "logDir": "logs/$SERVER_NAME_LOWER",
-  "commitTag": "$SERVER_NAME",
-  "codemaps": [
-$CODEMAPS_ENTRIES
-  ],
-  "review": {
-    "checklist": []
-  }
-}
-CFGEOF
+  # Replace single-line placeholders via sed, then multiline via python3 + env vars
+  sed -e "s|{{SERVER_NAME_LOWER}}|$SERVER_NAME_LOWER|g" \
+      -e "s|{{SERVER_NAME}}|$SERVER_NAME|g" \
+      "$TEMPLATE_DIR/ts-engineer.config.json.template" > ts-engineer.config.json
+
+  export _CODEMAPS_ENTRIES="$CODEMAPS_ENTRIES"
+  python3 -c "
+import os
+content = open('ts-engineer.config.json').read()
+content = content.replace('{{CODEMAPS_ENTRIES}}', os.environ.get('_CODEMAPS_ENTRIES', ''))
+open('ts-engineer.config.json', 'w').write(content)
+"
+  unset _CODEMAPS_ENTRIES
   echo "  Created: ts-engineer.config.json"
 fi
 
