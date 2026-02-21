@@ -1,24 +1,27 @@
-import { Field, ObjectType, Query, Resolver } from "@nestjs/graphql";
+import { Inject } from "@nestjs/common";
+import { Field, Float, ObjectType, Query, Resolver } from "@nestjs/graphql";
 import { HealthService } from "./health.service";
 
 @ObjectType()
 class HealthStatus {
-	@Field()
+	@Field(() => String)
 	status!: string;
 
-	@Field()
+	@Field(() => String)
 	timestamp!: string;
 
-	@Field()
+	@Field(() => Float)
 	uptime!: number;
 
-	@Field()
+	@Field(() => String)
 	mongodb!: string;
 }
 
 @Resolver()
 export class HealthResolver {
-	constructor(private readonly healthService: HealthService) {}
+	constructor(
+		@Inject(HealthService) private readonly healthService: HealthService,
+	) {}
 
 	@Query(() => HealthStatus)
 	async health(): Promise<HealthStatus> {
