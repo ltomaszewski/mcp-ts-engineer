@@ -129,7 +129,7 @@ describe("finalizeCapability", () => {
   });
 
   describe("preparePromptInput", () => {
-    it("extracts filesChanged and cwd", () => {
+    it("extracts filesChanged, monorepoRoot, and cwd", () => {
       const input: FinalizeInput = {
         files_changed: ["src/file1.ts", "src/file2.ts"],
         cwd: "/some/path",
@@ -143,8 +143,10 @@ describe("finalizeCapability", () => {
 
       expect(result).toEqual({
         filesChanged: ["src/file1.ts", "src/file2.ts"],
+        monorepoRoot: expect.any(String),
         cwd: "/some/path",
       });
+      expect((result as Record<string, unknown>).monorepoRoot).toBeTruthy();
     });
 
     it("handles missing cwd", () => {
@@ -160,6 +162,7 @@ describe("finalizeCapability", () => {
 
       expect(result).toEqual({
         filesChanged: ["src/file.ts"],
+        monorepoRoot: expect.any(String),
         cwd: undefined,
       });
     });

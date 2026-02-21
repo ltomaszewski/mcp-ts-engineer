@@ -7,11 +7,13 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
 
 interface CodemapPromptInput {
   filesChanged: string[];
+  monorepoRoot: string;
   cwd?: string;
 }
 
 const buildCodemapUserPrompt = (
   filesChanged: string[],
+  monorepoRoot: string,
   cwd?: string,
 ): string => {
   const filesChangedList = filesChanged.map((f) => `  - ${f}`).join("\n");
@@ -19,7 +21,10 @@ const buildCodemapUserPrompt = (
 
   return `You are the Codemap Agent for maintaining architecture documentation.
 
-${cwdContext}Changed files:
+${cwdContext}Monorepo root: ${monorepoRoot}
+Codemaps directory: ${monorepoRoot}/.claude/codemaps/
+
+Changed files:
 ${filesChangedList}
 
 Your responsibilities:
@@ -30,11 +35,12 @@ Your responsibilities:
    - Changes to core infrastructure
 
 2. Determine if codemaps need updating:
-   - Read existing codemaps from .claude/codemaps/
+   - Read existing codemaps from ${monorepoRoot}/.claude/codemaps/
    - Check if changed files are covered by existing codemaps
    - Identify which codemaps are outdated
 
 3. Update affected codemaps:
+   - ALWAYS write codemaps to ${monorepoRoot}/.claude/codemaps/ (the monorepo root, NOT a submodule directory)
    - Keep codemaps under 200 lines
    - Use tables for structured data
    - Use directory trees for file structure
@@ -78,6 +84,7 @@ Important:
 - Don't update for minor bug fixes or small tweaks
 - Create new codemaps for new major modules
 - Keep codemaps focused and concise
+- ALWAYS use the absolute path ${monorepoRoot}/.claude/codemaps/ for reading and writing codemaps
 
 Your goal is to keep architecture documentation current and useful.`;
 };
@@ -90,13 +97,13 @@ export const codemapPromptV1: PromptVersion = {
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { filesChanged, cwd } = input as CodemapPromptInput;
+    const { filesChanged, monorepoRoot, cwd } = input as CodemapPromptInput;
     return {
       systemPrompt: {
         type: "preset" as const,
         preset: "claude_code" as const,
       },
-      userPrompt: buildCodemapUserPrompt(filesChanged, cwd),
+      userPrompt: buildCodemapUserPrompt(filesChanged, monorepoRoot, cwd),
     };
   },
 };

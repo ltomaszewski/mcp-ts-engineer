@@ -7,6 +7,7 @@ import type { CapabilityDefinition } from "../../core/capability-registry/capabi
 import type { CapabilityContext } from "../../core/capability-registry/capability-registry.types.js";
 import type { AIQueryResult } from "../../core/ai-provider/ai-provider.types.js";
 import { updateSpecStatus } from "../../core/utils/index.js";
+import { getProjectConfig } from "../../config/project-config.js";
 import {
   FinalizeInputSchema,
   FinalizeOutputSchema,
@@ -209,6 +210,7 @@ export const finalizeCapability: CapabilityDefinition<
 
   preparePromptInput: (input: FinalizeInput, _context) => ({
     filesChanged: input.files_changed,
+    monorepoRoot: getProjectConfig().monorepoRoot,
     cwd: input.cwd,
   }),
 

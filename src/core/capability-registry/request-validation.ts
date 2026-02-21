@@ -3,7 +3,8 @@
  * Validates and merges capability options with server constraints.
  *
  * Applies ProjectConfig-based defaults for cwd and additionalDirectories,
- * so agents spawn with the submodule as cwd and monorepo root as accessible.
+ * so agents spawn with the monorepo root as cwd (where .claude/codemaps/,
+ * workspaces, and git live) and the submodule as an additional directory.
  */
 
 import type { CapabilityDefinition } from "./capability-registry.types.js";
@@ -21,7 +22,7 @@ import { getProjectConfig } from "../../config/project-config.js";
 
 /**
  * Merge capability default options with server-level validation.
- * Applies ProjectConfig defaults for cwd and additionalDirectories.
+ * Applies ProjectConfig defaults for cwd (monorepo root) and additionalDirectories.
  */
 export function mergeAndValidateAIQueryRequest(
   capability: CapabilityDefinition,
@@ -55,11 +56,12 @@ export function mergeAndValidateAIQueryRequest(
   }
 
   // Apply ProjectConfig defaults for cwd and additionalDirectories.
-  // If the capability or input doesn't set them, use the config values.
+  // Default cwd to monorepoRoot so agents operate where .claude/codemaps/,
+  // workspaces, and git live. When the submodule is separate, grant access to it.
   const config = getProjectConfig();
-  const cwd = defaults.cwd ?? config.submodulePath;
+  const cwd = defaults.cwd ?? config.monorepoRoot;
   const additionalDirectories = defaults.additionalDirectories ??
-    (config.submodulePath !== config.monorepoRoot ? [config.monorepoRoot] : undefined);
+    (config.submodulePath !== config.monorepoRoot ? [config.submodulePath] : undefined);
 
   return {
     prompt: builtPrompt.userPrompt,

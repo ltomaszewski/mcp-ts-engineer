@@ -24,6 +24,7 @@ import {
   codemapPrompts,
   CODEMAP_CURRENT_VERSION,
 } from "./prompts/index.js";
+import { getProjectConfig } from "../../config/project-config.js";
 
 /**
  * Internal sub-capability for updating architecture codemaps.
@@ -60,6 +61,7 @@ export const finalizeCodemapStepCapability: CapabilityDefinition<
 
   preparePromptInput: (input: CodemapStepInput, _context) => ({
     filesChanged: input.files_changed,
+    monorepoRoot: getProjectConfig().monorepoRoot,
     cwd: input.cwd,
   }),
 
