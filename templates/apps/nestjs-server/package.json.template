@@ -2,6 +2,9 @@
 	"name": "{{PACKAGE_NAME}}",
 	"version": "0.1.0",
 	"private": true,
+	"engines": {
+		"node": ">=24.0.0"
+	},
 	"scripts": {
 		"dev": "tsx watch src/main.ts",
 		"dev:local": "tsx scripts/start-local.ts",
@@ -38,7 +41,7 @@
 		"@biomejs/biome": "^2.4.4",
 		"@nestjs/testing": "^11.0.0",
 		"@swc/core": "^1.9.0",
-		"@types/node": "^22.13.1",
+		"@types/node": "^24.0.0",
 		"@types/passport-jwt": "^4.0.1",
 		"@types/supertest": "^6.0.0",
 		"@vitest/coverage-v8": "^4.0.0",
