@@ -11,6 +11,12 @@ relpath() {
   python3 -c "import os.path,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))" "$1" "$2"
 }
 
+# --- Convert PascalCase to kebab-case: MyProjectTs → my-project-ts ---
+# Mirrors deriveLogDir() in src/config/project-config.ts
+to_kebab_case() {
+  echo "$1" | sed -E 's/([a-z0-9])([A-Z])/\1-\2/g; s/([A-Z])([A-Z][a-z])/\1-\2/g' | tr '[:upper:]' '[:lower:]'
+}
+
 # --- Convert kebab-case to PascalCase: my-project → MyProject ---
 to_pascal_case() {
   echo "$1" | sed 's/[-_]/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1' | tr -d ' '

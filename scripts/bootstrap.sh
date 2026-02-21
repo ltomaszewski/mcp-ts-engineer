@@ -212,7 +212,7 @@ echo "--- Configuring ts-engineer.config.json ---"
 if [[ -f "ts-engineer.config.json" ]]; then
   echo "  Exists, skipping: ts-engineer.config.json"
 else
-  SERVER_NAME_LOWER="$(echo "$SERVER_NAME" | tr '[:upper:]' '[:lower:]')"
+  LOG_DIR="~/.claude/$(to_kebab_case "$SERVER_NAME")/logs/"
 
   # Build codemaps entries
   CODEMAPS_ENTRIES=""
@@ -229,7 +229,7 @@ else
   CODEMAPS_ENTRIES="$CODEMAPS_ENTRIES    { \"name\": \"architecture\", \"path\": \".claude/codemaps/architecture.md\" }"
 
   # Replace single-line placeholders via sed, then multiline via python3 + env vars
-  sed -e "s|{{SERVER_NAME_LOWER}}|$SERVER_NAME_LOWER|g" \
+  sed -e "s|{{LOG_DIR}}|$LOG_DIR|g" \
       -e "s|{{SERVER_NAME}}|$SERVER_NAME|g" \
       "$TEMPLATE_DIR/ts-engineer.config.json.template" > ts-engineer.config.json
 

@@ -1,6 +1,6 @@
 {
   "serverName": "{{SERVER_NAME}}",
-  "logDir": "logs/{{SERVER_NAME_LOWER}}",
+  "logDir": "{{LOG_DIR}}",
   "commitTag": "{{SERVER_NAME}}",
   "codemaps": [
 {{CODEMAPS_ENTRIES}}

@@ -56,6 +56,23 @@ describe('Bootstrap scripts', () => {
   })
 })
 
+describe('_common.sh specifics', () => {
+  const content = readFileSync(join(SCRIPTS_DIR, '_common.sh'), 'utf-8')
+
+  it('contains to_kebab_case function', () => {
+    expect(content).toContain('to_kebab_case()')
+  })
+
+  it('contains to_pascal_case function', () => {
+    expect(content).toContain('to_pascal_case()')
+  })
+
+  it('to_kebab_case mirrors deriveLogDir logic', () => {
+    // Verify it uses sed with extended regex for PascalCase splitting
+    expect(content).toMatch(/sed.*\[a-z0-9\].*\[A-Z\]/)
+  })
+})
+
 describe('bootstrap.sh specifics', () => {
   const content = readFileSync(join(SCRIPTS_DIR, 'bootstrap.sh'), 'utf-8')
 
@@ -87,6 +104,12 @@ describe('bootstrap.sh specifics', () => {
 
   it('skips mcp-ts-engineer in project discovery', () => {
     expect(content).toContain('"mcp-ts-engineer"')
+  })
+
+  it('derives LOG_DIR using to_kebab_case (matches deriveLogDir)', () => {
+    expect(content).toContain('to_kebab_case')
+    expect(content).toContain('LOG_DIR')
+    expect(content).not.toContain('SERVER_NAME_LOWER')
   })
 
   it('uses find with -maxdepth before -type', () => {
@@ -214,7 +237,7 @@ describe('Config templates', () => {
   it('ts-engineer.config.json.template has required placeholders', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'ts-engineer.config.json.template'), 'utf-8')
     expect(content).toContain('{{SERVER_NAME}}')
-    expect(content).toContain('{{SERVER_NAME_LOWER}}')
+    expect(content).toContain('{{LOG_DIR}}')
     expect(content).toContain('{{CODEMAPS_ENTRIES}}')
   })
 
