@@ -43,6 +43,7 @@ import { prTestStepCapability } from "./pr-reviewer/pr-test-step.capability.js";
 import { prCommitStepCapability } from "./pr-reviewer/pr-commit-step.capability.js";
 import { prRevertStepCapability } from "./pr-reviewer/pr-revert-step.capability.js";
 import { prCommentStepCapability } from "./pr-reviewer/pr-comment-step.capability.js";
+import { prFixerCapability } from "./pr-fixer/pr-fixer.capability.js";
 
 /**
  * Register all capabilities with the capability registry.
@@ -107,4 +108,7 @@ export function registerAllCapabilities(registry: CapabilityRegistry): void {
   registry.registerCapability(prCommitStepCapability as CapabilityDefinition);
   registry.registerCapability(prRevertStepCapability as CapabilityDefinition);
   registry.registerCapability(prCommentStepCapability as CapabilityDefinition);
+
+  // PR fixer orchestrator (public MCP tool)
+  registry.registerCapability(prFixerCapability as CapabilityDefinition);
 }

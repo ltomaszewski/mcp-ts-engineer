@@ -217,11 +217,11 @@ describe("todo-reviewer integration tests", () => {
       expect(registeredToolNames).not.toContain("todo_tdd_validate_step");
       expect(registeredToolNames).not.toContain("todo_commit_step");
 
-      // Should have echo_agent + todo_reviewer + todo_code_writer + finalize + audit_fix + pr_reviewer (6 public tools)
+      // Should have echo_agent + todo_reviewer + todo_code_writer + finalize + audit_fix + pr_reviewer + pr_fixer (7 public tools)
       expect(registeredToolNames).toEqual(
-        expect.arrayContaining(["echo_agent", "todo_reviewer", "todo_code_writer", "finalize", "audit_fix", "pr_reviewer"])
+        expect.arrayContaining(["echo_agent", "todo_reviewer", "todo_code_writer", "finalize", "audit_fix", "pr_reviewer", "pr_fixer"])
       );
-      expect(registeredToolNames.length).toBe(6);
+      expect(registeredToolNames.length).toBe(7);
     });
 
     it("should still allow todo_reviewer to invoke internal capabilities via context", async () => {
