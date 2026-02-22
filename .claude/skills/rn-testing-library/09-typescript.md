@@ -1,8 +1,8 @@
 # TypeScript Integration - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/typescript
+**Source:** https://oss.callstack.com/react-native-testing-library/
 
-**Version:** 13.3.3
+**Version:** 13.3.x
 
 ---
 
@@ -23,8 +23,6 @@ npm install --save-dev typescript @types/jest @testing-library/react-native
     "module": "commonjs",
     "lib": ["ES2020"],
     "jsx": "react-native",
-    "declaration": true,
-    "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -51,8 +49,8 @@ module.exports = {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
   testMatch: [
-    '**/__tests__/**/*.(ts|tsx|js)',
-    '**/?(*.)+(spec|test).(ts|tsx|js)',
+    '**/__tests__/**/*.(ts|tsx)',
+    '**/?(*.)+(spec|test).(ts|tsx)',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -99,35 +97,6 @@ export const Card: React.FC<CardProps> = ({ title, children }) => (
     {children}
   </View>
 );
-
-// Usage
-<Card title="My Card">
-  <Text>Card content</Text>
-</Card>
-```
-
-### Generic Component
-
-```typescript
-interface ListProps<T> {
-  items: T[];
-  renderItem: (item: T) => React.ReactNode;
-  keyExtractor: (item: T) => string;
-}
-
-export function List<T>({
-  items,
-  renderItem,
-  keyExtractor,
-}: ListProps<T>): React.ReactElement {
-  return (
-    <FlatList
-      data={items}
-      renderItem={({ item }) => renderItem(item)}
-      keyExtractor={item => keyExtractor(item)}
-    />
-  );
-}
 ```
 
 ---
@@ -154,16 +123,14 @@ export function useCounter(initialValue = 0): CounterResult {
 }
 ```
 
-### Generic Hook
+### Generic Async Hook
 
 ```typescript
 export function useAsync<T, E = string>(
   asyncFunction: () => Promise<T>,
-  immediate = true
+  immediate = true,
 ) {
-  const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>(
-    'idle'
-  );
+  const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<E | null>(null);
 
@@ -205,7 +172,7 @@ import AllProviders from '@/context/AllProviders';
 
 const render = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
+  options?: Omit<RenderOptions, 'wrapper'>,
 ) =>
   rtlRender(ui, { wrapper: AllProviders, ...options });
 
@@ -227,7 +194,7 @@ function render(
     theme = 'light',
     user = null,
     ...renderOptions
-  }: CustomRenderOptions = {}
+  }: CustomRenderOptions = {},
 ) {
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({
     children,
@@ -240,6 +207,24 @@ function render(
   );
 
   return rtlRender(ui, { wrapper: Wrapper, ...renderOptions });
+}
+```
+
+### Async Render with Types (v13.3.0+)
+
+```typescript
+import {
+  render as rtlRender,
+  renderAsync as rtlRenderAsync,
+  RenderOptions,
+} from '@testing-library/react-native';
+
+export function render(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
+  return rtlRender(ui, { wrapper: AllProviders, ...options });
+}
+
+export async function renderAsync(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
+  return rtlRenderAsync(ui, { wrapper: AllProviders, ...options });
 }
 ```
 
@@ -260,8 +245,8 @@ test('typed query results', () => {
   const elements: ReactTestInstance[] = screen.getAllByText('text');
 
   // These are typed as promises
-  const asyncElement = screen.findByText('text'); // Promise<ReactTestInstance>
-  const asyncElements = screen.findAllByText('text'); // Promise<ReactTestInstance[]>
+  const asyncElement: Promise<ReactTestInstance> = screen.findByText('text');
+  const asyncElements: Promise<ReactTestInstance[]> = screen.findAllByText('text');
 });
 ```
 
@@ -285,6 +270,27 @@ test('typed renderHook', () => {
   // result.current is now typed as UseCounterResult
   expect(result.current.count).toBe(0);
   result.current.increment();
+});
+```
+
+### Typed renderHookAsync (v13.3.0+)
+
+```typescript
+import { renderHookAsync } from '@testing-library/react-native';
+
+interface UseSuspenseDataResult {
+  data: string[];
+  refetch: () => Promise<void>;
+}
+
+test('typed renderHookAsync', async () => {
+  const { result, rerenderAsync } = await renderHookAsync<UseSuspenseDataResult>(
+    () => useSuspenseData(),
+  );
+
+  expect(result.current.data).toBeDefined();
+
+  await rerenderAsync();
 });
 ```
 
@@ -317,61 +323,12 @@ test('typed mock functions', async () => {
 });
 ```
 
-### Type-Safe Test Setup
-
-```typescript
-interface TestComponent<P = {}> {
-  component: React.ComponentType<P>;
-  defaultProps?: Partial<P>;
-}
-
-function createTest<P extends Record<string, any>>(
-  { component: Component, defaultProps = {} }: TestComponent<P>,
-  testName: string,
-  testFn: (props: P) => void
-) {
-  test(testName, () => {
-    const props = { ...defaultProps } as P;
-    render(<Component {...props} />);
-    testFn(props);
-  });
-}
-
-// Usage
-createTest(
-  { component: Button, defaultProps: { title: 'Click' } },
-  'button renders',
-  (props) => {
-    expect(screen.getByText(props.title)).toBeOnTheScreen();
-  }
-);
-```
-
-### Generic Component Testing
-
-```typescript
-function testGenericComponent<T extends { id: string; name: string }>(
-  component: React.ComponentType<{ item: T }>,
-  testItem: T
-) {
-  test(`renders item ${testItem.id}`, () => {
-    render(React.createElement(component, { item: testItem }));
-
-    expect(screen.getByText(testItem.name)).toBeOnTheScreen();
-  });
-}
-
-// Usage
-const mockUser = { id: '1', name: 'Alice' };
-testGenericComponent(UserCard, mockUser);
-```
-
 ### Typed Test Factory
 
 ```typescript
 function createComponentTest<P extends Record<string, any>>(
   Component: React.ComponentType<P>,
-  baseProps: P
+  baseProps: P,
 ) {
   return {
     render: (overrides?: Partial<P>) => {
@@ -395,11 +352,6 @@ test('renders form', () => {
   form.render();
   expect(screen.getByLabelText('Email')).toBeOnTheScreen();
 });
-
-test('renders with providers', () => {
-  form.renderWithProviders({ onSubmit: jest.fn() });
-  expect(screen.getByText('Content')).toBeOnTheScreen();
-});
 ```
 
 ---
@@ -407,6 +359,7 @@ test('renders with providers', () => {
 ## Type Safety Checklist
 
 - [ ] tsconfig.json has `strict: true`
+- [ ] `@testing-library/react-native` in `types` array
 - [ ] All component props typed with interfaces
 - [ ] All hooks have return types
 - [ ] All mock functions typed
@@ -417,4 +370,6 @@ test('renders with providers', () => {
 
 ---
 
-**Next:** [Troubleshooting & FAQ →](./10-troubleshooting.md)
+**Next:** [Troubleshooting & FAQ](./10-troubleshooting.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/

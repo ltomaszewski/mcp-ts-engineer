@@ -174,4 +174,4 @@ query {
 
 ---
 
-**Version:** @graphql-yoga/nestjs-federation + @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/federation
+**Version:** @graphql-yoga/nestjs-federation + @nestjs/graphql 13.2.x | **Source:** https://docs.nestjs.com/graphql/federation

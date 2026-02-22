@@ -1,6 +1,6 @@
 # API Reference: Selectors & Performance
 
-**Module:** `04-api-selectors.md` | **Version:** 5.x (^5.0.2)
+**Module:** `04-api-selectors.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -259,4 +259,4 @@ const increment = useStore((s) => s.increment)
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/hooks/use-shallow | https://zustand.docs.pmnd.rs/guides/prevent-rerenders-with-use-shallow
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

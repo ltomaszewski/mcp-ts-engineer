@@ -140,6 +140,29 @@ export class UsersRepository {
 }
 ```
 
+## Resolving Request-Scoped Providers
+
+Use `moduleRef.resolve()` instead of `moduleRef.get()` for request-scoped and transient providers. As of v11.1.9, `get()` throws explicitly for implicitly request-scoped dependency trees.
+
+```typescript
+import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+
+@Injectable()
+export class AppService implements OnModuleInit {
+  private transientService: TransientService;
+
+  constructor(@Inject(ModuleRef) private readonly moduleRef: ModuleRef) {}
+
+  async onModuleInit(): Promise<void> {
+    // resolve() creates a new instance for transient/request-scoped providers
+    this.transientService = await this.moduleRef.resolve(TransientService);
+  }
+}
+```
+
+**Note:** Each `resolve()` call returns a unique instance for transient providers. Use the `contextId` parameter to share instances within the same DI sub-tree.
+
 ## Module Re-exporting
 
 ```typescript
@@ -152,4 +175,4 @@ export class CoreModule {}
 
 ---
 
-**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/fundamentals/injection-scopes
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/fundamentals/injection-scopes

@@ -206,7 +206,7 @@ if (!result.success) {
 | **Unions** | `z.union()`, `z.discriminatedUnion()`, `z.intersection()`, `z.xor()` |
 | **Advanced** | `z.function()`, `z.instanceof()`, `z.lazy()`, `z.custom()` |
 | **Special v4** | `z.file()`, `z.json()`, `z.stringbool()`, `z.templateLiteral()` |
-| **Top-level** | `z.email()`, `z.uuid()`, `z.url()`, `z.ipv4()`, `z.ipv6()`, `z.jwt()`, `z.base64()`, `z.nanoid()`, `z.cuid2()`, `z.ulid()`, `z.semver()`, `z.e164()`, `z.cidrv4()`, `z.cidrv6()` |
+| **Top-level** | `z.email()`, `z.uuid()`, `z.uuidv4()`, `z.uuidv7()`, `z.guid()`, `z.url()`, `z.httpUrl()`, `z.hostname()`, `z.ipv4()`, `z.ipv6()`, `z.mac()`, `z.cidrv4()`, `z.cidrv6()`, `z.jwt()`, `z.base64()`, `z.base64url()`, `z.hex()`, `z.nanoid()`, `z.cuid()`, `z.cuid2()`, `z.ulid()`, `z.semver()`, `z.e164()`, `z.emoji()`, `z.iso.datetime()`, `z.iso.date()`, `z.iso.time()`, `z.iso.duration()` |
 | **Integers** | `z.int()`, `z.int32()` |
 | **Coercion** | `z.coerce.string()`, `z.coerce.number()`, `z.coerce.boolean()`, `z.coerce.date()`, `z.coerce.bigint()` |
 
@@ -217,4 +217,4 @@ if (!result.success) {
 - [Objects & Collections](03-objects-collections.md)
 - [API Parsing & Error Handling](05-api-parsing.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/

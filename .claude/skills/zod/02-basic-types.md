@@ -36,22 +36,27 @@ Prefer these over `z.string().email()` etc. -- tree-shakable and more efficient:
 ```typescript
 z.email()          // Email address
 z.uuid()           // UUID (RFC 9562/4122 strict)
+z.uuidv4()         // UUID v4 specifically
+z.uuidv6()         // UUID v6 specifically
+z.uuidv7()         // UUID v7 specifically
 z.guid()           // UUID-like (lenient)
-z.url()            // Any URL
+z.url()            // Any WHATWG-compatible URL
 z.httpUrl()        // HTTP/HTTPS URL only
 z.hostname()       // Hostname
 z.ipv4()           // IPv4 address
 z.ipv6()           // IPv6 address
 z.cidrv4()         // CIDR v4 notation
 z.cidrv6()         // CIDR v6 notation
-z.mac()            // MAC address
+z.mac()            // MAC address (IEEE 802 48-bit)
 z.iso.datetime()   // ISO 8601 datetime
 z.iso.date()       // ISO 8601 date
 z.iso.time()       // ISO 8601 time
 z.iso.duration()   // ISO 8601 duration
 z.base64()         // Base64 string
 z.base64url()      // Base64URL string (unpadded in v4)
+z.hex()            // Hexadecimal string
 z.nanoid()         // NanoID string
+z.cuid()           // CUID string
 z.cuid2()          // CUID2 string
 z.ulid()           // ULID string
 z.jwt()            // JWT string
@@ -318,4 +323,4 @@ const usernameSchema = z.string()
 - [Objects & Collections](03-objects-collections.md)
 - [Advanced Features](04-advanced-features.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/api
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/api

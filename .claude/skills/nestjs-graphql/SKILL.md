@@ -192,7 +192,7 @@ email!: string;
 
 ---
 
-**Version:** NestJS 11.x + @nestjs/graphql 13.x + GraphQL Yoga 5.x | **Source:** https://docs.nestjs.com/graphql/quick-start
+**Version:** NestJS 11.x + @nestjs/graphql 13.2.x + GraphQL Yoga 5.18.x | **Source:** https://docs.nestjs.com/graphql/quick-start
 
 ### GraphQL Yoga Driver Notes
 

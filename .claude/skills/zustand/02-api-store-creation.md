@@ -1,6 +1,6 @@
 # API Reference: Store Creation
 
-**Module:** `02-api-store-creation.md` | **Version:** 5.x (^5.0.2)
+**Module:** `02-api-store-creation.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -194,6 +194,25 @@ const { bears, fish } = useBearStore((s) => ({ bears: s.bears, fish: s.fish }))
 
 ---
 
+## `ExtractState` Type Utility (v5.0.3+)
+
+Extract the state type from a store hook or store API:
+
+```typescript
+import { create, ExtractState } from 'zustand'
+
+const useBearStore = create<BearState>((set) => ({
+  bears: 0,
+  addBear: () => set((s) => ({ bears: s.bears + 1 })),
+}))
+
+// Extract state type from hook
+type BearStoreState = ExtractState<typeof useBearStore>
+// { bears: number; addBear: () => void }
+```
+
+---
+
 ## Type Definitions
 
 ### StateCreator
@@ -262,4 +281,4 @@ const useStore = create<State>((set, get, store) => ({
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/apis/create | https://zustand.docs.pmnd.rs/apis/create-store | https://zustand.docs.pmnd.rs/apis/create-with-equality-fn
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

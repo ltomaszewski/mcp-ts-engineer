@@ -232,6 +232,8 @@ const logValidationError = (
 | **Using { message: "..." }** | Deprecated in v4 | Use `{ error: "..." }` |
 | **z.record(valueOnly)** | Error in v4 | `z.record(keySchema, valueSchema)` |
 | **Exhaustive enum records** | Missing keys errors | Use `z.partialRecord()` for optional keys |
+| **pick/omit on refined schemas** | Throws Error in 4.3+ | Restructure: refine after pick/omit |
+| **Strict object intersections** | Keys rejected too aggressively | 4.3.2+: only rejects keys unrecognized by both sides |
 
 ---
 
@@ -257,4 +259,4 @@ const logValidationError = (
 - [API Parsing](05-api-parsing.md)
 - [Integration Patterns](06-integration-patterns.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/

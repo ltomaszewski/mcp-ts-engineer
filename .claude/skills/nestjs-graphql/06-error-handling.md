@@ -136,14 +136,36 @@ export class AppModule {}
 
 ## Yoga Error Masking
 
-GraphQL Yoga masks unexpected errors by default in production for security:
+GraphQL Yoga masks unexpected errors by default in production for security. Only `GraphQLError` instances are exposed to clients; standard `Error` instances are replaced with a generic message.
+
+### Disable Masking (Not Recommended for Production)
 
 ```typescript
 GraphQLModule.forRoot<YogaDriverConfig>({
   driver: YogaDriver,
   autoSchemaFile: true,
+  maskedErrors: false, // Exposes all error details -- dev only
+})
+```
+
+### Custom Error Masking
+
+```typescript
+import { maskError } from 'graphql-yoga';
+
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
+  autoSchemaFile: true,
   maskedErrors: {
     isDev: process.env.NODE_ENV !== 'production',
+    maskError: (error, message, isDev) => {
+      // Expose downstream service errors
+      if (error?.extensions?.code === 'DOWNSTREAM_SERVICE_ERROR') {
+        return error;
+      }
+      // Default masking for everything else
+      return maskError(error, message, isDev);
+    },
   },
 })
 ```
@@ -213,4 +235,13 @@ export class UsersService {
 
 ---
 
-**Version:** @nestjs/graphql 13.x + graphql-yoga 5.x | **Source:** https://docs.nestjs.com/graphql/other-features#exception-filters
+### maskedErrors Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `isDev` | `boolean` | `NODE_ENV === 'development'` | Show original errors in extensions |
+| `maskError` | `(error, message, isDev) => Error` | built-in | Custom masking function |
+
+---
+
+**Version:** @nestjs/graphql 13.2.x + graphql-yoga 5.18.x | **Source:** https://docs.nestjs.com/graphql/other-features#exception-filters, https://the-guild.dev/graphql/yoga-server/docs/features/error-masking

@@ -1,6 +1,6 @@
 # useInfiniteQuery: Pagination & Infinite Scroll
 
-**Module:** `05-api-infinitequery.md` | **Version:** 5.x (^5.62.11)
+**Module:** `05-api-infinitequery.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
@@ -24,7 +24,7 @@ function useInfiniteQuery<
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| `initialPageParam` | `TPageParam` | Yes (v5) | -- | Page param for the first page |
+| `initialPageParam` | `TPageParam` | Yes | -- | Page param for the first page (required in v5) |
 | `getNextPageParam` | `(lastPage, allPages, lastPageParam, allPageParams) => TPageParam \| undefined \| null` | Yes | -- | Return next page param or undefined/null for no more pages |
 | `getPreviousPageParam` | `(firstPage, allPages, firstPageParam, allPageParams) => TPageParam \| undefined \| null` | No | -- | Return previous page param for bi-directional |
 | `maxPages` | `number` | No | `Infinity` | Max pages to store in cache (older pages evicted) |
@@ -34,6 +34,8 @@ The `queryFn` receives `pageParam` in its context:
 ```typescript
 queryFn: ({ pageParam }) => fetchPage(pageParam)
 ```
+
+**Note:** `initialPageParam` is required in v5 (was optional in v4). The `getNextPageParam` function now receives all four arguments: `lastPage`, `allPages`, `lastPageParam`, `allPageParams`.
 
 ---
 
@@ -173,7 +175,7 @@ function useInfiniteTimeline() {
 }
 ```
 
-**Note:** When using `maxPages`, both `getNextPageParam` and `getPreviousPageParam` should be defined to allow re-fetching pages in both directions.
+**Note:** When using `maxPages`, both `getNextPageParam` and `getPreviousPageParam` should be defined to allow re-fetching pages in both directions. When the max is reached, fetching a new page evicts the first or last page from cache depending on the fetch direction.
 
 ### Flattening Pages for Display
 
@@ -182,6 +184,25 @@ const { data } = useInfinitePosts()
 
 // Flatten all pages into a single array
 const allPosts = data?.pages.flatMap((page) => page.posts) ?? []
+```
+
+### Type-Safe infiniteQueryOptions Helper
+
+```typescript
+import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query'
+
+function postsInfiniteOptions() {
+  return infiniteQueryOptions({
+    queryKey: ['posts'] as const,
+    queryFn: ({ pageParam }) => fetchPosts(pageParam),
+    initialPageParam: '',
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  })
+}
+
+// Type-safe across hooks and QueryClient methods
+useInfiniteQuery(postsInfiniteOptions())
+queryClient.prefetchInfiniteQuery(postsInfiniteOptions())
 ```
 
 ---
@@ -224,5 +245,26 @@ await queryClient.prefetchInfiniteQuery({
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/reference/useInfiniteQuery | https://tanstack.com/query/v5/docs/react/guides/infinite-queries
-**Version:** 5.x (^5.62.11)
+## Invalidation Notes
+
+When invalidating infinite queries, all pages are refetched. This is by design to ensure data consistency:
+
+```typescript
+// This refetches ALL pages of the infinite query
+queryClient.invalidateQueries({ queryKey: ['posts'] })
+```
+
+If you want to refetch only a single page, use `refetchPage` in the refetch options:
+
+```typescript
+const { refetch } = useInfiniteQuery({ ... })
+
+refetch({
+  refetchPage: (page, index) => index === 0, // Only refetch first page
+})
+```
+
+---
+
+**Source:** https://tanstack.com/query/v5/docs/framework/react/reference/useInfiniteQuery | https://tanstack.com/query/v5/docs/framework/react/guides/infinite-queries
+**Version:** 5.x (^5.90.x)

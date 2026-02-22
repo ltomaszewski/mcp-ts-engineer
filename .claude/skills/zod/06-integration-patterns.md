@@ -200,6 +200,11 @@ const jsonSchema = z.toJSONSchema(userSchema);
 //   properties: { ... },
 //   required: ["id", "email", "name", "role"]
 // }
+
+// Convert JSON Schema to Zod schema (v4.3.4+)
+// Supports draft-2020-12, draft-7, draft-4, and OpenAPI 3.0
+const zodFromJson = z.fromJSONSchema(jsonSchema);
+const result = zodFromJson.safeParse(data);
 ```
 
 ---
@@ -258,4 +263,4 @@ const schema = z.object({
 - [API Parsing](05-api-parsing.md)
 - [Best Practices](07-best-practices.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/

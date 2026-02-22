@@ -1,8 +1,8 @@
-# Pseudo-Classes & Interactive States - NativeWind v4
+# Pseudo-Classes & Interactive States - NativeWind v4.2.x
 
 **Source:** https://www.nativewind.dev/docs/core-concepts/pseudo-classes  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 

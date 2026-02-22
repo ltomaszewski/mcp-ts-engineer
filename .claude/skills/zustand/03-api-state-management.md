@@ -1,6 +1,6 @@
 # API Reference: State Management
 
-**Module:** `03-api-state-management.md` | **Version:** 5.x (^5.0.2)
+**Module:** `03-api-state-management.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -283,4 +283,4 @@ function Component() {
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/apis/create-store
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

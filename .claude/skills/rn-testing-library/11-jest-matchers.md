@@ -2,7 +2,7 @@
 
 Complete reference for all built-in Jest matchers available since v12.4+. No additional packages required.
 
-**Version:** 13.x | **Source:** https://oss.callstack.com/react-native-testing-library/docs/api/jest-matchers
+**Version:** 13.3.x | **Source:** https://oss.callstack.com/react-native-testing-library/docs/api/jest-matchers
 
 ---
 
@@ -11,6 +11,8 @@ Complete reference for all built-in Jest matchers available since v12.4+. No add
 Built-in matchers are automatically available when using `@testing-library/react-native` v12.4+. No import or configuration needed.
 
 The deprecated `@testing-library/jest-native` package is no longer required. Remove it from your dependencies.
+
+To prevent auto-extension, import from `@testing-library/react-native/pure` instead.
 
 ---
 
@@ -57,7 +59,7 @@ test('element is visible', () => {
 test('element is hidden with display none', () => {
   render(<Text style={{ display: 'none' }}>Hidden</Text>);
 
-  expect(screen.getByText('Hidden')).not.toBeVisible();
+  expect(screen.getByText('Hidden', { includeHiddenElements: true })).not.toBeVisible();
 });
 
 test('element is hidden with opacity 0', () => {
@@ -221,9 +223,9 @@ expect(element).toHaveTextContent('hello', { normalizer: (s) => s.toLowerCase() 
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `text` | string \| RegExp | Expected text content |
-| `options.exact` | boolean | Require exact match (default: `true`) |
-| `options.normalizer` | function | Custom text normalizer |
+| `text` | `string \| RegExp` | Expected text content |
+| `options.exact` | `boolean` | Require exact match (default: `true`) |
+| `options.normalizer` | `function` | Custom text normalizer |
 
 ---
 
@@ -267,16 +269,16 @@ test('slider has accessibility value', () => {
 
   expect(slider).toHaveAccessibilityValue({ min: 0, max: 100, now: 50 });
   expect(slider).toHaveAccessibilityValue({ text: '50%' });
-  expect(slider).toHaveAccessibilityValue({ now: 50 });
+  expect(slider).toHaveAccessibilityValue({ now: 50 }); // partial match
 });
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `min` | number | Minimum value |
-| `max` | number | Maximum value |
-| `now` | number | Current value |
-| `text` | string \| RegExp | Text description of value |
+| `min` | `number` | Minimum value |
+| `max` | `number` | Maximum value |
+| `now` | `number` | Current value |
+| `text` | `string \| RegExp` | Text description of value |
 
 ---
 
@@ -343,8 +345,8 @@ test('input has prop', () => {
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `name` | string | Prop name to check |
-| `value` | any | Optional: expected prop value |
+| `name` | `string` | Prop name to check |
+| `value` | `any` | Optional: expected prop value |
 
 ---
 
@@ -400,7 +402,7 @@ test('element is not empty', () => {
 
 ### toHaveAccessibleName()
 
-Asserts the element has the specified accessible name (derived from label-related props).
+Asserts the element has the specified accessible name (derived from `accessibilityLabel`, `aria-label`, or text content).
 
 ```typescript
 import { render, screen } from '@testing-library/react-native';
@@ -417,6 +419,12 @@ test('button has accessible name', () => {
   expect(screen.getByRole('button')).toHaveAccessibleName(/Submit/);
 });
 ```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string \| RegExp` | Expected accessible name |
+| `options.exact` | `boolean` | Require exact match (default: `true`) |
+| `options.normalizer` | `function` | Custom text normalizer |
 
 ---
 
@@ -441,7 +449,7 @@ test('button has accessible name', () => {
 | `toHaveProp()` | Has a prop (last resort) | Any prop |
 | `toContainElement()` | Contains child | Parent-child relationship |
 | `toBeEmptyElement()` | Has no children | -- |
-| `toHaveAccessibleName()` | Has accessible name | `accessibilityLabel`, `aria-label` |
+| `toHaveAccessibleName()` | Has accessible name | `accessibilityLabel`, `aria-label`, text |
 
 ---
 

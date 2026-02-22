@@ -2,7 +2,7 @@
 
 **Source:** https://www.nativewind.dev/docs  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -277,18 +277,19 @@ Style children based on parent container size (not viewport):
 
 ### 4. Custom Values (CSS Variables)
 
-Define themes and dynamic styles:
+Define themes and dynamic styles using the `vars()` function:
 
 ```javascript
-const root = {
-  '--primary-color': '#3498db',
-  '--spacing-unit': '8px'
-};
+import { vars } from 'nativewind';
 
-<View style={root} className="p-[var(--spacing-unit)] bg-[var(--primary-color)]">
-  Dynamic Theme
+<View style={vars({ '--primary-color': '#3498db', '--spacing-unit': '8px' })}>
+  <View className="p-[var(--spacing-unit)] bg-[--primary-color]">
+    Dynamic Theme
+  </View>
 </View>
 ```
+
+**Shorthand syntax:** Use `text-[--variable]` instead of `text-[var(--variable)]` for cleaner code.
 
 **Cross-Reference:** See `09-custom-values.md` for detailed CSS variable usage
 

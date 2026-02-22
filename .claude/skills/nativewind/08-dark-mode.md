@@ -1,8 +1,8 @@
-# Dark Mode & Theme Management - NativeWind v4
+# Dark Mode & Theme Management - NativeWind v4.2.x
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode
+**Last Verified:** February 2026
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -68,18 +68,17 @@ import { View, Text } from 'react-native';
 import { useColorScheme } from 'nativewind';
 
 export const SystemPreferenceExample = () => {
-  const colorScheme = useColorScheme();
-  
+  const { colorScheme } = useColorScheme();
+
   return (
     <View className="flex-1 items-center justify-center">
       <Text className="text-lg">
-        Current scheme: {colorScheme || 'not-set'}
+        Current scheme: {colorScheme}
       </Text>
-      {/* 
+      {/*
         Possible values:
         - 'light' - System is in light mode
         - 'dark' - System is in dark mode
-        - null - System has no preference
       */}
     </View>
   );
@@ -95,21 +94,21 @@ import { View, Text } from 'react-native';
 import { useColorScheme } from 'nativewind';
 
 export const AdaptiveTheme = () => {
-  const colorScheme = useColorScheme();
-  
+  const { colorScheme } = useColorScheme();
+
   return (
     <View className="flex-1 bg-white dark:bg-slate-900">
-      {/* 
+      {/*
         If system is in dark mode:
         - Uses `dark:bg-slate-900`
-        
+
         If system is in light mode:
         - Uses `bg-white`
-        
+
         Changes automatically when system preference changes
       */}
       <Text className="text-black dark:text-white">
-        {colorScheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+        {colorScheme === 'dark' ? 'Dark Mode' : 'Light Mode'}
       </Text>
     </View>
   );
@@ -122,86 +121,94 @@ export const AdaptiveTheme = () => {
 
 Allow users to manually choose between light, dark, or automatic mode.
 
-### useColorScheme.set() Function
+### setColorScheme and toggleColorScheme
 
-Use `colorScheme.set()` to manually set the color scheme:
+Use `setColorScheme()` to manually set the scheme, or `toggleColorScheme()` to flip between light and dark:
 
 ```typescript
 import { useColorScheme } from 'nativewind';
 import { View, Text, Pressable } from 'react-native';
 
 export const ManualToggle = () => {
-  const colorScheme = useColorScheme();
-  
+  const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
+
   return (
     <View className="flex-1 gap-4 p-4">
       {/* Display current mode */}
       <Text className="text-lg font-bold">
-        Current: {colorScheme || 'auto'}
+        Current: {colorScheme}
       </Text>
-      
+
+      {/* Quick toggle button */}
+      <Pressable
+        onPress={toggleColorScheme}
+        className="p-4 rounded-lg bg-blue-500"
+      >
+        <Text className="text-white font-bold text-center">
+          Toggle (currently {colorScheme})
+        </Text>
+      </Pressable>
+
       {/* Light mode button */}
       <Pressable
-        onPress={() => colorScheme.set('light')}
+        onPress={() => setColorScheme('light')}
         className={`p-4 rounded-lg ${
           colorScheme === 'light'
             ? 'bg-blue-500'
             : 'bg-gray-200'
         }`}
       >
-        <Text className="font-bold">☀️ Light</Text>
+        <Text className="font-bold">Light</Text>
       </Pressable>
-      
+
       {/* Dark mode button */}
       <Pressable
-        onPress={() => colorScheme.set('dark')}
+        onPress={() => setColorScheme('dark')}
         className={`p-4 rounded-lg ${
           colorScheme === 'dark'
             ? 'bg-blue-500'
             : 'bg-gray-200'
         }`}
       >
-        <Text className="font-bold">🌙 Dark</Text>
+        <Text className="font-bold">Dark</Text>
       </Pressable>
-      
-      {/* Auto/System button */}
+
+      {/* System/Auto button */}
       <Pressable
-        onPress={() => colorScheme.set(null)}
-        className={`p-4 rounded-lg ${
-          colorScheme === null
-            ? 'bg-blue-500'
-            : 'bg-gray-200'
-        }`}
+        onPress={() => setColorScheme('system')}
+        className="p-4 rounded-lg bg-gray-200"
       >
-        <Text className="font-bold">🔄 Auto</Text>
+        <Text className="font-bold">System</Text>
       </Pressable>
     </View>
   );
 };
 ```
 
-### Valid Values for set()
+### Valid Values for setColorScheme()
 
 ```typescript
-colorScheme.set('light')  // Force light mode
-colorScheme.set('dark')   // Force dark mode
-colorScheme.set(null)     // Auto (follow system)
+setColorScheme('light')   // Force light mode
+setColorScheme('dark')    // Force dark mode
+setColorScheme('system')  // Follow system preference
 ```
 
 ### Return Values
 
 ```typescript
-const colorScheme = useColorScheme();
+const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
 
-// Reading returns string or null
+// colorScheme is 'light' | 'dark'
 if (colorScheme === 'light') { /* light mode */ }
 if (colorScheme === 'dark') { /* dark mode */ }
-if (colorScheme === null) { /* auto mode */ }
 
-// Setting accepts 'light' | 'dark' | null
-colorScheme.set('light')
-colorScheme.set('dark')
-colorScheme.set(null)
+// setColorScheme accepts 'light' | 'dark' | 'system'
+setColorScheme('light')
+setColorScheme('dark')
+setColorScheme('system')
+
+// toggleColorScheme flips between light and dark
+toggleColorScheme()
 ```
 
 ---
@@ -213,66 +220,59 @@ Complete API reference for the hook:
 ### Hook Signature
 
 ```typescript
-const colorScheme = useColorScheme();
+const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
 ```
 
 ### Return Type
 
 ```typescript
-interface ColorScheme {
-  // Current color scheme value
-  value: 'light' | 'dark' | null;
-  
-  // Set new color scheme
-  set: (scheme: 'light' | 'dark' | null) => void;
-  
-  // Direct string value (shorthand)
-  // colorScheme === 'light' // works!
-}
+interface UseColorSchemeReturn {
+  // Current resolved color scheme: 'light' | 'dark'
+  colorScheme: 'light' | 'dark';
 
-// Can be used as:
-// - colorScheme (as string)
-// - colorScheme.value (explicit)
-// - colorScheme.set() (setter)
+  // Set color scheme explicitly or follow system
+  setColorScheme: (scheme: 'light' | 'dark' | 'system') => void;
+
+  // Toggle between light and dark
+  toggleColorScheme: () => void;
+}
 ```
 
 ### Import
 
 ```typescript
 import { useColorScheme } from 'nativewind';
+```
 
-// OR
+### Module-Level colorScheme Export
 
-import { useColorScheme } from 'nativewind/core';
+For setting theme outside of components (e.g., in navigation config):
+
+```typescript
+import { colorScheme } from 'nativewind';
+
+// Set theme before component renders
+colorScheme.set('dark');
 ```
 
 ### Example Hook Usage
 
 ```typescript
 import { useColorScheme } from 'nativewind';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 
 export const HookExample = () => {
-  const colorScheme = useColorScheme();
-  
-  // Implicit string conversion
-  if (colorScheme === 'dark') {
-    // In dark mode
-  }
-  
-  // Explicit value access
-  const isDark = colorScheme.value === 'dark';
-  
-  // Setting
-  const toggleDarkMode = () => {
-    colorScheme.set(colorScheme === 'dark' ? 'light' : 'dark');
-  };
-  
+  const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
+
+  const isDark = colorScheme === 'dark';
+
   return (
-    <View className="flex-1">
-      <Text>Current: {colorScheme}</Text>
-      <Pressable onPress={toggleDarkMode}>
-        <Text>Toggle</Text>
+    <View className="flex-1 bg-white dark:bg-slate-900">
+      <Text className="text-slate-900 dark:text-white">
+        Current: {colorScheme}
+      </Text>
+      <Pressable onPress={toggleColorScheme}>
+        <Text className="text-blue-500">Toggle</Text>
       </Pressable>
     </View>
   );
@@ -378,14 +378,14 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useColorScheme } from 'nativewind';
 
 export const ThemeSettings = () => {
-  const colorScheme = useColorScheme();
-  
-  const themeOptions = [
-    { label: '☀️ Light Mode', value: 'light' as const },
-    { label: '🌙 Dark Mode', value: 'dark' as const },
-    { label: '🔄 System', value: null as const },
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  const themeOptions: Array<{ label: string; value: 'light' | 'dark' | 'system' }> = [
+    { label: 'Light Mode', value: 'light' },
+    { label: 'Dark Mode', value: 'dark' },
+    { label: 'System', value: 'system' },
   ];
-  
+
   return (
     <ScrollView className="flex-1 bg-white dark:bg-slate-900">
       {/* Header */}
@@ -397,39 +397,28 @@ export const ThemeSettings = () => {
           Choose your preferred appearance
         </Text>
       </View>
-      
+
       {/* Options */}
       <View className="p-6 gap-3">
         {themeOptions.map(({ label, value }) => (
           <Pressable
             key={label}
-            onPress={() => colorScheme.set(value)}
-            className={`flex-row items-center p-4 rounded-lg border-2 ${
-              colorScheme === value
-                ? 'bg-blue-50 dark:bg-blue-900 border-blue-500'
-                : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-gray-600'
-            }`}
+            onPress={() => setColorScheme(value)}
+            className="flex-row items-center p-4 rounded-lg border-2 bg-white dark:bg-slate-800 border-gray-300 dark:border-gray-600"
           >
             <View className="flex-1">
-              <Text className={`text-lg font-bold ${
-                colorScheme === value
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-slate-900 dark:text-white'
-              }`}>
+              <Text className="text-lg font-bold text-slate-900 dark:text-white">
                 {label}
               </Text>
             </View>
-            {colorScheme === value && (
-              <Text className="text-2xl">✓</Text>
-            )}
           </Pressable>
         ))}
       </View>
-      
+
       {/* Info box */}
       <View className="mx-6 mb-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
         <Text className="text-blue-900 dark:text-blue-100 text-sm">
-          Current theme: {colorScheme === null ? 'System' : colorScheme}
+          Current resolved theme: {colorScheme}
         </Text>
       </View>
     </ScrollView>
@@ -441,58 +430,53 @@ export const ThemeSettings = () => {
 
 ```typescript
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type ThemePreference = 'light' | 'dark' | 'system';
+
 export const usePersistedTheme = () => {
-  const colorScheme = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
   // Load saved preference on mount
   useEffect(() => {
     loadTheme();
   }, []);
-  
-  // Save preference when it changes
-  useEffect(() => {
-    if (isLoaded && colorScheme) {
-      saveTheme(colorScheme);
-    }
-  }, [colorScheme, isLoaded]);
-  
+
   const loadTheme = async () => {
     try {
       const saved = await AsyncStorage.getItem('theme-preference');
-      if (saved) {
-        const value = saved === 'null' ? null : saved;
-        colorScheme.set(value as any);
+      if (saved && ['light', 'dark', 'system'].includes(saved)) {
+        setColorScheme(saved as ThemePreference);
       }
       setIsLoaded(true);
     } catch (error) {
-      console.error('Failed to load theme:', error);
       setIsLoaded(true);
     }
   };
-  
-  const saveTheme = async (scheme: typeof colorScheme) => {
+
+  const setAndPersist = async (scheme: ThemePreference) => {
+    setColorScheme(scheme);
     try {
-      await AsyncStorage.setItem('theme-preference', String(scheme));
+      await AsyncStorage.setItem('theme-preference', scheme);
     } catch (error) {
-      console.error('Failed to save theme:', error);
+      // Storage write failed, theme still applied in memory
     }
   };
-  
-  return { colorScheme, isLoaded };
+
+  return { colorScheme, setColorScheme: setAndPersist, isLoaded };
 };
 
 // Usage
 export const App = () => {
-  const { colorScheme, isLoaded } = usePersistedTheme();
-  
+  const { isLoaded } = usePersistedTheme();
+
   if (!isLoaded) {
     return <View className="flex-1 bg-white dark:bg-slate-900" />;
   }
-  
+
   return (
     <View className="flex-1 bg-white dark:bg-slate-900">
       {/* App content */}

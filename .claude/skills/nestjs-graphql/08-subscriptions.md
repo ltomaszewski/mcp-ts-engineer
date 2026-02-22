@@ -225,4 +225,4 @@ const pubSub = new RedisPubSub({
 
 ---
 
-**Version:** @nestjs/graphql 13.x + graphql-yoga 5.x | **Source:** https://docs.nestjs.com/graphql/subscriptions
+**Version:** @nestjs/graphql 13.2.x + graphql-yoga 5.18.x | **Source:** https://docs.nestjs.com/graphql/subscriptions

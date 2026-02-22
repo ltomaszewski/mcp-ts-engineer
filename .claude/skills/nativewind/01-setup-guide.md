@@ -2,7 +2,7 @@
 
 **Source:** https://www.nativewind.dev/docs/getting-started/installation  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -39,12 +39,14 @@ If you're adding NativeWind to an existing Expo project, follow these steps:
 Install NativeWind and its peer dependencies:
 
 ```bash
-npm install nativewind tailwindcss react-native-reanimated react-native-safe-area-context
+npm install nativewind react-native-reanimated react-native-safe-area-context
+npm install --dev tailwindcss@^3.4.17 prettier-plugin-tailwindcss@0.5.11
 ```
 
 **Dependency Versions (as of Feb 2026):**
-- `nativewind`: ^4.1.23
-- `tailwindcss`: 3.4.17
+- `nativewind`: ^4.2.2
+- `tailwindcss`: ^3.4.17 (devDependency)
+- `prettier-plugin-tailwindcss`: ^0.5.11 (devDependency)
 - `react-native-reanimated`: ^4.2.2
 - `react-native-safe-area-context`: ^4.0.0+
 
@@ -107,14 +109,17 @@ Configure Babel to use NativeWind's preset. Update or create `babel.config.js`:
 module.exports = function(api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo', ['nativewind/babel']],
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+      'nativewind/babel',
+    ],
   };
 };
 ```
 
 **What This Does:**
-- Enables JSX transform for className support
-- Registers NativeWind's style compilation hooks
+- `jsxImportSource: 'nativewind'` enables the JSX transform for className support
+- `nativewind/babel` registers NativeWind's style compilation hooks
 - Required for build-time style optimization
 
 #### Step 5: Configure Metro Bundler
@@ -126,15 +131,23 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-const { withNativewind } = require('nativewind/metro');
+const { withNativeWind } = require('nativewind/metro');
 
-module.exports = withNativewind(config);
+module.exports = withNativeWind(config, { input: './global.css' });
 ```
 
 **What This Does:**
 - Integrates NativeWind with Expo's Metro bundler
+- `input` option specifies the path to your global CSS file
 - Enables CSS processing and style compilation
 - Must wrap your Metro config
+
+**withNativeWind Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `input` | `string` | `undefined` | Path to the global CSS file |
+| `disableTypeScriptGeneration` | `boolean` | `false` | Disable auto-generation of `nativewind-env.d.ts` |
 
 **File Structure After This Step:**
 ```
@@ -264,18 +277,18 @@ Create/update `metro.config.js`:
 
 ```javascript
 const { getDefaultConfig } = require('metro-config');
-const { withNativewind } = require('nativewind/metro');
+const { withNativeWind } = require('nativewind/metro');
 
-module.exports = withNativewind(getDefaultConfig(__dirname));
+module.exports = withNativeWind(getDefaultConfig(__dirname), { input: './global.css' });
 ```
 
 Or if using custom config:
 
 ```javascript
-const { withNativewind } = require('nativewind/metro');
+const { withNativeWind } = require('nativewind/metro');
 const config = require('./metro.config');
 
-module.exports = withNativewind(config);
+module.exports = withNativeWind(config, { input: './global.css' });
 ```
 
 #### Step 6: Handle CSS Processing
@@ -602,9 +615,9 @@ After successful setup, you're ready to:
 
 ## Version Information
 
-- **NativeWind Version:** 4.1.23+
+- **NativeWind Version:** 4.2.2+
 - **Tailwind CSS Version:** 3.4.17
-- **Minimum Node Version:** 24
+- **Minimum Node Version:** 20
 - **Last Updated:** February 2026
 
 **Source:** https://www.nativewind.dev/docs/getting-started/installation

@@ -364,4 +364,4 @@ findOne(@Param('id', ParseObjectIdPipe) id: Types.ObjectId) {}
 
 ---
 
-**Version:** NestJS 11.x + class-validator 0.14.x | **Source:** https://docs.nestjs.com/techniques/validation
+**Version:** NestJS 11.x (^11.1.14) + class-validator 0.14.x | **Source:** https://docs.nestjs.com/techniques/validation

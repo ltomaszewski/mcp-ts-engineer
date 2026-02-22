@@ -225,6 +225,10 @@ Hooks execute in module dependency order:
 | `beforeApplicationShutdown` | Reverse dependency order |
 | `onApplicationShutdown` | Reverse dependency order |
 
+## Async Logger Compatibility (v11.1.10+)
+
+NestJS 11.1.10 added async logger compatibility. Custom loggers that perform async operations (e.g., writing to external services) are now better supported during lifecycle events. The framework properly awaits async log flushes during shutdown.
+
 ## Best Practices
 
 | Practice | Rationale |
@@ -238,4 +242,4 @@ Hooks execute in module dependency order:
 
 ---
 
-**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/fundamentals/lifecycle-events
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/fundamentals/lifecycle-events

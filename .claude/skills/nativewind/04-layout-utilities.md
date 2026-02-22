@@ -1,8 +1,8 @@
-# Layout Utilities & Responsive Design - NativeWind v4
+# Layout Utilities & Responsive Design - NativeWind v4.2.x
 
 **Source:** https://www.nativewind.dev/docs  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 

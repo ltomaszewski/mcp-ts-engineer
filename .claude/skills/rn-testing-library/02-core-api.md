@@ -1,8 +1,8 @@
 # Core API Reference - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/render
 
-**Version:** ^13.0.0
+**Version:** 13.3.x
 
 ---
 
@@ -12,9 +12,7 @@
 
 Synchronously renders a React component for testing. Returns the rendered tree with bound query methods and utilities. This is the primary function for component testing.
 
-> **v13 note:** Concurrent rendering is enabled by default. Pass `concurrentRoot: false` in render options as an escape hatch if needed. In v14, `render` will become async.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/render](https://oss.callstack.com/react-native-testing-library/docs/api/render)
+> **v13 note:** Concurrent rendering is enabled by default. Pass `concurrentRoot: false` in render options as an escape hatch if needed.
 
 ### Signature
 
@@ -25,21 +23,14 @@ function render<Q extends Queries = typeof queries>(
 ): RenderResult<Q>
 ```
 
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `element` | `React.ReactElement<any>` | Yes | The component to render |
-| `options` | `RenderOptions<Q>` | No | Configuration object |
-
 ### RenderOptions
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `container` | `Element` | `null` | Custom container element |
 | `wrapper` | `React.ComponentType<any>` | `undefined` | Wrapper component (providers) |
-| `initialProps` | `object` | `{}` | Props for wrapper component |
-| `concurrentRoot` | `boolean` | `true` | Enable/disable concurrent rendering (v13 default: `true`) |
+| `concurrentRoot` | `boolean` | `true` | Enable/disable concurrent rendering |
+| `createNodeMock` | `(element: React.ReactElement) => any` | `undefined` | Custom mock ref factory |
+| `unstable_validateStringsRenderedWithinText` | `boolean` | `false` | Replicate RN's string-in-Text requirement |
 
 ### Code Examples
 
@@ -51,7 +42,7 @@ import { Text } from 'react-native';
 
 test('renders text component', () => {
   render(<Text>Hello, World!</Text>);
-  
+
   expect(screen.getByText('Hello, World!')).toBeOnTheScreen();
 });
 ```
@@ -67,7 +58,7 @@ test('renders with theme provider', () => {
   render(<UserProfile userId={123} />, {
     wrapper: ThemeProvider,
   });
-  
+
   expect(screen.getByText(/Profile/i)).toBeOnTheScreen();
 });
 ```
@@ -76,34 +67,31 @@ test('renders with theme provider', () => {
 
 ```typescript
 // test-utils.ts
-import { render as rtlRender } from '@testing-library/react-native';
+import { render as rtlRender, RenderOptions } from '@testing-library/react-native';
 import { AllProviders } from '@/context';
 
-export function render(component: React.ReactElement, options = {}) {
+export function render(
+  component: React.ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+) {
   return rtlRender(component, {
     wrapper: AllProviders,
     ...options,
   });
 }
 
-// In tests
-import { render, screen } from '@/test-utils';
-
-test('with custom render', () => {
-  render(<MyComponent />);
-  expect(screen.getByText('content')).toBeOnTheScreen();
-});
+export * from '@testing-library/react-native';
 ```
 
 ---
 
-## renderAsync()
+## renderAsync() (v13.3.0+)
 
 ### Description
 
-Asynchronously renders a component with async/await support. Returns promise resolving to RenderResult.
+Asynchronously renders a component using async `act` internally. Designed for React 19, React Suspense, and `React.use()`. Returns promise resolving to RenderResult.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/render-async](https://oss.callstack.com/react-native-testing-library/docs/api/render-async)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/render
 
 ### Signature
 
@@ -116,18 +104,44 @@ async function renderAsync<Q extends Queries = typeof queries>(
 
 ### Code Examples
 
-#### Async Component Rendering
+#### Suspense Component Rendering
 
 ```typescript
 import { renderAsync, screen } from '@testing-library/react-native';
+import { Suspense } from 'react';
 import { DataList } from '@/components/DataList';
 
-test('renders async component with data', async () => {
+test('renders Suspense component with data', async () => {
   await renderAsync(
-    <DataList url="https://api.example.com/data" />
+    <Suspense fallback={<Text>Loading...</Text>}>
+      <DataList url="https://api.example.com/data" />
+    </Suspense>,
   );
-  
-  expect(await screen.findByText(/Item 1/)).toBeOnTheScreen();
+
+  expect(screen.getByText(/Item 1/)).toBeOnTheScreen();
+});
+```
+
+#### React.use() Component
+
+```typescript
+import { renderAsync, screen } from '@testing-library/react-native';
+
+function UserName({ userPromise }: { userPromise: Promise<User> }) {
+  const user = React.use(userPromise);
+  return <Text>{user.name}</Text>;
+}
+
+test('renders component using React.use()', async () => {
+  const userPromise = Promise.resolve({ name: 'Alice' });
+
+  await renderAsync(
+    <Suspense fallback={<Text>Loading...</Text>}>
+      <UserName userPromise={userPromise} />
+    </Suspense>,
+  );
+
+  expect(screen.getByText('Alice')).toBeOnTheScreen();
 });
 ```
 
@@ -139,7 +153,23 @@ test('renders async component with data', async () => {
 
 The modern, recommended way to access queries and utilities. Provides all query methods bound to the most recent render's root.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/screen](https://oss.callstack.com/react-native-testing-library/docs/api/screen)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/screen
+
+### Properties and Methods
+
+| Property/Method | Type | Description |
+|-----------------|------|-------------|
+| `getBy*` / `getAllBy*` | Query | Find elements (throws if not found) |
+| `queryBy*` / `queryAllBy*` | Query | Find elements (returns null/empty array) |
+| `findBy*` / `findAllBy*` | Query | Async find (waits for element) |
+| `rerender(element)` | Function | Synchronous rerender |
+| `rerenderAsync(element)` | Function | Async rerender (v13.3.0+) |
+| `unmount()` | Function | Synchronous unmount |
+| `unmountAsync()` | Function | Async unmount (v13.3.0+) |
+| `debug(options?)` | Function | Pretty-print rendered tree |
+| `toJSON()` | Function | JSON representation for snapshots |
+| `root` | ReactTestInstance | Root host element |
+| `UNSAFE_root` | ReactTestInstance | Composite root element (discouraged) |
 
 ### Code Examples
 
@@ -151,10 +181,10 @@ import { LoginForm } from '@/components/LoginForm';
 
 test('renders login form with screen object', () => {
   render(<LoginForm onSubmit={jest.fn()} />);
-  
+
   const emailInput = screen.getByLabelText('Email');
   const submitButton = screen.getByRole('button', { name: 'Submit' });
-  
+
   expect(emailInput).toBeOnTheScreen();
   expect(submitButton).toBeOnTheScreen();
 });
@@ -170,26 +200,49 @@ test('debug rendered tree', () => {
     <View>
       <Text>Hello</Text>
       <Text>World</Text>
-    </View>
+    </View>,
   );
 
+  // Full tree debug
   screen.debug();
+
+  // With options
+  screen.debug({ message: 'After render' });
 });
 ```
 
-#### rerender() Function
+#### rerender() and rerenderAsync()
 
 ```typescript
 test('updates component on prop change', () => {
-  const { rerender } = render(
-    <Counter initialCount={0} />
-  );
-  
+  const { rerender } = render(<Counter initialCount={0} />);
+
   expect(screen.getByText('Count: 0')).toBeOnTheScreen();
-  
+
   rerender(<Counter initialCount={5} />);
-  
+
   expect(screen.getByText('Count: 5')).toBeOnTheScreen();
+});
+
+// Async version for React 19/Suspense
+test('async rerender', async () => {
+  await renderAsync(<SuspenseComponent data={initialData} />);
+
+  await screen.rerenderAsync(<SuspenseComponent data={newData} />);
+
+  expect(screen.getByText('Updated')).toBeOnTheScreen();
+});
+```
+
+#### root Property
+
+```typescript
+test('access root element', () => {
+  render(<MyComponent />);
+
+  // Access the root host element
+  const root = screen.root;
+  expect(root.type).toBe('View');
 });
 ```
 
@@ -201,7 +254,7 @@ test('updates component on prop change', () => {
 
 Renders a React Hook in isolation for testing hook logic without wrapping components.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/render-hook](https://oss.callstack.com/react-native-testing-library/docs/api/render-hook)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/render-hook
 
 ### Signature
 
@@ -210,11 +263,21 @@ function renderHook<Result, Props = undefined>(
   renderCallback: (initialProps?: Props) => Result,
   options?: RenderHookOptions<Props>
 ): RenderHookResult<Result, Props>
+
+interface RenderHookOptions<Props = undefined> {
+  initialProps?: Props;
+  wrapper?: React.ComponentType<any>;
+  concurrentRoot?: boolean;
+}
+
+interface RenderHookResult<Result, Props = undefined> {
+  result: { current: Result };
+  rerender: (props?: Props) => void;
+  unmount: () => void;
+}
 ```
 
 ### Code Examples
-
-#### Simple Hook Testing
 
 ```typescript
 import { renderHook } from '@testing-library/react-native';
@@ -222,42 +285,51 @@ import { useCounter } from '@/hooks/useCounter';
 
 test('useCounter hook increments', () => {
   const { result } = renderHook(() => useCounter());
-  
+
   expect(result.current.count).toBe(0);
-  
+
   result.current.increment();
-  
+
   expect(result.current.count).toBe(1);
 });
 ```
 
-#### Hook with Props
+---
+
+## renderHookAsync() (v13.3.0+)
+
+### Description
+
+Async version of renderHook for React 19 and Suspense. Uses async `act` internally.
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/render-hook
+
+### Signature
 
 ```typescript
-test('hook with initial props', () => {
-  const { result, rerender } = renderHook(
-    ({ query }: { query: string }) => useSearch(query),
-    { initialProps: { query: 'react' } }
-  );
-  
-  expect(result.current.query).toBe('react');
-  
-  rerender({ query: 'native' });
-  
-  expect(result.current.query).toBe('native');
-});
+async function renderHookAsync<Result, Props = undefined>(
+  renderCallback: (initialProps?: Props) => Result,
+  options?: RenderHookOptions<Props>
+): Promise<RenderHookAsyncResult<Result, Props>>
+
+interface RenderHookAsyncResult<Result, Props = undefined> {
+  result: { current: Result };
+  rerenderAsync: (props?: Props) => Promise<void>;
+  unmountAsync: () => Promise<void>;
+}
 ```
 
-#### Hook with Wrapper
+### Code Examples
 
 ```typescript
-test('useAuth hook with provider', () => {
-  const { result } = renderHook(
-    () => useAuth(),
-    { wrapper: AuthProvider }
-  );
-  
-  expect(result.current.user).toBeDefined();
+import { renderHookAsync } from '@testing-library/react-native';
+
+test('async hook with Suspense', async () => {
+  const { result } = await renderHookAsync(() => useSuspenseData());
+
+  expect(result.current.data).toBeDefined();
+
+  await result.current.refetch();
 });
 ```
 
@@ -269,7 +341,7 @@ test('useAuth hook with provider', () => {
 
 Removes all rendered components from the test environment. Automatically called after each test when using Jest.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/cleanup](https://oss.callstack.com/react-native-testing-library/docs/api/cleanup)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/cleanup
 
 ### Signature
 
@@ -278,8 +350,6 @@ function cleanup(): void
 ```
 
 ### Code Examples
-
-#### Setup in jest.setup.js
 
 ```typescript
 import { cleanup } from '@testing-library/react-native';
@@ -297,9 +367,9 @@ afterEach(() => {
 
 Wraps updates to React state and effects to ensure they complete before making assertions.
 
-> **v13 note:** Uses React's own `act()` instead of React Test Renderer's `act()`. This aligns with React 18+ patterns.
+> **v13 note:** Uses React's own `act()` instead of React Test Renderer's `act()`.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/act](https://oss.callstack.com/react-native-testing-library/docs/api/act)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/act
 
 ### Signature
 
@@ -309,35 +379,29 @@ function act<T>(callback: () => T | Promise<T>): T | Promise<T>
 
 ### Code Examples
 
-#### Wrapping State Updates
-
 ```typescript
 import { act, render, screen } from '@testing-library/react-native';
-import { ToggleButton } from '@/components/ToggleButton';
 
-test('handles click and updates state', () => {
+test('handles state updates', () => {
   render(<ToggleButton />);
-  
+
   const button = screen.getByRole('button');
-  
+
   act(() => {
     button.props.onPress();
   });
-  
+
   expect(screen.getByText('ON')).toBeOnTheScreen();
 });
-```
 
-#### Async State Updates
-
-```typescript
+// Async version
 test('handles async state updates', async () => {
   render(<DataFetcher />);
-  
+
   await act(async () => {
     await new Promise(resolve => setTimeout(resolve, 100));
   });
-  
+
   expect(screen.getByText(/Data loaded/)).toBeOnTheScreen();
 });
 ```
@@ -350,61 +414,35 @@ test('handles async state updates', async () => {
 
 Scopes queries to a specific element subtree instead of the entire render tree.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/within](https://oss.callstack.com/react-native-testing-library/docs/api/within)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/within
 
 ### Signature
 
 ```typescript
-function within<Q extends Queries = typeof queries>(
-  element: ReactTestInstance
-): Queries
+function within(element: ReactTestInstance): Queries
 ```
 
 ### Code Examples
 
-#### Scoping Queries to Element
-
 ```typescript
 import { render, screen, within } from '@testing-library/react-native';
-import { UserCard } from '@/components/UserCard';
 
 test('queries within specific element', () => {
   render(
-    <View>
-      <UserCard name="Alice" />
-      <UserCard name="Bob" />
-    </View>
-  );
-  
-  const aliceCard = screen.getByText('Alice').parent?.parent;
-  const nameInCard = within(aliceCard).getByText('Alice');
-  
-  expect(nameInCard).toBeOnTheScreen();
-});
-```
-
-#### Querying Lists with within()
-
-```typescript
-test('within() for list items', () => {
-  render(
     <FlatList
-      data={[
-        { id: '1', name: 'Item 1' },
-        { id: '2', name: 'Item 2' },
-      ]}
+      data={[{ id: '1', name: 'Item 1' }, { id: '2', name: 'Item 2' }]}
       renderItem={({ item }) => (
         <View testID={`item-${item.id}`}>
           <Text>{item.name}</Text>
-          <Button title="Delete" />
+          <Pressable accessibilityRole="button"><Text>Delete</Text></Pressable>
         </View>
       )}
-    />
+    />,
   );
-  
+
   const secondItem = screen.getByTestId('item-2');
   const deleteButton = within(secondItem).getByRole('button');
-  
+
   expect(deleteButton).toBeOnTheScreen();
 });
 ```
@@ -417,50 +455,39 @@ test('within() for list items', () => {
 
 Sets global default options for the RNTL library, affecting behavior across all tests.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/configure](https://oss.callstack.com/react-native-testing-library/docs/api/configure)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/config
 
 ### Signature
 
 ```typescript
 interface ConfigOptions {
-  testIdAttribute?: string;
-  asyncUtilTimeout?: number;
-  getElementError?: (message: string | null, container: Element) => Error;
+  asyncUtilTimeout: number;
+  defaultHidden: boolean;
+  defaultDebugOptions: Partial<DebugOptions>;
+  concurrentRoot: boolean;
 }
 
 function configure(options: Partial<ConfigOptions>): void
 ```
 
-### Code Examples
+### Config Options
 
-#### Configure Async Timeout Globally
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `asyncUtilTimeout` | `number` | `1000` | Timeout for `waitFor`, `waitForElementToBeRemoved`, `findBy*` (ms) |
+| `defaultHidden` | `boolean` | `false` | Whether queries match elements hidden from accessibility |
+| `defaultDebugOptions` | `Partial<DebugOptions>` | `{}` | Default options for `debug()` calls |
+| `concurrentRoot` | `boolean` | `true` | Enable/disable concurrent rendering globally |
+
+### Code Examples
 
 ```typescript
 import { configure } from '@testing-library/react-native';
 
-// In jest.setup.js
-configure({ asyncUtilTimeout: 3000 }); // 3 second global timeout
-
-test('uses configured timeout', async () => {
-  render(<SlowComponent />);
-  
-  await screen.findByText(/Loaded/);
-});
-```
-
-#### Configure Custom Test ID Attribute
-
-```typescript
-configure({ testIdAttribute: 'data-testid' });
-
-test('uses custom test ID attribute', () => {
-  render(
-    <View data-testid="my-view">
-      <Text>Content</Text>
-    </View>
-  );
-  
-  expect(screen.getByTestId('my-view')).toBeOnTheScreen();
+// In jest.setup.ts
+configure({
+  asyncUtilTimeout: 3000,
+  concurrentRoot: true,
 });
 ```
 
@@ -472,33 +499,11 @@ test('uses custom test ID attribute', () => {
 
 Resets all global configuration options to their default values.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/reset](https://oss.callstack.com/react-native-testing-library/docs/api/reset)
-
-### Signature
-
-```typescript
-function resetToDefaults(): void
-```
-
-### Code Examples
-
-#### Reset After Test Configuration
-
 ```typescript
 import { configure, resetToDefaults } from '@testing-library/react-native';
 
-describe('Custom Configuration Tests', () => {
-  beforeEach(() => {
-    configure({ asyncUtilTimeout: 500 });
-  });
-  
-  afterEach(() => {
-    resetToDefaults();
-  });
-  
-  test('uses custom timeout', async () => {
-    await screen.findByText(/Content/, {}, { timeout: 500 });
-  });
+afterEach(() => {
+  resetToDefaults();
 });
 ```
 
@@ -506,17 +511,20 @@ describe('Custom Configuration Tests', () => {
 
 ## API Quick Reference
 
-| Function | Synchronous | Returns | Use Case |
-|----------|-------------|---------|----------|
-| `render()` | Yes | `RenderResult` | Render components |
-| `renderAsync()` | No | `Promise<RenderResult>` | Async rendering |
-| `renderHook()` | Yes | `RenderHookResult` | Test hooks |
-| `cleanup()` | Yes | `void` | Clean up after tests |
-| `act()` | Both | Value or Promise | Wrap state updates |
-| `within()` | Yes | `Queries` | Scope queries |
-| `configure()` | Yes | `void` | Set defaults |
-| `resetToDefaults()` | Yes | `void` | Reset configuration |
+| Function | Sync | Returns | Since |
+|----------|------|---------|-------|
+| `render()` | Yes | `RenderResult` | v1 |
+| `renderAsync()` | No | `Promise<RenderResult>` | v13.3.0 |
+| `renderHook()` | Yes | `RenderHookResult` | v12 |
+| `renderHookAsync()` | No | `Promise<RenderHookAsyncResult>` | v13.3.0 |
+| `cleanup()` | Yes | `void` | v1 |
+| `act()` | Both | Value or Promise | v1 |
+| `within()` | Yes | `Queries` | v1 |
+| `configure()` | Yes | `void` | v1 |
+| `resetToDefaults()` | Yes | `void` | v1 |
 
 ---
 
-**Next:** [Query Methods →](./03-query-methods.md)
+**Next:** [Query Methods](./03-query-methods.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/render

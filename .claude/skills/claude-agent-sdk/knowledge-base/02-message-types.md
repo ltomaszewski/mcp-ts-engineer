@@ -13,7 +13,7 @@ type SDKMessage =
   | SDKUserMessageReplay
   | SDKResultMessage
   | SDKSystemMessage
-  | SDKPartialAssistantMessage
+  | SDKStreamEventMessage       // v0.2: replaces SDKPartialAssistantMessage
   | SDKCompactBoundaryMessage;
 ```
 
@@ -130,6 +130,8 @@ type SDKResultMessage = {
   };
   result?: string;
   structured_output?: unknown;
+  model?: string;                  // v0.2: model used
+  permission_denials?: number;     // v0.2: count of denied permissions
 }
 ```
 
@@ -138,11 +140,13 @@ type SDKResultMessage = {
 | Subtype | Meaning |
 |---------|---------|
 | `"success"` | Completed successfully |
-| `"error"` | Encountered an error |
+| `"error_during_execution"` | Error during agent execution |
+| `"error_max_turns"` | Hit max turns limit |
+| `"error_budget"` | Hit budget limit |
+| `"error_timeout"` | Hit timeout |
 | `"interrupted"` | User or system interrupted |
-| `"max_turns"` | Hit max turns limit |
-| `"budget_exceeded"` | Hit budget limit |
-| `"timeout"` | Hit timeout |
+
+> **v0.2 Note**: Subtypes were refined. `"error"` split into `"error_during_execution"`, `"error_max_turns"`, `"error_budget"`, `"error_timeout"` for more granular error handling.
 
 ### Handling Result Messages
 
@@ -210,36 +214,45 @@ type SDKSystemMessage = {
 | `"mcp_connected"` | MCP server connected |
 | `"mcp_error"` | MCP server error |
 | `"permission_request"` | Permission needed |
+| `"task_started"` | Subagent task started (v0.2.45+) |
+| `"task_notification"` | Subagent task notification (v0.2.47+) |
+| `"config_change"` | Configuration changed (v0.2.49+) |
 
 ---
 
-## SDKPartialAssistantMessage
+## SDKStreamEventMessage (v0.2)
 
-Streaming chunk during response generation.
+Streaming chunk during response generation. Requires `includePartialMessages: true` in options.
+
+> **v0.2 Migration**: Type changed from `"partial"` to `"stream_event"`. The old `SDKPartialAssistantMessage` with `type: "partial"` is replaced.
 
 ```typescript
-type SDKPartialAssistantMessage = {
-  type: "partial";
+type SDKStreamEventMessage = {
+  type: "stream_event";
   uuid: UUID;
   session_id: string;
-  delta: {
-    type: "text_delta" | "input_json_delta";
-    text?: string;
-    partial_json?: string;
+  event: {
+    type: "content_block_delta";
+    index: number;
+    delta: {
+      type: "text_delta" | "input_json_delta";
+      text?: string;
+      partial_json?: string;
+    };
   };
 }
 ```
 
-### Handling Partial Messages (Streaming)
+### Handling Stream Events
 
 ```typescript
-let currentText = "";
-
-for await (const message of query({ prompt })) {
-  if (message.type === "partial") {
-    if (message.delta.text) {
-      process.stdout.write(message.delta.text);
-      currentText += message.delta.text;
+for await (const message of query({
+  prompt,
+  options: { includePartialMessages: true }
+})) {
+  if (message.type === "stream_event") {
+    if (message.event.delta.text) {
+      process.stdout.write(message.event.delta.text);
     }
   }
 }
@@ -296,8 +309,11 @@ async function processQuery(prompt: string) {
         }
         break;
 
-      case "partial":
-        // Handle streaming if needed
+      case "stream_event":
+        // Handle streaming (requires includePartialMessages: true)
+        if (message.event.delta.text) {
+          result.responses.push(message.event.delta.text);
+        }
         break;
 
       case "system":
@@ -339,9 +355,9 @@ for message in query(prompt="Hello"):
         if message.is_error:
             print(f"Error: {message.result}")
 
-    elif message.type == "partial":
-        if hasattr(message.delta, "text"):
-            print(message.delta.text, end="", flush=True)
+    elif message.type == "stream_event":
+        if hasattr(message.event.delta, "text"):
+            print(message.event.delta.text, end="", flush=True)
 ```
 
 ---
@@ -384,9 +400,9 @@ for await (const message of query({ prompt })) {
 1. **Always handle `result` messages** - they contain important metadata
 2. **Check `is_error` in result** - don't assume success
 3. **Use discriminated unions** - leverage TypeScript's type narrowing
-4. **Handle `partial` for UX** - show streaming output to users
+4. **Handle `stream_event` for UX** - show streaming output to users (requires `includePartialMessages: true`)
 5. **Log `system` messages** - useful for debugging MCP and permissions
 
 ---
 
-**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

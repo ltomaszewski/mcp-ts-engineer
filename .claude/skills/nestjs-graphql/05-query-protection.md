@@ -151,4 +151,4 @@ GraphQLModule.forRootAsync<YogaDriverConfig>({
 
 ---
 
-**Version:** @escape.tech/graphql-armor + @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/complexity
+**Version:** @escape.tech/graphql-armor + @nestjs/graphql 13.2.x | **Source:** https://docs.nestjs.com/graphql/complexity

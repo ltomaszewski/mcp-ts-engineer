@@ -1,18 +1,19 @@
-# Advanced Features - NativeWind v4
+# Advanced Features - NativeWind v4.2.x
 
 **Source:** https://www.nativewind.dev/docs/api/css-interop
 **Last Verified:** February 2026
-**Version:** NativeWind v4 (^4.1.23) + Tailwind 3.4.17
+**Version:** NativeWind v4.2.x
 
 ---
 
 ## Table of Contents
 1. [cssInterop API](#cssinterop-api)
-2. [Safe Area Utilities](#safe-area-utilities)
-3. [Arbitrary Values](#arbitrary-values)
-4. [Plugin System](#plugin-system)
-5. [Container Queries](#container-queries)
-6. [Advanced Configuration](#advanced-configuration)
+2. [Theme Helper Functions](#theme-helper-functions)
+3. [Safe Area Utilities](#safe-area-utilities)
+4. [Arbitrary Values](#arbitrary-values)
+5. [Plugin System](#plugin-system)
+6. [Container Queries](#container-queries)
+7. [Advanced Configuration](#advanced-configuration)
 
 ---
 
@@ -90,6 +91,89 @@ Enabling `cssInterop` on a component adds runtime overhead -- NativeWind must re
 | `@shopify/flash-list` | `cssInterop(FlashList, { className: 'style', contentContainerClassName: 'contentContainerStyle' })` |
 | `react-native-maps` | `cssInterop(MapView, { className: 'style' })` |
 | `react-native-svg` | `cssInterop(Svg, { className: 'style' })` |
+
+---
+
+## Theme Helper Functions
+
+NativeWind 4.2.x provides theme helper functions from `nativewind/theme` for platform-aware values in `tailwind.config.js`.
+
+### Available Helpers
+
+| Function | Description |
+|----------|-------------|
+| `hairlineWidth()` | Thinnest visible line (1px / pixelRatio) |
+| `pixelRatio(value)` | Multiply by device pixel ratio |
+| `pixelRatioSelect({ default, ios?, android? })` | Value based on pixel ratio |
+| `fontScale(value)` | Multiply by font scale factor |
+| `fontScaleSelect({ default, ios?, android? })` | Value based on font scale |
+| `platformSelect({ default, ios?, android?, web? })` | Value per platform |
+| `platformColor(iosColor, androidColor)` | Platform-specific color |
+| `getPixelSizeForLayoutSize(size)` | Layout size to pixel size |
+| `roundToNearestPixel(size)` | Round to nearest pixel boundary |
+
+### Usage in tailwind.config.js
+
+```javascript
+const {
+  hairlineWidth,
+  platformSelect,
+  platformColor,
+  pixelRatio,
+  fontScale,
+} = require('nativewind/theme');
+
+module.exports = {
+  theme: {
+    extend: {
+      borderWidth: {
+        hairline: hairlineWidth(),
+      },
+      fontSize: {
+        // Scale font size with device font scale setting
+        'body-scaled': fontScale(16),
+      },
+      colors: {
+        // Use native platform colors
+        label: platformColor('label', '@android:color/primary_text_dark'),
+        // Platform-specific color values
+        link: platformSelect({
+          ios: '#007AFF',
+          android: '#1976D2',
+          default: '#0066CC',
+        }),
+      },
+      spacing: {
+        'pixel-2': pixelRatio(2),
+      },
+    },
+  },
+};
+```
+
+### Usage in Components
+
+```typescript
+import { View, Text } from 'react-native';
+
+export const ThemeHelpersExample = () => {
+  return (
+    <View className="p-4 gap-4">
+      {/* Hairline border */}
+      <View className="border-hairline border-gray-300 p-4 rounded-lg">
+        <Text className="text-body-scaled">
+          Scaled text with hairline border
+        </Text>
+      </View>
+
+      {/* Platform color */}
+      <Text className="text-link font-bold">
+        Platform-native link color
+      </Text>
+    </View>
+  );
+};
+```
 
 ---
 
@@ -373,4 +457,4 @@ module.exports = {
 
 ---
 
-**Version:** NativeWind 4.x (^4.1.23) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/docs/api/css-interop
+**Version:** NativeWind v4.2.x | **Source:** https://www.nativewind.dev/docs/api/css-interop

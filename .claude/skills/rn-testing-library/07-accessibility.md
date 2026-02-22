@@ -1,8 +1,8 @@
 # Accessibility & Configuration - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api/accessibility
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/accessibility
 
-**Version:** 13.3.3
+**Version:** 13.3.x
 
 ---
 
@@ -13,11 +13,9 @@
 React Native Testing Library emphasizes accessibility through:
 
 1. **Semantic Queries** - Use `getByRole()` first (encourages accessible components)
-2. **ARIA Attributes** - `accessibilityRole`, `accessibilityLabel`, `accessibilityHint`
+2. **ARIA Attributes** - `accessibilityRole`, `accessibilityLabel`, `accessibilityHint`, `aria-*` props
 3. **Visibility Queries** - Test what's actually visible to users
 4. **Inclusive Testing** - Benefits all users, not just those with assistive tech
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/accessibility](https://oss.callstack.com/react-native-testing-library/docs/api/accessibility)
 
 ### Why Accessibility Matters
 
@@ -37,8 +35,6 @@ React Native Testing Library emphasizes accessibility through:
 
 Checks if an element is hidden from accessibility tree (assistive technologies).
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/accessibility#ishiddenfromaccessibility](https://oss.callstack.com/react-native-testing-library/docs/api/accessibility#ishiddenfromaccessibility)
-
 ### Signature
 
 ```typescript
@@ -50,17 +46,14 @@ function isHiddenFromAccessibility(element: ReactTestInstance): boolean
 #### Visible Element
 
 ```typescript
-import { render, screen } from '@testing-library/react-native';
-import { isHiddenFromAccessibility } from '@testing-library/react-native';
+import { render, screen, isHiddenFromAccessibility } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 test('visible element is not hidden', () => {
-  render(
-    <Text>Hello World</Text>
-  );
-  
+  render(<Text>Hello World</Text>);
+
   const element = screen.getByText('Hello World');
-  
+
   expect(isHiddenFromAccessibility(element)).toBe(false);
 });
 ```
@@ -72,11 +65,11 @@ test('element with accessibilityElementsHidden is hidden', () => {
   render(
     <View accessibilityElementsHidden={true}>
       <Text>Hidden Text</Text>
-    </View>
+    </View>,
   );
-  
-  const element = screen.getByText('Hidden Text');
-  
+
+  const element = screen.getByText('Hidden Text', { includeHiddenElements: true });
+
   expect(isHiddenFromAccessibility(element)).toBe(true);
 });
 ```
@@ -85,12 +78,10 @@ test('element with accessibilityElementsHidden is hidden', () => {
 
 ```typescript
 test('element with display none is hidden', () => {
-  render(
-    <Text style={{ display: 'none' }}>Hidden Text</Text>
-  );
-  
+  render(<Text style={{ display: 'none' }}>Hidden Text</Text>);
+
   const element = screen.getByText('Hidden Text', { includeHiddenElements: true });
-  
+
   expect(isHiddenFromAccessibility(element)).toBe(true);
 });
 ```
@@ -103,16 +94,18 @@ test('query options for hidden elements', () => {
     <View>
       <Text style={{ display: 'none' }}>Hidden from accessibility</Text>
       <Text>Visible to accessibility</Text>
-    </View>
+    </View>,
   );
-  
+
   // By default, doesn't find hidden elements
   expect(screen.queryByText('Hidden from accessibility')).toBeNull();
-  
+
   // With option, finds hidden elements
-  const hidden = screen.getByText('Hidden from accessibility', { includeHiddenElements: true });
+  const hidden = screen.getByText('Hidden from accessibility', {
+    includeHiddenElements: true,
+  });
   expect(isHiddenFromAccessibility(hidden)).toBe(true);
-  
+
   // Visible elements always findable
   const visible = screen.getByText('Visible to accessibility');
   expect(isHiddenFromAccessibility(visible)).toBe(false);
@@ -127,14 +120,10 @@ test('query options for hidden elements', () => {
 
 `within()` scopes all queries to a specific element subtree. Critical for testing isolated sections, lists, and complex nested components.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/within](https://oss.callstack.com/react-native-testing-library/docs/api/within)
-
 ### Signature
 
 ```typescript
-function within<Q extends Queries = typeof queries>(
-  element: ReactTestInstance
-): Queries
+function within(element: ReactTestInstance): Queries
 ```
 
 ### Code Examples
@@ -142,6 +131,8 @@ function within<Q extends Queries = typeof queries>(
 #### Basic within() Usage
 
 ```typescript
+import { render, screen, within } from '@testing-library/react-native';
+
 test('within() scopes queries', () => {
   render(
     <View>
@@ -151,15 +142,15 @@ test('within() scopes queries', () => {
       <View testID="section-2">
         <Text>Item 2</Text>
       </View>
-    </View>
+    </View>,
   );
-  
+
   const section1 = screen.getByTestId('section-1');
-  
+
   // Query only within section1
   const item1 = within(section1).getByText('Item 1');
   expect(item1).toBeOnTheScreen();
-  
+
   // Item 2 not in section1
   expect(within(section1).queryByText('Item 2')).toBeNull();
 });
@@ -174,7 +165,7 @@ test('within() for list items', () => {
     { id: 2, name: 'Banana', price: '$0.50' },
     { id: 3, name: 'Orange', price: '$1.50' },
   ];
-  
+
   render(
     <FlatList
       data={items}
@@ -184,22 +175,21 @@ test('within() for list items', () => {
           <Text>{item.price}</Text>
         </View>
       )}
-    />
+    />,
   );
-  
+
   // Find specific item
   const bananaItem = screen.getByTestId('item-2');
-  
+
   // Query within that item
   const name = within(bananaItem).getByText('Banana');
   const price = within(bananaItem).getByText('$0.50');
-  
+
   expect(name).toBeOnTheScreen();
   expect(price).toBeOnTheScreen();
-  
+
   // Other items not in this scope
   expect(within(bananaItem).queryByText('Apple')).toBeNull();
-  expect(within(bananaItem).queryByText('Orange')).toBeNull();
 });
 ```
 
@@ -213,13 +203,13 @@ test('within() for list items', () => {
 interface AccessibilityProps {
   // Role (button, checkbox, link, etc.)
   accessibilityRole?: AccessibilityRole;
-  
+
   // Label for element
   accessibilityLabel?: string;
-  
+
   // Additional hint text
   accessibilityHint?: string;
-  
+
   // State information
   accessibilityState?: {
     disabled?: boolean;
@@ -228,7 +218,7 @@ interface AccessibilityProps {
     busy?: boolean;
     expanded?: boolean;
   };
-  
+
   // Value information
   accessibilityValue?: {
     min?: number;
@@ -236,27 +226,46 @@ interface AccessibilityProps {
     now?: number;
     text?: string;
   };
-  
+
   // Hide from accessibility tree
   accessibilityElementsHidden?: boolean;
-  
+
+  // ARIA equivalents (React Native 0.71+)
+  'aria-label'?: string;
+  'aria-disabled'?: boolean;
+  'aria-selected'?: boolean;
+  'aria-checked'?: boolean | 'mixed';
+  'aria-busy'?: boolean;
+  'aria-expanded'?: boolean;
+  'aria-valuemin'?: number;
+  'aria-valuemax'?: number;
+  'aria-valuenow'?: number;
+  'aria-valuetext'?: string;
+  'aria-labelledby'?: string;
+
   // Test ID
   testID?: string;
 }
 ```
 
-### Using accessibilityLabel
+### v13 Accessibility Label Priority
+
+In v13, explicit labels take strict priority over implicit text-derived labels:
 
 ```typescript
-test('accessible button with label', () => {
+test('explicit label takes priority', () => {
   render(
     <Pressable accessibilityRole="button" accessibilityLabel="Submit Form">
       <Text>Submit</Text>
-    </Pressable>
+    </Pressable>,
   );
-  
+
+  // Finds by explicit accessibilityLabel
   const button = screen.getByRole('button', { name: 'Submit Form' });
   expect(button).toBeOnTheScreen();
+
+  // Does NOT find by inner text when explicit label exists
+  expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
 });
 ```
 
@@ -264,19 +273,16 @@ test('accessible button with label', () => {
 
 ```typescript
 test('accessible checkbox with state', () => {
-  const [checked, setChecked] = useState(false);
-  
   render(
     <Pressable
       accessibilityRole="checkbox"
       accessibilityLabel="Accept terms"
-      accessibilityState={{ checked }}
-      onPress={() => setChecked(!checked)}
+      accessibilityState={{ checked: false }}
     >
       <Text>I accept the terms</Text>
-    </Pressable>
+    </Pressable>,
   );
-  
+
   const checkbox = screen.getByRole('checkbox', { checked: false });
   expect(checkbox).toBeOnTheScreen();
 });
@@ -287,19 +293,15 @@ test('accessible checkbox with state', () => {
 ```typescript
 test('slider with accessibility value', () => {
   render(
-    <Slider
-      accessibilityRole="slider"
+    <View
+      accessibilityRole="adjustable"
       accessibilityLabel="Volume"
       accessibilityValue={{ min: 0, max: 100, now: 50 }}
-    />
+    />,
   );
-  
-  const slider = screen.getByRole('slider', { name: 'Volume' });
-  expect(slider.props.accessibilityValue).toEqual({
-    min: 0,
-    max: 100,
-    now: 50,
-  });
+
+  const slider = screen.getByRole('adjustable', { name: 'Volume' });
+  expect(slider).toHaveAccessibilityValue({ min: 0, max: 100, now: 50 });
 });
 ```
 
@@ -314,10 +316,21 @@ import { configure } from '@testing-library/react-native';
 
 // Set global defaults
 configure({
-  testIdAttribute: 'testID', // Default attribute for testID queries
-  asyncUtilTimeout: 1000,    // Timeout for async queries
+  asyncUtilTimeout: 1000,    // Timeout for async queries (ms)
+  defaultHidden: false,       // Whether queries match hidden elements
+  concurrentRoot: true,       // Enable concurrent rendering
+  defaultDebugOptions: {},    // Default debug() options
 });
 ```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `asyncUtilTimeout` | `number` | `1000` | Timeout for `waitFor`, `findBy*` (ms) |
+| `defaultHidden` | `boolean` | `false` | Include hidden elements in queries |
+| `concurrentRoot` | `boolean` | `true` | Enable concurrent rendering |
+| `defaultDebugOptions` | `Partial<DebugOptions>` | `{}` | Default options for `debug()` |
 
 ---
 
@@ -326,36 +339,37 @@ configure({
 ### Recommended Order
 
 ```
-1. getByRole()           ← Most semantic, most accessible
-2. getByLabelText()      ← Form inputs with labels
-3. getByPlaceholderText() ← Form inputs with placeholders
-4. getByText()           ← Generic content
-5. getByTestId()         ← Last resort, implementation detail
+1. getByRole()           -- Most semantic, most accessible
+2. getByLabelText()      -- Form inputs with labels
+3. getByPlaceholderText() -- Form inputs with placeholders
+4. getByText()           -- Generic content
+5. getByHintText()       -- Accessibility hint text
+6. getByTestId()         -- Last resort, implementation detail
 ```
 
 ---
 
 ## Accessibility Best Practices
 
-### ✅ DO: Use Semantic Queries
+### DO: Use Semantic Queries
 
 ```typescript
-// ✅ GOOD: Semantic queries
+// GOOD: Semantic queries
 const button = screen.getByRole('button', { name: 'Click me' });
 const input = screen.getByLabelText('Email');
 const checkbox = screen.getByRole('checkbox', { name: 'Terms' });
 
-// ✅ Also good
+// Also good
 const text = screen.getByText(/pattern/);
 
-// ❌ AVOID: Last resort only
+// AVOID: Last resort only
 const element = screen.getByTestId('some-id');
 ```
 
-### ✅ DO: Provide Accessibility Labels
+### DO: Provide Accessibility Labels
 
 ```typescript
-// ✅ GOOD: Clear accessible labels
+// GOOD: Clear accessible labels
 <Pressable
   accessibilityRole="button"
   accessibilityLabel="Delete Item"
@@ -364,13 +378,13 @@ const element = screen.getByTestId('some-id');
   <Icon name="trash" />
 </Pressable>
 
-// ❌ POOR: No accessible label
+// POOR: No accessible label
 <Pressable>
   <Icon name="trash" />
 </Pressable>
 ```
 
-### ✅ DO: Test Accessibility States
+### DO: Test Accessibility States
 
 ```typescript
 test('checkbox state', () => {
@@ -379,28 +393,30 @@ test('checkbox state', () => {
       accessibilityRole="checkbox"
       accessibilityLabel="Enabled"
       accessibilityState={{ checked: false }}
-    />
+    />,
   );
-  
+
   expect(
-    screen.getByRole('checkbox', { checked: false })
+    screen.getByRole('checkbox', { checked: false }),
   ).toBeOnTheScreen();
-  
+
   // Verify state can change
   rerender(
     <Pressable
       accessibilityRole="checkbox"
       accessibilityLabel="Enabled"
       accessibilityState={{ checked: true }}
-    />
+    />,
   );
-  
+
   expect(
-    screen.getByRole('checkbox', { checked: true })
+    screen.getByRole('checkbox', { checked: true }),
   ).toBeOnTheScreen();
 });
 ```
 
 ---
 
-**Next:** [Advanced Patterns →](./08-advanced-patterns.md)
+**Next:** [Advanced Patterns](./08-advanced-patterns.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/accessibility

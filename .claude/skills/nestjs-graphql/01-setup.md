@@ -12,10 +12,10 @@ npm i @nestjs/graphql @graphql-yoga/nestjs graphql-yoga graphql
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `@nestjs/graphql` | ^13.0.0 | NestJS GraphQL integration |
+| `@nestjs/graphql` | ^13.2.4 | NestJS GraphQL integration |
 | `@graphql-yoga/nestjs` | ^3.19.0 | Yoga driver for NestJS |
 | `graphql-yoga` | ^5.18.0 | Underlying GraphQL server |
-| `graphql` | ^16.0.0 | GraphQL.js runtime |
+| `graphql` | ^16.12.0 | GraphQL.js runtime |
 
 ## Code-First Configuration
 
@@ -57,6 +57,7 @@ export class AppModule {}
 | `plugins` | `any[]` | -- | Envelop/Yoga plugins |
 | `cors` | `object \| boolean` | -- | CORS configuration |
 | `validationRules` | `Function[]` | -- | Custom GraphQL validation rules |
+| `maskedErrors` | `boolean \| object` | `true` | Yoga error masking (see 06-error-handling) |
 
 ## Async Configuration
 
@@ -141,6 +142,23 @@ GraphQLModule.forRoot<YogaDriverConfig>({
 })
 ```
 
+### Custom Type Naming (13.2.0+)
+
+Apply custom transformations to generated type names to avoid naming conflicts:
+
+```typescript
+import { GraphQLDefinitionsFactory } from '@nestjs/graphql';
+
+const definitionsFactory = new GraphQLDefinitionsFactory();
+definitionsFactory.generate({
+  typePaths: ['./src/**/*.graphql'],
+  path: join(process.cwd(), 'src/graphql.ts'),
+  typeName: (name: string) => `${name}Schema`,
+  // User -> UserSchema, CreateUserInput -> CreateUserInputSchema
+  // Root types (Query, Mutation, Subscription) are unaffected
+});
+```
+
 ## Code-First vs Schema-First
 
 | Aspect | Code-First | Schema-First |
@@ -153,4 +171,4 @@ GraphQLModule.forRoot<YogaDriverConfig>({
 
 ---
 
-**Version:** @nestjs/graphql 13.x + @graphql-yoga/nestjs 3.x + graphql-yoga 5.x | **Source:** https://docs.nestjs.com/graphql/quick-start
+**Version:** @nestjs/graphql 13.2.x + @graphql-yoga/nestjs 3.19.x + graphql-yoga 5.18.x | **Source:** https://docs.nestjs.com/graphql/quick-start

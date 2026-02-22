@@ -1,6 +1,6 @@
 # Advanced Patterns & Best Practices
 
-**Module:** `07-advanced-patterns.md` | **Version:** 5.x (^5.0.2)
+**Module:** `07-advanced-patterns.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -379,6 +379,26 @@ const useConfigStore = create((set) => ({
 
 ---
 
+## SSR Safety (v5.0.9+ experimental)
+
+For Next.js and SSR frameworks, prevent hydration mismatches:
+
+```typescript
+import { create } from 'zustand'
+import { unstable_ssrSafe } from 'zustand/middleware'
+
+const useStore = create<State>()(
+  unstable_ssrSafe((set) => ({
+    count: 0,
+    increment: () => set((s) => ({ count: s.count + 1 })),
+  }))
+)
+```
+
+**Note:** This is an experimental/unstable API. Prefer `skipHydration` in persist middleware for most SSR use cases.
+
+---
+
 ## Quick Reference: When to Use What
 
 | Need | Solution |
@@ -399,4 +419,4 @@ const useConfigStore = create((set) => ({
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/guides/slices-pattern | https://zustand.docs.pmnd.rs/guides/updating-state
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

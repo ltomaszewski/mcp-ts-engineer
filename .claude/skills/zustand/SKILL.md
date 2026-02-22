@@ -155,6 +155,7 @@ const { a, b } = useStore(useShallow((s) => ({ a: s.a, b: s.b })))
 | Vanilla store | `createStore()` | `createStore<State>((set) => ({...}))` |
 | Reset store | custom action | `reset: () => set(initialState)` |
 | Type inference | `combine()` | `combine({ count: 0 }, (set) => ({...}))` |
+| Extract state type | `ExtractState` | `type S = ExtractState<typeof useStore>` |
 
 ---
 
@@ -172,4 +173,4 @@ const { a, b } = useStore(useShallow((s) => ({ a: s.a, b: s.b })))
 
 ---
 
-**Version:** 5.x (^5.0.2) | **Source:** https://zustand.docs.pmnd.rs/
+**Version:** 5.x (^5.0.11) | **Source:** https://zustand.docs.pmnd.rs/

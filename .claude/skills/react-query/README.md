@@ -2,7 +2,7 @@
 
 > Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate.
 
-**Version:** 5.x (^5.62.11) | **Source:** https://tanstack.com/query/latest
+**Version:** 5.x (^5.90.x) | **Source:** https://tanstack.com/query/latest
 
 ---
 
@@ -11,14 +11,14 @@
 | # | File | Topic |
 |---|------|-------|
 | -- | [SKILL.md](SKILL.md) | Quick reference, rules, core patterns |
-| 01 | [01-overview.md](01-overview.md) | Philosophy, server vs client state, architecture |
-| 02 | [02-installation-setup.md](02-installation-setup.md) | Installation, QueryClient, QueryClientProvider, defaults |
-| 03 | [03-api-usequery.md](03-api-usequery.md) | useQuery all options, useSuspenseQuery |
-| 04 | [04-api-usemutation.md](04-api-usemutation.md) | useMutation all options, optimistic update |
-| 05 | [05-api-infinitequery.md](05-api-infinitequery.md) | useInfiniteQuery, cursor/offset pagination, maxPages |
-| 06 | [06-api-queryclient.md](06-api-queryclient.md) | QueryClient methods: fetch, prefetch, invalidate, set/get |
-| 07 | [07-guide-query-keys.md](07-guide-query-keys.md) | Query key design, factories, invalidation strategies |
-| 08 | [08-guide-advanced.md](08-guide-advanced.md) | Dependent queries, parallel, retry, Suspense, performance |
+| 01 | [01-overview.md](01-overview.md) | Philosophy, server vs client state, architecture, v5 changes |
+| 02 | [02-installation-setup.md](02-installation-setup.md) | Installation, QueryClient, QueryClientProvider, defaults, ESLint |
+| 03 | [03-api-usequery.md](03-api-usequery.md) | useQuery all options, useSuspenseQuery, keepPreviousData |
+| 04 | [04-api-usemutation.md](04-api-usemutation.md) | useMutation, optimistic updates, scope, useMutationState, mutationOptions |
+| 05 | [05-api-infinitequery.md](05-api-infinitequery.md) | useInfiniteQuery, cursor/offset pagination, maxPages, infiniteQueryOptions |
+| 06 | [06-api-queryclient.md](06-api-queryclient.md) | QueryClient methods: fetch, prefetch, invalidate, set/get, useIsFetching, useIsMutating |
+| 07 | [07-guide-query-keys.md](07-guide-query-keys.md) | Query key design, factories, queryOptions, invalidation strategies |
+| 08 | [08-guide-advanced.md](08-guide-advanced.md) | Dependent queries, parallel, retry, Suspense, combine, performance |
 
 ---
 

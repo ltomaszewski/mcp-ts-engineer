@@ -97,6 +97,58 @@ export class UpdateUserInput {
 }
 ```
 
+### Input Field Deprecation (13.2.0+)
+
+`deprecationReason` on `@Field()` now works for `@InputType` fields:
+
+```typescript
+@InputType()
+export class CreatePostInput {
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String, { deprecationReason: 'Use title instead' })
+  subject?: string;
+}
+// Generates: subject: String @deprecated(reason: "Use title instead")
+```
+
+### OneOf Input Types (13.2.2+)
+
+Enforce exactly one field is set using `isOneOf`:
+
+```typescript
+import { InputType, Field, ID } from '@nestjs/graphql';
+
+@InputType({ isOneOf: true })
+export class UserByInput {
+  @Field(() => ID, { nullable: true })
+  id?: string;
+
+  @Field(() => String, { nullable: true })
+  email?: string;
+
+  @Field(() => String, { nullable: true })
+  username?: string;
+}
+
+// Generates:
+// input UserByInput @oneOf {
+//   id: ID
+//   email: String
+//   username: String
+// }
+
+// Usage in resolver:
+@Query(() => User, { nullable: true })
+async userBy(@Args('input') input: UserByInput): Promise<User | null> {
+  if (input.id) return this.usersService.findById(input.id);
+  if (input.email) return this.usersService.findByEmail(input.email);
+  if (input.username) return this.usersService.findByUsername(input.username);
+  return null;
+}
+```
+
 ## @ArgsType
 
 Define multiple flat arguments as a single class:
@@ -292,4 +344,4 @@ export class UpdateUserInput {
 
 ---
 
-**Version:** @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/unions-and-enums, https://docs.nestjs.com/graphql/interfaces
+**Version:** @nestjs/graphql 13.2.x | **Source:** https://docs.nestjs.com/graphql/unions-and-enums, https://docs.nestjs.com/graphql/interfaces

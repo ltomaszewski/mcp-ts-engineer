@@ -1,8 +1,8 @@
-# Best Practices & Production Patterns - NativeWind v4
+# Best Practices & Production Patterns - NativeWind v4.2.x
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Source:** https://www.nativewind.dev/docs
+**Last Verified:** February 2026
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -408,6 +408,20 @@ const androidProps =
 
 ## Debugging Styling Issues
 
+### 0. Enable NativeWind Debug Mode
+
+Set the `DEBUG` environment variable to see which styles NativeWind compiles:
+
+```bash
+# Start Metro with NativeWind debug output
+DEBUG=nativewind npx expo start
+
+# Or with npm
+DEBUG=nativewind npm start
+```
+
+This logs compiled style objects to the console, helping identify when classes are not recognized or when styles differ from expectations.
+
 ### 1. Styles Not Appearing
 
 **Checklist:**
@@ -415,23 +429,25 @@ const androidProps =
 - [ ] Is the file in `tailwind.config.js` content paths?
 - [ ] Did you save the file?
 - [ ] Did you import global.css at app root?
-- [ ] Is Babel preset configured?
-- [ ] Is Metro config wrapped with withNativewind?
+- [ ] Is Babel preset configured with `jsxImportSource: 'nativewind'`?
+- [ ] Is Metro config wrapped with `withNativeWind({ input: './global.css' })`?
 - [ ] Try: `npm start -- --reset-cache`
+- [ ] Try: `DEBUG=nativewind npx expo start` to see compiled output
 
 ### 2. Class Name Shows But No Styling
 
 ```typescript
 // Debug: Check if class is recognized
 import { useColorScheme } from 'nativewind';
+import { View, Text } from 'react-native';
 
 export const Debug = () => {
-  const { value } = useColorScheme();
-  
+  const { colorScheme } = useColorScheme();
+
   return (
     <View className="bg-blue-500 dark:bg-red-500">
       {/* If not colored, Tailwind didn't process the file */}
-      <Text>Color scheme: {value}</Text>
+      <Text>Color scheme: {colorScheme}</Text>
     </View>
   );
 };
@@ -573,6 +589,55 @@ For web-based React Native apps, ensure CSS is properly scoped.
 <Pressable className="web:aria-label='Like this post'">
   <Text>♥</Text>
 </Pressable>
+```
+
+---
+
+## React Native Quirks
+
+NativeWind bridges CSS and React Native, but there are important behavioral differences to be aware of.
+
+### 1. Explicit Styles Recommended
+
+React Native does not support CSS shorthand properties the same way browsers do. Always use explicit utility classes:
+
+```typescript
+// ✅ GOOD: Explicit properties
+<View className="border-t-2 border-t-red-500 border-b border-b-gray-300" />
+
+// ⚠️ CAUTION: Shorthand may not behave as expected on all platforms
+<View className="border-2 border-red-500" />
+```
+
+### 2. dp vs px Equivalence
+
+React Native uses density-independent pixels (dp). NativeWind's pixel values map 1:1 to dp:
+
+```typescript
+// p-4 = 16dp (not 16 physical pixels)
+// On a 3x device, 16dp = 48 physical pixels
+<View className="p-4" />
+```
+
+### 3. Flexbox Defaults Differ from Web
+
+React Native flexbox defaults differ from CSS:
+- Default `flexDirection` is `column` (not `row`)
+- Default `alignContent` is `flex-start` (not `stretch`)
+- Default `flexShrink` is `0` (not `1`)
+
+```typescript
+// React Native default is column — be explicit if you want row
+<View className="flex-row" /> {/* Must specify for horizontal */}
+```
+
+### 4. Style Specificity with !important
+
+Use the `!` prefix to ensure className wins over inline styles across all platforms:
+
+```typescript
+<Text className="!text-red-500" style={{ color: 'green' }} />
+// Result: red text on all platforms (className wins)
 ```
 
 ---

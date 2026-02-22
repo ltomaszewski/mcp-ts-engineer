@@ -1,6 +1,6 @@
 # Query Keys: Design & Patterns
 
-**Module:** `07-guide-query-keys.md` | **Version:** 5.x (^5.62.11)
+**Module:** `07-guide-query-keys.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
@@ -165,6 +165,55 @@ export const queryKeys = {
 
 ---
 
+## Using `queryOptions` Helper (v5)
+
+Co-locate queryKey, queryFn, and options for full type safety across hooks and QueryClient:
+
+```typescript
+import { queryOptions } from '@tanstack/react-query'
+
+function todoDetailOptions(id: number) {
+  return queryOptions({
+    queryKey: todoKeys.detail(id),
+    queryFn: () => fetchTodo(id),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Usage -- fully typed everywhere
+useQuery(todoDetailOptions(1))
+await queryClient.prefetchQuery(todoDetailOptions(1))
+await queryClient.ensureQueryData(todoDetailOptions(1))
+
+// getQueryData knows the return type
+const todo = queryClient.getQueryData(todoDetailOptions(1).queryKey) // Todo | undefined
+```
+
+### Combined Factory + queryOptions Pattern
+
+```typescript
+export const todoQueries = {
+  all: () => queryOptions({ queryKey: ['todos'] as const, queryFn: fetchAllTodos }),
+  list: (filters: TodoFilters) =>
+    queryOptions({
+      queryKey: ['todos', 'list', filters] as const,
+      queryFn: () => fetchTodos(filters),
+      staleTime: 5 * 60 * 1000,
+    }),
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: ['todos', 'detail', id] as const,
+      queryFn: () => fetchTodo(id),
+    }),
+}
+
+// Usage
+useQuery(todoQueries.detail(1))
+queryClient.invalidateQueries({ queryKey: todoQueries.all().queryKey })
+```
+
+---
+
 ## Invalidation Strategies
 
 ### After Create Mutation
@@ -232,27 +281,6 @@ export const todoKeys = {
 } satisfies Record<string, readonly unknown[] | ((...args: never[]) => readonly unknown[])>
 ```
 
-### Using `queryOptions` Helper (v5)
-
-```typescript
-import { queryOptions } from '@tanstack/react-query'
-
-function todoDetailOptions(id: number) {
-  return queryOptions({
-    queryKey: todoKeys.detail(id),
-    queryFn: () => fetchTodo(id),
-    staleTime: 5 * 60 * 1000,
-  })
-}
-
-// Usage -- fully typed
-useQuery(todoDetailOptions(1))
-await queryClient.prefetchQuery(todoDetailOptions(1))
-await queryClient.ensureQueryData(todoDetailOptions(1))
-```
-
-The `queryOptions` helper ensures queryKey and queryFn stay co-located and type-safe across `useQuery`, `prefetchQuery`, and `ensureQueryData`.
-
 ---
 
 ## Anti-Patterns
@@ -292,9 +320,9 @@ useQuery({ queryKey: ['users', id], ... })
 // Component B
 queryClient.invalidateQueries({ queryKey: ['user', id] })  // Typo! "user" vs "users"
 
-// GOOD -- use factory
-useQuery({ queryKey: userKeys.detail(id), ... })
-queryClient.invalidateQueries({ queryKey: userKeys.detail(id) })
+// GOOD -- use factory or queryOptions
+useQuery(userQueries.detail(id))
+queryClient.invalidateQueries({ queryKey: userQueries.detail(id).queryKey })
 ```
 
 ---
@@ -314,5 +342,5 @@ queryClient.invalidateQueries({ queryKey: userKeys.detail(id) })
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/guides/query-keys | https://tanstack.com/query/v5/docs/react/guides/query-invalidation
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/framework/react/guides/query-keys | https://tanstack.com/query/v5/docs/framework/react/guides/query-options | https://tanstack.com/query/v5/docs/framework/react/guides/query-invalidation
+**Version:** 5.x (^5.90.x)

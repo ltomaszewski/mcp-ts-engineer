@@ -1,6 +1,6 @@
 # QueryClient: Cache Management API
 
-**Module:** `06-api-queryclient.md` | **Version:** 5.x (^5.62.11)
+**Module:** `06-api-queryclient.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
@@ -410,6 +410,34 @@ queryClient.setQueryDefaults(['users'], {
 const defaults = queryClient.getQueryDefaults(['users'])
 ```
 
+### `getMutationDefaults` / `setMutationDefaults`
+
+Set default options for mutations matching a key prefix.
+
+```typescript
+queryClient.setMutationDefaults(['createUser'], {
+  retry: 2,
+  retryDelay: 1000,
+})
+```
+
+### `getQueryCache` / `getMutationCache`
+
+Access raw cache instances for advanced use cases.
+
+```typescript
+const queryCache = queryClient.getQueryCache()
+const mutationCache = queryClient.getMutationCache()
+```
+
+### `resumePausedMutations`
+
+Resume mutations that were paused due to being offline.
+
+```typescript
+await queryClient.resumePausedMutations()
+```
+
 ---
 
 ## Infinite Query Methods
@@ -440,6 +468,57 @@ await queryClient.prefetchInfiniteQuery({
 
 Same as `prefetchInfiniteQuery` but returns the data and throws on error.
 
+### `ensureInfiniteQueryData`
+
+Returns cached infinite query data if it exists, otherwise calls `fetchInfiniteQuery`. Includes `revalidateIfStale` option (default: `false`).
+
+```typescript
+const data = await queryClient.ensureInfiniteQueryData({
+  queryKey: ['posts'],
+  queryFn: ({ pageParam }) => fetchPosts(pageParam),
+  initialPageParam: '',
+  getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+})
+```
+
+---
+
+## Hooks for Global State
+
+### `useIsFetching`
+
+Returns the number of queries currently fetching. Useful for global loading indicators.
+
+```typescript
+import { useIsFetching } from '@tanstack/react-query'
+
+function GlobalLoadingIndicator() {
+  const isFetching = useIsFetching()
+
+  return isFetching > 0 ? <Spinner /> : null
+}
+
+// With filters
+const userFetching = useIsFetching({ queryKey: ['users'] })
+```
+
+### `useIsMutating`
+
+Returns the number of mutations currently running.
+
+```typescript
+import { useIsMutating } from '@tanstack/react-query'
+
+function GlobalSavingIndicator() {
+  const isMutating = useIsMutating()
+
+  return isMutating > 0 ? <div>Saving...</div> : null
+}
+
+// With filters
+const todoMutating = useIsMutating({ mutationKey: ['todos'] })
+```
+
 ---
 
 ## Method Comparison
@@ -457,5 +536,5 @@ Same as `prefetchInfiniteQuery` but returns the data and throws on error.
 
 ---
 
-**Source:** https://tanstack.com/query/latest/docs/reference/QueryClient
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/reference/QueryClient
+**Version:** 5.x (^5.90.x)

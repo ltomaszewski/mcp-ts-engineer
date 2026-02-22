@@ -1,17 +1,109 @@
-# Custom Values & Advanced Styling - NativeWind v4
+# Custom Values & Advanced Styling - NativeWind v4.2.x
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/functions-and-directives  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Source:** https://www.nativewind.dev/docs/core-concepts/functions-and-directives
+**Last Verified:** February 2026
+**Version:** NativeWind v4.2.x
 
 ---
 
 ## Table of Contents
-1. [CSS Variables (Custom Properties)](#css-variables-custom-properties)
-2. [var() Function](#var-function)
-3. [Dynamic Theming](#dynamic-theming)
-4. [Arbitrary Values](#arbitrary-values)
-5. [Advanced Patterns](#advanced-patterns)
+1. [vars() Function (Recommended)](#vars-function-recommended)
+2. [CSS Variable Shorthand](#css-variable-shorthand)
+3. [CSS Variables (Custom Properties)](#css-variables-custom-properties)
+4. [var() Function](#var-function)
+5. [useUnstableNativeVariable Hook](#useunstablenativevariable-hook)
+6. [Dynamic Theming](#dynamic-theming)
+7. [Arbitrary Values](#arbitrary-values)
+8. [Advanced Patterns](#advanced-patterns)
+
+---
+
+## vars() Function (Recommended)
+
+NativeWind 4.2.x provides a `vars()` helper function as the preferred way to set CSS variables from JavaScript. It returns a properly typed style object.
+
+### Basic Usage
+
+```typescript
+import { View, Text } from 'react-native';
+import { vars } from 'nativewind';
+
+export const VarsExample = () => {
+  return (
+    <View style={vars({ '--brand': '#3498db', '--spacing': '16px' })}>
+      <Text className="text-[--brand]">Branded text</Text>
+      <View className="p-[--spacing] bg-[--brand] rounded-lg">
+        <Text className="text-white">Themed box</Text>
+      </View>
+    </View>
+  );
+};
+```
+
+### Dynamic vars() with Props
+
+```typescript
+import { View, Text } from 'react-native';
+import { vars } from 'nativewind';
+
+interface ThemeProps {
+  primaryColor: string;
+  accentColor: string;
+}
+
+export const ThemedSection = ({ primaryColor, accentColor }: ThemeProps) => {
+  return (
+    <View style={vars({ '--primary': primaryColor, '--accent': accentColor })}>
+      <View className="bg-[--primary] p-4 rounded-lg">
+        <Text className="text-white font-bold">Primary Section</Text>
+      </View>
+      <View className="bg-[--accent] p-4 rounded-lg mt-2">
+        <Text className="text-white font-bold">Accent Section</Text>
+      </View>
+    </View>
+  );
+};
+```
+
+### vars() vs Inline Style
+
+```typescript
+// ✅ RECOMMENDED: Use vars() helper (type-safe, no `as any` cast)
+import { vars } from 'nativewind';
+<View style={vars({ '--color': '#3498db' })}>
+  <Text className="text-[--color]">Typed</Text>
+</View>
+
+// ⚠️ LEGACY: Inline style with `as any` cast (still works)
+<View style={{ '--color': '#3498db' } as any}>
+  <Text className="text-[var(--color)]">Untyped</Text>
+</View>
+```
+
+---
+
+## CSS Variable Shorthand
+
+NativeWind 4.2.x supports a shorthand syntax for referencing CSS variables without `var()`:
+
+```typescript
+// ✅ SHORTHAND (4.2.x): Omit var() wrapper
+<Text className="text-[--brand]" />
+<View className="bg-[--primary] p-[--spacing]" />
+
+// EQUIVALENT TO (verbose):
+<Text className="text-[var(--brand)]" />
+<View className="bg-[var(--primary)] p-[var(--spacing)]" />
+```
+
+### Shorthand with Fallback
+
+When using the shorthand, you can still specify fallback values:
+
+```typescript
+// Shorthand does NOT support fallback — use var() for fallbacks
+<View className="bg-[var(--brand,#3498db)]" />
+```
 
 ---
 
@@ -23,7 +115,22 @@ CSS variables allow you to define reusable values that can be changed at runtime
 
 CSS variables can be defined in three ways:
 
-#### 1. Inline Style Object
+#### 1. vars() Function (Preferred)
+
+```typescript
+import { View, Text } from 'react-native';
+import { vars } from 'nativewind';
+
+export const VarsFunction = () => {
+  return (
+    <View style={vars({ '--primary-color': '#3498db', '--spacing-unit': '8px' })}>
+      <Text className="text-[--primary-color]">Dynamic themed box</Text>
+    </View>
+  );
+};
+```
+
+#### 2. Inline Style Object (Legacy)
 
 ```typescript
 import { View, Text } from 'react-native';
@@ -184,6 +291,34 @@ const size = 30; // 10 + 20
   className="w-[var(--computed)]"
 />
 ```
+
+---
+
+## useUnstableNativeVariable Hook
+
+Read the computed value of a CSS variable in JavaScript. Useful for passing variable values to native components that don't support className.
+
+```typescript
+import { View } from 'react-native';
+import { vars, useUnstableNativeVariable } from 'nativewind';
+
+export const NativeVariableExample = () => {
+  const brandColor = useUnstableNativeVariable('--brand');
+
+  return (
+    <View style={vars({ '--brand': '#3498db' })}>
+      {/* Use the resolved value for native props that need a color string */}
+      <View style={{ shadowColor: brandColor, shadowOpacity: 0.3, shadowRadius: 8 }}>
+        <View className="bg-[--brand] p-4 rounded-lg">
+          {/* className uses the variable directly */}
+        </View>
+      </View>
+    </View>
+  );
+};
+```
+
+**Note:** This API is marked "unstable" and may change in future versions.
 
 ---
 

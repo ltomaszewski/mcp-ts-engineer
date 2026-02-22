@@ -58,4 +58,4 @@
 
 ---
 
-**Version**: Zod 4.x (^4.3.0) | **Source**: https://zod.dev/
+**Version**: Zod 4.x (^4.3.6) | **Source**: https://zod.dev/

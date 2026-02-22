@@ -210,4 +210,4 @@ export class AuthResolver {
 
 ---
 
-**Version:** @nestjs/graphql 13.x + @nestjs/passport 11.x | **Source:** https://docs.nestjs.com/graphql/other-features#execution-context
+**Version:** @nestjs/graphql 13.2.x + @nestjs/passport 11.x | **Source:** https://docs.nestjs.com/graphql/other-features#execution-context

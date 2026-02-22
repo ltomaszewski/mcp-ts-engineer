@@ -1,6 +1,6 @@
 # Middleware: Persistence & Storage
 
-**Module:** `05-middleware-persist.md` | **Version:** 5.x (^5.0.2)
+**Module:** `05-middleware-persist.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -304,4 +304,4 @@ const urlStorage = {
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/middlewares/persist
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

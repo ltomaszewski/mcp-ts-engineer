@@ -1,6 +1,6 @@
 # useQuery: Data Fetching Hook
 
-**Module:** `03-api-usequery.md` | **Version:** 5.x (^5.62.11)
+**Module:** `03-api-usequery.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
@@ -42,6 +42,10 @@ function useQuery<
 | `throwOnError` | `boolean \| (error, query) => boolean` | No | `false` | Throw to error boundary |
 | `meta` | `Record<string, unknown>` | No | -- | Metadata accessible in queryFn context |
 | `queryKeyHashFn` | `(queryKey) => string` | No | -- | Custom key hashing |
+| `structuralSharing` | `boolean \| (oldData, newData) => TData` | No | `true` | Structural sharing for referential stability |
+| `notifyOnChangeProps` | `string[] \| 'all'` | No | -- | Only re-render when specific return properties change |
+
+**Removed in v5:** `onSuccess`, `onError`, `onSettled` callbacks -- use `useEffect` for side effects. `keepPreviousData` -- use `placeholderData: (prev) => prev`. `cacheTime` -- renamed to `gcTime`. `isInitialLoading` -- use `isLoading` (= `isPending && isFetching`).
 
 ---
 
@@ -53,7 +57,7 @@ function useQuery<
 | `error` | `TError \| null` | Error object if failed |
 | `status` | `'pending' \| 'error' \| 'success'` | Query status |
 | `isPending` | `boolean` | First load, no data yet |
-| `isLoading` | `boolean` | Alias: `isPending && isFetching` |
+| `isLoading` | `boolean` | `isPending && isFetching` (first load with active fetch) |
 | `isError` | `boolean` | Query errored |
 | `isSuccess` | `boolean` | Query succeeded |
 | `fetchStatus` | `'fetching' \| 'idle' \| 'paused'` | Network state |
@@ -66,6 +70,14 @@ function useQuery<
 | `failureCount` | `number` | Number of consecutive failures |
 | `failureReason` | `TError \| null` | Reason for last failure |
 | `refetch` | `(options?) => Promise<QueryObserverResult>` | Manually refetch |
+
+### Status vs fetchStatus
+
+| | `fetchStatus: 'fetching'` | `fetchStatus: 'paused'` | `fetchStatus: 'idle'` |
+|---|---|---|---|
+| `status: 'pending'` | First load in progress | First load paused (offline) | Disabled query |
+| `status: 'error'` | Retrying / refetching | Paused retry | Idle with error |
+| `status: 'success'` | Background refetch | Background refetch paused | Fresh data, idle |
 
 ---
 
@@ -159,6 +171,22 @@ function SearchPosts({ searchTerm }: { searchTerm: string }) {
 }
 ```
 
+### Using keepPreviousData Helper
+
+```typescript
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
+
+function PaginatedList({ page }: { page: number }) {
+  const { data, isPlaceholderData } = useQuery({
+    queryKey: ['items', page],
+    queryFn: () => fetchItems(page),
+    placeholderData: keepPreviousData, // Built-in identity function
+  })
+
+  return <div style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>{/* ... */}</div>
+}
+```
+
 ### Polling with refetchInterval
 
 ```typescript
@@ -218,6 +246,32 @@ if (error) {
 }
 ```
 
+### Side Effects (v5 Pattern)
+
+```typescript
+function UserProfile({ userId }: { userId: string }) {
+  const { data, error } = useQuery({
+    queryKey: ['users', userId],
+    queryFn: () => fetchUser(userId),
+  })
+
+  // v5: use useEffect instead of removed onSuccess/onError
+  useEffect(() => {
+    if (data) {
+      analytics.track('user_loaded', { userId })
+    }
+  }, [data, userId])
+
+  useEffect(() => {
+    if (error) {
+      toast.error(`Failed to load user: ${error.message}`)
+    }
+  }, [error])
+
+  return <div>{data?.name}</div>
+}
+```
+
 ---
 
 ## `useSuspenseQuery`
@@ -249,5 +303,5 @@ function App() {
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/reference/useQuery | https://tanstack.com/query/v5/docs/react/reference/useSuspenseQuery
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/framework/react/reference/useQuery | https://tanstack.com/query/v5/docs/framework/react/reference/useSuspenseQuery
+**Version:** 5.x (^5.90.x)

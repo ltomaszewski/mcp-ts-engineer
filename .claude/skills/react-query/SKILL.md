@@ -1,6 +1,6 @@
 ---
 name: react-query
-description: "@tanstack/react-query v5 server state management - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, caching, invalidation, optimistic updates. Use when fetching API data, managing server state, implementing pagination, or cache management."
+description: "@tanstack/react-query v5 server state management - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, queryOptions, caching, invalidation, optimistic updates. Use when fetching API data, managing server state, implementing pagination, or cache management."
 ---
 
 # TanStack React Query v5
@@ -12,7 +12,7 @@ Server state management with automatic caching, background refetching, deduplica
 ## When to Use
 
 LOAD THIS SKILL when user is:
-- Fetching data from APIs with `useQuery`
+- Fetching data from APIs with `useQuery` or `useSuspenseQuery`
 - Creating/updating/deleting data with `useMutation`
 - Implementing pagination or infinite scroll with `useInfiniteQuery`
 - Setting up caching, stale time, or garbage collection
@@ -28,6 +28,7 @@ LOAD THIS SKILL when user is:
 3. Invalidate queries after mutations -- keeps UI in sync with server
 4. Handle `isPending`, `isError`, `data` states -- provide good UX
 5. Include all variables in query key -- ensures correct caching per parameter
+6. Use `queryOptions` helper to co-locate queryKey + queryFn for type safety and reuse
 
 **NEVER:**
 1. Fetch in useEffect -- use `useQuery` for automatic caching, deduping, retries
@@ -35,6 +36,7 @@ LOAD THIS SKILL when user is:
 3. Call `mutate()` in render body -- triggers infinite loops
 4. Use string query keys -- arrays allow hierarchical matching and invalidation
 5. Create multiple QueryClient instances -- export a single shared instance
+6. Use `onSuccess`/`onError`/`onSettled` on useQuery -- removed in v5, use useEffect instead
 
 ---
 
@@ -68,6 +70,25 @@ function useUser(id: string) {
     enabled: !!id,
   })
 }
+```
+
+### Type-Safe queryOptions Helper
+
+```typescript
+import { queryOptions, useQuery } from '@tanstack/react-query'
+
+function userOptions(id: string) {
+  return queryOptions({
+    queryKey: ['users', id],
+    queryFn: () => fetch(`/api/users/${id}`).then(r => r.json()) as Promise<User>,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Fully typed across useQuery, prefetchQuery, ensureQueryData
+useQuery(userOptions('1'))
+queryClient.prefetchQuery(userOptions('1'))
+queryClient.ensureQueryData(userOptions('1'))
 ```
 
 ### Mutation with Invalidation
@@ -139,6 +160,23 @@ useQuery({ queryKey: 'users', queryFn: fetchUsers })
 useQuery({ queryKey: ['users'], queryFn: fetchUsers })
 ```
 
+**BAD** -- Using removed onSuccess callback on useQuery (v5):
+```typescript
+useQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+  onSuccess: (data) => { /* removed in v5 */ },
+})
+```
+
+**GOOD** -- Using useEffect for side effects:
+```typescript
+const { data } = useQuery({ queryKey: ['users'], queryFn: fetchUsers })
+useEffect(() => {
+  if (data) { /* handle data */ }
+}, [data])
+```
+
 ---
 
 ## Quick Reference
@@ -159,6 +197,11 @@ useQuery({ queryKey: ['users'], queryFn: fetchUsers })
 | Conditional | `enabled` | `enabled: !!id` |
 | Fresh duration | `staleTime` | `staleTime: 5 * 60 * 1000` |
 | Cache lifetime | `gcTime` | `gcTime: 30 * 60 * 1000` |
+| Type-safe options | `queryOptions` | `queryOptions({ queryKey, queryFn })` |
+| Mutation options | `mutationOptions` | `mutationOptions({ mutationFn })` |
+| Mutation state | `useMutationState` | `useMutationState({ filters: { mutationKey } })` |
+| Fetching count | `useIsFetching` | `const count = useIsFetching()` |
+| Mutating count | `useIsMutating` | `const count = useIsMutating()` |
 
 ---
 
@@ -177,4 +220,4 @@ useQuery({ queryKey: ['users'], queryFn: fetchUsers })
 
 ---
 
-**Version:** 5.x (^5.62.11) | **Source:** https://tanstack.com/query/latest
+**Version:** 5.x (^5.90.x) | **Source:** https://tanstack.com/query/latest

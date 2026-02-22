@@ -1,6 +1,6 @@
 # Middleware: devtools, immer, combine, subscribeWithSelector
 
-**Module:** `06-middleware-core.md` | **Version:** 5.x (^5.0.2)
+**Module:** `06-middleware-core.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -58,6 +58,15 @@ The third argument to `set` is the action name visible in DevTools:
 
 ```typescript
 set(newState, replace?, actionName?)
+```
+
+### Cleanup (v5.0.5+)
+
+Disconnect from DevTools and clean up resources:
+
+```typescript
+// Clean up devtools connection when done
+useStore.devtools?.cleanup()
 ```
 
 ### Middleware Ordering
@@ -416,4 +425,4 @@ const useStore = create(
 - https://zustand.docs.pmnd.rs/middlewares/combine
 - https://zustand.docs.pmnd.rs/middlewares/subscribe-with-selector
 
-**Version:** 5.x (^5.0.2)
+**Version:** 5.x (^5.0.11)

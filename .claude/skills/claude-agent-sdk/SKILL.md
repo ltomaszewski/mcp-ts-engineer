@@ -1,6 +1,6 @@
 ---
 name: claude-agent-sdk
-version: "^0.2.45"
+version: "^0.2.50"
 description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks, multi-turn conversations. Use when building agents, integrating Claude API, or implementing AI features programmatically.
 ---
 
@@ -227,22 +227,24 @@ for await (const chunk of session.stream("Explain the code")) {
 }
 ```
 
-### Subagent Pattern
+### Subagent Pattern (v0.2: `agents`, not `subagents`)
 
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
-// Define subagent types
-const subagents = {
+// Define agents (v0.2: renamed from "subagents")
+const agents = {
   "code-reviewer": {
+    description: "Reviews code for quality, security, and maintainability",
+    prompt: "You are an expert code reviewer. Focus on quality, security, and maintainability.",
     model: "sonnet",
-    systemPrompt: "You are an expert code reviewer. Focus on quality, security, and maintainability.",
-    allowedTools: ["Read", "Glob", "Grep"]
+    tools: ["Read", "Glob", "Grep"]
   },
   "test-writer": {
+    description: "Writes comprehensive unit tests following TDD principles",
+    prompt: "You write comprehensive unit tests following TDD principles.",
     model: "sonnet",
-    systemPrompt: "You write comprehensive unit tests following TDD principles.",
-    allowedTools: ["Read", "Write", "Glob", "Bash"]
+    tools: ["Read", "Write", "Glob", "Bash"]
   }
 };
 
@@ -250,9 +252,9 @@ const subagents = {
 for await (const message of query({
   prompt: "Review the auth module and write tests for it",
   options: {
-    systemPrompt: { preset: "claude_code" },
+    systemPrompt: { type: "preset", preset: "claude_code" },
     allowedTools: ["Task", "Read", "Glob"],
-    subagents
+    agents
   }
 })) {
   // Handle messages including subagent results
@@ -290,16 +292,25 @@ const results = await Promise.all(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `model` | `"sonnet" \| "opus" \| "haiku"` | `"sonnet"` | Model to use |
-| `systemPrompt` | `string \| { preset: "claude_code" }` | minimal | System prompt |
+| `model` | `string` | CLI default | Model to use (`"sonnet"`, `"opus"`, `"haiku"`) |
+| `systemPrompt` | `string \| { type: "preset", preset: "claude_code", append?: string }` | minimal | System prompt |
 | `allowedTools` | `string[]` | all | Tools agent can use |
 | `disallowedTools` | `string[]` | `[]` | Tools to block |
-| `maxTurns` | `number` | `∞` | Max conversation turns |
-| `maxBudgetUsd` | `number` | `∞` | Max cost in USD |
+| `maxTurns` | `number` | `undefined` | Max conversation turns |
+| `maxBudgetUsd` | `number` | `undefined` | Max cost in USD |
 | `permissionMode` | `PermissionMode` | `"default"` | Permission behavior |
 | `cwd` | `string` | `process.cwd()` | Working directory |
-| `mcpServers` | `Record<string, MCPServerConfig>` | `{}` | MCP server configs |
-| `tools` | `Tool[]` | `[]` | Custom tools |
+| `mcpServers` | `Record<string, McpServerConfig>` | `{}` | MCP server configs |
+| `tools` | `string[] \| { type: "preset", preset: "claude_code" }` | `undefined` | Tool configuration |
+| `agents` | `Record<string, AgentDefinition>` | `undefined` | Subagent definitions |
+| `settingSources` | `("user" \| "project" \| "local")[]` | `[]` | Settings to load from disk |
+| `enableFileCheckpointing` | `boolean` | `false` | Enable `rewindFiles()` |
+| `outputFormat` | `{ type: "json_schema", schema: JSONSchema }` | `undefined` | Structured output format |
+| `sandbox` | `SandboxSettings` | `undefined` | Sandbox configuration |
+| `plugins` | `SdkPluginConfig[]` | `[]` | Custom plugins |
+| `betas` | `SdkBeta[]` | `[]` | Beta features (e.g., `"context-1m-2025-08-07"`) |
+| `canUseTool` | `CanUseTool` | `undefined` | Custom permission function |
+| `includePartialMessages` | `boolean` | `false` | Include streaming partial messages |
 
 ### Permission Modes
 
@@ -324,6 +335,7 @@ const results = await Promise.all(
 | `Stop` | Agent stops | TS ✓ Python ✓ |
 | `SubagentStart` | Subagent spawns | TS ✓ Python ✗ |
 | `SubagentStop` | Subagent completes | TS ✓ Python ✗ |
+| `ConfigChange` | Config/settings changed | TS ✓ Python ✗ |
 
 ### Hook Example (TypeScript)
 
@@ -496,7 +508,7 @@ ANTHROPIC_API_KEY=your-api-key
 | Hook | `hooks: {}` | `PreToolUse, PostToolUse, Stop` |
 | MCP server | `mcpServers: {}` | `{ command, args }` or `{ url }` |
 | V2 session | `unstable_v2_createSession` | `session.send()`, `session.stream()` |
-| Subagents | `subagents: {}` | Named agent definitions |
+| Agents | `agents: {}` | Named agent definitions (v0.2) |
 
 ---
 
@@ -510,12 +522,19 @@ ANTHROPIC_API_KEY=your-api-key
 
 ---
 
-**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
 
-### v0.2 Changes
+### v0.2.45-0.2.50 Changes
 
-- **`@anthropic-ai/claude-agent-sdk`**: Package at ^0.2.45
-- **Model names**: Updated to `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5` (4.x series)
-- **Zod 4 support**: Peer dependency now accepts both Zod 3 and Zod 4 (^4.0.0)
-- **Tool definitions**: `tool()` helper accepts Zod 4 schemas
-- **V2 interface**: `unstable_v2_createSession` stabilized (still prefixed)
+- **v0.2.50**: Parity with Claude Code v2.1.50
+- **v0.2.49**: `ConfigChange` hook event for security auditing; model info now includes `supportsEffort`, `supportedEffortLevels`, `supportsAdaptiveThinking`; permission suggestions on safety checks
+- **v0.2.47**: `promptSuggestion()` method on `Query` for context-based prompt suggestions; `tool_use_id` field on `task_notification` events
+- **v0.2.45**: Claude Sonnet 4.6 support; `task_started` system message; fixed `Session.stream()` premature return with background subagents; improved memory for large shell output
+- **`subagents` renamed to `agents`**: Use `agents` property in options
+- **`settingSources`**: Settings NOT auto-loaded from disk; explicitly pass `["user", "project", "local"]`
+- **`systemPrompt` preset**: Use `{ type: "preset", preset: "claude_code" }` (old `{ preset: "claude_code" }` deprecated)
+- **`outputFormat`**: Use `{ type: "json_schema", schema: JSONSchema }` for structured outputs
+- **Sandbox settings**: Full `SandboxSettings` type with network controls, excluded commands, violation ignoring
+- **Plugins**: `plugins: [{ type: "local", path: "./my-plugin" }]`
+- **Betas**: `betas: ["context-1m-2025-08-07"]` for 1M context window
+- **`canUseTool`**: Custom permission callback for programmatic tool authorization

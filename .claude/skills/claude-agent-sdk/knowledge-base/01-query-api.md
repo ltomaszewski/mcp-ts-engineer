@@ -91,37 +91,49 @@ interface Options {
   agents?: Record<string, AgentDefinition>;  // v0.2: renamed from "subagents"
 
   // Sandbox
-  sandbox?: SandboxConfig;
+  sandbox?: SandboxSettings;
 
   // Plugins
-  plugins?: PluginConfig[];
+  plugins?: SdkPluginConfig[];   // { type: "local", path: "./my-plugin" }
 
   // Session
-  sessionId?: string;
-  resumeSession?: string;
-  forkSession?: string;       // v0.2: Fork from existing session
+  resume?: string;             // Session ID to resume
+  resumeSessionAt?: string;    // Resume at specific message UUID
+  forkSession?: boolean;       // Fork on resume instead of continuing
+  continue?: boolean;          // Continue most recent conversation
 
   // File Checkpointing
-  enableFileCheckpointing?: boolean;  // v0.2: Enable rewindFiles(uuid)
+  enableFileCheckpointing?: boolean;  // Enable rewindFiles(uuid)
 
   // Structured Output
-  outputSchema?: JSONSchema;
-  outputFormat?: "json" | "text";     // v0.2: Control output format
+  outputFormat?: { type: "json_schema"; schema: JSONSchema };
 
-  // Debugging
-  debug?: boolean;             // v0.2: Enable debug logging
-  debugFile?: string;          // v0.2: Write debug logs to file
+  // Permissions
+  canUseTool?: CanUseTool;     // Custom permission callback
+  allowDangerouslySkipPermissions?: boolean;  // Required for bypassPermissions
 
   // Beta Features
-  betas?: string[];            // v0.2: Opt into beta features
+  betas?: SdkBeta[];           // e.g., ["context-1m-2025-08-07"]
+
+  // Runtime
+  executable?: "bun" | "deno" | "node";
+  executableArgs?: string[];
+  env?: Dict<string>;
+  stderr?: (data: string) => void;
+  includePartialMessages?: boolean;  // Include stream_event messages
+  additionalDirectories?: string[];
 }
 ```
 
 > **v0.2 Migration Notes:**
-> - `systemPrompt` preset syntax changed: use `{ type: "preset", preset: "claude_code" }` instead of `{ preset: "claude_code" }` (old form still works but is deprecated)
-> - Settings are **not auto-loaded** from disk. Pass `settingSources: ["user", "project", "local"]` to load `.claude/settings.json` files
-> - `subagents` renamed to `agents`
-> - `tools` accepts an empty array `[]` to disable all custom tools, or `"preset"` for built-in tool set
+> - `systemPrompt` preset syntax: `{ type: "preset", preset: "claude_code" }` with optional `append` field for extending
+> - Settings are **not auto-loaded**. Pass `settingSources: ["user", "project", "local"]` to load `.claude/settings.json`. Must include `"project"` to load CLAUDE.md files
+> - `subagents` renamed to `agents` with new `AgentDefinition` type (requires `description` + `prompt`)
+> - `tools` accepts string array or `{ type: "preset", preset: "claude_code" }`
+> - `outputSchema`/`outputFormat` replaced by `outputFormat: { type: "json_schema", schema }` for structured outputs
+> - `resumeSession` replaced by `resume` (session ID) + optional `forkSession: boolean`
+> - `permissionMode: "bypassPermissions"` now requires `allowDangerouslySkipPermissions: true`
+> - `includePartialMessages: true` yields `type: "stream_event"` instead of `type: "partial"`
 
 ---
 
@@ -319,27 +331,30 @@ query({
 ## Structured Output
 
 ```typescript
-const outputSchema = {
-  type: "object",
-  properties: {
-    summary: { type: "string" },
-    issues: {
-      type: "array",
-      items: {
+for await (const message of query({
+  prompt: "Review the code",
+  options: {
+    outputFormat: {
+      type: "json_schema",
+      schema: {
         type: "object",
         properties: {
-          severity: { type: "string", enum: ["high", "medium", "low"] },
-          message: { type: "string" },
-          file: { type: "string" }
+          summary: { type: "string" },
+          issues: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                severity: { type: "string", enum: ["high", "medium", "low"] },
+                message: { type: "string" },
+                file: { type: "string" }
+              }
+            }
+          }
         }
       }
     }
   }
-};
-
-for await (const message of query({
-  prompt: "Review the code",
-  options: { outputSchema }
 })) {
   if (message.type === "result" && message.structured_output) {
     const review = message.structured_output as ReviewResult;
@@ -480,4 +495,4 @@ for message in query(
 
 ---
 
-**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

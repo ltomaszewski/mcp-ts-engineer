@@ -195,4 +195,4 @@ async me(
 
 ---
 
-**Version:** @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/resolvers
+**Version:** @nestjs/graphql 13.2.x | **Source:** https://docs.nestjs.com/graphql/resolvers

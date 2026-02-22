@@ -20,6 +20,7 @@ Intercept and customize agent behavior at key execution points.
 | `SessionEnd` | Session ends | ✓ | ✗ |
 | `PreCompact` | Before context compaction | ✓ | ✗ |
 | `PermissionRequest` | Permission needed | ✓ | ✗ |
+| `ConfigChange` | Config/settings changed | ✓ | ✗ |
 
 ---
 
@@ -440,6 +441,29 @@ Don't use hooks for:
 
 ---
 
+## ConfigChange Hook (v0.2.49+)
+
+React when configuration or settings change during execution.
+
+```typescript
+ConfigChange: async ({ session_id, key, old_value, new_value }) => {
+  console.log(`Config changed: ${key}`);
+  console.log(`  Old: ${JSON.stringify(old_value)}`);
+  console.log(`  New: ${JSON.stringify(new_value)}`);
+
+  // Useful for security auditing
+  await auditLog.write({
+    timestamp: new Date(),
+    event: "config_change",
+    key,
+    old_value,
+    new_value
+  });
+}
+```
+
+---
+
 ## Debugging Hooks
 
 ```typescript
@@ -458,4 +482,4 @@ PreToolUse: async (data) => {
 
 ---
 
-**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

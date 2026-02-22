@@ -43,7 +43,7 @@ const bears = useBearStore((s) => s.bears)
 
 ## Version & Compatibility
 
-- **Zustand:** 5.x (^5.0.2)
+- **Zustand:** 5.x (^5.0.11)
 - **React:** 18+ (React 19 supported)
 - **TypeScript:** 4.5+
 - **Runtime:** Browser, Node.js (`createStore`), React Native

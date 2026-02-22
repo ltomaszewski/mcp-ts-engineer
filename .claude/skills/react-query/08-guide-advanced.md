@@ -1,6 +1,6 @@
 # Advanced Patterns & Best Practices
 
-**Module:** `08-guide-advanced.md` | **Version:** 5.x (^5.62.11)
+**Module:** `08-guide-advanced.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
@@ -88,9 +88,9 @@ function UserProfiles({ userIds }: { userIds: string[] }) {
 }
 ```
 
-### `useQueries` with Combine
+### `useQueries` with `combine` (v5)
 
-Transform results of multiple queries:
+Transform and combine results of multiple queries into a single value:
 
 ```typescript
 const { data, pending } = useQueries({
@@ -104,6 +104,28 @@ const { data, pending } = useQueries({
   }),
 })
 ```
+
+**Note:** When using `combine`, all other properties of individual query results are lost. Only the combined value is returned.
+
+### `useSuspenseQueries` for Parallel Suspense
+
+```typescript
+import { useSuspenseQueries } from '@tanstack/react-query'
+
+function Dashboard() {
+  const [users, projects] = useSuspenseQueries({
+    queries: [
+      { queryKey: ['users'], queryFn: fetchUsers },
+      { queryKey: ['projects'], queryFn: fetchProjects },
+    ],
+  })
+
+  // Both guaranteed defined
+  return <div>{users.data.length} users, {projects.data.length} projects</div>
+}
+```
+
+**Options NOT available on Suspense hooks:** `enabled`, `placeholderData`, `throwOnError`.
 
 ---
 
@@ -154,7 +176,9 @@ useMutation({
 
 ## Error Handling
 
-### Per-Query Error Handling
+### Per-Query Error Handling (v5 Pattern)
+
+In v5, `onError`/`onSuccess` callbacks are removed from useQuery. Use `useEffect`:
 
 ```typescript
 function UserProfile({ userId }: { userId: string }) {
@@ -162,6 +186,13 @@ function UserProfile({ userId }: { userId: string }) {
     queryKey: ['users', userId],
     queryFn: () => fetchUser(userId),
   })
+
+  // v5: side effects via useEffect
+  useEffect(() => {
+    if (error) {
+      toast.error(`Failed to load: ${error.message}`)
+    }
+  }, [error])
 
   if (isError) {
     return (
@@ -263,6 +294,34 @@ function useUpdateTodo() {
       queryClient.invalidateQueries({ queryKey: ['todos', newTodo.id] })
     },
   })
+}
+```
+
+### Simpler Optimistic UI via `variables` (v5)
+
+v5 returns `variables` from useMutation, enabling UI optimism without `onMutate`:
+
+```typescript
+function TodoItem({ todo }: { todo: Todo }) {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (updated: Todo) => updateTodo(updated),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] })
+    },
+  })
+
+  // Show optimistic value from variables while mutation is pending
+  const displayTitle = mutation.isPending
+    ? mutation.variables?.title
+    : todo.title
+
+  return (
+    <div style={{ opacity: mutation.isPending ? 0.7 : 1 }}>
+      {displayTitle}
+    </div>
+  )
 }
 ```
 
@@ -370,26 +429,6 @@ function App() {
 }
 ```
 
-### `useSuspenseQueries` for Parallel Suspense
-
-```typescript
-import { useSuspenseQueries } from '@tanstack/react-query'
-
-function Dashboard() {
-  const [users, projects] = useSuspenseQueries({
-    queries: [
-      { queryKey: ['users'], queryFn: fetchUsers },
-      { queryKey: ['projects'], queryFn: fetchProjects },
-    ],
-  })
-
-  // Both guaranteed defined
-  return <div>{users.data.length} users, {projects.data.length} projects</div>
-}
-```
-
-**Options NOT available on Suspense hooks:** `enabled`, `placeholderData`, `throwOnError`.
-
 ---
 
 ## Placeholder and Initial Data
@@ -397,11 +436,13 @@ function Dashboard() {
 ### `placeholderData` -- Show Previous Results
 
 ```typescript
+import { keepPreviousData } from '@tanstack/react-query'
+
 function SearchResults({ query }: { query: string }) {
   const { data, isPlaceholderData } = useQuery({
     queryKey: ['search', query],
     queryFn: () => search(query),
-    placeholderData: (previousData) => previousData,
+    placeholderData: keepPreviousData, // or (previousData) => previousData
   })
 
   return (
@@ -412,10 +453,14 @@ function SearchResults({ query }: { query: string }) {
 }
 ```
 
+**Note:** `placeholderData` always puts you in `status: 'success'`. The `dataUpdatedAt` timestamp stays at `0` when showing placeholder data. Use `isPlaceholderData` to differentiate.
+
 ### `initialData` -- Pre-populate from Cache
 
 ```typescript
 function TodoDetail({ todoId }: { todoId: number }) {
+  const queryClient = useQueryClient()
+
   const { data } = useQuery({
     queryKey: ['todos', todoId],
     queryFn: () => fetchTodo(todoId),
@@ -492,6 +537,17 @@ useQuery({
 })
 ```
 
+### 6. Use `notifyOnChangeProps` to Limit Re-renders
+
+```typescript
+// Only re-render when data or error changes (not isFetching, etc.)
+useQuery({
+  queryKey: ['todos'],
+  queryFn: fetchTodos,
+  notifyOnChangeProps: ['data', 'error'],
+})
+```
+
 ---
 
 ## Common Pitfalls
@@ -504,8 +560,10 @@ useQuery({
 | New `queryFn` each render | Unnecessary refetches | Stabilize with useCallback or extract |
 | Forgetting `onSettled` | Optimistic UI stuck | Always invalidate in onSettled |
 | `staleTime: 0` (default) | Too many refetches | Set appropriate staleTime per query |
+| Using `onSuccess` on useQuery | Removed in v5 | Use useEffect for side effects |
+| Using `cacheTime` | Renamed in v5 | Use `gcTime` instead |
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/guides/dependent-queries | https://tanstack.com/query/v5/docs/react/guides/parallel-queries | https://tanstack.com/query/v5/docs/react/guides/optimistic-updates
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/framework/react/guides/dependent-queries | https://tanstack.com/query/v5/docs/framework/react/guides/parallel-queries | https://tanstack.com/query/v5/docs/framework/react/guides/optimistic-updates | https://tanstack.com/query/v5/docs/framework/react/guides/migrating-to-v5
+**Version:** 5.x (^5.90.x)

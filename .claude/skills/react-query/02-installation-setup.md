@@ -1,6 +1,13 @@
 # Installation & Setup
 
-**Module:** `02-installation-setup.md` | **Version:** 5.x (^5.62.11)
+**Module:** `02-installation-setup.md` | **Version:** 5.x (^5.90.x)
+
+---
+
+## Requirements
+
+- React 18.0 or later (uses `useSyncExternalStore`)
+- TypeScript 4.7+ recommended
 
 ---
 
@@ -14,6 +21,12 @@ Optional DevTools:
 
 ```bash
 npm install @tanstack/react-query-devtools
+```
+
+Optional ESLint plugin:
+
+```bash
+npm install @tanstack/eslint-plugin-query
 ```
 
 ---
@@ -34,7 +47,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: true,
     },
     mutations: {
-      retry: 1,
+      retry: 0,
     },
   },
 })
@@ -90,6 +103,7 @@ function TodoList() {
 | `refetchOnReconnect` | `boolean \| 'always'` | `true` | Refetch on network reconnect if stale |
 | `networkMode` | `'online' \| 'always' \| 'offlineFirst'` | `'online'` | Network behavior mode |
 | `throwOnError` | `boolean` | `false` | Throw to error boundary |
+| `structuralSharing` | `boolean \| (old, new) => T` | `true` | Enable structural sharing for referential stability |
 
 ### Mutation Defaults
 
@@ -154,6 +168,30 @@ function UserProfile({ userId }: { userId: number }) {
 }
 ```
 
+### Recommended: `queryOptions` for Type Inference
+
+```typescript
+import { queryOptions, useQuery } from '@tanstack/react-query'
+
+function userQueryOptions(userId: number) {
+  return queryOptions({
+    queryKey: ['users', userId] as const,
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${userId}`)
+      if (!res.ok) throw new Error('Failed to fetch')
+      return res.json() as Promise<User>
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Type-safe everywhere -- queryKey and queryFn co-located
+useQuery(userQueryOptions(1))
+queryClient.prefetchQuery(userQueryOptions(1))
+queryClient.ensureQueryData(userQueryOptions(1))
+const cached = queryClient.getQueryData(userQueryOptions(1).queryKey) // User | undefined
+```
+
 ---
 
 ## DevTools
@@ -169,6 +207,21 @@ Features: Query explorer, status inspector, manual invalidation, mock offline mo
 
 ---
 
+## ESLint Plugin
+
+```typescript
+// eslint.config.js
+import pluginQuery from '@tanstack/eslint-plugin-query'
+
+export default [
+  ...pluginQuery.configs['flat/recommended'],
+]
+```
+
+Rules include: `exhaustive-deps` (ensure queryKey includes all queryFn variables), `no-rest-destructuring`, `stable-query-client`, `no-unstable-deps`.
+
+---
+
 ## Common Setup Issues
 
 | Issue | Solution |
@@ -176,8 +229,11 @@ Features: Query explorer, status inspector, manual invalidation, mock offline mo
 | "useQuery not defined inside Provider" | Ensure component is wrapped by `QueryClientProvider` |
 | Multiple QueryClient instances | Export single instance from shared module |
 | Queries pending despite cache | Check `staleTime` and `refetchOnMount` |
+| `onSuccess` callback not working | Removed in v5 -- use `useEffect` for side effects |
+| `cacheTime` not recognized | Renamed to `gcTime` in v5 |
+| `isLoading` behaves differently | `isLoading` = `isPending && isFetching` in v5; use `isPending` for first-load check |
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/installation | https://tanstack.com/query/v5/docs/reference/QueryClient
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/framework/react/installation | https://tanstack.com/query/v5/docs/reference/QueryClient
+**Version:** 5.x (^5.90.x)

@@ -22,7 +22,7 @@
 
 ## Authoritative Version
 
-- **Zod**: 4.x (^4.3.0)
+- **Zod**: 4.x (^4.3.6)
 - **TypeScript**: ^5.5+
 - **Source**: https://zod.dev/
 
@@ -40,7 +40,9 @@
 - `ctx.addIssue()` removed; mutate `ctx.issues` array
 - `.default()` applies to output type; `.prefault()` for input type
 - New: `z.file()`, `z.stringbool()`, `z.templateLiteral()`, `z.xor()`, `z.partialRecord()`, `z.looseRecord()`, `z.codec()`, `z.registry()`
-- New: getter syntax for recursive types, `z.toJSONSchema()`, `z.meta()`
+- New: getter syntax for recursive types, `z.toJSONSchema()`, `z.fromJSONSchema()`, `z.meta()`
+- New top-level validators: `z.uuidv4()`, `z.uuidv7()`, `z.guid()`, `z.httpUrl()`, `z.hostname()`, `z.mac()`, `z.hex()`, `z.cuid()`
+- 4.3.x: `.pick()`/`.omit()` on refined schemas now throws; strict object intersections relaxed
 
 ---
 

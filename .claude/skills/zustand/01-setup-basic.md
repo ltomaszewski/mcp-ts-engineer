@@ -1,6 +1,6 @@
 # Setup & Basic Concepts
 
-**Module:** `01-setup-basic.md` | **Version:** 5.x (^5.0.2)
+**Module:** `01-setup-basic.md` | **Version:** 5.x (^5.0.11)
 
 ---
 
@@ -234,4 +234,4 @@ const useFoxStore = create((set) => ({...}))
 ---
 
 **Source:** https://zustand.docs.pmnd.rs/getting-started/introduction
-**Version:** 5.x (^5.0.2) | React 18+ | TypeScript 4.5+
+**Version:** 5.x (^5.0.11) | React 18+ | TypeScript 4.5+

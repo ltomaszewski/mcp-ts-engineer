@@ -159,4 +159,4 @@ Middleware -> Guards -> Interceptors (before) -> Pipes -> Controller/Resolver ->
 
 ---
 
-**Version:** NestJS 11.x (^11.1.9) | **Source:** https://docs.nestjs.com/
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/

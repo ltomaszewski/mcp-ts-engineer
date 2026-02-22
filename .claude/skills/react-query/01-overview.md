@@ -1,12 +1,12 @@
 # Core Philosophy & Overview
 
-**Module:** `01-overview.md` | **Version:** 5.x (^5.62.11)
+**Module:** `01-overview.md` | **Version:** 5.x (^5.90.x)
 
 ---
 
 ## What is TanStack Query?
 
-A server state management library that handles fetching, caching, synchronizing, and updating remote data. Eliminates manual loading/error/caching logic.
+A server state management library that handles fetching, caching, synchronizing, and updating remote data. Eliminates manual loading/error/caching logic. Approximately 20% smaller than v4 with simplified APIs.
 
 ---
 
@@ -32,8 +32,9 @@ A server state management library that handles fetching, caching, synchronizing,
 4. **Request cancellation** -- Automatic on component unmount
 5. **Memory management** -- Garbage collection of unused cache entries
 6. **Retry logic** -- Configurable retries with exponential backoff
-7. **Pagination** -- Cursor-based infinite queries
+7. **Pagination** -- Cursor-based infinite queries with `maxPages` for memory control
 8. **Optimistic updates** -- Instant UI with rollback on failure
+9. **Structural sharing** -- Referential stability of unchanged data across refetches
 
 ---
 
@@ -97,6 +98,25 @@ React Application
 
 ---
 
+## v5 Key Changes from v4
+
+| Change | v4 | v5 |
+|--------|-----|-----|
+| Cache time option | `cacheTime` | `gcTime` |
+| Loading state | `status: 'loading'` | `status: 'pending'` |
+| Loading flag | `isLoading` (first load) | `isPending` (first load), `isLoading` = `isPending && isFetching` |
+| Previous data | `keepPreviousData` | `placeholderData: (prev) => prev` |
+| Query callbacks | `onSuccess`/`onError`/`onSettled` on useQuery | Removed -- use `useEffect` |
+| API shape | Multiple overloads | Single object parameter |
+| Options helpers | None | `queryOptions()`, `infiniteQueryOptions()`, `mutationOptions()` |
+| Mutation state | Not shared | `useMutationState()` hook |
+| Infinite queries | No limit | `maxPages` option |
+| useQueries | No combining | `combine` option |
+| Mutation scoping | None | `scope: { id }` for serial execution |
+| React requirement | React 17+ | React 18+ (uses `useSyncExternalStore`) |
+
+---
+
 ## When to Use
 
 **Use TanStack Query for:** API fetching, caching, pagination, background sync, optimistic updates.
@@ -105,5 +125,5 @@ React Application
 
 ---
 
-**Source:** https://tanstack.com/query/v5/docs/react/overview
-**Version:** 5.x (^5.62.11)
+**Source:** https://tanstack.com/query/v5/docs/framework/react/overview
+**Version:** 5.x (^5.90.x)

@@ -2,7 +2,7 @@
 
 **Source:** https://www.nativewind.dev/docs  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -425,13 +425,25 @@ export const DynamicTheme = ({
 
 Understanding specificity and precedence is important for debugging.
 
-### Specificity Order (Lowest to Highest)
+### Specificity Order (Highest to Lowest)
 
-1. **Default styles** - Base component styling
-2. **className utilities** - Tailwind utilities
-3. **Inline style prop** - Overrides everything
-4. **Pseudo-classes** - (hover, active, focus, etc)
-5. **Responsive variants** - (sm:, md:, lg:, etc)
+1. **Styles marked as `!important`** - `!text-red-500` wins over everything
+2. **Inline & remapped styles** - `style` prop overrides className
+3. **className styles** - Follow CSS specificity conventions
+
+### The `!important` Modifier
+
+Use `!` prefix to ensure className wins over inline styles:
+
+```typescript
+// Without !important - style prop wins (platform-dependent)
+<Text className="text-red-500" style={{ color: 'green' }} />
+// Result: green text
+
+// With !important - className wins consistently
+<Text className="!text-red-500" style={{ color: 'green' }} />
+// Result: red text on all platforms
+```
 
 ### Example: Precedence in Action
 

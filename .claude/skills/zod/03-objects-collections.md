@@ -72,6 +72,11 @@ const saferSchema = userSchema.safeExtend({
   age: z.number().optional(),
 });
 
+// v4.3+: .pick()/.omit() on schemas with refinements throws Error
+// (previously silently dropped the refinements)
+// const refined = userSchema.refine(...)
+// refined.pick({...}) // Error! Use .extend() or restructure
+
 // .partial() - Make all optional
 const partialUserSchema = userSchema.partial();
 
@@ -295,6 +300,8 @@ type Person = z.infer<typeof personSchema>;
 // { name: string; age: number }
 
 // v4 change: merge conflicts throw Error (not ZodError)
+// v4.3.2+: strict object intersections only reject keys
+// unrecognized by BOTH sides (not either side)
 ```
 
 ---
@@ -330,4 +337,4 @@ statusSchema.enum.active; // "active"
 - [Advanced Features](04-advanced-features.md)
 - [API Parsing](05-api-parsing.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/api
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/api

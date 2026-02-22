@@ -1,8 +1,8 @@
 # Query Methods - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api/queries
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/queries
 
-**Version:** ^13.0.0
+**Version:** 13.3.x
 
 ---
 
@@ -16,8 +16,8 @@
 | `getAllBy*()` | Yes | Element[] | No | Multiple elements, must exist |
 | `queryBy*()` | No | Element \| null | No | Single element, may not exist |
 | `queryAllBy*()` | No | Element[] | No | Multiple elements, may not exist |
-| `findBy*()` | Yes | Promise<Element> | Yes | Single element, wait for it |
-| `findAllBy*()` | Yes | Promise<Element[]> | Yes | Multiple elements, wait for them |
+| `findBy*()` | Yes | Promise\<Element\> | Yes | Single element, wait for it |
+| `findAllBy*()` | Yes | Promise\<Element[]\> | Yes | Multiple elements, wait for them |
 
 ### v13 Removed Queries
 
@@ -25,8 +25,8 @@ The following query methods were **removed in v13**:
 
 | Removed Query | Migration |
 |---------------|-----------|
-| `*ByA11yState()` | Use `*ByRole()` with state options (`{ checked, disabled, selected, busy, expanded }`) or `toHaveAccessibilityState()` matcher |
-| `*ByA11yValue()` | Use `*ByRole()` or `toHaveAccessibleValue()` matcher |
+| `*ByA11yState()` | Use `*ByRole()` with state options (`{ checked, disabled, selected, busy, expanded }`) or matchers like `toBeChecked()` |
+| `*ByA11yValue()` | Use `*ByRole()` with `value` option or `toHaveAccessibilityValue()` matcher |
 
 ```typescript
 // v12 (REMOVED):
@@ -35,8 +35,21 @@ screen.getByA11yValue({ min: 0, max: 100, now: 50 });
 
 // v13 (CORRECT):
 screen.getByRole('checkbox', { checked: true });
-expect(slider).toHaveAccessibleValue({ min: 0, max: 100, now: 50 });
+screen.getByRole('adjustable', { value: { min: 0, max: 100, now: 50 } });
+expect(slider).toHaveAccessibilityValue({ min: 0, max: 100, now: 50 });
 ```
+
+---
+
+## Common Query Options
+
+All text-based queries accept these options:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `exact` | `boolean` | `true` | Require exact match (false = substring) |
+| `normalizer` | `(text: string) => string` | default normalizer | Custom text normalization |
+| `includeHiddenElements` | `boolean` | `false` | Include accessibility-hidden elements |
 
 ---
 
@@ -45,8 +58,6 @@ expect(slider).toHaveAccessibleValue({ min: 0, max: 100, now: 50 });
 ### Description
 
 The most recommended query method. Finds elements by their accessibility role. Encourages semantic, accessible component structure.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbyrole](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbyrole)
 
 ### Signature
 
@@ -60,9 +71,28 @@ function getByRole(
     checked?: boolean | 'mixed';
     busy?: boolean;
     expanded?: boolean;
+    value?: {
+      min?: number;
+      max?: number;
+      now?: number;
+      text?: string | RegExp;
+    };
+    includeHiddenElements?: boolean;
   }
 ): ReactTestInstance
 ```
+
+### Role Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `name` | `TextMatch` | Filter by accessible name |
+| `disabled` | `boolean` | Filter by disabled state |
+| `selected` | `boolean` | Filter by selected state |
+| `checked` | `boolean \| 'mixed'` | Filter by checked state |
+| `busy` | `boolean` | Filter by busy state |
+| `expanded` | `boolean` | Filter by expanded state |
+| `value` | `object` | Filter by accessibility value (`min`, `max`, `now`, `text`) |
 
 ### Code Examples
 
@@ -76,9 +106,9 @@ test('find button by role', () => {
   render(
     <Pressable accessibilityRole="button">
       <Text>Submit</Text>
-    </Pressable>
+    </Pressable>,
   );
-  
+
   const button = screen.getByRole('button');
   expect(button).toBeOnTheScreen();
 });
@@ -96,12 +126,12 @@ test('find button by role and name', () => {
       <Pressable accessibilityRole="button">
         <Text>Submit</Text>
       </Pressable>
-    </View>
+    </View>,
   );
-  
+
   const submitBtn = screen.getByRole('button', { name: 'Submit' });
   const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
-  
+
   expect(submitBtn).toBeOnTheScreen();
   expect(cancelBtn).toBeOnTheScreen();
 });
@@ -125,14 +155,33 @@ test('find checkbox by role and checked state', () => {
       >
         <Text>Checked Option</Text>
       </Pressable>
-    </View>
+    </View>,
   );
-  
+
   const unchecked = screen.getByRole('checkbox', { checked: false });
   const checked = screen.getByRole('checkbox', { checked: true });
-  
+
   expect(unchecked).toBeOnTheScreen();
   expect(checked).toBeOnTheScreen();
+});
+```
+
+#### Find Slider with Value
+
+```typescript
+test('find slider by role and value', () => {
+  render(
+    <View
+      accessibilityRole="adjustable"
+      accessibilityValue={{ min: 0, max: 100, now: 50 }}
+    />,
+  );
+
+  const slider = screen.getByRole('adjustable', {
+    value: { now: 50 },
+  });
+
+  expect(slider).toBeOnTheScreen();
 });
 ```
 
@@ -142,9 +191,7 @@ test('find checkbox by role and checked state', () => {
 
 ### Description
 
-Finds form elements by their label. Looks for `accessibilityLabel` properties. Semantic and accessible.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbylabeltext](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbylabeltext)
+Finds form elements by their label. Looks for `accessibilityLabel`, `aria-label`, or elements referenced by `aria-labelledby`/`accessibilityLabelledBy`.
 
 ### Signature
 
@@ -154,48 +201,73 @@ function getByLabelText(
   options?: {
     exact?: boolean;
     normalizer?: (text: string) => string;
+    includeHiddenElements?: boolean;
   }
 ): ReactTestInstance
 ```
 
 ### Code Examples
 
-#### TextInput with accessibilityLabel
-
 ```typescript
 test('find input by accessibility label', () => {
   render(
     <View>
-      <TextInput
-        accessibilityLabel="Username"
-        placeholder="Enter username"
-      />
-      <TextInput
-        accessibilityLabel="Password"
-        placeholder="Enter password"
-        secureTextEntry
-      />
-    </View>
+      <TextInput accessibilityLabel="Username" placeholder="Enter username" />
+      <TextInput accessibilityLabel="Password" secureTextEntry />
+    </View>,
   );
-  
+
   const usernameInput = screen.getByLabelText('Username');
   const passwordInput = screen.getByLabelText('Password');
-  
+
   expect(usernameInput).toBeOnTheScreen();
   expect(passwordInput).toBeOnTheScreen();
 });
-```
 
-#### Case-Insensitive Match
+// Case-insensitive match
+test('label text with regex', () => {
+  render(<TextInput accessibilityLabel="Email Address" />);
 
-```typescript
-test('label text with case insensitivity', () => {
-  render(
-    <TextInput accessibilityLabel="Email Address" />
-  );
-  
   const input = screen.getByLabelText(/email/i);
   expect(input).toBeOnTheScreen();
+});
+```
+
+---
+
+## getByText()
+
+### Description
+
+Finds elements by their text content. Joins `<Text>` siblings to find matches.
+
+### Code Examples
+
+```typescript
+test('find element by exact text', () => {
+  render(
+    <View>
+      <Text>Hello World</Text>
+    </View>,
+  );
+
+  const element = screen.getByText('Hello World');
+  expect(element).toBeOnTheScreen();
+});
+
+test('find element by regex', () => {
+  render(<Text>Welcome to React Native</Text>);
+
+  const element = screen.getByText(/react/i);
+  expect(element).toBeOnTheScreen();
+});
+
+// Substring match
+test('partial text match', () => {
+  render(<Text>Hello World</Text>);
+
+  const element = screen.getByText('Hello', { exact: false });
+  expect(element).toBeOnTheScreen();
 });
 ```
 
@@ -205,25 +277,7 @@ test('label text with case insensitivity', () => {
 
 ### Description
 
-Finds TextInput elements by their placeholder text. Useful for form inputs without explicit labels.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbyplaceholdertext](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbyplaceholdertext)
-
-### Signature
-
-```typescript
-function getByPlaceholderText(
-  placeholderText: TextMatch,
-  options?: {
-    exact?: boolean;
-    normalizer?: (text: string) => string;
-  }
-): ReactTestInstance
-```
-
-### Code Examples
-
-#### Find Input by Placeholder
+Finds TextInput elements by their placeholder text.
 
 ```typescript
 test('find input by placeholder text', () => {
@@ -231,12 +285,12 @@ test('find input by placeholder text', () => {
     <View>
       <TextInput placeholder="Enter your email" />
       <TextInput placeholder="Enter your password" secureTextEntry />
-    </View>
+    </View>,
   );
-  
+
   const emailInput = screen.getByPlaceholderText('Enter your email');
   const passwordInput = screen.getByPlaceholderText('Enter your password');
-  
+
   expect(emailInput).toBeOnTheScreen();
   expect(passwordInput).toBeOnTheScreen();
 });
@@ -248,71 +302,40 @@ test('find input by placeholder text', () => {
 
 ### Description
 
-Finds TextInput elements by their current display value. Useful after user input or initialization with values.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbydisplayvalue](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbydisplayvalue)
-
-### Code Examples
-
-#### Find Input by Current Value
+Finds TextInput elements by their current display value.
 
 ```typescript
 test('find input by display value', () => {
   render(
-    <View>
-      <TextInput value="alice@example.com" editable={false} />
-      <TextInput value="Set Username" editable={false} />
-    </View>
+    <TextInput value="alice@example.com" editable={false} />,
   );
-  
+
   const emailDisplay = screen.getByDisplayValue('alice@example.com');
-  const usernameDisplay = screen.getByDisplayValue('Set Username');
-  
   expect(emailDisplay).toBeOnTheScreen();
-  expect(usernameDisplay).toBeOnTheScreen();
 });
 ```
 
 ---
 
-## getByText()
+## getByHintText()
 
 ### Description
 
-Finds elements by their text content. Less semantic than role-based queries but very common.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbytext](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbytext)
-
-### Code Examples
-
-#### Find Element by Exact Text
+Finds elements by `accessibilityHint` prop. Aliases: `ByA11yHint`, `ByAccessibilityHint`.
 
 ```typescript
-test('find element by exact text', () => {
+test('find element by hint text', () => {
   render(
-    <View>
-      <Text>Hello World</Text>
-      <Text>Hello Universe</Text>
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint="Navigates to the home screen"
+    >
+      <Text>Home</Text>
+    </Pressable>,
   );
-  
-  const element = screen.getByText('Hello World');
-  expect(element).toBeOnTheScreen();
-});
-```
 
-#### Case-Insensitive Text Match with Regex
-
-```typescript
-test('find element by regex', () => {
-  render(
-    <View>
-      <Text>Welcome to React Native</Text>
-    </View>
-  );
-  
-  const element = screen.getByText(/react/i);
-  expect(element).toBeOnTheScreen();
+  const button = screen.getByHintText('Navigates to the home screen');
+  expect(button).toBeOnTheScreen();
 });
 ```
 
@@ -324,37 +347,27 @@ test('find element by regex', () => {
 
 Finds elements by their `testID` prop. Not semantic but guaranteed unique. Use as last resort.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbytestid](https://oss.callstack.com/react-native-testing-library/docs/api/queries#getbytestid)
-
-### Code Examples
-
-#### Find Element by testID
-
 ```typescript
 test('find element by testID', () => {
   render(
     <View testID="unique-container">
       <Text>Content</Text>
-    </View>
+    </View>,
   );
-  
+
   const container = screen.getByTestId('unique-container');
   expect(container).toBeOnTheScreen();
 });
-```
 
-#### testID with Regex
-
-```typescript
 test('find with testID pattern', () => {
   render(
     <View>
       <View testID="user-card-1" />
       <View testID="user-card-2" />
       <View testID="user-card-3" />
-    </View>
+    </View>,
   );
-  
+
   const cards = screen.getAllByTestId(/user-card/);
   expect(cards).toHaveLength(3);
 });
@@ -366,29 +379,33 @@ test('find with testID pattern', () => {
 
 ### Priority Order (Recommended)
 
-1. **getByRole()** - Most semantic, accessible ✅ First choice
-2. **getByLabelText()** - Semantic for form inputs ✅ Second choice
-3. **getByPlaceholderText()** - Form inputs without labels ✅ Third choice
-4. **getByText()** - Generic content ✅ Fourth choice
-5. **getByTestId()** - Last resort, implementation detail ⚠️ Avoid if possible
+1. **getByRole()** - Most semantic, accessible. First choice
+2. **getByLabelText()** - Semantic for form inputs. Second choice
+3. **getByPlaceholderText()** - Form inputs without labels. Third choice
+4. **getByText()** - Generic content. Fourth choice
+5. **getByHintText()** - Accessibility hint. Fifth choice
+6. **getByTestId()** - Last resort, implementation detail
 
 ### Decision Tree
 
 ```
-Is it a button/checkbox/radio/etc?
-→ YES: Use getByRole('button', { name: 'Label' })
+Is it a button/checkbox/radio/switch/slider?
+  -> YES: Use getByRole('button', { name: 'Label' })
 
 Is it a form input with label?
-→ YES: Use getByLabelText('Label text')
+  -> YES: Use getByLabelText('Label text')
 
 Is it a TextInput with placeholder?
-→ YES: Use getByPlaceholderText('Placeholder')
+  -> YES: Use getByPlaceholderText('Placeholder')
 
 Is it a Text element?
-→ YES: Use getByText('Text content')
+  -> YES: Use getByText('Text content')
+
+Has an accessibilityHint?
+  -> YES: Use getByHintText('Hint text')
 
 No semantic identifier available?
-→ Use getByTestId('unique-id') as fallback
+  -> Use getByTestId('unique-id') as fallback
 ```
 
 ---
@@ -402,13 +419,11 @@ getByLabelText('Email')          // Form inputs
 getByPlaceholderText('Name')     // TextInput placeholder
 getByDisplayValue('current')     // TextInput value
 getByText('Click me')            // Text content
+getByHintText('Hint')            // Accessibility hint
 getByTestId('submit-btn')        // Last resort
 
 // Multiple elements
 getAllByRole('button')
-getAllByLabelText('Email')
-getAllByPlaceholderText('Name')
-getAllByDisplayValue('current')
 getAllByText('Item')
 getAllByTestId('item')
 
@@ -423,4 +438,6 @@ await findAllByRole('button')    // Waits for elements
 
 ---
 
-**Next:** [User Interactions →](./04-user-interactions.md)
+**Next:** [User Interactions](./04-user-interactions.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/queries

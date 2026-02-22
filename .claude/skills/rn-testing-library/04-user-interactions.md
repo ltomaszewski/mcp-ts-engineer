@@ -1,8 +1,8 @@
 # User Interactions - React Native Testing Library
 
-Complete reference for userEvent (recommended) and fireEvent (legacy) APIs.
+Complete reference for userEvent (recommended), fireEvent (legacy), and fireEventAsync (v13.3.0+) APIs.
 
-**Version:** 13.x | **Source:** https://oss.callstack.com/react-native-testing-library/docs/api/events/user-event
+**Version:** 13.3.x | **Source:** https://oss.callstack.com/react-native-testing-library/docs/api/events/user-event
 
 ---
 
@@ -28,7 +28,7 @@ const user = userEvent.setup({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `delay` | number | 0 | Interval between subsequent events (ms) |
+| `delay` | `number` | `0` | Interval between subsequent events (ms) |
 | `advanceTimers` | `(delay: number) => Promise<void> \| void` | auto-detected | Timer advancement function for fake timers |
 
 ---
@@ -78,7 +78,7 @@ async function longPress(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `duration` | number | 500 | Press duration in milliseconds |
+| `duration` | `number` | `500` | Press duration in milliseconds |
 
 ```typescript
 import { render, screen, userEvent } from '@testing-library/react-native';
@@ -122,9 +122,9 @@ async function type(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `skipPress` | boolean | `false` | Skip initial pressIn/pressOut events |
-| `skipBlur` | boolean | `false` | Skip endEditing/blur events after typing |
-| `submitEditing` | boolean | `false` | Fire submitEditing event after typing |
+| `skipPress` | `boolean` | `false` | Skip initial pressIn/pressOut events |
+| `skipBlur` | `boolean` | `false` | Skip endEditing/blur events after typing |
+| `submitEditing` | `boolean` | `false` | Fire submitEditing event after typing |
 
 ```typescript
 import { render, screen, userEvent } from '@testing-library/react-native';
@@ -292,29 +292,17 @@ async function scrollTo(
   options: ScrollToOptions,
 ): Promise<void>
 
-// Vertical scroll options
-type ScrollToOptions = {
-  y: number;
-  momentumY?: number;
-  contentSize?: { width: number; height: number };
-  layoutMeasurement?: { width: number; height: number };
-};
-
-// Horizontal scroll options
-type ScrollToOptions = {
-  x: number;
-  momentumX?: number;
-  contentSize?: { width: number; height: number };
-  layoutMeasurement?: { width: number; height: number };
-};
+type ScrollToOptions =
+  | { y: number; momentumY?: number; contentSize?: { width: number; height: number }; layoutMeasurement?: { width: number; height: number } }
+  | { x: number; momentumX?: number; contentSize?: { width: number; height: number }; layoutMeasurement?: { width: number; height: number } };
 ```
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `y` / `x` | number | Drag scroll offset (vertical or horizontal) |
-| `momentumY` / `momentumX` | number | Optional inertial movement after drag |
-| `contentSize` | `{ width, height }` | Total scrollable content size (enables FlatList `onEndReached`) |
-| `layoutMeasurement` | `{ width, height }` | Viewport dimensions (enables FlatList `onEndReached`) |
+| `y` / `x` | `number` | Drag scroll offset (vertical or horizontal, mutually exclusive) |
+| `momentumY` / `momentumX` | `number` | Optional inertial movement after drag |
+| `contentSize` | `{ width, height }` | Total scrollable content size (enables `onEndReached`) |
+| `layoutMeasurement` | `{ width, height }` | Viewport dimensions (enables `onEndReached`) |
 
 ```typescript
 import { render, screen, userEvent } from '@testing-library/react-native';
@@ -353,26 +341,10 @@ test('horizontal scroll in carousel', async () => {
     <ScrollView horizontal accessibilityRole="scrollbar">
       <Text>Slide 1</Text>
       <Text>Slide 2</Text>
-      <Text>Slide 3</Text>
     </ScrollView>,
   );
 
   await user.scrollTo(screen.getByRole('scrollbar'), { x: 300 });
-});
-```
-
-### Scroll with Momentum
-
-```typescript
-test('scroll with momentum for pull-to-refresh', async () => {
-  const user = userEvent.setup();
-
-  render(<ItemList />);
-
-  await user.scrollTo(screen.getByRole('list'), {
-    y: 500,
-    momentumY: 200,
-  });
 });
 ```
 
@@ -426,15 +398,43 @@ fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 200 } } });
 
 ---
 
+## fireEventAsync API (v13.3.0+)
+
+Async version of fireEvent for React 19 and Suspense. Uses async `act` internally.
+
+```typescript
+import { renderAsync, screen, fireEventAsync } from '@testing-library/react-native';
+
+test('async fire event with Suspense', async () => {
+  await renderAsync(<SuspenseComponent />);
+
+  await fireEventAsync.press(screen.getByRole('button'));
+
+  expect(screen.getByText('Updated')).toBeOnTheScreen();
+});
+```
+
+### Available Methods
+
+| Method | Signature |
+|--------|-----------|
+| `fireEventAsync(element, eventName, ...data)` | Generic async event |
+| `fireEventAsync.press(element, ...data)` | Async press |
+| `fireEventAsync.changeText(element, ...data)` | Async text change |
+| `fireEventAsync.scroll(element, ...data)` | Async scroll |
+
+---
+
 ## userEvent vs fireEvent
 
-| Feature | userEvent | fireEvent |
-|---------|-----------|-----------|
-| Event sequence | Full realistic sequence | Single event dispatch |
-| Async | Always async (`await`) | Synchronous |
-| Character-by-character typing | Yes (`type()`) | No (full string at once) |
-| Focus management | Automatic | Manual |
-| Recommended for | All new tests | Legacy code, custom events |
+| Feature | userEvent | fireEvent | fireEventAsync |
+|---------|-----------|-----------|----------------|
+| Event sequence | Full realistic sequence | Single event dispatch | Single event, async act |
+| Async | Always async (`await`) | Synchronous | Always async (`await`) |
+| Character-by-character typing | Yes (`type()`) | No (full string) | No (full string) |
+| Focus management | Automatic | Manual | Manual |
+| React 19/Suspense | Works (already async) | Use fireEventAsync | Designed for Suspense |
+| Recommended for | All new tests | Legacy code, custom events | Suspense + legacy patterns |
 
 ---
 

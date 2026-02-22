@@ -181,4 +181,4 @@ async (ids) => {
 
 ---
 
-**Version:** dataloader 2.x + @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/complexity#dataloader
+**Version:** dataloader 2.x + @nestjs/graphql 13.2.x | **Source:** https://docs.nestjs.com/graphql/complexity#dataloader

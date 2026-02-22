@@ -340,4 +340,4 @@ import 'reflect-metadata';
 
 ---
 
-**Version:** NestJS 11.x + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing
+**Version:** NestJS 11.x (^11.1.14) + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing

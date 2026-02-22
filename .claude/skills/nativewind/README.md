@@ -1,6 +1,6 @@
 # NativeWind v4 - Modular Knowledge Base
 
-**Framework:** NativeWind v4 (^4.1.23) + Tailwind CSS 3.4.17
+**Framework:** NativeWind v4 (^4.2.2) + Tailwind CSS 3.4.17
 **Target:** React Native 0.81.5, Expo SDK 54, TypeScript ^5.9.3
 
 ---

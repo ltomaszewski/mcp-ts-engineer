@@ -1,9 +1,9 @@
-# React Native Testing Library (v13.3.3) — Modular Knowledge Base
+# React Native Testing Library (v13.3.x) — Modular Knowledge Base
 
 > Testing framework for React Native components. User-centric, accessible, production-grade reference with modular, LLM-optimized architecture.
 
 **Source:** [https://oss.callstack.com/react-native-testing-library](https://oss.callstack.com/react-native-testing-library)
-**Version:** 13.3.3
+**Version:** 13.3.x
 **Last Updated:** February 2026
 
 ---
@@ -11,9 +11,11 @@
 ## Quick Overview
 
 React Native Testing Library (RNTL) is a lightweight, modern testing solution emphasizing behavior over implementation:
-- Uses React Test Renderer under the hood
 - Semantic queries (role-based, text-based, accessibility-first)
 - Async/await patterns with `findBy*` and `waitFor()`
+- React 19 and Suspense support via `renderAsync()` and `renderHookAsync()` (v13.3.0+)
+- `fireEventAsync` for async-aware event dispatch (v13.3.0+)
+- 18 built-in Jest matchers (no additional packages required)
 - Jest integration with TypeScript support
 - **Philosophy:** "The more your tests resemble how your software is used, the more confidence they can give you."
 
@@ -23,73 +25,73 @@ React Native Testing Library (RNTL) is a lightweight, modern testing solution em
 
 This knowledge base is organized into self-contained modules optimized for LLM context windows. Each module is designed to be independently retrievable.
 
-### 📋 **Setup & Installation**
+### **Setup & Installation**
 **Module:** `01-setup.md`
-**Summary:** Node/React prerequisites, npm installation, Jest configuration, Expo project setup, TypeScript setup, verification steps.
-**Best for:** New projects, environment setup, troubleshooting installation issues.
+**Summary:** Node/React prerequisites (React 18+, RN 0.71+), npm installation, Jest configuration, Expo project setup, TypeScript setup, v13 migration notes, v13.3.0 new features overview.
+**Best for:** New projects, environment setup, upgrading from v12, troubleshooting installation issues.
 
 ---
 
-### 🔧 **Core API Reference**
+### **Core API Reference**
 **Module:** `02-core-api.md`
-**Summary:** `render()`, `renderAsync()`, `screen` object, cleanup utilities, `act()` function, debug utilities.
-**Best for:** Understanding rendering and component testing foundations.
+**Summary:** `render()`, `renderAsync()` (v13.3.0+), `screen` object (`root`, `UNSAFE_root`, `rerenderAsync`, `unmountAsync`), `renderHook()`, `renderHookAsync()` (v13.3.0+), cleanup, `act()`, `within()`, `configure()`, `resetToDefaults()`.
+**Best for:** Understanding rendering and component testing foundations, React 19 Suspense testing.
 
 ---
 
-### 🔍 **Query Methods**
+### **Query Methods**
 **Module:** `03-query-methods.md`
-**Summary:** Complete guide to `getBy*`, `getAllBy*`, `queryBy*`, `queryAllBy*`, `findBy*`, `findAllBy*` with role-based, text-based, and attribute-based selectors. Decision tree included.
+**Summary:** Complete guide to `getBy*`, `getAllBy*`, `queryBy*`, `queryAllBy*`, `findBy*`, `findAllBy*` with role-based, text-based, hint-based, and attribute-based selectors. `getByRole` `value` option, `getByHintText` query, decision tree included.
 **Best for:** Selecting elements in tests, understanding query variants and when to use each.
 
 ---
 
-### 👆 **User Interactions**
+### **User Interactions**
 **Module:** `04-user-interactions.md`
-**Summary:** `userEvent` API (press, type, selectValue), legacy `fireEvent` support, form submission patterns, best practices.
+**Summary:** `userEvent` API (press, longPress, type, clear, paste, scrollTo), legacy `fireEvent`, `fireEventAsync` (v13.3.0+), form submission patterns, comparison table.
 **Best for:** Simulating user actions, testing forms and interactions.
 
 ---
 
-### ⏳ **Async Testing & Waiting**
+### **Async Testing & Waiting**
 **Module:** `05-async-testing.md`
-**Summary:** `waitFor()`, `waitForElementToBeRemoved()`, promise-based queries, timeout management, async patterns.
-**Best for:** Testing side effects, handling asynchronous component behavior.
+**Summary:** `waitFor()` with options table, `waitForElementToBeRemoved()`, promise-based queries, timeout management, React 19 Suspense async patterns with `renderAsync`.
+**Best for:** Testing side effects, handling asynchronous component behavior, Suspense components.
 
 ---
 
-### 🪝 **Hook Testing**
+### **Hook Testing**
 **Module:** `06-hook-testing.md`
-**Summary:** `renderHook()`, managing hook state, testing custom hooks, hook result properties, provider wrapping.
-**Best for:** Testing React Hooks in isolation, custom hook validation.
+**Summary:** `renderHook()`, `renderHookAsync()` (v13.3.0+) with `rerenderAsync`/`unmountAsync`, managing hook state, testing custom hooks, sync vs async comparison table, provider wrapping.
+**Best for:** Testing React Hooks in isolation, custom hook validation, async hooks with Suspense.
 
 ---
 
-### ♿ **Accessibility & Configuration**
+### **Accessibility & Configuration**
 **Module:** `07-accessibility.md`
-**Summary:** `isHiddenFromAccessibility()`, `within()` scoping, `configure()` global settings, semantic queries, accessibility best practices.
+**Summary:** `isHiddenFromAccessibility()`, `within()` scoping, `configure()` global settings (4 options), v13 accessibility label priority, `aria-*` props, semantic queries, accessibility best practices.
 **Best for:** Accessibility testing, leveraging semantic attributes for maintainable tests.
 
 ---
 
-### 🚀 **Advanced Patterns & Best Practices**
+### **Advanced Patterns & Best Practices**
 **Module:** `08-advanced-patterns.md`
-**Summary:** Custom render functions with providers, snapshot testing, async components, form testing patterns, 2024 recommended practices.
+**Summary:** Custom render functions with providers, custom `renderAsync` wrapper, snapshot testing, React 19 Suspense components, form testing, fake timers, recommended practices.
 **Best for:** Complex testing scenarios, establishing patterns for large applications.
 
 ---
 
-### 📘 **TypeScript Integration**
+### **TypeScript Integration**
 **Module:** `09-typescript.md`
-**Summary:** Type definitions, component typing, generic render functions, typed queries, TypeScript best practices.
+**Summary:** Type definitions, component typing, generic render functions, typed `renderHookAsync`, typed queries, async render with types, TypeScript best practices.
 **Best for:** Type-safe testing, TypeScript project setup and patterns.
 
 ---
 
-### 🆘 **Troubleshooting & FAQ**
+### **Troubleshooting & FAQ**
 **Module:** `10-troubleshooting.md`
-**Summary:** 27+ common issues with solutions, debug techniques, performance optimization, FAQ with resolutions.
-**Best for:** Solving problems, error diagnostics, getting unstuck.
+**Summary:** 27+ common issues with solutions, v13 migration issues (removed queries, concurrent rendering, matchers), debug techniques, FAQ with resolutions.
+**Best for:** Solving problems, error diagnostics, v12-to-v13 migration, getting unstuck.
 
 ---
 
@@ -98,16 +100,16 @@ This knowledge base is organized into self-contained modules optimized for LLM c
 | **Task** | **Module** | **Key Sections** |
 |----------|-----------|-----------------|
 | Set up RNTL in new project | `01-setup.md` | Installation, Jest config, verification |
-| Render and test components | `02-core-api.md` | `render()`, `screen`, cleanup |
-| Find elements in tests | `03-query-methods.md` | Query variants, decision tree |
-| Simulate user actions | `04-user-interactions.md` | `userEvent`, form interactions |
-| Handle async operations | `05-async-testing.md` | `waitFor()`, promise queries |
-| Test custom hooks | `06-hook-testing.md` | `renderHook()`, providers |
-| Improve test accessibility | `07-accessibility.md` | Semantic queries, `within()` |
-| Complex testing patterns | `08-advanced-patterns.md` | Custom render, providers, forms |
-| TypeScript integration | `09-typescript.md` | Types, generics, configuration |
-| Solve problems | `10-troubleshooting.md` | Common issues, debug techniques |
-| Jest matchers reference | `11-jest-matchers.md` | toBeOnTheScreen, toBeVisible, etc. |
+| Render and test components | `02-core-api.md` | `render()`, `renderAsync()`, `screen`, cleanup |
+| Find elements in tests | `03-query-methods.md` | Query variants, `getByRole` value, decision tree |
+| Simulate user actions | `04-user-interactions.md` | `userEvent`, `fireEventAsync`, form interactions |
+| Handle async operations | `05-async-testing.md` | `waitFor()`, promise queries, Suspense |
+| Test custom hooks | `06-hook-testing.md` | `renderHook()`, `renderHookAsync()`, providers |
+| Improve test accessibility | `07-accessibility.md` | Semantic queries, `within()`, `aria-*` props |
+| Complex testing patterns | `08-advanced-patterns.md` | Custom render, providers, Suspense, forms |
+| TypeScript integration | `09-typescript.md` | Types, generics, typed async APIs |
+| Solve problems | `10-troubleshooting.md` | Common issues, v13 migration, debug techniques |
+| Jest matchers reference | `11-jest-matchers.md` | 18 built-in matchers, accessibility matchers |
 
 ---
 
@@ -144,13 +146,16 @@ Test what users see and interact with, not implementation details:
 expect(component.state.isLoading).toBe(false);
 
 // ✅ User-centric testing
-expect(screen.getByText('Loading...')).not.toBeInTheDocument();
+expect(screen.getByText('Loading...')).not.toBeOnTheScreen();
 ```
 
 ### Query Hierarchy (in preferred order)
-1. **Role-based:** `getByRole()` — Most semantic
-2. **Text-based:** `getByText()` — For accessibility labels
-3. **Attribute-based:** `getByTestId()` — Last resort for testing purposes
+1. **Role-based:** `getByRole()` — Most semantic, most accessible
+2. **Label-based:** `getByLabelText()` — Form inputs with labels
+3. **Placeholder-based:** `getByPlaceholderText()` — Form inputs with placeholders
+4. **Text-based:** `getByText()` — Generic content
+5. **Hint-based:** `getByHintText()` — Accessibility hint text
+6. **Attribute-based:** `getByTestId()` — Last resort
 
 ### Async Patterns
 ```typescript
@@ -159,7 +164,7 @@ const element = await screen.findByText('Success');
 
 // ✅ Or explicit waitFor
 await waitFor(() => {
-  expect(screen.getByText('Success')).toBeInTheDocument();
+  expect(screen.getByText('Success')).toBeOnTheScreen();
 });
 ```
 
@@ -232,7 +237,8 @@ fireEvent.press(screen.getByRole('button'));
 - Test behavior, not implementation — Focus on user perspective
 - Keep tests isolated — Use custom render with providers
 - Use `within()` for scoping — More specific queries
-- Update to v13.3.3 — Latest version with full support
+- Use `renderAsync` for Suspense — React 19 / `React.use()` components
+- Update to v13.3.x — Latest version with full support
 
 ### ❌ DON'T:
 - Test internal state — User can't access it
@@ -306,8 +312,8 @@ fireEvent.press(screen.getByRole('button'));
 
 ## Version & Maintenance
 
-- **Knowledge Base Version:** 1.0 (Modular)
-- **Target Library Version:** React Native Testing Library 13.3.3
+- **Knowledge Base Version:** 1.1 (Modular)
+- **Target Library Version:** React Native Testing Library 13.3.x
 - **Last Updated:** February 2026
 - **Next Review:** When RNTL 14.0 releases
 
@@ -344,6 +350,6 @@ test('form submits two answers [integration]', async () => {
 
 ---
 
-*Knowledge Base Version 1.0 (Modular)*
-*Framework: React Native Testing Library 13.3.3*
+*Knowledge Base Version 1.1 (Modular)*
+*Framework: React Native Testing Library 13.3.x*
 *Status: Production-Ready*

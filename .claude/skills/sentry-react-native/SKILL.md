@@ -1,5 +1,6 @@
 ---
 name: sentry-react-native
+version: "8.x"
 description: "@sentry/react-native v8 - error monitoring, crash reporting, performance tracing, session replay, native initialization, breadcrumbs, navigation instrumentation. Use when integrating Sentry, capturing errors, configuring performance monitoring, setting up error boundaries, or enabling native app start crash capture."
 ---
 

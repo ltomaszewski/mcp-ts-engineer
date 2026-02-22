@@ -1,8 +1,8 @@
 # Async Testing & Waiting - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api/waitfor
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/async
 
-**Version:** 13.3.3
+**Version:** 13.3.x
 
 ---
 
@@ -11,8 +11,6 @@
 ### Overview
 
 The `findBy*` and `findAllBy*` query variants are async, wait for elements, and throw on timeout.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/queries#findby](https://oss.callstack.com/react-native-testing-library/docs/api/queries#findby)
 
 ### Signature
 
@@ -41,10 +39,10 @@ async function findAllByX(
 ```typescript
 test('find element that appears asynchronously', async () => {
   render(<DataLoader />);
-  
+
   // Waits up to 1000ms for element to appear
   const element = await screen.findByText('Data Loaded');
-  
+
   expect(element).toBeOnTheScreen();
 });
 ```
@@ -54,14 +52,14 @@ test('find element that appears asynchronously', async () => {
 ```typescript
 test('find element with custom timeout', async () => {
   render(<SlowDataLoader />);
-  
+
   // Wait up to 5 seconds for element
   const element = await screen.findByText(
     'Data Loaded',
     {},
-    { timeout: 5000 }
+    { timeout: 5000 },
   );
-  
+
   expect(element).toBeOnTheScreen();
 });
 ```
@@ -71,10 +69,10 @@ test('find element with custom timeout', async () => {
 ```typescript
 test('find multiple elements', async () => {
   render(<ListLoader />);
-  
+
   // Wait for list items to appear
   const items = await screen.findAllByText(/Item \d+/);
-  
+
   expect(items).toHaveLength(5);
 });
 ```
@@ -87,13 +85,13 @@ test('sequential async queries', async () => {
     <List items={[
       { id: 1, title: 'Item 1' },
       { id: 2, title: 'Item 2' },
-    ]} />
+    ]} />,
   );
-  
+
   // Wait for first item
   const firstItem = await screen.findByText('Item 1');
   expect(firstItem).toBeOnTheScreen();
-  
+
   // Second item should also be available
   const secondItem = screen.getByText('Item 2');
   expect(secondItem).toBeOnTheScreen();
@@ -108,7 +106,7 @@ test('sequential async queries', async () => {
 
 Waits for a condition (callback) to be true. More flexible than `findBy*` for complex async scenarios.
 
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/waitfor](https://oss.callstack.com/react-native-testing-library/docs/api/waitfor)
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/async#waitfor
 
 ### Signature
 
@@ -123,6 +121,12 @@ async function waitFor<T>(
 ): Promise<T>
 ```
 
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `timeout` | `number` | `1000` | Maximum wait time in ms |
+| `interval` | `number` | `50` | Polling interval in ms |
+| `onTimeout` | `() => void` | `undefined` | Callback when timeout occurs |
+
 ### Code Examples
 
 #### Basic waitFor() Usage
@@ -130,10 +134,10 @@ async function waitFor<T>(
 ```typescript
 test('wait for async state update', async () => {
   render(<AsyncCounter />);
-  
+
   const button = screen.getByRole('button', { name: 'Increment' });
   fireEvent.press(button);
-  
+
   // Wait for count to update
   await waitFor(() => {
     expect(screen.getByText('Count: 1')).toBeOnTheScreen();
@@ -146,9 +150,9 @@ test('wait for async state update', async () => {
 ```typescript
 test('wait for callback invocation', async () => {
   const handleComplete = jest.fn();
-  
+
   render(<AsyncTask onComplete={handleComplete} />);
-  
+
   await waitFor(() => {
     expect(handleComplete).toHaveBeenCalled();
   });
@@ -160,13 +164,13 @@ test('wait for callback invocation', async () => {
 ```typescript
 test('wait with extended timeout', async () => {
   render(<SlowDataFetcher />);
-  
+
   // Wait up to 10 seconds
   await waitFor(
     () => {
       expect(screen.getByText('Data loaded')).toBeOnTheScreen();
     },
-    { timeout: 10000 }
+    { timeout: 10000 },
   );
 });
 ```
@@ -176,11 +180,11 @@ test('wait with extended timeout', async () => {
 ```typescript
 test('wait for complex async condition', async () => {
   render(<DataFetcher />);
-  
+
   await waitFor(() => {
     const items = screen.queryAllByText(/Item/);
     const errorElement = screen.queryByText(/Error/);
-    
+
     expect(items.length).toBeGreaterThan(0);
     expect(errorElement).not.toBeOnTheScreen();
   });
@@ -193,14 +197,12 @@ test('wait for complex async condition', async () => {
 
 ### Overview
 
-Waits for an element to be removed from the DOM. Useful for testing disappearing toasts, modals, or conditional renders being unmounted.
-
-**Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/waitfor-element-to-be-removed](https://oss.callstack.com/react-native-testing-library/docs/api/waitfor-element-to-be-removed)
+Waits for an element to be removed from the tree. Useful for testing disappearing toasts, modals, or loading indicators.
 
 ### Signature
 
 ```typescript
-async function waitForElementToBeRemoved<T extends Element | Function>(
+async function waitForElementToBeRemoved<T>(
   element: T | (() => T),
   options?: {
     timeout?: number;
@@ -220,15 +222,15 @@ test('wait for toast to disappear', async () => {
       message="Success!"
       duration={2000}
       autoHide={true}
-    />
+    />,
   );
-  
+
   const toast = screen.getByRole('alert');
   expect(toast).toBeOnTheScreen();
-  
+
   // Wait for toast to be removed after 2 seconds
   await waitForElementToBeRemoved(toast);
-  
+
   expect(screen.queryByRole('alert')).not.toBeOnTheScreen();
 });
 ```
@@ -238,25 +240,38 @@ test('wait for toast to disappear', async () => {
 ```typescript
 test('wait for modal removal', async () => {
   const user = userEvent.setup();
-  
+
   render(
     <ConfirmDialog
       title="Delete Item?"
       onConfirm={() => {}}
       visible={true}
-    />
+    />,
   );
-  
+
   const modal = screen.getByRole('dialog');
   expect(modal).toBeOnTheScreen();
-  
+
   // Click close button
   await user.press(screen.getByRole('button', { name: 'Cancel' }));
-  
+
   // Wait for modal removal
   await waitForElementToBeRemoved(modal);
-  
+
   expect(screen.queryByRole('dialog')).not.toBeOnTheScreen();
+});
+```
+
+#### Wait for Loading Indicator to Disappear
+
+```typescript
+test('loading indicator disappears after data loads', async () => {
+  render(<UserProfile userId="123" />);
+
+  // Wait for loading to be removed
+  await waitForElementToBeRemoved(() => screen.getByText('Loading...'));
+
+  expect(screen.getByText('John Doe')).toBeOnTheScreen();
 });
 ```
 
@@ -290,7 +305,7 @@ test('override timeout for specific query', async () => {
   const element = await screen.findByText(
     'Slow Element',
     {},
-    { timeout: 5000 }
+    { timeout: 5000 },
   );
 });
 ```
@@ -304,14 +319,14 @@ test('override timeout for specific query', async () => {
 ```typescript
 test('component loads and displays data', async () => {
   render(<UserProfile userId={123} />);
-  
+
   // Show loading state first
   expect(screen.getByText('Loading...')).toBeOnTheScreen();
-  
+
   // Wait for data to load and display
   const userName = await screen.findByText('John Doe');
   expect(userName).toBeOnTheScreen();
-  
+
   // Loading should be gone
   expect(screen.queryByText('Loading...')).not.toBeOnTheScreen();
 });
@@ -322,19 +337,38 @@ test('component loads and displays data', async () => {
 ```typescript
 test('button click triggers async operation', async () => {
   const user = userEvent.setup();
-  
+
   render(<FormWithAsync />);
-  
+
   // Fill form
   await user.type(screen.getByLabelText('Name'), 'Alice');
-  
+
   // Submit
   const submitBtn = screen.getByRole('button', { name: 'Submit' });
   await user.press(submitBtn);
-  
+
   // Wait for success message
   const successMsg = await screen.findByText('Submitted successfully');
   expect(successMsg).toBeOnTheScreen();
+});
+```
+
+### React 19 Suspense Async Pattern (v13.3.0+)
+
+```typescript
+import { renderAsync, screen } from '@testing-library/react-native';
+import { Suspense } from 'react';
+
+test('Suspense component resolves data', async () => {
+  await renderAsync(
+    <Suspense fallback={<Text>Loading...</Text>}>
+      <AsyncDataComponent />
+    </Suspense>,
+  );
+
+  // After renderAsync, Suspense has resolved
+  expect(screen.getByText('Data loaded')).toBeOnTheScreen();
+  expect(screen.queryByText('Loading...')).not.toBeOnTheScreen();
 });
 ```
 
@@ -347,13 +381,13 @@ test('button click triggers async operation', async () => {
 ```typescript
 test('debug timeout issue', async () => {
   render(<Component />);
-  
+
   try {
     await screen.findByText('Never appears', {}, {
       timeout: 1000,
       onTimeout: () => {
         screen.debug(); // See what actually rendered
-      }
+      },
     });
   } catch (error) {
     console.log('Element search failed');
@@ -366,21 +400,21 @@ test('debug timeout issue', async () => {
 ```typescript
 test('debugging async issues', async () => {
   render(<ComplexComponent />);
-  
+
   // 1. Check initial state
   screen.debug({ message: 'Initial render' });
-  
+
   // 2. Trigger action
   const user = userEvent.setup();
   await user.press(screen.getByRole('button'));
-  
+
   // 3. Wait with debug callback
   try {
     await screen.findByText('Expected Text', {}, {
       timeout: 2000,
       onTimeout: () => {
         screen.debug({ message: 'Timeout debug' });
-      }
+      },
     });
   } catch (error) {
     console.error('Element not found:', error.message);
@@ -390,4 +424,6 @@ test('debugging async issues', async () => {
 
 ---
 
-**Next:** [Hook Testing →](./06-hook-testing.md)
+**Next:** [Hook Testing](./06-hook-testing.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/api/misc/async

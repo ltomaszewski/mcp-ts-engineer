@@ -244,4 +244,4 @@ it('should reject invalid email in mutation', () => {
 
 ---
 
-**Version:** @nestjs/graphql 13.x + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing
+**Version:** @nestjs/graphql 13.2.x + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing

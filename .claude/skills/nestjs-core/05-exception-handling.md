@@ -177,4 +177,4 @@ export class GraphQLErrorFilter implements GqlExceptionFilter {
 
 ---
 
-**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/exception-filters
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/exception-filters

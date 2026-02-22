@@ -298,4 +298,4 @@ const module: TestingModule = await Test.createTestingModule({
 
 ---
 
-**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/fundamentals/custom-providers
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/fundamentals/custom-providers

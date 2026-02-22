@@ -79,9 +79,9 @@ export function Card({ title }: { title: string }) {
 import { useColorScheme } from 'nativewind';
 
 export function ThemeToggle() {
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
   return (
-    <Pressable onPress={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}>
+    <Pressable onPress={toggleColorScheme}>
       <Text className="text-black dark:text-white">
         {colorScheme === 'dark' ? 'Light' : 'Dark'}
       </Text>
@@ -100,6 +100,20 @@ cssInterop(FlashList, {
   className: 'style',
   contentContainerClassName: 'contentContainerStyle',
 });
+```
+
+### CSS Variables with vars()
+
+```typescript
+import { vars } from 'nativewind';
+
+export function BrandSection({ color }: { color: string }) {
+  return (
+    <View style={vars({ '--brand': color })}>
+      <Text className="text-[--brand]">Branded text</Text>
+    </View>
+  );
+}
 ```
 
 ### Safe Area Utilities
@@ -154,6 +168,9 @@ const colorMap = { blue: 'bg-blue-500', red: 'bg-red-500' };
 | Safe area with offset | `p*-safe-offset-[n]` | `pt-safe-offset-4` |
 | Container query | `@container` + `@md:` | `@md:flex-row` |
 | Arbitrary value | `[value]` | `w-[250px]` `bg-[#3498db]` |
+| CSS variable | `[--name]` shorthand | `text-[--brand]` `bg-[--primary]` |
+| vars() function | set CSS vars from JS | `style={vars({ '--brand': 'red' })}` |
+| Important | `!` prefix | `!text-red-500` (wins over inline) |
 | Color opacity | `/` suffix | `bg-blue-500/50` |
 | Aspect ratio | `aspect-` | `aspect-square` `aspect-[3/2]` |
 | Gap | `gap-` | `gap-4` `gap-x-2` |
@@ -178,4 +195,4 @@ const colorMap = { blue: 'bg-blue-500', red: 'bg-red-500' };
 
 ---
 
-**Version:** 4.x (^4.1.23) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/
+**Version:** 4.2.x (^4.2.2) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/

@@ -140,6 +140,7 @@ export class UsersService {
 | `@Header(name, value)` | `@nestjs/common` | Set response header |
 | `@Redirect(url, statusCode?)` | `@nestjs/common` | Redirect to URL |
 | `@Render(template)` | `@nestjs/common` | Render view template |
+| `@Sse(path?, options?)` | `@nestjs/common` | Server-Sent Events endpoint |
 
 ```typescript
 @Post()
@@ -150,6 +151,12 @@ create(@Body() dto: CreateDto) {}
 @Get('docs')
 @Redirect('https://docs.example.com', 301)
 getDocs() {}
+
+// Server-Sent Events (v11.1.9+: supports method options parameter)
+@Sse('events')
+events(): Observable<MessageEvent> {
+  return interval(1000).pipe(map(() => ({ data: { timestamp: Date.now() } })));
+}
 ```
 
 ## Guard, Interceptor, Pipe, Filter Decorators
@@ -338,4 +345,4 @@ getAdmin() {}
 
 ---
 
-**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/custom-decorators
+**Version:** NestJS 11.x (^11.1.14) | **Source:** https://docs.nestjs.com/custom-decorators

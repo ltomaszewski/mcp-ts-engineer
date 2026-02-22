@@ -387,4 +387,4 @@ const positiveNumber = z.custom<number>((val) => {
 - [API Parsing](05-api-parsing.md)
 - [Best Practices](07-best-practices.md)
 
-**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/api
+**Version**: 4.x (^4.3.6) | **Source**: https://zod.dev/api

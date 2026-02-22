@@ -144,8 +144,11 @@ const Category = z.object({
   get subcategories() { return z.array(Category); },
 });
 
-// JSON Schema conversion
+// JSON Schema conversion (Zod -> JSON Schema)
 const jsonSchema = z.toJSONSchema(UserSchema);
+
+// JSON Schema -> Zod conversion (v4.3.4+)
+const zodSchema = z.fromJSONSchema(jsonSchemaObject);
 
 // Schema metadata
 UserSchema.meta({ title: "User", description: "A user object" });
@@ -225,7 +228,8 @@ type User = z.infer<typeof UserSchema>;
 | Readonly | `.readonly()` | `z.array(z.string()).readonly()` |
 | Error tree | `z.treeifyError()` | `z.treeifyError(result.error)` |
 | Pretty error | `z.prettifyError()` | `z.prettifyError(result.error)` |
-| JSON Schema | `z.toJSONSchema()` | `z.toJSONSchema(UserSchema)` |
+| JSON Schema (export) | `z.toJSONSchema()` | `z.toJSONSchema(UserSchema)` |
+| JSON Schema (import) | `z.fromJSONSchema()` | `z.fromJSONSchema(jsonSchemaObj)` |
 
 ---
 
@@ -243,4 +247,4 @@ type User = z.infer<typeof UserSchema>;
 
 ---
 
-**Version:** 4.x (^4.3.0) | **Source:** https://zod.dev/
+**Version:** 4.x (^4.3.6) | **Source:** https://zod.dev/

@@ -1,5 +1,6 @@
 ---
 name: mcp-sdk
+version: "1.x"
 description: Model Context Protocol SDK v1.x - MCP servers, tools, resources, prompts, transports, Zod schema validation. Use when building MCP servers, defining tools, exposing resources, creating prompts, or configuring stdio/HTTP transports.
 ---
 

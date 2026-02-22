@@ -1,8 +1,8 @@
-# Color & Typography System - NativeWind v4
+# Color & Typography System - NativeWind v4.2.x
 
 **Source:** https://www.nativewind.dev/docs  
 **Last Verified:** February 2026  
-**Version:** NativeWind v4
+**Version:** NativeWind v4.2.x
 
 ---
 
@@ -126,15 +126,14 @@ export const ColorExamples = () => {
 ### Color Opacity
 
 ```typescript
-{/* Opacity utility */}
-<View className="bg-blue-500 opacity-50" /> {/* 50% opacity */}
-<View className="bg-blue-500 opacity-75" /> {/* 75% opacity */}
+{/* Slash syntax (recommended in v4.2.x) */}
+<View className="bg-blue-500/50" />   {/* 50% opacity background */}
+<View className="bg-blue-500/75" />   {/* 75% opacity background */}
+<Text className="text-red-600/80" />  {/* 80% opacity text */}
 
-{/* Or use opacity in color */}
-<View className="bg-blue-500 bg-opacity-50" /> {/* Equivalent */}
-
-{/* Text opacity */}
-<Text className="text-blue-600 text-opacity-75">75% opacity text</Text>
+{/* Opacity utility (applies to entire element) */}
+<View className="bg-blue-500 opacity-50" /> {/* 50% element opacity */}
+<View className="bg-blue-500 opacity-75" /> {/* 75% element opacity */}
 ```
 
 ---

@@ -1,15 +1,15 @@
 # Setup & Installation - React Native Testing Library
 
-**Document URL:** https://oss.callstack.com/react-native-testing-library/docs/start/installation
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/start/installation
 
-**Version:** ^13.0.0
+**Version:** 13.3.x
 
 ---
 
 ## Prerequisites
 
 - **Node.js:** v18 or higher
-- **React Native:** v0.73 or higher (tested through 0.81.x)
+- **React Native:** v0.71 or higher (tested through 0.81.x)
 - **React:** v18 or higher, including React 19.x (React 16/17 no longer supported)
 - **Jest:** v29 or higher (typically included with React Native)
 
@@ -40,14 +40,13 @@ Add this to your `package.json` to verify all dependencies:
 ```json
 {
   "devDependencies": {
-    "@testing-library/react-native": "^13.0.0",
+    "@testing-library/react-native": "^13.3.0",
     "jest": "^29.0.0"
   }
 }
 ```
 
 > **Note:** `react-test-renderer` is no longer required as a peer dependency in v13. It will be fully removed in v14.
-```
 
 ---
 
@@ -59,7 +58,7 @@ Add this to your `package.json` to verify all dependencies:
 module.exports = {
   preset: 'react-native',
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
+  testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/?(*.)+(spec|test).{ts,tsx}'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -67,20 +66,22 @@ module.exports = {
     'node_modules/(?!(react-native|@react-native|@react-native-async-storage|@react-native-community)/)',
   ],
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
+    'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/index.{js,ts}',
+    '!src/index.{ts,tsx}',
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };
 ```
 
-### Create jest.setup.js
+### Create jest.setup.ts
 
-```javascript
+```typescript
 // v13: Jest matchers (toBeOnTheScreen, etc.) are auto-extended.
 // No need to import '@testing-library/react-native/extend-expect' or
-// '@testing-library/jest-native/extend-expect' — they are registered automatically.
+// '@testing-library/jest-native/extend-expect' -- they are registered automatically.
+
+// To prevent auto-extension, import from '@testing-library/react-native/pure' instead.
 
 // Optional: Increase default timeout for async tests
 jest.setTimeout(10000);
@@ -111,8 +112,8 @@ Create `jest.config.js`:
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testMatch: ['**/__tests__/**/*.{js,ts}', '**/?(*.)+(spec|test).{js,ts}'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  testMatch: ['**/__tests__/**/*.{ts,tsx}', '**/?(*.)+(spec|test).{ts,tsx}'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -157,7 +158,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-navigation|@react-native-async-storage|react-native-gesture-handler)/)',
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };
 ```
 
@@ -177,7 +178,8 @@ module.exports = {
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["jest", "@testing-library/react-native"]
   }
 }
 ```
@@ -217,15 +219,14 @@ import { Hello } from '../Hello';
 describe('Hello Component', () => {
   it('renders correct greeting message', () => {
     render(<Hello name="World" />);
-    
+
     expect(screen.getByText('Hello, World!')).toBeOnTheScreen();
   });
 
   it('renders with custom name', () => {
     render(<Hello name="Alice" />);
-    
-    const greeting = screen.getByTestId('greeting');
-    expect(greeting.props.children).toEqual(['Hello, ', 'Alice', '!']);
+
+    expect(screen.getByText('Hello, Alice!')).toBeOnTheScreen();
   });
 });
 ```
@@ -255,14 +256,24 @@ Time:        2.345s
 ### Key Changes from v12
 
 1. **React 18+ required (React 19 supported)** -- React 16 and 17 are no longer supported
-2. **`react-test-renderer` no longer required** -- v13 uses React's own APIs; `react-test-renderer` will be fully removed in v14
-3. **Jest matchers auto-extend** -- No need to import `@testing-library/react-native/extend-expect` or `@testing-library/jest-native/extend-expect`
-4. **Concurrent rendering enabled by default** -- Pass `concurrentRoot: false` to `render()` options as an escape hatch if needed
-5. **Uses React's `act()`** -- Instead of React Test Renderer's `act()`
-6. **Jest preset removed** -- Use the standard `react-native` preset, not `@testing-library/react-native`
-7. **Removed queries**: `*ByA11yState` (use `*ByRole` with state options or `toHaveAccessibilityState` matcher) and `*ByA11yValue` (use `*ByRole` or `toHaveAccessibleValue` matcher)
-8. **`debug.shallow` removed** -- No shallow rendering support
-9. **Node 18+** -- Minimum Node.js version requirement
+2. **React Native 0.71+ required** -- earlier versions must use v12
+3. **`react-test-renderer` no longer required** -- v13 uses React's own APIs; will be fully removed in v14
+4. **Jest matchers auto-extend** -- No need to import `extend-expect`; use `@testing-library/react-native/pure` to opt out
+5. **Concurrent rendering enabled by default** -- Pass `concurrentRoot: false` to `render()` or `configure()` as escape hatch
+6. **Uses React's `act()`** -- Instead of React Test Renderer's `act()`
+7. **Jest preset removed** -- Use the standard `react-native` preset, not `@testing-library/react-native`
+8. **Removed queries**: `*ByA11yState` (use `*ByRole` with state options) and `*ByA11yValue` (use `*ByRole` with `value` option or `toHaveAccessibilityValue` matcher)
+9. **`debug.shallow` removed** -- No shallow rendering support
+10. **Node 18+** -- Minimum Node.js version requirement
+11. **Accessibility label priority** -- Explicit labels (`accessibilityLabel`, `aria-label`) take strict priority over implicit text-derived labels
+
+### New in v13.3.0
+
+1. **`renderAsync()`** -- Async render for React 19 Suspense support
+2. **`renderHookAsync()`** -- Async hook rendering for Suspense
+3. **`fireEventAsync`** -- Async fire event for Suspense boundaries
+4. **`screen.rerenderAsync()`** -- Async rerender
+5. **`screen.unmountAsync()`** -- Async unmount
 
 ### v14 Preview (NOT in v13 yet)
 
@@ -285,9 +296,9 @@ Create or update `.babelrc`:
 
 ### Issue: "Timeout - Async callback was not invoked"
 
-Increase timeout in `jest.setup.js`:
+Increase timeout in `jest.setup.ts`:
 
-```javascript
+```typescript
 jest.setTimeout(10000); // 10 seconds
 ```
 
@@ -306,4 +317,6 @@ After setup, verify:
 
 ---
 
-**Next:** [Core API Reference →](./02-core-api.md)
+**Next:** [Core API Reference](./02-core-api.md)
+
+**Source:** https://oss.callstack.com/react-native-testing-library/docs/start/installation
