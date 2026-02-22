@@ -1,12 +1,12 @@
 ---
 name: nestjs-mongoose
-version: "NestJS 11 + Mongoose 8.x"
+version: "NestJS 11 + Mongoose 9.x"
 description: NestJS Mongoose/MongoDB integration - schemas, models, repository pattern, transactions, virtuals, hooks, discriminators. Use when working with MongoDB, creating schemas, or implementing data access patterns.
 ---
 
 # NestJS Mongoose
 
-> MongoDB integration for NestJS using Mongoose ODM with decorators, schemas, transactions, and the repository pattern.
+> MongoDB integration for NestJS using Mongoose 9 ODM with decorators, schemas, transactions, and the repository pattern.
 
 ---
 
@@ -19,6 +19,7 @@ description: NestJS Mongoose/MongoDB integration - schemas, models, repository p
 - Adding virtuals, hooks, or middleware to schemas
 - Using discriminators for polymorphic data
 - Setting up repository pattern for data access
+- Migrating from Mongoose 8 to Mongoose 9
 
 ---
 
@@ -29,14 +30,32 @@ description: NestJS Mongoose/MongoDB integration - schemas, models, repository p
 2. Enable `timestamps: true` on schemas — auto-manages createdAt/updatedAt
 3. Set `toJSON: { virtuals: true }` if using virtuals — otherwise they won't serialize
 4. Use `Connection.transaction()` helper — simpler than manual session management
-5. Enable `transactionAsyncLocalStorage` in Mongoose 8.4+ — auto-propagates sessions
+5. Enable `transactionAsyncLocalStorage` — auto-propagates sessions (available since Mongoose 8.4)
 6. Hash passwords in pre-save hooks — never store plain text
+7. Use `async function` for all pre hooks — Mongoose 9 removed `next()` callback support
 
 **NEVER:**
 1. Enable `autoIndex` in production — creates indexes at startup, blocks event loop
 2. Forget `select: false` on sensitive fields — password, tokens should be excluded
 3. Use transactions without replica set — MongoDB requires replica set for transactions
-4. Pass sessions manually in Mongoose 8.4+ with AsyncLocalStorage — automatic propagation
+4. Use `next()` callback in pre middleware — removed in Mongoose 9, use async functions
+5. Pass numbers to `isValidObjectId()` or `new ObjectId()` — Mongoose 9 rejects numbers
+
+---
+
+## Mongoose 9 Migration Notes
+
+Key breaking changes from Mongoose 8:
+- **Pre hooks**: `next()` callback removed — use `async function` instead
+- **TypeScript**: `FilterQuery` renamed to `QueryFilter`
+- **ObjectId**: `isValidObjectId()` returns `false` for numbers
+- **Update pipelines**: Throw error by default — enable with `updatePipeline: true`
+- **UUID**: Now BSON UUID objects, serialized as hex string in JSON
+- **`noListener`**: Option removed from `useDb()` — only `{ useCache }` supported
+- **`doc.id`**: Now typed as `string` (was `any`)
+- **Index `background`**: Option removed (deprecated since MongoDB 4.2)
+- **Middleware skip**: New `{ middleware: false }` option on `save()` (Mongoose 9.2+)
+- **Node.js**: Requires Node.js 18 or higher
 
 ---
 
@@ -76,12 +95,11 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Pre-save hook for password hashing
-UserSchema.pre('save', async function(next) {
+// Mongoose 9: async function, no next() callback
+UserSchema.pre('save', async function () {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 10);
   }
-  next();
 });
 ```
 
@@ -169,24 +187,17 @@ MongooseModule.forRootAsync({
 })
 ```
 
-**BAD** — Manual session management:
+**BAD** — Using next() in Mongoose 9 pre hooks:
 ```typescript
-const session = await this.connection.startSession();
-session.startTransaction();
-try {
-  // operations
-  await session.commitTransaction();
-} catch {
-  await session.abortTransaction();
-} finally {
-  session.endSession();
-}
+UserSchema.pre('save', function (next) {  // WRONG - next() removed in v9
+  next();
+});
 ```
 
-**GOOD** — Transaction helper:
+**GOOD** — Async pre hooks:
 ```typescript
-await this.connection.transaction(async (session) => {
-  // operations - auto commit/abort
+UserSchema.pre('save', async function () {
+  // async logic here
 });
 ```
 
@@ -218,7 +229,8 @@ password: string;
 | Inject model | `@InjectModel(Name.name)` | `Model<Document>` |
 | Inject connection | `@InjectConnection()` | `Connection` |
 | Transaction | `connection.transaction()` | Auto commit/abort |
-| Pre-save hook | `Schema.pre('save', fn)` | Password hashing |
+| Pre hook (v9) | `Schema.pre('save', async fn)` | No `next()` callback |
+| Skip middleware | `doc.save({ middleware: false })` | Skip user hooks (v9.2+) |
 
 ### Common @Prop Options
 
@@ -233,6 +245,8 @@ password: string;
 | `min/max` | Number validation | `0`, `1000` |
 | `trim` | Whitespace | `true` |
 | `lowercase/uppercase` | Case transform | `true` |
+| `immutable` | Prevent modification | `true` |
+| `transform` | Custom toJSON transform | `(val) => val` |
 
 ---
 
@@ -254,4 +268,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** @nestjs/mongoose 11.x + Mongoose 8.x | **Source:** https://docs.nestjs.com/techniques/mongodb
+**Version:** @nestjs/mongoose 11.x + Mongoose 9.x | **Source:** https://docs.nestjs.com/techniques/mongodb + https://mongoosejs.com/docs/migrating_to_9.html

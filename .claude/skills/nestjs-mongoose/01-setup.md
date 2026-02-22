@@ -1,10 +1,18 @@
-# NestJS Mongoose Setup
+# NestJS Mongoose: Setup
+
+**Module installation, root configuration, feature module registration, and multiple database connections.**
+
+---
 
 ## Installation
 
 ```bash
 npm install @nestjs/mongoose mongoose
 ```
+
+**Requirements:** Node.js 18+ (Mongoose 9 minimum), MongoDB 4.4+ recommended.
+
+---
 
 ## Basic Configuration
 
@@ -19,6 +27,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 })
 export class AppModule {}
 ```
+
+---
 
 ## Async Configuration (Production)
 
@@ -51,6 +61,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 export class AppModule {}
 ```
 
+---
+
 ## forRoot / forRootAsync Options
 
 | Option | Type | Default | Description |
@@ -69,6 +81,14 @@ export class AppModule {}
 | `authSource` | `string` | `undefined` | Auth database |
 | `appName` | `string` | `undefined` | App name in connection metadata |
 | `autoIndex` | `boolean` | `true` | **Set `false` in production** |
+| `bufferCommands` | `boolean` | `true` | Buffer operations until connected |
+| `dbName` | `string` | from URI | Override database name |
+| `family` | `4 \| 6` | auto | IP version preference |
+| `heartbeatFrequencyMS` | `number` | `10000` | Connection status check interval |
+| `maxIdleTimeMS` | `number` | `0` | Max idle time per connection |
+| `compressors` | `string[]` | none | Compression (`['zstd', 'snappy']`) |
+
+---
 
 ## Register Schemas in Feature Modules
 
@@ -90,6 +110,8 @@ import { UsersService } from './users.service';
 export class UsersModule {}
 ```
 
+---
+
 ## forFeature Options
 
 | Option | Type | Description |
@@ -98,6 +120,8 @@ export class UsersModule {}
 | `schema` | `Schema` | Mongoose schema instance |
 | `collection` | `string` | Override collection name |
 | `discriminators` | `DiscriminatorOptions[]` | Schema inheritance |
+
+---
 
 ## Multiple Database Connections
 
@@ -131,4 +155,15 @@ export class AnalyticsModule {}
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://docs.nestjs.com/techniques/mongodb
+## Mongoose 9 Migration: Setup Changes
+
+- **Node.js 18+** required (Mongoose 9 dropped support for older versions)
+- **`noListener`** option removed from `useDb()` — only `{ useCache }` is supported
+- **`background`** index option removed (deprecated since MongoDB 4.2)
+- No changes to `MongooseModule.forRoot` or `forFeature` API from @nestjs/mongoose perspective
+
+---
+
+**See Also**: [09-connection-options.md](09-connection-options.md) for connection pool sizing and monitoring
+**Source**: https://docs.nestjs.com/techniques/mongodb
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

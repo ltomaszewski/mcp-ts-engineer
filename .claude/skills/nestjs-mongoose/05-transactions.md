@@ -1,6 +1,10 @@
-# Transactions
+# NestJS Mongoose: Transactions
+
+**Manual transactions, connection.transaction() helper, AsyncLocalStorage, and best practices.**
 
 **Requirement:** MongoDB replica set (standalone instances do not support transactions).
+
+---
 
 ## Manual Transaction
 
@@ -44,9 +48,11 @@ export class OrdersService {
 }
 ```
 
+---
+
 ## connection.transaction() Helper (Preferred)
 
-Automatically commits on success, aborts on error, ends session.
+Mongoose's wrapper around `session.withTransaction()`. Automatically commits on success, aborts on error, ends session. Also integrates with Mongoose change tracking — resets document state on abort.
 
 ```typescript
 async transfer(fromId: string, toId: string, amount: number): Promise<void> {
@@ -64,7 +70,9 @@ async transfer(fromId: string, toId: string, amount: number): Promise<void> {
 }
 ```
 
-## AsyncLocalStorage (Mongoose 8.4+)
+---
+
+## AsyncLocalStorage (Mongoose 8.4+, works in 9.x)
 
 Automatically propagates sessions to all queries within the callback. No need to pass `session` manually.
 
@@ -77,6 +85,7 @@ mongoose.set('transactionAsyncLocalStorage', true);
 // Usage - session propagation is automatic
 async createOrderAutoSession(data: CreateOrderDto): Promise<Order> {
   return this.connection.transaction(async () => {
+    // No session parameter needed — auto-propagated
     const order = await this.orderModel.create(data);
 
     await this.productModel.updateOne(
@@ -89,11 +98,38 @@ async createOrderAutoSession(data: CreateOrderDto): Promise<Order> {
 }
 ```
 
+> **Important:** Nested `connection.transaction()` calls create independent sessions even with AsyncLocalStorage enabled.
+
+---
+
+## Document Session Association
+
+Documents retrieved within a transaction automatically use the session for subsequent `save()` calls:
+
+```typescript
+await this.connection.transaction(async (session) => {
+  const user = await this.userModel.findById(id).session(session);
+  // user.$session() returns the session
+  user.name = 'Updated';
+  await user.save(); // Automatically uses the session
+});
+```
+
+You can also manually bind a session to a document:
+
+```typescript
+const doc = new this.userModel(data);
+doc.$session(session);
+await doc.save();
+```
+
+---
+
 ## Transaction Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `readConcern` | `string` | `'local'` | Read concern level |
+| `readConcern` | `{ level: string }` | `{ level: 'local' }` | Read concern level |
 | `writeConcern` | `object` | `{ w: 'majority' }` | Write concern |
 | `readPreference` | `string` | `'primary'` | Read preference |
 | `maxCommitTimeMS` | `number` | none | Max time for commit |
@@ -107,15 +143,29 @@ await this.connection.transaction(async (session) => {
 });
 ```
 
+---
+
 ## Transaction Best Practices
 
-1. **Keep transactions short** -- long transactions increase lock contention
+1. **Keep transactions short** — long transactions increase lock contention
 2. **Always use `.session(session)` on every operation** within manual transactions
 3. **Use `connection.transaction()` helper** instead of manual session management
-4. **Use `transactionAsyncLocalStorage` in Mongoose 8.4+** for automatic propagation
+4. **Use `transactionAsyncLocalStorage`** for automatic propagation
 5. **Use `create([data], { session })` (array form)** when using sessions with `create()`
 6. **Handle `TransientTransactionError`** with retry logic in production
+7. **No parallel operations** — running operations in parallel within a transaction is not supported; avoid `Promise.all()` inside transactions
+8. **Aggregation support** — use `Model.aggregate().session(session)` to run pipelines within transactions
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://mongoosejs.com/docs/transactions.html
+## Mongoose 9 Migration: Transaction Changes
+
+- No breaking changes to the transaction API between Mongoose 8 and 9
+- `connection.transaction()` and AsyncLocalStorage work the same in Mongoose 9
+- Pre hooks in transactions must use `async function` (no `next()` callback)
+
+---
+
+**See Also**: [09-connection-options.md](09-connection-options.md) for replica set configuration
+**Source**: https://mongoosejs.com/docs/transactions.html
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

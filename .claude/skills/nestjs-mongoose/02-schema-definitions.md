@@ -1,4 +1,8 @@
-# Schema Definitions
+# NestJS Mongoose: Schema Definitions
+
+**Schema decorators, property options, nested schemas, arrays, maps, validators, and TTL indexes.**
+
+---
 
 ## Basic Schema with @Schema and @Prop
 
@@ -42,6 +46,8 @@ export class User {
 export const UserSchema = SchemaFactory.createForClass(User);
 ```
 
+---
+
 ## @Schema Options
 
 | Option | Type | Default | Description |
@@ -57,6 +63,8 @@ export const UserSchema = SchemaFactory.createForClass(User);
 | `id` | `boolean` | `true` | Virtual `id` getter |
 | `_id` | `boolean` | `true` | Auto-generate `_id` |
 | `minimize` | `boolean` | `true` | Remove empty objects |
+
+---
 
 ## @Prop Options (Complete)
 
@@ -84,6 +92,41 @@ export const UserSchema = SchemaFactory.createForClass(User);
 | `set` | `(val) => val` | Setter function |
 | `immutable` | `boolean` | Prevent modification after creation |
 | `expires` | `string \| number` | TTL index (e.g., `'7d'`) |
+| `alias` | `string` | Virtual alias for this path |
+| `transform` | `(val) => val` | Called during `toJSON()` |
+
+---
+
+## Mongoose 9 Schema Types
+
+All available types for `@Prop({ type: ... })`:
+
+| Type | Mongoose Type | Notes |
+|------|---------------|-------|
+| `String` | SchemaString | Supports trim, lowercase, uppercase, match, enum |
+| `Number` | SchemaNumber | Supports min, max, enum |
+| `Date` | SchemaDate | Supports min, max, expires |
+| `Boolean` | SchemaBoolean | |
+| `Buffer` | SchemaBuffer | |
+| `Types.ObjectId` | ObjectId | Use with `ref` for population |
+| `Schema.Types.Mixed` | Mixed | Any value (no casting) |
+| `Schema.Types.UUID` | UUID | BSON UUID in Mongoose 9 (hex string in JSON) |
+| `Schema.Types.BigInt` | BigInt | New in recent versions |
+| `Schema.Types.Double` | Double | New in recent versions |
+| `Schema.Types.Int32` | Int32 | New in recent versions |
+| `Schema.Types.Decimal128` | Decimal128 | High-precision decimals |
+| `Map` | Map | Key-value pairs |
+| `Schema.Types.Union` | Union | Multi-type paths (new in Mongoose 9) |
+
+### Union Type (New in Mongoose 9)
+
+```typescript
+// Allows a field to be either String or Number
+@Prop({ type: Schema.Types.Union, of: [String, Number] })
+value: string | number;
+```
+
+---
 
 ## Common @Prop Patterns
 
@@ -176,4 +219,20 @@ expiresAt: Date;
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://docs.nestjs.com/techniques/mongodb
+## Mongoose 9 Migration: Schema Changes
+
+- **UUID fields** are now BSON UUID objects, serialized as hex string in JSON even without `getters: true`. To restore Mongoose 8 string behavior:
+  ```typescript
+  import mongoose from 'mongoose';
+  mongoose.Schema.Types.UUID.get(v => v == null ? v : v.toString());
+  ```
+- **`embeddedSchemaType`** replaces `caster` property on array schema paths
+- **Index `background` option** removed (MongoDB no longer supports it since 4.2)
+- **`doc.id`** is now typed as `string` in TypeScript (was `any` in Mongoose 8)
+- **Union type** (`Schema.Types.Union`) is a new schema type for multi-type fields
+
+---
+
+**See Also**: [06-virtuals-hooks.md](06-virtuals-hooks.md) for virtuals and hooks on schemas
+**Source**: https://mongoosejs.com/docs/schematypes.html
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

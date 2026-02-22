@@ -1,4 +1,8 @@
-# Connection Options & Monitoring
+# NestJS Mongoose: Connection Options & Monitoring
+
+**Production configuration, connection pooling, monitoring, multiple databases, and read preferences.**
+
+---
 
 ## Full Production Configuration
 
@@ -50,6 +54,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 export class DatabaseModule {}
 ```
 
+---
+
 ## Connection Pool Sizing
 
 | Environment | maxPoolSize | minPoolSize | Rationale |
@@ -61,15 +67,21 @@ export class DatabaseModule {}
 
 **Formula:** `maxPoolSize ~= peak concurrent requests * 1.5`
 
+Each connection in the pool corresponds to one socket. MongoDB allows one operation per socket at a time.
+
+---
+
 ## Connection Options Reference
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `maxPoolSize` | `number` | `100` | Max connections |
 | `minPoolSize` | `number` | `0` | Maintained idle connections |
+| `maxIdleTimeMS` | `number` | `0` | Max idle time per connection |
 | `serverSelectionTimeoutMS` | `number` | `30000` | Server selection timeout |
 | `socketTimeoutMS` | `number` | `0` | Socket inactivity timeout |
 | `connectTimeoutMS` | `number` | `30000` | Initial connection timeout |
+| `heartbeatFrequencyMS` | `number` | `10000` | Connection status check interval |
 | `retryWrites` | `boolean` | `true` | Retry failed writes |
 | `retryReads` | `boolean` | `true` | Retry failed reads |
 | `w` | `string \| number` | `1` | Write concern |
@@ -79,8 +91,26 @@ export class DatabaseModule {}
 | `appName` | `string` | none | Connection metadata |
 | `family` | `4 \| 6` | auto | IP version preference |
 | `autoIndex` | `boolean` | `true` | Auto-create indexes |
-| `maxIdleTimeMS` | `number` | `0` | Max idle time per connection |
+| `bufferCommands` | `boolean` | `true` | Buffer ops until connected |
+| `dbName` | `string` | from URI | Override database name |
 | `compressors` | `string[]` | none | Compression (`['zstd', 'snappy']`) |
+
+---
+
+## Connection Events
+
+| Event | Description |
+|-------|-------------|
+| `connecting` | Initial connection attempt starting |
+| `connected` | Successfully established |
+| `open` | Connected + model initialization complete |
+| `disconnected` | Lost MongoDB connectivity |
+| `reconnected` | Automatic reconnection succeeded |
+| `error` | Connection errors |
+| `close` | Connection fully closed |
+| `disconnecting` | Explicit disconnection requested |
+
+---
 
 ## Connection Monitoring
 
@@ -131,6 +161,8 @@ export class DatabaseMonitor implements OnModuleInit {
 }
 ```
 
+---
+
 ## Multiple Database Connections
 
 ```typescript
@@ -158,6 +190,8 @@ MongooseModule.forFeature(
 @InjectConnection('analytics') private analyticsConnection: Connection
 ```
 
+---
+
 ## Read Preference Options
 
 | Preference | Description | Use Case |
@@ -170,4 +204,16 @@ MongooseModule.forFeature(
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://mongoosejs.com/docs/connections.html
+## Mongoose 9 Migration: Connection Changes
+
+- **`noListener` option removed** from `useDb()` — only `{ useCache }` is supported now
+- **`keepAlive`** was deprecated in Mongoose 7.2 and remains unsupported; TCP keepalive is always enabled
+- **`serverSelectionTimeoutMS`** affects both initial connection and query operations (no independent tuning)
+- **Node.js 18+** required — Mongoose 9 dropped support for older Node.js versions
+- No changes to connection pooling, events, or monitoring APIs
+
+---
+
+**See Also**: [01-setup.md](01-setup.md) for initial setup
+**Source**: https://mongoosejs.com/docs/connections.html
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

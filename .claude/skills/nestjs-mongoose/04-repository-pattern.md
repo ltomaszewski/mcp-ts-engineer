@@ -1,9 +1,13 @@
-# Repository Pattern
+# NestJS Mongoose: Repository Pattern
+
+**Generic base repository, concrete implementations, service layer, and pagination helpers.**
+
+---
 
 ## Generic Base Repository
 
 ```typescript
-import { Document, Model, FilterQuery, UpdateQuery, QueryOptions } from 'mongoose';
+import { Document, Model, QueryFilter, UpdateQuery } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
 
 export abstract class BaseRepository<T extends Document> {
@@ -14,7 +18,7 @@ export abstract class BaseRepository<T extends Document> {
   }
 
   async findAll(
-    filter: FilterQuery<T> = {},
+    filter: QueryFilter<T> = {},
     options: { sort?: Record<string, 1 | -1>; skip?: number; limit?: number } = {},
   ): Promise<T[]> {
     return this.model
@@ -33,7 +37,7 @@ export abstract class BaseRepository<T extends Document> {
     return doc;
   }
 
-  async findOne(filter: FilterQuery<T>): Promise<T | null> {
+  async findOne(filter: QueryFilter<T>): Promise<T | null> {
     return this.model.findOne(filter).exec();
   }
 
@@ -54,15 +58,19 @@ export abstract class BaseRepository<T extends Document> {
     }
   }
 
-  async count(filter: FilterQuery<T> = {}): Promise<number> {
+  async count(filter: QueryFilter<T> = {}): Promise<number> {
     return this.model.countDocuments(filter).exec();
   }
 
-  async exists(filter: FilterQuery<T>): Promise<boolean> {
+  async exists(filter: QueryFilter<T>): Promise<boolean> {
     return (await this.model.exists(filter)) !== null;
   }
 }
 ```
+
+> **Mongoose 9 note:** `FilterQuery<T>` has been renamed to `QueryFilter<T>`. Update your imports accordingly.
+
+---
 
 ## Concrete Repository
 
@@ -101,6 +109,8 @@ export class UserRepository extends BaseRepository<UserDocument> {
 }
 ```
 
+---
+
 ## Service Layer Using Repository
 
 ```typescript
@@ -136,6 +146,8 @@ export class UsersService {
 }
 ```
 
+---
+
 ## Module Registration
 
 ```typescript
@@ -157,6 +169,8 @@ import { UsersService } from './users.service';
 export class UsersModule {}
 ```
 
+---
+
 ## Pagination Helper
 
 ```typescript
@@ -169,7 +183,7 @@ interface PaginatedResult<T> {
 }
 
 async paginate(
-  filter: FilterQuery<T>,
+  filter: QueryFilter<T>,
   page: number,
   limit: number,
 ): Promise<PaginatedResult<T>> {
@@ -195,4 +209,14 @@ async paginate(
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://docs.nestjs.com/techniques/mongodb
+## Mongoose 9 Migration: Repository Changes
+
+- **`FilterQuery<T>` renamed to `QueryFilter<T>`** — update all repository type imports
+- **Stricter TypeScript filter types** — invalid operators or mismatched field types produce compile errors
+- **`create()` no generic** — `Model.create<T>()` no longer accepts a generic; passes `Partial<RawDocType>` directly
+
+---
+
+**See Also**: [03-model-injection.md](03-model-injection.md) for direct model usage
+**Source**: https://docs.nestjs.com/techniques/mongodb
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

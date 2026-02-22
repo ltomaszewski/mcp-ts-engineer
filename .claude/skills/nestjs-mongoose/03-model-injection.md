@@ -1,4 +1,8 @@
-# Model Injection & Query Methods
+# NestJS Mongoose: Model Injection & Query Methods
+
+**Model injection, CRUD operations, query methods, populate, lean queries, and connection injection.**
+
+---
 
 ## Basic Model Injection
 
@@ -75,6 +79,8 @@ export class UsersService {
 }
 ```
 
+---
+
 ## Common Model Methods
 
 | Method | Returns | Description |
@@ -93,9 +99,12 @@ export class UsersService {
 | `deleteOne(filter)` | `Query<DeleteResult>` | Delete first match |
 | `deleteMany(filter)` | `Query<DeleteResult>` | Delete all matches |
 | `countDocuments(filter)` | `Query<number>` | Count matching docs |
+| `estimatedDocumentCount()` | `Query<number>` | Fast count using metadata |
 | `exists(filter)` | `Promise<{ _id } \| null>` | Check existence |
 | `distinct(field, filter)` | `Query<any[]>` | Get distinct values |
 | `aggregate(pipeline)` | `Aggregate<T[]>` | Aggregation pipeline |
+
+---
 
 ## findByIdAndUpdate Options
 
@@ -107,6 +116,8 @@ export class UsersService {
 | `lean` | `boolean` | `false` | Return plain object (faster) |
 | `select` | `string` | all | Fields to include/exclude |
 | `populate` | `string \| object` | none | Populate references |
+
+---
 
 ## Connection Injection
 
@@ -142,6 +153,8 @@ export class DatabaseService implements OnModuleInit {
 }
 ```
 
+---
+
 ## Named Connection Injection
 
 ```typescript
@@ -153,6 +166,8 @@ private readonly userModel: Model<UserDocument>
 @InjectConnection('analytics')
 private readonly analyticsConnection: Connection
 ```
+
+---
 
 ## Populate References
 
@@ -177,6 +192,8 @@ async findWithDetails(id: string): Promise<User> {
 }
 ```
 
+---
+
 ## Lean Queries (Performance)
 
 ```typescript
@@ -188,4 +205,17 @@ async findAllLean(): Promise<User[]> {
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://mongoosejs.com/docs/queries.html
+## Mongoose 9 Migration: Query Changes
+
+- **`FilterQuery<T>` renamed to `QueryFilter<T>`** in TypeScript — update imports if using the type directly
+- **Stricter TypeScript types** — queries now reject invalid operators and mismatched field types at compile time
+- **`create()` generic removed** — `create<T>()` no longer accepts a generic parameter; accepts `Partial<RawDocType>` instead
+- **`doc.updateOne()` callback removed** — use `await doc.updateOne(...)` only
+- **Update pipelines disabled** — array-based updates throw by default; enable with `{ updatePipeline: true }` or `mongoose.set('updatePipeline', true)`
+- **`orFail()`** — throws on `updateOne`/`updateMany` when `matchedCount === 0` (not `modifiedCount === 0`)
+
+---
+
+**See Also**: [04-repository-pattern.md](04-repository-pattern.md) for abstracting data access
+**Source**: https://mongoosejs.com/docs/queries.html
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

@@ -1,6 +1,8 @@
-# Discriminators
+# NestJS Mongoose: Discriminators
 
-Schema inheritance for polymorphic data stored in the same MongoDB collection.
+**Schema inheritance for polymorphic data stored in the same MongoDB collection.**
+
+---
 
 ## Define Base and Child Schemas
 
@@ -54,6 +56,8 @@ export type PurchaseEventDocument = PurchaseEvent & Document;
 export const PurchaseEventSchema = SchemaFactory.createForClass(PurchaseEvent);
 ```
 
+---
+
 ## Module Registration
 
 ```typescript
@@ -78,6 +82,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 })
 export class EventsModule {}
 ```
+
+---
 
 ## Service Usage
 
@@ -127,11 +133,98 @@ export class EventsService {
 }
 ```
 
+---
+
+## Embedded Array Discriminators
+
+Discriminators can also be applied to subdocument arrays within a single document:
+
+```typescript
+@Schema({ discriminatorKey: 'kind' })
+export class Activity {
+  @Prop({ required: true })
+  kind: string;
+
+  @Prop({ required: true })
+  timestamp: Date;
+}
+
+export const ActivitySchema = SchemaFactory.createForClass(Activity);
+
+@Schema()
+export class LoginActivity extends Activity {
+  @Prop({ required: true })
+  ipAddress: string;
+}
+
+export const LoginActivitySchema = SchemaFactory.createForClass(LoginActivity);
+
+@Schema()
+export class PurchaseActivity extends Activity {
+  @Prop({ required: true })
+  amount: number;
+}
+
+export const PurchaseActivitySchema = SchemaFactory.createForClass(PurchaseActivity);
+
+// Parent schema with discriminated array
+@Schema({ timestamps: true })
+export class User {
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ type: [ActivitySchema] })
+  activities: Activity[];
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// Register embedded discriminators on the array path
+const activitiesPath = UserSchema.path('activities') as any;
+activitiesPath.discriminator('LoginActivity', LoginActivitySchema);
+activitiesPath.discriminator('PurchaseActivity', PurchaseActivitySchema);
+```
+
+---
+
+## Single Nested Discriminators
+
+Schema variants for a single subdocument field:
+
+```typescript
+@Schema({ discriminatorKey: 'provider' })
+export class PaymentMethod {
+  @Prop({ required: true })
+  provider: string;
+}
+
+export const PaymentMethodSchema = SchemaFactory.createForClass(PaymentMethod);
+
+@Schema()
+export class CreditCardPayment extends PaymentMethod {
+  @Prop({ required: true })
+  cardNumber: string;
+
+  @Prop({ required: true })
+  expiryDate: string;
+}
+
+export const CreditCardPaymentSchema = SchemaFactory.createForClass(CreditCardPayment);
+
+// Register on a single nested path
+const paymentPath = OrderSchema.path('paymentMethod') as any;
+paymentPath.discriminator('CreditCard', CreditCardPaymentSchema);
+```
+
+---
+
 ## @Schema discriminatorKey Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `discriminatorKey` | `string` | `'__t'` | Field name for type discrimination |
+
+---
 
 ## How Discriminators Work
 
@@ -141,7 +234,19 @@ export class EventsService {
 - Querying via base model returns all types
 - Child schemas can add their own properties, hooks, and virtuals
 - Base schema properties are shared by all children
+- The discriminator key **cannot be updated** by default; use `overwriteDiscriminatorKey: true` option in update operations to allow changes
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://mongoosejs.com/docs/discriminators.html
+## Important Rules
+
+1. **Define hooks before `discriminator()`** — do not call `pre()` or `post()` after creating discriminators
+2. **Hooks use async functions** (Mongoose 9) — no `next()` callback
+3. **Child schemas inherit base schema validation**
+4. **Indexes defined on base schema** apply to all discriminator types
+
+---
+
+**See Also**: [02-schema-definitions.md](02-schema-definitions.md) for schema options
+**Source**: https://mongoosejs.com/docs/discriminators.html
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x

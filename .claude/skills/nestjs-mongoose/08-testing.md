@@ -1,4 +1,8 @@
-# Testing with MongoDB
+# NestJS Mongoose: Testing
+
+**MongoMemoryServer setup, integration tests, unit tests with mocked models, and test patterns.**
+
+---
 
 ## MongoMemoryServer Setup
 
@@ -29,6 +33,8 @@ export async function closeMongoConnection(): Promise<void> {
   }
 }
 ```
+
+---
 
 ## Integration Test
 
@@ -112,6 +118,8 @@ describe('UsersService (Integration)', () => {
 });
 ```
 
+---
+
 ## Unit Test with Mocked Model
 
 ```typescript
@@ -170,14 +178,117 @@ describe('UsersService (Unit)', () => {
 });
 ```
 
+---
+
+## Testing Hooks (Mongoose 9)
+
+When testing pre/post hooks, use integration tests with MongoMemoryServer since hooks run on the actual Mongoose schema. Hooks use async functions in Mongoose 9 (no `next()` callback):
+
+```typescript
+describe('User Schema Hooks', () => {
+  let module: TestingModule;
+  let userModel: Model<UserDocument>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        rootMongooseTestModule(),
+        MongooseModule.forFeature([
+          { name: User.name, schema: UserSchema },
+        ]),
+      ],
+    }).compile();
+
+    userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
+  });
+
+  afterAll(async () => {
+    await module.close();
+    await closeMongoConnection();
+  });
+
+  it('should hash password on save', async () => {
+    const user = await userModel.create({
+      email: 'hook-test@example.com',
+      name: 'Hook Test',
+      password: 'plaintext',
+    });
+
+    expect(user.password).not.toBe('plaintext');
+    expect(user.password).toMatch(/^\$2[aby]\$/); // bcrypt hash pattern
+  });
+});
+```
+
+---
+
+## Testing Transactions
+
+Test transactions with MongoMemoryServer configured as a replica set:
+
+```typescript
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+
+let replSet: MongoMemoryReplSet;
+
+export function rootMongooseReplicaSetTestModule(): ReturnType<typeof MongooseModule.forRootAsync> {
+  return MongooseModule.forRootAsync({
+    useFactory: async () => {
+      replSet = await MongoMemoryReplSet.create({
+        replSet: { count: 1 },
+      });
+      return { uri: replSet.getUri() };
+    },
+  });
+}
+
+export async function closeReplicaSetConnection(): Promise<void> {
+  if (replSet) {
+    await replSet.stop();
+  }
+}
+```
+
+---
+
+## Mocking Connection for Transaction Tests
+
+```typescript
+import { getConnectionToken } from '@nestjs/mongoose';
+
+const mockSession = {
+  startTransaction: vi.fn(),
+  commitTransaction: vi.fn(),
+  abortTransaction: vi.fn(),
+  endSession: vi.fn(),
+};
+
+const mockConnection = {
+  startSession: vi.fn().mockResolvedValue(mockSession),
+  transaction: vi.fn().mockImplementation(async (fn) => fn(mockSession)),
+};
+
+// In test module providers:
+{
+  provide: getConnectionToken(),
+  useValue: mockConnection,
+}
+```
+
+---
+
 ## Key Test Patterns
 
 | Pattern | When | Setup |
 |---------|------|-------|
 | MongoMemoryServer | Integration tests | Real in-memory MongoDB |
+| MongoMemoryReplSet | Transaction tests | In-memory replica set |
 | Mock Model | Unit tests | `getModelToken()` + vi.fn() |
+| Mock Connection | Transaction unit tests | `getConnectionToken()` + vi.fn() |
 | Seeded data | Complex queries | `beforeEach` with `model.create()` |
 
 ---
 
-**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://docs.nestjs.com/techniques/mongodb
+**See Also**: [05-transactions.md](05-transactions.md) for transaction patterns
+**Source**: https://docs.nestjs.com/techniques/mongodb
+**Version**: @nestjs/mongoose 11.x, Mongoose 9.x
