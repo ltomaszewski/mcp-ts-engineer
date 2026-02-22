@@ -74,9 +74,10 @@ Path exists → new random5 → retry
 
 ## 5. Run Setup Script (MANDATORY — NEVER SKIP)
 ```bash
-cd .worktrees/<slug> && echo "n" | ./scripts/setup-worktree.sh
+cd .worktrees/<slug> && git submodule update --init --recursive && echo "n" | ./scripts/setup-worktree.sh
 ```
 This step is REQUIRED. ALWAYS run it. No exceptions.
+Note: `git submodule update --init --recursive` must run BEFORE `setup-worktree.sh` because the script is a symlink into the submodule.
 
 </phase2_create>
 

@@ -189,6 +189,10 @@ describe('setup-worktree.sh specifics', () => {
     expect(content).not.toContain('resolve_symlink')
   })
 
+  it('initializes git submodules', () => {
+    expect(content).toContain('git submodule update --init --recursive')
+  })
+
   it('runs npm install', () => {
     expect(content).toContain('npm install')
   })

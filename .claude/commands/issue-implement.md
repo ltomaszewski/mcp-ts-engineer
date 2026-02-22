@@ -217,18 +217,18 @@ if [ -n "$EXISTING" ]; then
     # Worktree already exists, reuse but STILL run setup
     WORKTREE_PATH=$EXISTING_WT
     echo "⟲ Reusing existing worktree: $WORKTREE_PATH"
-    cd "$WORKTREE_PATH" && echo "n" | ./scripts/setup-worktree.sh
+    cd "$WORKTREE_PATH" && git submodule update --init --recursive && echo "n" | ./scripts/setup-worktree.sh
   else
     # Branch exists but worktree doesn't, create worktree
     git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
-    cd "$WORKTREE_PATH" && echo "n" | ./scripts/setup-worktree.sh
+    cd "$WORKTREE_PATH" && git submodule update --init --recursive && echo "n" | ./scripts/setup-worktree.sh
   fi
 else
   # Fresh run: create branch and worktree
   git checkout main && git pull origin main
   gh issue develop $ISSUE_NUMBER --name "$BRANCH_NAME" --base main
   git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
-  cd "$WORKTREE_PATH" && echo "n" | ./scripts/setup-worktree.sh
+  cd "$WORKTREE_PATH" && git submodule update --init --recursive && echo "n" | ./scripts/setup-worktree.sh
 fi
 ```
 
