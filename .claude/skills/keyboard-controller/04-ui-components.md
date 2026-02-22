@@ -130,9 +130,51 @@ Inherits all `ScrollView` props, plus:
 
 ### Methods
 
-| Method | Description |
-|--------|-------------|
-| `assureFocusedInputVisible()` | Programmatically ensure the focused input is visible |
+| Method | Added | Description |
+|--------|-------|-------------|
+| `assureFocusedInputVisible()` | v1.20.0 | Programmatically ensure the focused input is visible. Useful after dynamic layout changes (e.g., validation errors appearing). Provides pixel-perfect accuracy across all configurations including accessibility settings. |
+
+### Using assureFocusedInputVisible (v1.20.0+)
+
+```typescript
+import React, { useRef } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { TextInput, View, Text, StyleSheet } from 'react-native';
+
+function FormWithValidation() {
+  const scrollRef = useRef<KeyboardAwareScrollView>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleValidation = (text: string) => {
+    if (text.length < 3) {
+      setError('Must be at least 3 characters');
+      // After error message changes layout, ensure input stays visible
+      scrollRef.current?.assureFocusedInputVisible();
+    } else {
+      setError(null);
+    }
+  };
+
+  return (
+    <KeyboardAwareScrollView ref={scrollRef} bottomOffset={50}>
+      <View style={styles.container}>
+        <TextInput
+          placeholder="Username"
+          style={styles.input}
+          onChangeText={handleValidation}
+        />
+        {error && <Text style={styles.error}>{error}</Text>}
+      </View>
+    </KeyboardAwareScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 16 },
+  input: { padding: 12, borderWidth: 1, borderColor: '#ccc', borderRadius: 8 },
+  error: { color: 'red', fontSize: 12, marginTop: 4 },
+});
+```
 
 ### Example
 
@@ -265,4 +307,4 @@ const styles = StyleSheet.create({
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/

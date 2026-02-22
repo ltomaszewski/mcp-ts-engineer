@@ -52,7 +52,7 @@ maestro studio
 
 **Syntax:**
 ```bash
-maestro test flow.yaml --view-hierarchy
+maestro hierarchy
 ```
 
 **Output:**
@@ -77,4 +77,4 @@ android.widget.FrameLayout
 
 ---
 
-**Learn More:** https://maestro.dev
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

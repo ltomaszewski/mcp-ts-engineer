@@ -1,41 +1,50 @@
 # Setup Guide: @react-native-community/netinfo
 
-**Installation, configuration, and platform-specific setup for React Native NetInfo**
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Platform-Specific Setup](#platform-specific-setup)
-3. [Manual Linking](#manual-linking)
-4. [React Native Compatibility](#react-native-compatibility)
-5. [Browser Compatibility](#browser-compatibility)
-6. [Node Compatibility](#node-compatibility)
-7. [Migration from Core React Native](#migration-from-core-react-native)
-8. [Initial Configuration](#initial-configuration)
+Installation, configuration, and platform-specific setup for React Native NetInfo v12.x.
 
 ---
 
 ## Installation
 
-### Via Yarn (Recommended)
+### Via NPM
+
+```bash
+npm install @react-native-community/netinfo
+```
+
+### Via Yarn
 
 ```bash
 yarn add @react-native-community/netinfo
 ```
 
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#getting-started
-
-### Via NPM
+### Via Expo
 
 ```bash
-npm install --save @react-native-community/netinfo
+npx expo install @react-native-community/netinfo
 ```
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#getting-started
 
 ### Auto-Linking (React Native 0.60+)
 
-For React Native 0.60 and above, manual linking is **not required**. The library uses React Native's built-in auto-linking feature to automatically integrate with your project during the build process.
+For React Native 0.60 and above, manual linking is **not required**. The library uses React Native's built-in auto-linking feature.
+
+---
+
+## Minimum Requirements (v12)
+
+| Requirement | Version |
+|-------------|---------|
+| iOS | 14.0+ |
+| React Native | 0.76+ |
+| Node.js | v16+ |
+
+### Breaking Change in v12
+
+v12.0.0 raises the iOS minimum deployment target to **iOS 14+** (aligning with React Native 0.76+). The library now uses `NEHotspotNetwork` instead of the deprecated `CNCopyCurrentNetworkInfo` for retrieving WiFi information on iOS.
+
+**Source**: https://github.com/react-native-netinfo/react-native-netinfo/releases
 
 ---
 
@@ -43,7 +52,7 @@ For React Native 0.60 and above, manual linking is **not required**. The library
 
 ### iOS Platform
 
-#### Using CocoaPods (Recommended)
+#### CocoaPods (Required)
 
 After installing the package, run:
 
@@ -51,282 +60,114 @@ After installing the package, run:
 npx pod-install
 ```
 
-**Why**: iOS uses CocoaPods to manage native dependencies. This command installs the native pods required by `@react-native-community/netinfo`.
+#### Access Wi-Fi Information Entitlement (v12 Requirement)
 
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#using-react-native--060
+In v12, WiFi information retrieval on iOS uses `NEHotspotNetwork`, which requires the **Access Wi-Fi Information** entitlement. Without it, WiFi details (SSID, BSSID) return nil.
 
-#### Configuration for SSID/BSSID Retrieval (Optional)
+To enable:
+1. Open your Xcode project
+2. Go to **Signing & Capabilities** tab
+3. Click **+ Capability**
+4. Add **Access WiFi Information**
+
+#### Configuration for SSID/BSSID Retrieval
 
 If you need to retrieve WiFi SSID and BSSID information, your app must meet **at least one** of these requirements:
 
-1. **Location Permission**: Declare `NSLocationWhenInUseUsageDescription` in your `Info.plist`
-2. **Local Network Permission**: For iOS 14.5+, declare `NSLocalNetworkUsageDescription` in your `Info.plist`
-3. **Bluetooth Permission**: For tvOS, declare `NSBluetoothAlwaysAndWhenInUseUsageDescription`
+1. **Access Wi-Fi Information entitlement** (required in v12)
+2. **Location Permission**: Declare `NSLocationWhenInUseUsageDescription` in `Info.plist`
+3. **Local Network Permission** (iOS 14.5+): Declare `NSLocalNetworkUsageDescription` in `Info.plist`
 
-Then, when setting up the hook or calling methods, set `shouldFetchWiFiSSID: true`:
+Then pass `shouldFetchWiFiSSID: true`:
 
-```javascript
+```typescript
 import { useNetInfo } from '@react-native-community/netinfo';
 
 const netInfo = useNetInfo({
-  shouldFetchWiFiSSID: true
+  shouldFetchWiFiSSID: true,
 });
 ```
 
-**⚠️ Warning**: Setting this option without meeting the above requirements will leak memory on iOS.
+**Warning**: Setting `shouldFetchWiFiSSID: true` without meeting the above requirements will leak memory on iOS.
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#type-is-wifi
 
 ### Android Platform
 
-#### AndroidX Configuration
+#### Permissions
 
-Modify your `android/build.gradle` file to ensure proper SDK configuration:
-
-```gradle
-buildscript {
-  ext {
-    buildToolsVersion = "xx.yy.zz"
-    minSdkVersion = xyz
-    compileSdkVersion = xyz
-    targetSdkVersion = xyz
-  }
-  // ... rest of your config
-}
-```
-
-**Required Values**:
-- `buildToolsVersion`: Match your Android build tools (e.g., "33.0.0")
-- `minSdkVersion`: Minimum supported version (recommended: 21+)
-- `compileSdkVersion`: Target Android API level (recommended: 33+)
-- `targetSdkVersion`: Should match compileSdkVersion
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#android-platform-with-androidx
-
-#### Permissions for SSID/BSSID Retrieval
-
-Add the following permission to your `AndroidManifest.xml`:
-
-```xml
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-```
-
-Additionally, request this permission at runtime using your app's runtime permission system.
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#type-is-wifi
-
-#### WiFi State Permission
-
-To read the `isWifiEnabled` property:
+Add to `AndroidManifest.xml`:
 
 ```xml
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 ```
 
-### macOS Platform
+For SSID/BSSID retrieval, also add:
 
-#### Manual Linking Required
-
-Autolinking is **not yet available** on macOS. Follow these steps:
-
-1. **Open Xcode**
-
-```bash
-open macos/YourProject.xcodeproj
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 ```
 
-2. **Add Library Project**
-   - Right-click on the "Libraries" folder in the left panel
-   - Select "Add files to 'YourProject'"
-   - Navigate to `node_modules/@react-native-community/react-native-netinfo/macos`
-   - Select `RNCNetInfo.xcodeproj` and click "Add"
+And request the location permission at runtime:
 
-3. **Link Binary with Libraries**
-   - Select your project in the left panel
-   - Go to "Build Phases" tab
-   - Expand "Link Binary With Libraries"
-   - Click the "+" button
-   - Select `libRNCNetInfo-macOS.a`
-   - Click "Add"
+```typescript
+import { PermissionsAndroid } from 'react-native';
+
+async function requestWiFiPermission(): Promise<boolean> {
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'WiFi Details',
+      message: 'App needs location permission to access WiFi details',
+      buttonPositive: 'Grant',
+    },
+  );
+  return granted === PermissionsAndroid.RESULTS.GRANTED;
+}
+```
+
+#### AndroidX Configuration
+
+Ensure your `android/build.gradle` has appropriate SDK configuration:
+
+```gradle
+buildscript {
+  ext {
+    buildToolsVersion = "35.0.0"
+    minSdkVersion = 24
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+  }
+}
+```
+
+**Source**: https://github.com/react-native-netinfo/react-native-netinfo#android-platform-with-androidx
+
+### macOS Platform
+
+Autolinking is **not available** on macOS. Manual linking is required:
+
+1. Open your Xcode project: `open macos/YourProject.xcodeproj`
+2. Right-click "Libraries" and add `RNCNetInfo.xcodeproj` from `node_modules/@react-native-community/react-native-netinfo/macos`
+3. In "Build Phases" > "Link Binary With Libraries", add `libRNCNetInfo-macOS.a`
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#macos-platform
 
 ### Windows Platform
 
-#### Auto-Linking
+For `react-native-windows` v0.63+, auto-linking works automatically.
 
-For `react-native-windows` version **0.63 or newer**, auto-linking works automatically. No manual configuration required.
-
-#### System Requirements
-
-- **Minimum RNW Version**: 0.63 or newer
-- **MSVC Build Tools**: v142 (included in Visual Studio 2019) or newer
-- **Supported Architectures**: x86, x64, arm64 (32-bit arm is **not** supported)
+**Requirements**:
+- Minimum RNW: 0.63+
+- MSVC Build Tools: v142+
+- Supported architectures: x86, x64, arm64 (32-bit arm not supported)
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#windows-platform
 
 ### Web Platform
 
-No platform-specific setup required. The library uses the standard **Network Information API** when available and gracefully falls back to basic `navigator.onLine` status.
-
-**Browser Support**: The Network Information API is experimental and not supported in all browsers. See [Browser Compatibility](#browser-compatibility) for details.
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#browser-compatilibity
-
----
-
-## Manual Linking
-
-### When to Use Manual Linking
-
-Manual linking is required in these scenarios:
-
-- **React Native < 0.60**: Auto-linking not available
-- **macOS platform**: No auto-linking support yet
-- **Custom configurations**: Non-standard build setup
-
-### iOS Manual Linking
-
-1. Open your project in Xcode
-2. Go to "Build Phases" → "Link Binary with Libraries"
-3. Click "+" and find and select `RNCNetInfo.xcodeproj`
-4. Run `npx pod-install` to install CocoaPods dependencies
-
-### Android Manual Linking
-
-For React Native < 0.60, edit `android/app/build.gradle`:
-
-```gradle
-dependencies {
-    // ... other dependencies
-    implementation project(':react-native-netinfo')
-}
-```
-
-Also add to `android/settings.gradle`:
-
-```gradle
-include ':react-native-netinfo'
-project(':react-native-netinfo').projectDir = new File(rootProject.projectDir, '../node_modules/@react-native-community/netinfo/android')
-```
-
----
-
-## React Native Compatibility
-
-| NetInfo Version | Minimum React Native | Status |
-|-----------------|----------------------|--------|
-| 11.x | 0.60+ | ✓ Current |
-| 10.x | 0.60+ | ✓ Supported |
-| 9.x and below | 0.60+ | ⚠️ Deprecated |
-| Pre-0.60 versions | < 0.60 | ✗ Not supported |
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#react-native-compatibility
-
-### Checking Your React Native Version
-
-```bash
-react-native --version
-# or
-npm list react-native
-```
-
-If your version is below 0.60, you must upgrade React Native before using current versions of NetInfo.
-
----
-
-## Browser Compatibility
-
-### Network Information API Support
-
-The library relies on the experimental **Network Information API** for detailed network information. Not all browsers support this API.
-
-| Browser | Status | Notes |
-|---------|--------|-------|
-| Chrome 61+ | ✓ Supported | Full Network Information API |
-| Edge 79+ | ✓ Supported | Full Network Information API |
-| Firefox | ⚠️ Partial | Requires about:config changes |
-| Safari | ✗ Not supported | Falls back to `navigator.onLine` |
-| Internet Explorer | ✗ Not supported | Falls back to `navigator.onLine` |
-
-### AbortController Support
-
-The library uses `AbortController` to cancel network requests. Browser support:
-
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome 63+ | ✓ Yes | |
-| Firefox 55+ | ✓ Yes | |
-| Safari 11.1+ | ✓ Yes | |
-| Edge 16+ | ✓ Yes | |
-| Internet Explorer 11 | ✗ No | No AbortController support |
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#browser-compatilibity
-
-### Graceful Fallback
-
-If the Network Information API is unavailable, the library automatically falls back to the basic `navigator.onLine` property, providing minimal but functional network state information.
-
----
-
-## Node Compatibility
-
-**Minimum Node Version**: v16+
-
-`AbortController` is required for the library to function properly and is only available in Node.js stable versions v16 and above.
-
-```bash
-node --version
-# Should output v16.0.0 or higher
-```
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#node-compatibility
-
----
-
-## Migration from Core React Native
-
-### Before (Core React Native)
-
-```javascript
-import { NetInfo } from 'react-native';
-
-NetInfo.getConnectionInfo().then((connectionInfo) => {
-  console.log('Type: ' + connectionInfo.type);
-  console.log('Effective Type: ' + connectionInfo.effectiveType);
-});
-```
-
-**Source**: https://archive.reactnative.dev/docs/0.50/netinfo
-
-### After (@react-native-community/netinfo)
-
-```javascript
-import NetInfo from '@react-native-community/netinfo';
-
-NetInfo.fetch().then((state) => {
-  console.log('Type: ' + state.type);
-  console.log('Is Connected: ' + state.isConnected);
-});
-```
-
-### What Changed
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| Import | `import { NetInfo } from 'react-native'` | `import NetInfo from '@react-native-community/netinfo'` |
-| Get info | `getConnectionInfo()` | `fetch()` |
-| Property | `type`, `effectiveType` | `type`, `isConnected`, `isInternetReachable` |
-| Listeners | `addEventListener('connectionChange', ...)` | `addEventListener((state) => {...})` |
-| Hooks | Not available | `useNetInfo()` hook |
-| Details | Limited | Extensive platform-specific data |
-
-### Backward Compatibility
-
-The old API still works for backward compatibility, but the new API is recommended for all new code.
-
-**Source**: https://github.com/react-native-netinfo/react-native-netinfo#migrating-from-the-core-react-native-module
+No platform-specific setup required. Uses the Network Information API when available, falls back to `navigator.onLine`.
 
 ---
 
@@ -334,54 +175,101 @@ The old API still works for backward compatibility, but the new API is recommend
 
 ### Basic Setup
 
-```javascript
+```typescript
 import NetInfo from '@react-native-community/netinfo';
 
 // Optional: Configure on app start
 NetInfo.configure({
   reachabilityUrl: 'https://clients3.google.com/generate_204',
   reachabilityTest: async (response) => response.status === 204,
-  shouldFetchWiFiSSID: false
+  shouldFetchWiFiSSID: false,
 });
-
-// Now use NetInfo anywhere in your app
-export default NetInfo;
 ```
 
 ### Using in React Components
 
-```javascript
-import React, { useEffect, useState } from 'react';
+```typescript
+import React from 'react';
 import { View, Text } from 'react-native';
 import { useNetInfo } from '@react-native-community/netinfo';
 
-export const NetworkStatus = () => {
+export function NetworkStatus(): React.JSX.Element {
   const netInfo = useNetInfo();
 
   return (
     <View>
       <Text>Type: {netInfo.type}</Text>
-      <Text>Connected: {netInfo.isConnected ? 'Yes' : 'No'}</Text>
-      <Text>Internet: {netInfo.isInternetReachable ? 'Yes' : 'No'}</Text>
+      <Text>Connected: {netInfo.isConnected === true ? 'Yes' : 'No'}</Text>
+      <Text>Internet: {netInfo.isInternetReachable === true ? 'Yes' : 'No'}</Text>
     </View>
   );
-};
+}
 ```
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#usage
 
 ---
 
-## Verification Checklist
+## React Native Compatibility
 
-- [ ] Package installed via `yarn add` or `npm install`
-- [ ] `npx pod-install` run on macOS/iOS
-- [ ] Platform-specific permissions added to manifests
-- [ ] React Native version is 0.60 or higher
-- [ ] Node version is v16 or higher
-- [ ] First import test successful
-- [ ] No TypeScript errors (if using TypeScript)
+| NetInfo Version | Minimum React Native | Minimum iOS | Status |
+|-----------------|----------------------|-------------|--------|
+| 12.x | 0.76+ | iOS 14+ | Current |
+| 11.x | 0.60+ | iOS 11+ | Supported |
+| 10.x | 0.60+ | iOS 11+ | Supported |
+| 9.x and below | 0.60+ | -- | Deprecated |
+
+**Source**: https://github.com/react-native-netinfo/react-native-netinfo#react-native-compatibility
 
 ---
 
-**Source Repository**: https://github.com/react-native-netinfo/react-native-netinfo
+## Browser Compatibility
+
+| Browser | Status | Notes |
+|---------|--------|-------|
+| Chrome 61+ | Supported | Full Network Information API |
+| Edge 79+ | Supported | Full Network Information API |
+| Firefox | Partial | Requires about:config changes |
+| Safari | Not supported | Falls back to `navigator.onLine` |
+| Internet Explorer | Not supported | Falls back to `navigator.onLine` |
+
+**Source**: https://github.com/react-native-netinfo/react-native-netinfo#browser-compatilibity
+
+---
+
+## Migration from v11 to v12
+
+### Breaking Changes
+
+| Change | Details |
+|--------|---------|
+| iOS minimum | Raised to iOS 14+ (was iOS 11+) |
+| React Native minimum | 0.76+ required |
+| WiFi API | Uses `NEHotspotNetwork` instead of deprecated `CNCopyCurrentNetworkInfo` |
+| Entitlement | Access Wi-Fi Information entitlement required for WiFi details on iOS |
+| NetworkExtension | NetworkExtension framework required on iOS (v12.0.1 fix) |
+
+### Migration Steps
+
+1. Update your iOS deployment target to 14.0+ in Xcode
+2. Add the Access Wi-Fi Information entitlement in Xcode capabilities
+3. Ensure NetworkExtension framework is linked
+4. Run `npx pod-install` to update native dependencies
+5. Verify WiFi SSID/BSSID retrieval still works
+
+---
+
+## Verification Checklist
+
+- [ ] Package installed
+- [ ] `npx pod-install` run on iOS
+- [ ] iOS deployment target >= 14.0
+- [ ] Access Wi-Fi Information entitlement added (if using WiFi details)
+- [ ] Android permissions added to AndroidManifest.xml
+- [ ] React Native version is 0.76+
+- [ ] Node version is v16+
+- [ ] First import test successful
+
+---
+
+**Version:** 12.x | **Source:** https://github.com/react-native-netinfo/react-native-netinfo

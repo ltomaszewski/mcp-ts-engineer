@@ -358,3 +358,7 @@ CODE_SIGNING_ALLOWED=NO
 - [Apple xcodebuild Man Page](https://keith.github.io/xcode-man-pages/xcodebuild.1.html)
 - [Maestro React Native Support](https://docs.maestro.dev/platform-support/react-native)
 - [Expo Prebuild Documentation](https://docs.expo.dev/workflow/prebuild/)
+
+---
+
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

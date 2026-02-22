@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - **React Native:** 0.75 or higher (v4 requires Nitro Modules)
-- **New Architecture:** Required (TurboModules/Fabric)
+- **Architecture:** Both New Architecture and Old Architecture supported (via Nitro backwards compatibility)
 - **Node.js:** 16+
 
 ---
@@ -122,4 +122,4 @@ Ensure MMKVCore dependency is v2.2.4+ or add `:modular_headers => true` to Podfi
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv

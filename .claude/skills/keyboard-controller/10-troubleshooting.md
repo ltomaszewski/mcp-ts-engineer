@@ -224,4 +224,4 @@ If the keyboard briefly appears when the app launches, disable preloading:
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

@@ -67,9 +67,9 @@ Configuration interface for network detection behavior.
 ```typescript
 interface NetInfoConfiguration {
   reachabilityUrl: string;
-  reachabilityHeaders: object | Headers | string[][];
-  reachabilityMethod: NetInfoMethodType;
-  reachabilityTest: (response: Response) => boolean | Promise<boolean>;
+  reachabilityHeaders?: Record<string, string>;
+  reachabilityMethod?: NetInfoMethodType;
+  reachabilityTest: (response: Response) => Promise<boolean>;
   reachabilityShortTimeout: number;
   reachabilityLongTimeout: number;
   reachabilityRequestTimeout: number;
@@ -84,9 +84,9 @@ interface NetInfoConfiguration {
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `reachabilityUrl` | `string` | `'https://clients3.google.com/generate_204'` | HTTP endpoint for internet test |
-| `reachabilityHeaders` | `object` \| `Headers` \| `string[][]` | `{}` | Custom HTTP headers |
-| `reachabilityMethod` | `'HEAD'` \| `'GET'` | `'HEAD'` | HTTP method for requests |
-| `reachabilityTest` | `(response: Response) => boolean \| Promise<boolean>` | Status 204 check | Response validation |
+| `reachabilityHeaders` | `Record<string, string>` | `{}` | Custom HTTP headers (optional) |
+| `reachabilityMethod` | `'HEAD'` \| `'GET'` | `'HEAD'` | HTTP method for requests (optional) |
+| `reachabilityTest` | `(response: Response) => Promise<boolean>` | Status 204 check | Response validation |
 | `reachabilityShortTimeout` | `number` | `5000` | Check interval offline (ms) |
 | `reachabilityLongTimeout` | `number` | `60000` | Check interval online (ms) |
 | `reachabilityRequestTimeout` | `number` | `15000` | Request timeout (ms) |
@@ -232,6 +232,8 @@ NetInfo.configure({
 | `subnet` | ✓ | ✓ | ✓ | ✗ |
 | `frequency` | ✓ | ✗ | ✗ | ✓ |
 | `linkSpeed` | ✓ | ✗ | ✗ | ✗ |
+| `rxLinkSpeed` | ✓ (Q+) | ✗ | ✗ | ✗ |
+| `txLinkSpeed` | ✓ (Q+) | ✗ | ✗ | ✗ |
 
 *Requires permissions and `shouldFetchWiFiSSID: true`
 **Requires WiFiControl capability
@@ -266,4 +268,4 @@ NetInfo.configure({
 
 ---
 
-**Source Repository**: https://github.com/react-native-netinfo/react-native-netinfo#global-instance-methods
+**Version:** 12.x | **Source:** https://github.com/react-native-netinfo/react-native-netinfo

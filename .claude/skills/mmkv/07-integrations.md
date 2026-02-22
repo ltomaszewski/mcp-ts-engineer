@@ -17,7 +17,7 @@ const mmkv = createMMKV({ id: 'zustand-storage' });
 export const zustandStorage: StateStorage = {
   getItem: (name) => mmkv.getString(name) ?? null,
   setItem: (name, value) => mmkv.set(name, value),
-  removeItem: (name) => mmkv.remove(name),
+  removeItem: (name) => { mmkv.remove(name); },
 };
 
 // Usage in store
@@ -60,7 +60,7 @@ export const reduxStorage: Storage = {
     return Promise.resolve(value ?? null);
   },
   removeItem: (key) => {
-    mmkv.remove(key);
+    mmkv.remove(key); // returns boolean but Redux expects void
     return Promise.resolve();
   },
 };
@@ -85,7 +85,7 @@ const mmkv = createMMKV({ id: 'jotai-storage' });
 const jotaiStorage = createJSONStorage(() => ({
   getItem: (key: string) => mmkv.getString(key) ?? null,
   setItem: (key: string, value: string) => mmkv.set(key, value),
-  removeItem: (key: string) => mmkv.remove(key),
+  removeItem: (key: string) => { mmkv.remove(key); },
 }));
 
 export const themeAtom = atomWithStorage('theme', 'light', jotaiStorage);
@@ -172,12 +172,17 @@ function App() {
 | Change | V3 | V4 |
 |--------|----|----|
 | Constructor | `new MMKV()` | `createMMKV()` |
-| Delete key | `storage.delete('key')` | `storage.remove('key')` |
-| Encryption | `storage.recrypt('key')` | `storage.encrypt('key')` |
-| Remove encryption | `storage.recrypt(undefined)` | `storage.decrypt()` |
+| Delete key | `storage.delete('key')` returns `void` | `storage.remove('key')` returns `boolean` |
+| Encryption | `storage.recrypt('key')` | `storage.recrypt('key')` (unchanged) |
+| Remove encryption | `storage.recrypt(undefined)` | `storage.recrypt(undefined)` (unchanged) |
 | Runtime dep | JSI | `react-native-nitro-modules` |
+| Architecture | New Arch only (v3) | Both New + Old Arch (via Nitro) |
 | Min RN | 0.71+ | 0.75+ |
 | iOS App Group key | `AppGroup` | `AppGroupIdentifier` |
+| Instance ID | N/A | `storage.id` (read-only property, v4.0.1+) |
+| Read-only check | N/A | `storage.isReadOnly` (read-only property) |
+| Global utils | N/A | `existsMMKV(id)`, `deleteMMKV(id)` (v4.1.0+) |
+| Import data | N/A | `storage.importAllFrom(other)` returns count (v4.1.0+) |
 
 ### Migration Steps
 
@@ -204,15 +209,11 @@ storage.delete('key');
 storage.remove('key');
 ```
 
-4. Update encryption API:
+4. Encryption API (unchanged in v4):
 ```typescript
-// Before
-storage.recrypt('new-key');
-storage.recrypt(undefined);
-
-// After
-storage.encrypt('new-key');
-storage.decrypt();
+// recrypt API is the same in v3 and v4
+storage.recrypt('new-key');       // encrypt or re-key
+storage.recrypt(undefined);       // remove encryption
 ```
 
 5. Update Info.plist key (iOS App Groups):
@@ -232,4 +233,4 @@ npx react-native run-android
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv

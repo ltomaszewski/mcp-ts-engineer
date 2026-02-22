@@ -1,6 +1,6 @@
 # @react-native-community/netinfo Knowledge Base
 
-**Comprehensive documentation for React Native NetInfo library v11.4.1 and above**
+**Comprehensive documentation for React Native NetInfo library v12.x**
 
 ## Framework Overview
 
@@ -10,7 +10,7 @@ The `@react-native-community/netinfo` library provides a unified API for detecti
 
 - **GitHub Repository**: https://github.com/react-native-netinfo/react-native-netinfo
 - **NPM Package**: https://www.npmjs.com/package/@react-native-community/netinfo
-- **Latest Version**: v11.4.1 (September 20, 2024)
+- **Latest Version**: v12.0.1 (February 14, 2026)
 
 ---
 
@@ -40,8 +40,8 @@ Complete TypeScript type definitions, enums, interface structures, and platform 
 
 | Metric | Value |
 |--------|-------|
-| **Latest Release** | v11.4.1 (September 20, 2024) |
-| **Minimum React Native** | 0.60+ (with auto-linking) |
+| **Latest Release** | v12.0.1 (February 14, 2026) |
+| **Minimum React Native** | 0.76+ (v12 requirement; 0.60+ for auto-linking in older versions) |
 | **Supported Platforms** | Android, iOS, macOS, Windows, Web |
 | **Language Breakdown** | TypeScript (44%), Java (25.7%), Objective-C (13.2%), C++ (9.7%), JavaScript (5.1%) |
 | **GitHub Stars** | 2.1k+ |
@@ -119,6 +119,6 @@ Every network state object contains:
 
 ---
 
-**Last Updated**: December 27, 2025  
-**Library Version**: 11.4.1  
+**Last Updated**: February 22, 2026
+**Library Version**: 12.0.1
 **Status**: Complete and verified

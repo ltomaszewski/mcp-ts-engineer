@@ -25,34 +25,30 @@ storage.getString('password');         // Returns "secret123"
 
 | Method | Description |
 |--------|-------------|
-| `encrypt(key)` | Encrypt all data with AES-128 |
-| `encrypt(key, 'AES-256')` | Encrypt all data with AES-256 |
-| `decrypt()` | Remove encryption from all data |
+| `recrypt(key)` | Encrypt or re-encrypt all data (key max 16 bytes) |
+| `recrypt(undefined)` | Remove encryption from all data |
 
 ```typescript
 const storage = createMMKV({ id: 'my-data' });
 
 // Encrypt existing unencrypted data
-storage.encrypt('hunter2');
-
-// Upgrade to AES-256
-storage.encrypt('hunter2', 'AES-256');
+storage.recrypt('hunter2');
 
 // Remove encryption (data becomes plaintext)
-storage.decrypt();
+storage.recrypt(undefined);
 ```
 
 ### Key Rotation
 
 ```typescript
 // Re-encrypt with a new key
-storage.encrypt('old-key');        // Initially encrypted
-storage.encrypt('new-key');        // Re-encrypts with new key
+storage.recrypt('old-key');        // Initially encrypted
+storage.recrypt('new-key');        // Re-encrypts with new key
 ```
 
 ### Secure Key Management
 
-Never hardcode encryption keys. Use platform-specific secure storage:
+Never hardcode encryption keys. Use platform-specific secure storage. Keys must be 16 bytes or fewer.
 
 ```typescript
 import * as SecureStore from 'expo-secure-store';
@@ -61,7 +57,7 @@ import { createMMKV } from 'react-native-mmkv';
 async function initSecureStorage() {
   let key = await SecureStore.getItemAsync('mmkv-encryption-key');
   if (!key) {
-    key = generateRandomKey(); // Your key generation function
+    key = generateRandomKey(); // Your key generation function (max 16 bytes)
     await SecureStore.setItemAsync('mmkv-encryption-key', key);
   }
   return createMMKV({ id: 'secure', encryptionKey: key });
@@ -138,6 +134,15 @@ useMMKVListener((key) => {
 
 ## Storage Utilities
 
+### isReadOnly (read-only)
+
+Returns whether this MMKV instance was created in read-only mode.
+
+```typescript
+const storage = createMMKV({ id: 'config', readOnly: true });
+console.log(storage.isReadOnly); // true
+```
+
 ### size
 
 Returns total storage size in bytes.
@@ -155,26 +160,29 @@ Optimizes storage file size and clears internal cache.
 storage.trim();
 ```
 
-### importAllFrom(source)
+### importAllFrom(source): number
 
-Copy all data from another MMKV instance.
+Copy all data from another MMKV instance. Returns the count of imported entries. Added in v4.1.0.
 
 ```typescript
 const oldStorage = createMMKV({ id: 'v1.data' });
 const newStorage = createMMKV({ id: 'v2.data' });
 
-newStorage.importAllFrom(oldStorage);
+const count = newStorage.importAllFrom(oldStorage);
+console.log(`Imported ${count} entries`);
 ```
 
 ### existsMMKV(id) / deleteMMKV(id)
 
-Check existence or permanently delete an instance and its file.
+Check existence or permanently delete an instance and its file. Both return `boolean`. Added in v4.1.0.
 
 ```typescript
 import { existsMMKV, deleteMMKV } from 'react-native-mmkv';
 
-if (existsMMKV('temp.cache')) {
-  deleteMMKV('temp.cache'); // Removes file from disk
+const exists: boolean = existsMMKV('temp.cache');
+if (exists) {
+  const wasDeleted: boolean = deleteMMKV('temp.cache');
+  console.log('Deleted:', wasDeleted); // true
 }
 ```
 
@@ -200,10 +208,15 @@ Update `Info.plist`:
 
 ---
 
-## Complete MMKV Type Interface (v4)
+## Complete MMKV Type Interface (v4.1.x)
 
 ```typescript
 interface MMKV {
+  // Instance identifier (read-only, added v4.0.1)
+  readonly id: string;
+  readonly size: number;
+  readonly isReadOnly: boolean;
+
   // Write
   set(key: string, value: string | number | boolean | ArrayBuffer): void;
 
@@ -216,25 +229,27 @@ interface MMKV {
   // Key management
   contains(key: string): boolean;
   getAllKeys(): string[];
-  remove(key: string): void;
+  remove(key: string): boolean;  // returns true if key existed
   clearAll(): void;
 
-  // Storage info
-  readonly size: number;
+  // Storage utilities
   trim(): void;
-  importAllFrom(source: MMKV): void;
+  importAllFrom(source: MMKV): number;  // returns count of imported entries
 
-  // Encryption
-  encrypt(key: string, cipher?: 'AES-128' | 'AES-256'): void;
-  decrypt(): void;
+  // Encryption (key max 16 bytes, undefined to remove)
+  recrypt(key: string | undefined): void;
 
   // Listeners
   addOnValueChangedListener(
     listener: (changedKey: string) => void
   ): { remove: () => void };
 }
+
+// Global functions (added v4.1.0)
+declare function existsMMKV(id: string): boolean;
+declare function deleteMMKV(id: string): boolean;
 ```
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv

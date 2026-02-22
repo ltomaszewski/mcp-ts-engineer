@@ -1,6 +1,6 @@
 # Keyboard Controller: Master Index
 
-**Complete Knowledge Base for react-native-keyboard-controller v1.19.x**
+**Complete Knowledge Base for react-native-keyboard-controller v1.20.x**
 
 ---
 
@@ -62,8 +62,10 @@ export default function App() {
 |------|---------|---------|
 | `useKeyboardAnimation` | Animated.Value for height/progress | `{ height, progress }` |
 | `useReanimatedKeyboardAnimation` | SharedValue for Reanimated | `{ height, progress }` |
+| `useAnimatedKeyboard` | Compat hook for reanimated migration (v1.20.0+) | `{ height, state }` |
 | `useKeyboardHandler` | Lifecycle callbacks with worklets | void |
 | `useKeyboardController` | Module enabled state | `{ enabled, setEnabled }` |
+| `useKeyboardState` | Reactive keyboard state with selector | `KeyboardState \| T` |
 | `useFocusedInputHandler` | Text/selection events from focused input | void |
 
 ### Components
@@ -105,4 +107,4 @@ export default function App() {
 
 ---
 
-**Version**: 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version**: 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

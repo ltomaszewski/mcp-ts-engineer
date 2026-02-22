@@ -1,17 +1,17 @@
-# FlashList v1.7.x - Quick Reference Card
+# FlashList v2.x - Quick Reference Card
 
-**Compact cheat sheet for FlashList development**
+**Compact cheat sheet for FlashList v2 development**
 
 ---
 
 ## Installation
 
 ```bash
-# React Native
-yarn add @shopify/flash-list
+# React Native (New Architecture required)
+yarn add @shopify/flash-list@^2.0.0
 cd ios && pod install && cd ..
 
-# Expo
+# Expo (SDK 54+)
 npx expo install @shopify/flash-list
 ```
 
@@ -22,12 +22,13 @@ npx expo install @shopify/flash-list
 ```typescript
 import { FlashList } from '@shopify/flash-list';
 
-<FlashList
-  data={data}
-  renderItem={({ item }) => <Text>{item.title}</Text>}
-  estimatedItemSize={80}
-  keyExtractor={(item) => item.id}
-/>
+<View style={{ flex: 1 }}>
+  <FlashList
+    data={data}
+    renderItem={({ item }) => <Text>{item.title}</Text>}
+    keyExtractor={(item) => item.id}
+  />
+</View>
 ```
 
 ---
@@ -38,16 +39,17 @@ import { FlashList } from '@shopify/flash-list';
 |------|------|---------|
 | `data` | `T[]` | Items to render |
 | `renderItem` | `(info) => ReactElement` | Render each item |
-| `estimatedItemSize` | `number` | Average item height (px) |
 | `keyExtractor` | `(item, index) => string` | Unique key per item |
-| `getItemType` | `(item) => string` | Type for different item styles |
+| `getItemType` | `(item) => string` | Type for separate recycle pools |
 | `numColumns` | `number` | Grid columns |
+| `masonry` | `boolean` | Masonry (Pinterest) layout |
 | `horizontal` | `boolean` | Horizontal scrolling |
-| `inverted` | `boolean` | Bottom-to-top (chat) |
 | `drawDistance` | `number` | Pre-render buffer (px) |
 | `onEndReached` | `() => void` | Called near bottom |
-| `onBlankArea` | `(event) => void` | Blank space detected |
+| `onStartReached` | `() => void` | Called near top (chat) |
 | `extraData` | `any` | Triggers re-render |
+| `maintainVisibleContentPosition` | `object` | Scroll position preservation |
+| `maxItemsInRecyclePool` | `number` | Cap recycle pool size |
 
 ---
 
@@ -57,12 +59,12 @@ import { FlashList } from '@shopify/flash-list';
 // BAD: useState persists across recycled cells
 const [expanded, setExpanded] = useState(false);
 
-// GOOD: External state keyed by item ID
-const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-const renderItem = useCallback(({ item }) => (
-  <View>{expandedIds.has(item.id) && <Details />}</View>
-), [expandedIds]);
+// GOOD: useRecyclingState resets on dependency change (v2)
+import { useRecyclingState } from '@shopify/flash-list';
+const [expanded, setExpanded] = useRecyclingState(false, [item.id]);
 
+// ALSO GOOD: External state keyed by item ID
+const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 <FlashList extraData={expandedIds} ... />
 ```
 
@@ -71,7 +73,8 @@ const renderItem = useCallback(({ item }) => (
 ## Scroll Control
 
 ```typescript
-const listRef = useRef<FlashList<Item>>(null);
+import { FlashListRef } from '@shopify/flash-list';
+const listRef = useRef<FlashListRef<Item>>(null);
 
 // Scroll to item
 listRef.current?.scrollToIndex({
@@ -80,11 +83,17 @@ listRef.current?.scrollToIndex({
   viewPosition: 0.5,  // 0=top, 0.5=center, 1=bottom
 });
 
+// Scroll to top (v2)
+listRef.current?.scrollToTop({ animated: true });
+
 // Scroll to end
 listRef.current?.scrollToEnd({ animated: true });
 
 // Scroll to offset
 listRef.current?.scrollToOffset({ offset: 500, animated: true });
+
+// Get visible indices (v2)
+const indices = listRef.current?.getVisibleIndices();
 ```
 
 ---
@@ -92,21 +101,21 @@ listRef.current?.scrollToOffset({ offset: 500, animated: true });
 ## Performance Optimization
 
 ```typescript
-// 1. Accurate estimated size
-<FlashList estimatedItemSize={100} />
-
-// 2. Type-based recycling for mixed content
+// 1. Type-based recycling for mixed content
 <FlashList getItemType={(item) => item.type} />
 
-// 3. Memoize renderItem
+// 2. Memoize renderItem
 const renderItem = useCallback(({ item }) => (
   <MemoizedItem item={item} />
 ), []);
 
-// 4. Monitor blank areas
-<FlashList onBlankArea={(e) => console.warn(e.blankArea)} />
+// 3. Use target for measurement optimization
+const renderItem = useCallback(({ item, target }) => {
+  if (target === 'Measurement') return <View style={{ height: 80 }} />;
+  return <FullItem item={item} />;
+}, []);
 
-// 5. Test in release mode only
+// 4. Test in release mode only
 // npx react-native run-android --variant release
 ```
 
@@ -123,24 +132,25 @@ const renderItem = useCallback(({ item }) => (
       <Text>{item.title}</Text>
     </View>
   )}
-  estimatedItemSize={200}
+  keyExtractor={(item) => item.id}
 />
 ```
 
 ---
 
-## Masonry Layout
+## Masonry Layout (v2)
 
 ```typescript
-import { MasonryFlashList } from '@shopify/flash-list';
+import { FlashList } from '@shopify/flash-list';
 
-<MasonryFlashList
+<FlashList
   data={images}
+  masonry
   numColumns={2}
   renderItem={({ item }) => (
     <Image style={{ height: item.height, width: '100%' }} source={{ uri: item.url }} />
   )}
-  estimatedItemSize={200}
+  keyExtractor={(item) => item.id}
   optimizeItemArrangement={true}
 />
 ```
@@ -153,7 +163,7 @@ import { MasonryFlashList } from '@shopify/flash-list';
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
+  keyExtractor={(item) => item.id}
   onEndReached={() => fetchMore()}
   onEndReachedThreshold={0.3}
   ListFooterComponent={isLoading ? <Spinner /> : null}
@@ -162,7 +172,7 @@ import { MasonryFlashList } from '@shopify/flash-list';
 
 ---
 
-## Chat Pattern (Inverted)
+## Chat Pattern (v2)
 
 ```typescript
 const reversed = [...messages].reverse();
@@ -170,9 +180,13 @@ const reversed = [...messages].reverse();
 <FlashList
   data={reversed}
   renderItem={({ item }) => <ChatBubble msg={item} />}
-  estimatedItemSize={80}
-  inverted={true}
   keyExtractor={(item) => item.id}
+  maintainVisibleContentPosition={{
+    autoscrollToBottomThreshold: 0.2,
+    startRenderingFromBottom: true,
+  }}
+  onStartReached={loadOlderMessages}
+  onStartReachedThreshold={0.5}
 />
 ```
 
@@ -182,19 +196,20 @@ const reversed = [...messages].reverse();
 
 | Problem | Solution |
 |---------|----------|
-| State persists across cells | Use external state + `extraData` |
-| Blank cells visible | Increase `estimatedItemSize` or `drawDistance` |
+| State persists across cells | Use `useRecyclingState` or external state + `extraData` |
+| Blank cells visible | Increase `drawDistance`, add `getItemType` |
 | Slow with mixed items | Add `getItemType` |
 | Index keys break on reorder | Use `keyExtractor` with unique IDs |
 | Dev mode looks slow | Test release builds only |
 | Nothing renders | Add `flex: 1` to parent container |
-| Wrapped in ScrollView | Remove ScrollView, use ListHeaderComponent |
+| Wrapped in ScrollView | Remove ScrollView, use `ListHeaderComponent` |
+| Item movement on data change | `maintainVisibleContentPosition={{ disabled: true }}` |
 
 ---
 
 ## Unsupported FlatList Props
 
-`getItemLayout`, `windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `disableVirtualization`, `columnWrapperStyle`
+`getItemLayout`, `windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `disableVirtualization`, `columnWrapperStyle`, `debug`, `listKey`, `onScrollToIndexFailed`, `setNativeProps`
 
 ---
 
@@ -204,18 +219,30 @@ const reversed = [...messages].reverse();
 // 1. Change import
 import { FlashList } from '@shopify/flash-list';
 
-// 2. Add estimatedItemSize
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={80}  // ADD THIS
-  keyExtractor={(item) => item.id}
-/>
+// 2. Wrap in sized parent
+<View style={{ flex: 1 }}>
+  <FlashList
+    data={data}
+    renderItem={renderItem}
+    keyExtractor={(item) => item.id}
+  />
+</View>
 
-// 3. Ensure parent has flex: 1
-// 4. Remove unsupported props
+// 3. Remove unsupported props
+// 4. Use useRecyclingState for per-item state
 // 5. Test in release mode
 ```
+
+---
+
+## v2 Hooks
+
+| Hook | Signature | Purpose |
+|------|-----------|---------|
+| `useRecyclingState` | `(init, deps, onReset?) => [state, setState]` | Per-item state that resets on recycle |
+| `useLayoutState` | `(init) => [state, setState]` | State that triggers FlashList re-layout |
+| `useMappingHelper` | `() => { getMappingKey }` | Recycling-safe keys for `.map()` |
+| `useFlashListContext` | `() => context` | Access FlashList and ScrollView refs |
 
 ---
 
@@ -227,4 +254,4 @@ import { FlashList } from '@shopify/flash-list';
 
 ---
 
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/

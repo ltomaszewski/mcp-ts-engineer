@@ -1,8 +1,20 @@
-# FlashList v1.7.x - Setup & Installation
+# FlashList v2.x - Setup & Installation
 
-**Installation, basic setup, environment configuration**
+**Installation, New Architecture requirement, basic setup, environment configuration**
 
 **Source:** https://shopify.github.io/flash-list/docs/
+
+---
+
+## Prerequisites
+
+FlashList v2 requires **React Native New Architecture** (Fabric). It does not run on the old architecture (bridge). Ensure your project has New Architecture enabled before installing.
+
+| Requirement | Minimum |
+|-------------|---------|
+| React Native | New Architecture enabled |
+| Expo | SDK 54+ with New Architecture |
+| Platforms | iOS, Android |
 
 ---
 
@@ -10,30 +22,28 @@
 
 ```bash
 # Using npm
-npm install @shopify/flash-list
+npm install @shopify/flash-list@^2.0.0
 
 # Using Yarn
-yarn add @shopify/flash-list
+yarn add @shopify/flash-list@^2.0.0
 
 # iOS: install pods
 cd ios && pod install && cd ..
 ```
 
-**Supported Versions:**
-- React Native 0.63 or higher (v1.x)
-- All platforms: iOS, Android, Windows, macOS
+FlashList v2 is a **JS-only** solution -- no native code. The pod install step is for any transitive native dependencies.
 
 ---
 
 ## Expo Setup
 
-### Expo SDK 54+ (Expo Go supported)
+### Expo SDK 54+ (Recommended)
 
 ```bash
 npx expo install @shopify/flash-list
 ```
 
-FlashList is included in Expo Go from SDK 54 onwards -- no config plugin or development build required for basic usage.
+FlashList v2 works with Expo's New Architecture support. From SDK 54, Expo projects use New Architecture by default.
 
 ### Expo Development Build
 
@@ -63,7 +73,7 @@ const DATA: Item[] = [
   { id: '3', title: 'Third Item' },
 ];
 
-export default function MyList() {
+export default function MyList(): React.ReactElement {
   const renderItem = useCallback(({ item }: { item: Item }) => (
     <View style={styles.item}>
       <Text style={styles.title}>{item.title}</Text>
@@ -75,7 +85,6 @@ export default function MyList() {
       <FlashList
         data={DATA}
         renderItem={renderItem}
-        estimatedItemSize={50}
         keyExtractor={(item) => item.id}
       />
     </View>
@@ -91,20 +100,83 @@ const styles = StyleSheet.create({
 **Required for rendering:**
 1. `data` -- array of items
 2. `renderItem` -- render function
-3. `estimatedItemSize` -- average item height/width in pixels
+3. `keyExtractor` -- unique key per item (strongly recommended)
 4. Parent container with defined dimensions (`flex: 1` or explicit height)
+
+**No longer required in v2:**
+- `estimatedItemSize` -- FlashList v2 handles all sizing automatically
+
+---
+
+## Imports
+
+```typescript
+// Core component
+import { FlashList } from '@shopify/flash-list';
+
+// Ref type (for useRef)
+import { FlashList, FlashListRef } from '@shopify/flash-list';
+
+// Hooks
+import {
+  useRecyclingState,
+  useLayoutState,
+  useMappingHelper,
+  useFlashListContext,
+} from '@shopify/flash-list';
+
+// Helper components
+import { FlashList, LayoutCommitObserver } from '@shopify/flash-list';
+```
+
+---
+
+## TypeScript Configuration
+
+FlashList is fully typed. Use generic type parameter for type-safe data:
+
+```typescript
+import { FlashList, FlashListRef } from '@shopify/flash-list';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+}
+
+// Typed ref
+const listRef = useRef<FlashListRef<Product>>(null);
+
+// Typed component
+<FlashList<Product>
+  data={products}
+  renderItem={({ item }) => <Text>{item.name}</Text>}
+  keyExtractor={(item) => item.id}
+/>
+```
+
+**Note:** In v2, the ref type changed from `FlashList<T>` to `FlashListRef<T>`.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Package installed (`@shopify/flash-list` in `node_modules`)
+- [ ] Package installed (`@shopify/flash-list@^2.0.0` in `node_modules`)
+- [ ] React Native New Architecture enabled
 - [ ] iOS pods installed (if applicable)
 - [ ] Parent `View` has `flex: 1` or explicit height
-- [ ] `estimatedItemSize` set to approximate average item height
+- [ ] `estimatedItemSize` removed (not needed in v2)
 - [ ] No `ScrollView` wrapper around FlashList
+- [ ] Using `FlashListRef<T>` for ref type (not `FlashList<T>`)
 - [ ] Test in release mode for real performance
 
 ---
 
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/
+## See Also
+
+- [02-core-concepts.md](02-core-concepts.md) -- Cell recycling and state hooks
+- [07-migration-troubleshooting.md](07-migration-troubleshooting.md) -- Migrating from v1.x or FlatList
+
+---
+
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/

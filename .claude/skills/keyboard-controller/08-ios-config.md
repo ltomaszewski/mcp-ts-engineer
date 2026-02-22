@@ -112,4 +112,4 @@ This works with `useKeyboardHandler`'s `onInteractive` callback to track the dis
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation

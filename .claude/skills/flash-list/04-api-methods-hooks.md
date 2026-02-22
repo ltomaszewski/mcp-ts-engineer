@@ -1,37 +1,43 @@
-# FlashList v1.7.x - Methods & Ref API
+# FlashList v2.x - Methods, Ref API & Hooks
 
-**Imperative scroll methods, ref access patterns**
+**Imperative scroll methods, ref access patterns, v2 hooks**
 
-**Source:** https://shopify.github.io/flash-list/docs/usage
+**Source:** https://shopify.github.io/flash-list/docs/usage/
 
 ---
 
 ## Accessing the FlashList Ref
 
-FlashList exposes imperative methods through a React ref. Use `useRef` to obtain the ref:
+FlashList v2 uses `FlashListRef<T>` as the ref type (changed from `FlashList<T>` in v1):
 
 ```typescript
-import React, { useRef } from 'react';
-import { FlashList } from '@shopify/flash-list';
+import React, { useRef, useCallback } from 'react';
+import { View, Text } from 'react-native';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 interface Item {
   id: string;
   title: string;
 }
 
-export function MyList({ data }: { data: Item[] }) {
-  const listRef = useRef<FlashList<Item>>(null);
+export function MyList({ data }: { data: Item[] }): React.ReactElement {
+  const listRef = useRef<FlashListRef<Item>>(null);
 
-  const scrollToTop = () => {
+  const scrollToTop = useCallback(() => {
     listRef.current?.scrollToIndex({ index: 0, animated: true });
-  };
+  }, []);
+
+  const renderItem = useCallback(({ item }: { item: Item }) => (
+    <View style={{ padding: 16 }}>
+      <Text>{item.title}</Text>
+    </View>
+  ), []);
 
   return (
     <FlashList
       ref={listRef}
       data={data}
-      renderItem={({ item }) => <Text>{item.title}</Text>}
-      estimatedItemSize={80}
+      renderItem={renderItem}
       keyExtractor={(item) => item.id}
     />
   );
@@ -44,7 +50,7 @@ export function MyList({ data }: { data: Item[] }) {
 
 ### scrollToIndex
 
-Scroll to a specific item by its index in the data array.
+Scroll to a specific item by its index in the data array. v2 achieves pixel-perfect precision through progressive refinement, measuring neighboring items to refine target positions.
 
 ```typescript
 listRef.current?.scrollToIndex({
@@ -55,8 +61,6 @@ listRef.current?.scrollToIndex({
 });
 ```
 
-**Parameters:**
-
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `index` | `number` | Required | Target item index |
@@ -64,24 +68,12 @@ listRef.current?.scrollToIndex({
 | `viewOffset` | `number` | `0` | Additional offset in pixels from the edge |
 | `viewPosition` | `number` | `0` | Position within viewport: 0=top, 0.5=center, 1=bottom |
 
-**Usage notes:**
-- Accuracy depends on `estimatedItemSize`. If items vary significantly, use `overrideItemLayout` to provide exact sizes for better precision.
-- If the target index is far from the current position, the scroll may not land perfectly. Use `estimatedFirstItemOffset` when headers are present.
-
 ```typescript
 // Center an item in the viewport
-listRef.current?.scrollToIndex({
-  index: 50,
-  animated: true,
-  viewPosition: 0.5,
-});
+listRef.current?.scrollToIndex({ index: 50, animated: true, viewPosition: 0.5 });
 
 // Scroll with offset (e.g., account for a floating header)
-listRef.current?.scrollToIndex({
-  index: 10,
-  animated: true,
-  viewOffset: -64,  // Offset by header height
-});
+listRef.current?.scrollToIndex({ index: 10, animated: true, viewOffset: -64 });
 ```
 
 ---
@@ -94,78 +86,48 @@ Scroll to the end of the list.
 listRef.current?.scrollToEnd({ animated: true });
 ```
 
-**Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `animated` | `boolean` | `false` | Smooth scroll animation |
+
+---
+
+### scrollToTop (v2 New)
+
+Scroll to the top of the list.
+
+```typescript
+listRef.current?.scrollToTop({ animated: true });
+```
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `animated` | `boolean` | `false` | Smooth scroll animation |
 
-**Common use case:** Chat applications scrolling to the latest message.
-
-```typescript
-// Auto-scroll to bottom when new message arrives
-useEffect(() => {
-  if (messages.length > 0) {
-    listRef.current?.scrollToEnd({ animated: true });
-  }
-}, [messages.length]);
-```
-
 ---
 
 ### scrollToOffset
 
-Scroll to a specific pixel offset.
+Scroll to a specific pixel offset. x-value for horizontal, y-value for vertical.
 
 ```typescript
-listRef.current?.scrollToOffset({
-  offset: 500,
-  animated: true,
-});
+listRef.current?.scrollToOffset({ offset: 500, animated: true });
 ```
-
-**Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `offset` | `number` | Required | Target scroll offset in pixels |
 | `animated` | `boolean` | `false` | Smooth scroll animation |
 
-**Use case:** Restoring a previous scroll position.
-
-```typescript
-// Save and restore scroll position
-const [savedOffset, setSavedOffset] = useState(0);
-
-<FlashList
-  ref={listRef}
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={80}
-  onScroll={(event) => {
-    setSavedOffset(event.nativeEvent.contentOffset.y);
-  }}
-/>
-
-// Later, restore position
-listRef.current?.scrollToOffset({ offset: savedOffset, animated: false });
-```
-
 ---
 
 ### scrollToItem
 
-Scroll to a specific item object (finds it by reference equality or `keyExtractor`).
+Scroll to a specific item object.
 
 ```typescript
-listRef.current?.scrollToItem({
-  item: targetItem,
-  animated: true,
-  viewPosition: 0,
-});
+listRef.current?.scrollToItem({ item: targetItem, animated: true, viewPosition: 0 });
 ```
-
-**Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -173,51 +135,251 @@ listRef.current?.scrollToItem({
 | `animated` | `boolean` | `false` | Smooth scroll animation |
 | `viewPosition` | `number` | `0` | Position within viewport |
 
-**Note:** This method scans the data array to find the item's index. For large datasets, prefer `scrollToIndex` if you already know the index.
-
 ---
 
-### recordInteraction
+## Query Methods (v2 New)
 
-Tells FlashList that an interaction has occurred, which can be used to optimize rendering priority.
+### getVisibleIndices
+
+Returns indices currently visible in the viewport.
 
 ```typescript
-listRef.current?.recordInteraction();
+const visibleIndices: number[] = listRef.current?.getVisibleIndices() ?? [];
 ```
 
-This is inherited from the underlying `RecyclerListView`. Calling it signals that the user has interacted with the list, which may adjust internal rendering priorities.
+---
+
+### getLayout
+
+Returns current layout dimensions and position.
+
+```typescript
+const layout = listRef.current?.getLayout();
+// { x: number; y: number; width: number; height: number }
+```
 
 ---
+
+### getFirstVisibleIndex
+
+Returns the index of the first visible item.
+
+```typescript
+const firstIndex: number = listRef.current?.getFirstVisibleIndex() ?? 0;
+```
+
+---
+
+### getFirstItemOffset
+
+Returns the first item offset for header calculations.
+
+```typescript
+const offset: number = listRef.current?.getFirstItemOffset() ?? 0;
+```
+
+---
+
+### getWindowSize
+
+Returns current rendered dimensions.
+
+```typescript
+const windowSize = listRef.current?.getWindowSize();
+// { width: number; height: number }
+```
+
+---
+
+## Utility Methods
 
 ### prepareForLayoutAnimationRender
 
-Prepares FlashList for a layout animation. Call this before triggering a state change that causes item additions/removals when you want smooth layout animations.
-
-```typescript
-// Prepare before data change that triggers animation
-listRef.current?.prepareForLayoutAnimationRender();
-
-// Then update data
-setData(newData);
-```
-
-**Use case:** Smooth insert/delete animations when combined with React Native's `LayoutAnimation`:
+Prepares FlashList for a layout animation. Call before triggering a state change that causes item additions/removals. Disables recycling for the next frame.
 
 ```typescript
 import { LayoutAnimation } from 'react-native';
 
-const deleteItem = (id: string) => {
+const deleteItem = (id: string): void => {
   listRef.current?.prepareForLayoutAnimationRender();
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   setData((prev) => prev.filter((item) => item.id !== id));
 };
 ```
 
+**Note:** `LayoutAnimation` is experimental on Android. Stability is not guaranteed when used with FlashList.
+
+---
+
+### recordInteraction
+
+Triggers viewability calculations when user interaction occurs. Useful with `viewabilityConfig.waitForInteraction`.
+
+```typescript
+listRef.current?.recordInteraction();
+```
+
+---
+
+### recomputeViewableItems
+
+Imperatively triggers viewability recalculation.
+
+```typescript
+listRef.current?.recomputeViewableItems();
+```
+
+---
+
+### flashScrollIndicators
+
+Momentarily displays scroll indicators.
+
+```typescript
+listRef.current?.flashScrollIndicators();
+```
+
+---
+
+### getNativeScrollRef
+
+Returns underlying scroll view reference.
+
+```typescript
+const scrollRef = listRef.current?.getNativeScrollRef();
+```
+
+---
+
+### getScrollResponder
+
+Returns scroll responder from underlying scroll view.
+
+```typescript
+const responder = listRef.current?.getScrollResponder();
+```
+
+---
+
+### getScrollableNode
+
+Returns native scrollable node reference.
+
+```typescript
+const node = listRef.current?.getScrollableNode();
+```
+
+---
+
+## Hooks
+
+### useRecyclingState
+
+Manages per-item state that resets when the cell is recycled. See `02-core-concepts.md` for details.
+
+```typescript
+import { useRecyclingState } from '@shopify/flash-list';
+
+const [liked, setLiked] = useRecyclingState(item.liked, [item.id], () => {
+  // Optional reset callback
+});
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `initialState` | `T` | Initial value (used on mount and reset) |
+| `dependencies` | `any[]` | State resets when any dependency changes |
+| `resetCallback` | `() => void` (optional) | Called when state resets |
+
+**Returns:** `[state, setState]` tuple (same API as `useState`)
+
+---
+
+### useLayoutState
+
+Like `useState` but communicates layout changes to FlashList for smooth resizing.
+
+```typescript
+import { useLayoutState } from '@shopify/flash-list';
+
+const [isExpanded, setIsExpanded] = useLayoutState(false);
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `initialState` | `T` | Initial value |
+
+**Returns:** `[state, setState]` tuple
+
+**Use when:** State changes affect the item's dimensions and FlashList needs to adjust layout.
+
+---
+
+### useMappingHelper
+
+Returns a function for creating mapping keys in `.map()` operations inside FlashList items. Ensures consistent key generation that works with FlashList's recycling system.
+
+```typescript
+import { useMappingHelper } from '@shopify/flash-list';
+
+const ItemComponent = ({ item }: { item: Item }): React.ReactElement => {
+  const { getMappingKey } = useMappingHelper();
+
+  return (
+    <View>
+      {item.tags.map((tag, index) => (
+        <Text key={getMappingKey(tag, index)}>{tag}</Text>
+      ))}
+    </View>
+  );
+};
+```
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `getMappingKey` | `(itemKey: string, index: number) => string` | Generates recycling-safe keys |
+
+---
+
+### useFlashListContext
+
+Exposes FlashList and ScrollView refs for use in child components or `CellRendererComponent`.
+
+```typescript
+import { useFlashListContext } from '@shopify/flash-list';
+
+const ChildComponent = (): React.ReactElement => {
+  const context = useFlashListContext();
+  // Access FlashList ref and ScrollView ref
+
+  return <View />;
+};
+```
+
+---
+
+## Helper Components
+
+### LayoutCommitObserver
+
+Detects when FlashList(s) complete layout commits. Useful when you have multiple nested FlashLists and need to know when all have finished rendering.
+
+```typescript
+import { LayoutCommitObserver } from '@shopify/flash-list';
+
+<LayoutCommitObserver onLayoutCommit={() => {
+  console.log('All nested lists have committed layout');
+}}>
+  <FlashList ... />
+  <FlashList ... />
+</LayoutCommitObserver>
+```
+
 ---
 
 ## Inherited ScrollView Props
 
-FlashList inherits all standard `ScrollView` props from React Native. Common ones used with FlashList:
+FlashList inherits all standard `ScrollView` props. Common ones:
 
 | Prop | Type | Description |
 |------|------|-------------|
@@ -231,23 +393,6 @@ FlashList inherits all standard `ScrollView` props from React Native. Common one
 | `keyboardDismissMode` | `string` | Keyboard dismiss behavior |
 | `keyboardShouldPersistTaps` | `string` | Tap behavior when keyboard open |
 
-```typescript
-<FlashList
-  ref={listRef}
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={80}
-  scrollEventThrottle={16}
-  showsVerticalScrollIndicator={false}
-  keyboardDismissMode="on-drag"
-  keyboardShouldPersistTaps="handled"
-  onScroll={(event) => {
-    const { contentOffset } = event.nativeEvent;
-    console.log('Scroll Y:', contentOffset.y);
-  }}
-/>
-```
-
 ---
 
 ## Practical Patterns
@@ -257,10 +402,15 @@ FlashList inherits all standard `ScrollView` props from React Native. Common one
 ```typescript
 import React, { useRef, useState, useCallback } from 'react';
 import { View, Pressable, Text } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 
-export function ListWithScrollTop({ data }: { data: Item[] }) {
-  const listRef = useRef<FlashList<Item>>(null);
+interface Item {
+  id: string;
+  title: string;
+}
+
+export function ListWithScrollTop({ data }: { data: Item[] }): React.ReactElement {
+  const listRef = useRef<FlashListRef<Item>>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const handleScroll = useCallback((event: any) => {
@@ -268,22 +418,26 @@ export function ListWithScrollTop({ data }: { data: Item[] }) {
     setShowScrollTop(offsetY > 300);
   }, []);
 
+  const renderItem = useCallback(({ item }: { item: Item }) => (
+    <View style={{ padding: 16 }}>
+      <Text>{item.title}</Text>
+    </View>
+  ), []);
+
   return (
     <View style={{ flex: 1 }}>
       <FlashList
         ref={listRef}
         data={data}
         renderItem={renderItem}
-        estimatedItemSize={80}
+        keyExtractor={(item) => item.id}
         onScroll={handleScroll}
         scrollEventThrottle={100}
       />
       {showScrollTop && (
         <Pressable
           style={{ position: 'absolute', bottom: 20, right: 20 }}
-          onPress={() => {
-            listRef.current?.scrollToIndex({ index: 0, animated: true });
-          }}
+          onPress={() => listRef.current?.scrollToTop({ animated: true })}
         >
           <Text>Scroll to Top</Text>
         </Pressable>
@@ -293,26 +447,14 @@ export function ListWithScrollTop({ data }: { data: Item[] }) {
 }
 ```
 
-### Jump to Section
+---
 
-```typescript
-const sectionIndices = { A: 0, B: 15, C: 30 };
+## See Also
 
-const jumpToSection = (letter: string) => {
-  const index = sectionIndices[letter];
-  if (index !== undefined) {
-    listRef.current?.scrollToIndex({ index, animated: true });
-  }
-};
-```
+- [03-api-props.md](03-api-props.md) -- Complete props reference
+- [05-performance-guide.md](05-performance-guide.md) -- Optimization strategies
+- [06-layouts-advanced.md](06-layouts-advanced.md) -- Complex layout patterns
 
 ---
 
-## Next Steps
-
-- Read **05-performance-guide.md** for optimization strategies
-- Read **06-layouts-advanced.md** for complex layout patterns
-
----
-
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/usage
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/usage/

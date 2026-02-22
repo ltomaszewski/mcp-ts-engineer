@@ -48,6 +48,14 @@ Most action and assertion commands accept a selector to target UI elements.
 | `checked` | `checked: true` | Match checked state |
 | `focused` | `focused: true` | Match keyboard focus state |
 | `selected` | `selected: true` | Match selected state |
+| `below` | `below: { text: "Header" }` | Element positioned below another |
+| `above` | `above: { id: "footer" }` | Element positioned above another |
+| `leftOf` | `leftOf: { text: "Price" }` | Element to the left of another |
+| `rightOf` | `rightOf: { id: "label" }` | Element to the right of another |
+| `containsChild` | `containsChild: { text: "X" }` | Parent with direct child matching |
+| `containsDescendants` | `containsDescendants: [...]` | Parent with all listed descendants |
+| `childOf` | `childOf: { id: "parent" }` | Child of specified parent element |
+| `traits` | `traits: "text"` | Match by trait (text, long-text, square) |
 
 Selectors can be combined:
 
@@ -75,7 +83,7 @@ Selectors can be combined:
 
 ### launchApp
 
-Start the app. Kills previous instance and clears state by default.
+Start the app. Kills previous instance by default (stopApp: true). clearState defaults to false.
 
 ```yaml
 # Basic launch (clears state)
@@ -111,7 +119,7 @@ Start the app. Kills previous instance and clears state by default.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `appId` | string | flow header | Package name (Android) or bundle ID (iOS) |
-| `clearState` | boolean | `true` | Clear app data before launch |
+| `clearState` | boolean | `false` | Clear app data before launch |
 | `clearKeychain` | boolean | `false` | Clear iOS keychain |
 | `stopApp` | boolean | `true` | Stop app before relaunch |
 | `permissions` | object | all allowed | Permission grants (`allow` / `deny`) |
@@ -195,7 +203,7 @@ Tap on a UI element.
 | `index` | integer | 0 | Index among matching elements |
 | `repeat` | integer | 1 | Number of taps |
 | `delay` | integer | 100 | Milliseconds between repeated taps |
-| `retryTapIfNoChange` | boolean | `false` | Retry if hierarchy unchanged |
+| `retryTapIfNoChange` | boolean | `true` | Retry if hierarchy unchanged |
 | `waitToSettleTimeoutMs` | integer | -- | Max wait for UI to settle |
 | `optional` | boolean | `false` | Skip without failing if not found |
 | `label` | string | -- | Custom step label for reports |
@@ -625,8 +633,10 @@ Set device GPS coordinates.
 Set device orientation.
 
 ```yaml
-- setOrientation: LANDSCAPE
+- setOrientation: LANDSCAPE_LEFT
+- setOrientation: LANDSCAPE_RIGHT
 - setOrientation: PORTRAIT
+- setOrientation: UPSIDE_DOWN
 ```
 
 ### setPermissions
@@ -793,4 +803,4 @@ env:
 
 ---
 
-**Source:** https://docs.maestro.dev/api-reference/commands
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/api-reference/commands

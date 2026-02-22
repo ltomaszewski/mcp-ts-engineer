@@ -6,9 +6,14 @@
 
 ## From react-native-reanimated useAnimatedKeyboard
 
-### Before (Reanimated)
+Starting from `react-native-reanimated@4.2.0`, the Reanimated team deprecated `useAnimatedKeyboard` and recommends migrating to `react-native-keyboard-controller` instead.
+
+### Option A: Drop-In Replacement (v1.20.0+ -- Easiest)
+
+The library provides a compatibility `useAnimatedKeyboard` hook with the same API. Just change the import:
 
 ```typescript
+// Before (deprecated in reanimated 4.2.0)
 import { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import Animated from 'react-native-reanimated';
 
@@ -21,9 +26,27 @@ function OldComponent() {
 
   return <Animated.View style={style} />;
 }
+
+// After (v1.20.0+ -- just change the import)
+import { useAnimatedKeyboard } from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+
+function NewComponent() {
+  const { height, state } = useAnimatedKeyboard();
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: height.value * -1 }],
+  }));
+
+  return <Animated.View style={style} />;
+}
 ```
 
-### After (Keyboard Controller)
+**Note:** Requires `KeyboardProvider` at app root. The API is identical -- `height` and `state` work the same way.
+
+### Option B: Use useReanimatedKeyboardAnimation (Recommended for New Code)
+
+For new code, prefer `useReanimatedKeyboardAnimation` which returns `progress` (0-1) instead of `state` enum:
 
 ```typescript
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
@@ -40,7 +63,7 @@ function NewComponent() {
 }
 ```
 
-**Key differences:**
+**Key differences from reanimated's useAnimatedKeyboard:**
 - Returns `progress` (0-1) instead of `state` enum
 - Requires `KeyboardProvider` at root
 - Provides additional hooks (`useKeyboardHandler`) for lifecycle events
@@ -124,4 +147,4 @@ function NewForm() {
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

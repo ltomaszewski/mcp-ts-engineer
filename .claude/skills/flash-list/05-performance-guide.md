@@ -1,6 +1,6 @@
-# FlashList v1.7.x - Performance & Optimization
+# FlashList v2.x - Performance & Optimization
 
-**Performance tuning, blank area debugging, getItemType, best practices**
+**Performance tuning, blank area reduction, getItemType, best practices**
 
 **Source:** https://shopify.github.io/flash-list/docs/fundamentals/performant-components
 
@@ -8,14 +8,14 @@
 
 ## Performance Benchmarks
 
-FlashList delivers significant improvements over FlatList, especially on low-end devices:
+FlashList v2 delivers significant improvements over FlatList, especially on low-end devices:
 
-| Metric | FlatList | FlashList | Improvement |
-|--------|----------|-----------|-------------|
+| Metric | FlatList | FlashList v2 | Improvement |
+|--------|----------|--------------|-------------|
 | **UI Thread FPS** | ~10 FPS | ~48 FPS | **5x faster** |
 | **JS Thread FPS** | ~6 FPS | ~60 FPS | **10x faster** |
 | **Memory Usage** | Baseline | ~4% less | Lower allocation |
-| **Blank Area** | Frequent | Rare | Significant reduction |
+| **Blank Area** | Frequent | ~50% less than v1 | Significant reduction |
 
 Benchmarked on Moto G10 (low-end Android device).
 
@@ -25,62 +25,25 @@ Benchmarked on Moto G10 (low-end Android device).
 
 ## Core Performance Strategy
 
-### 1. Accurate estimatedItemSize (Most Important)
+### 1. Automatic Sizing (v2 -- No Estimates Needed)
 
-`estimatedItemSize` is the single most impactful prop for performance. It determines how many cells FlashList pre-allocates and how large the render buffer is.
+FlashList v2 **automatically handles all item sizing**. The `estimatedItemSize`, `estimatedListSize`, and `estimatedFirstItemOffset` props are removed. The v2 algorithm:
+
+1. Measures items as they render
+2. Tracks size estimates per item type (from `getItemType`)
+3. Updates predictions dynamically as more items render
+4. Applies corrections synchronously before paint
+
+This eliminates the most common source of blank areas in v1 (incorrect `estimatedItemSize`).
 
 ```typescript
-// BAD: No estimate -- blank cells and console warning
+// v2: No estimatedItemSize needed
 <FlashList
   data={data}
   renderItem={renderItem}
-/>
-
-// GOOD: Accurate estimate
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}
+  keyExtractor={(item) => item.id}
 />
 ```
-
-**How to determine the correct size:**
-
-```typescript
-// Method 1: Calculate from design specs
-const ITEM_HEIGHT = 16 + 16 + 20 + 16 + 16;
-// padding-top + padding-bottom + text-height + margin-top + margin-bottom
-// = 84 pixels
-
-// Method 2: Measure a representative item at runtime
-const MeasureItem = ({ item }: { item: Item }) => (
-  <View
-    onLayout={(e) => {
-      console.log('Item height:', e.nativeEvent.layout.height);
-    }}
-    style={{ padding: 16 }}
-  >
-    <Text style={{ fontSize: 16 }}>{item.title}</Text>
-  </View>
-);
-
-// Method 3: Use FlashList's console warning
-// FlashList logs the average measured size if estimatedItemSize is missing
-// Use that number as your estimate
-```
-
-**Guidelines:**
-
-| Content Type | Typical Range |
-|---|---|
-| Simple text row | 48-60 |
-| Text with subtitle | 60-80 |
-| Card with image | 120-150 |
-| Complex multi-line | 200-300 |
-
-- 80% accuracy is sufficient
-- Too large: wasted render buffer, extra memory
-- Too small: blank cells visible during fast scrolling
 
 ---
 
@@ -97,7 +60,6 @@ When your list contains structurally different items, `getItemType` maintains se
     if (item.type === 'ad') return <AdItem data={item} />;
     return <RowItem data={item} />;
   }}
-  estimatedItemSize={100}
 />
 
 // GOOD: Separate pools per type -- no cross-type recycling
@@ -108,8 +70,8 @@ When your list contains structurally different items, `getItemType` maintains se
     if (item.type === 'ad') return <AdItem data={item} />;
     return <RowItem data={item} />;
   }}
-  estimatedItemSize={100}
   getItemType={(item) => item.type}
+  keyExtractor={(item) => item.id}
 />
 ```
 
@@ -126,7 +88,6 @@ Avoid creating the render function inline. Use `useCallback` to memoize it:
 <FlashList
   data={data}
   renderItem={({ item }) => <Text>{item.title}</Text>}
-  estimatedItemSize={80}
 />
 
 // GOOD: Memoized function -- stable reference
@@ -137,7 +98,7 @@ const renderItem = useCallback(({ item }: { item: Item }) => (
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
+  keyExtractor={(item) => item.id}
 />
 ```
 
@@ -170,7 +131,6 @@ Stable, unique keys are essential for correct recycling behavior:
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
   // No keyExtractor -- defaults to index.toString()
 />
 
@@ -178,29 +138,25 @@ Stable, unique keys are essential for correct recycling behavior:
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
   keyExtractor={(item) => item.id}
 />
 ```
 
 ---
 
-### 5. Provide overrideItemLayout for Known Sizes
+### 5. Use overrideItemLayout for Custom Spans
 
-When you know exact item sizes, providing them improves `scrollToIndex` accuracy and reduces layout recalculations:
+In v2, `overrideItemLayout` supports `span` configuration only. The `size` property is no longer read (v2 handles sizing automatically):
 
 ```typescript
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={100}
   numColumns={2}
-  overrideItemLayout={(layout, item, index, maxColumns) => {
+  keyExtractor={(item) => item.id}
+  overrideItemLayout={(layout, item, _index, maxColumns) => {
     if (item.type === 'banner') {
-      layout.span = maxColumns;  // Full-width banner
-      layout.size = 200;         // Known height
-    } else {
-      layout.size = 120;         // Known card height
+      layout.span = maxColumns;  // Full-width banner across all columns
     }
   }}
 />
@@ -208,9 +164,32 @@ When you know exact item sizes, providing them improves `scrollToIndex` accuracy
 
 ---
 
-## Blank Area Debugging
+### 6. Use the renderItem `target` Parameter
 
-Blank areas (white space visible during scrolling) are the primary performance indicator for list quality.
+The `target` parameter lets you skip expensive rendering during measurement passes:
+
+```typescript
+const renderItem = useCallback(({ item, target }: {
+  item: Item; target: string;
+}) => {
+  if (target === 'Measurement') {
+    // Return lightweight placeholder for measurement
+    return <View style={{ height: 80 }} />;
+  }
+  return (
+    <View style={{ padding: 16 }}>
+      <Image source={{ uri: item.imageUrl }} style={{ height: 120 }} />
+      <Text>{item.title}</Text>
+    </View>
+  );
+}, []);
+```
+
+---
+
+## Blank Area Reduction
+
+Blank areas (white space visible during scrolling) are the primary performance indicator for list quality. v2 reduces blank areas by ~50% compared to v1 through automatic sizing and progressive rendering.
 
 ### Using onBlankArea
 
@@ -218,7 +197,7 @@ Blank areas (white space visible during scrolling) are the primary performance i
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
+  keyExtractor={(item) => item.id}
   onBlankArea={(event) => {
     if (event.blankArea > 0) {
       console.warn(`Blank area: ${event.blankArea}px`);
@@ -231,8 +210,7 @@ Blank areas (white space visible during scrolling) are the primary performance i
 
 | Cause | Symptom | Fix |
 |-------|---------|-----|
-| `estimatedItemSize` too small | Frequent blank areas | Increase estimate |
-| Heavy `renderItem` | Blank during fast scroll | Memoize, simplify |
+| Heavy `renderItem` | Blank during fast scroll | Memoize, simplify, use `target === 'Measurement'` |
 | Missing `getItemType` | Blank after mixed content | Add `getItemType` |
 | Slow network images | Blank where images load | Use placeholder images |
 | Small `drawDistance` | Blank at edges | Increase `drawDistance` |
@@ -242,12 +220,11 @@ Blank areas (white space visible during scrolling) are the primary performance i
 `drawDistance` controls how far beyond the visible area FlashList pre-renders. Higher values reduce blank areas but use more memory:
 
 ```typescript
-// Default is platform-dependent
 // Increase for content-heavy lists or fast-scrolling scenarios
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
+  keyExtractor={(item) => item.id}
   drawDistance={500}  // Pre-render 500px beyond viewport
 />
 ```
@@ -266,7 +243,15 @@ const BadItem = ({ item }: { item: Item }) => {
   return <View>{isExpanded && <Details />}</View>;
 };
 
-// GOOD: External state keyed by item ID
+// GOOD: useRecyclingState resets on dependency change (v2)
+import { useRecyclingState } from '@shopify/flash-list';
+
+const GoodItem = ({ item }: { item: Item }) => {
+  const [isExpanded, setIsExpanded] = useRecyclingState(false, [item.id]);
+  return <View>{isExpanded && <Details />}</View>;
+};
+
+// ALSO GOOD: External state keyed by item ID
 const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 const renderItem = useCallback(({ item }: { item: Item }) => (
   <View>{expandedIds.has(item.id) && <Details />}</View>
@@ -294,14 +279,14 @@ npx expo run:ios --configuration Release
 ```typescript
 // BAD: Nested scroll -- layout and performance issues
 <ScrollView>
-  <FlashList data={data} renderItem={renderItem} estimatedItemSize={80} />
+  <FlashList data={data} renderItem={renderItem} />
 </ScrollView>
 
 // GOOD: Use ListHeaderComponent and ListFooterComponent instead
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={80}
+  keyExtractor={(item) => item.id}
   ListHeaderComponent={<HeaderContent />}
   ListFooterComponent={<FooterContent />}
 />
@@ -312,12 +297,12 @@ npx expo run:ios --configuration Release
 ```typescript
 // BAD: Parent has no height -- FlashList renders nothing
 <View>
-  <FlashList data={data} renderItem={renderItem} estimatedItemSize={80} />
+  <FlashList data={data} renderItem={renderItem} />
 </View>
 
 // GOOD: Parent has flex: 1 or explicit height
 <View style={{ flex: 1 }}>
-  <FlashList data={data} renderItem={renderItem} estimatedItemSize={80} />
+  <FlashList data={data} renderItem={renderItem} keyExtractor={(item) => item.id} />
 </View>
 ```
 
@@ -325,24 +310,23 @@ npx expo run:ios --configuration Release
 
 ## Performance Checklist
 
-- [ ] `estimatedItemSize` set and accurate (within 20% of actual average)
 - [ ] `getItemType` provided for mixed-content lists
 - [ ] `renderItem` memoized with `useCallback`
 - [ ] `keyExtractor` uses stable unique IDs (not array index)
-- [ ] No `useState` inside rendered items (use external state)
+- [ ] No `useState` inside rendered items (use `useRecyclingState` or external state)
 - [ ] No `ScrollView` wrapping FlashList
 - [ ] Parent container has defined dimensions (`flex: 1`)
 - [ ] Performance tested in release build (not dev mode)
-- [ ] `onBlankArea` monitored during development
 - [ ] Heavy components wrapped in `React.memo`
+- [ ] Using `target === 'Measurement'` to skip expensive rendering during measurement
 
 ---
 
 ## Next Steps
 
-- Read **06-layouts-advanced.md** for grid, horizontal, and chat patterns
-- Read **07-migration-troubleshooting.md** for FlatList migration
+- Read **06-layouts-advanced.md** for grid, masonry, horizontal, and chat patterns
+- Read **07-migration-troubleshooting.md** for FlatList and v1 migration
 
 ---
 
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/fundamentals/performant-components
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/fundamentals/performant-components

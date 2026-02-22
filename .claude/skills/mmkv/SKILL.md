@@ -11,12 +11,13 @@ Ultra-fast synchronous key-value storage for React Native -- 30x faster than Asy
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Setting up local key-value storage in React Native
 - Replacing AsyncStorage with a faster synchronous alternative
 - Storing user preferences, auth tokens, or app state
 - Implementing encrypted local storage
-- Creating Zustand/Redux persist storage adapters
+- Creating Zustand/Redux/Jotai/TinyBase persist storage adapters
+- Checking if an MMKV instance exists or deleting one from disk
 
 ---
 
@@ -28,6 +29,8 @@ LOAD THIS SKILL when user is:
 3. Use `remove()` to delete keys (v4 API) -- `delete()` was renamed due to C++ keyword conflict
 4. Use encryption for sensitive data (tokens, PII) -- MMKV files are readable without encryption
 5. Install `react-native-nitro-modules` alongside MMKV -- required runtime dependency for v4
+6. Access `storage.id` to identify instances at runtime -- read-only property added in v4.0.1
+7. Keep encryption keys under 16 bytes -- MMKV enforces a maximum key length of 16 bytes
 
 **NEVER:**
 1. Store sensitive tokens without encryption -- MMKV storage files are accessible on rooted devices
@@ -51,6 +54,9 @@ export const secureStorage = createMMKV({
   id: 'secure-storage',
   encryptionKey: 'your-encryption-key',
 });
+
+// Access instance identifier (v4.0.1+)
+console.log(storage.id); // "app-storage"
 ```
 
 ### CRUD Operations
@@ -70,8 +76,8 @@ const age = storage.getNumber('user.age');          // number | undefined
 const isPremium = storage.getBoolean('user.premium'); // boolean | undefined
 const data = storage.getBuffer('user.data');        // ArrayBuffer | undefined
 
-// DELETE (v4: remove, not delete)
-storage.remove('user.name');
+// DELETE (v4: remove, not delete) -- returns boolean
+const wasRemoved: boolean = storage.remove('user.name');
 
 // CHECK existence
 if (storage.contains('user.age')) { /* key exists */ }
@@ -114,7 +120,7 @@ const mmkv = createMMKV({ id: 'zustand-storage' });
 const zustandStorage: StateStorage = {
   getItem: (name) => mmkv.getString(name) ?? null,
   setItem: (name, value) => mmkv.set(name, value),
-  removeItem: (name) => mmkv.remove(name),
+  removeItem: (name) => { mmkv.remove(name); },
 };
 
 const useStore = create(
@@ -154,14 +160,14 @@ import { createMMKV } from 'react-native-mmkv';
 
 const storage = createMMKV({ id: 'my-storage' });
 
-// Encrypt all data with AES-128
-storage.encrypt('hunter2');
+// Encrypt all data (key max 16 bytes)
+storage.recrypt('hunter2');
 
-// Encrypt with AES-256
-storage.encrypt('hunter2', 'AES-256');
+// Change encryption key
+storage.recrypt('new-secret-key');
 
 // Remove encryption
-storage.decrypt();
+storage.recrypt(undefined);
 ```
 
 ---
@@ -183,16 +189,18 @@ const storage = createMMKV({
 storage.set('authToken', token); // Encrypted at rest
 ```
 
-**BAD** -- Using old v3 API:
+**BAD** -- Using old v3 constructor and method names:
 ```typescript
-const storage = new MMKV(); // v3 class removed in v4
-storage.delete('key');       // renamed to remove() in v4
+const storage = new MMKV();     // v3 class removed in v4
+storage.delete('key');           // renamed to remove() in v4
 ```
 
 **GOOD** -- Using v4 factory function:
 ```typescript
-const storage = createMMKV(); // v4 factory
-storage.remove('key');         // v4 method name
+const storage = createMMKV();   // v4 factory
+storage.remove('key');           // v4 method name
+storage.recrypt('secret');       // encrypt with key (max 16 bytes)
+storage.recrypt(undefined);      // remove encryption
 ```
 
 **BAD** -- Using wrong getter type:
@@ -212,23 +220,25 @@ const age = storage.getNumber('user.age'); // Returns 30
 | Task | API | Example |
 |------|-----|---------|
 | Create instance | `createMMKV()` | `const s = createMMKV({ id: 'app' })` |
+| Instance ID | `id` | `s.id` |
 | Set value | `set()` | `s.set('key', value)` |
 | Get string | `getString()` | `s.getString('key')` |
 | Get number | `getNumber()` | `s.getNumber('key')` |
 | Get boolean | `getBoolean()` | `s.getBoolean('key')` |
 | Get buffer | `getBuffer()` | `s.getBuffer('key')` |
-| Delete key | `remove()` | `s.remove('key')` |
+| Delete key | `remove()` | `s.remove('key')` -- returns `boolean` |
 | Check exists | `contains()` | `s.contains('key')` |
 | Get all keys | `getAllKeys()` | `s.getAllKeys()` |
 | Clear all | `clearAll()` | `s.clearAll()` |
 | Storage size | `size` | `s.size` |
+| Read-only check | `isReadOnly` | `s.isReadOnly` |
 | Trim/optimize | `trim()` | `s.trim()` |
-| Encrypt | `encrypt()` | `s.encrypt('key')` |
-| Decrypt | `decrypt()` | `s.decrypt()` |
-| Import data | `importAllFrom()` | `s.importAllFrom(otherInstance)` |
+| Encrypt/rekey | `recrypt()` | `s.recrypt('key')` -- key max 16 bytes |
+| Remove encryption | `recrypt(undefined)` | `s.recrypt(undefined)` |
+| Import data | `importAllFrom()` | `s.importAllFrom(otherInstance)` -- returns count |
 | Listen changes | `addOnValueChangedListener()` | `s.addOnValueChangedListener(cb)` |
-| Check exists (global) | `existsMMKV()` | `existsMMKV('id')` |
-| Delete instance | `deleteMMKV()` | `deleteMMKV('id')` |
+| Check exists (global) | `existsMMKV()` | `existsMMKV('id')` -- returns `boolean` |
+| Delete instance (global) | `deleteMMKV()` | `deleteMMKV('id')` -- returns `boolean` |
 | Hook: string | `useMMKVString()` | `const [v, set] = useMMKVString('key')` |
 | Hook: number | `useMMKVNumber()` | `const [v, set] = useMMKVNumber('key')` |
 | Hook: boolean | `useMMKVBoolean()` | `const [v, set] = useMMKVBoolean('key')` |
@@ -254,4 +264,4 @@ const age = storage.getNumber('user.age'); // Returns 30
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv

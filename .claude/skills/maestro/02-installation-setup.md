@@ -6,13 +6,12 @@
 
 | Component | Requirement | Details |
 |-----------|-------------|---------|
-| **Node.js** | 18.0.0+ | JavaScript runtime |
+| **Java** | JDK 17+ (required) | v2.0 breaking change -- Java 11 no longer supported |
 | **Memory** | 2GB minimum, 8GB recommended | RAM allocation |
 | **Disk Space** | 2GB | Tools + dependencies |
 | **macOS** | 10.13+ | For iOS development |
-| **Java** | JDK 17+ | Android development |
-| **Android API** | Level 16+ | Minimum Android version |
-| **iOS Version** | 11.0+ | Minimum iOS version |
+| **Android API** | Level 29, 30, 31, 33, or 34 | Supported API levels (35-36 support expected Q1 2026) |
+| **iOS Version** | 16, 17, 18, or 24 | Supported iOS runtimes |
 
 ### Platform-Specific Prerequisites
 
@@ -20,21 +19,22 @@
 - Xcode Command Line Tools: `xcode-select --install`
 - Homebrew: https://brew.sh
 - Apple ID for iOS development
+- Latest Xcode installed from Mac App Store
 
 **Android:**
 - Android Studio or Android SDK Command Line Tools
 - Set `ANDROID_HOME` environment variable
-- Configured emulator or connected device
+- Configured emulator or connected device (Pixel 8 recommended for emulator)
 - Android SDK Platform Tools
 
 **iOS:**
-- Xcode 12.0 or higher
+- Xcode 14.0 or higher
 - iOS Simulator or connected iPhone
-- Development Certificate (real devices)
+- Command Line Tools configured in Xcode > Settings > Locations
 
 ## Installation Methods
 
-### Method 1: Homebrew (macOS - Recommended)
+### Method 1: Homebrew (macOS -- Recommended)
 
 ```bash
 # Add repository
@@ -45,7 +45,7 @@ brew install maestro
 
 # Verify
 maestro --version
-# Output: Maestro X.Y.Z (date)
+# Output: Maestro 2.x.x
 ```
 
 **Advantages:**
@@ -53,7 +53,7 @@ maestro --version
 - Automatic updates with `brew upgrade maestro`
 - Easy uninstall with `brew uninstall maestro`
 
-### Method 2: Curl Installation (All Platforms)
+### Method 2: Curl Installation (macOS, Linux)
 
 ```bash
 # Download and install
@@ -66,17 +66,54 @@ export PATH=$PATH:~/.maestro/bin
 maestro --version
 ```
 
-### Method 3: Manual Installation
+### Method 3: Windows Installation
 
-1. Download binary from https://releases.maestro.dev
-2. Extract to preferred location
-3. Add to PATH:
-   ```bash
-   export PATH=$PATH:/path/to/maestro/bin
-   ```
-4. Verify: `maestro --version`
+```bash
+# Option A: Curl (same as above in PowerShell)
+curl -fsSL "https://get.maestro.mobile.dev" | bash
+
+# Option B: Manual download
+# 1. Download maestro.zip from https://github.com/mobile-dev-inc/maestro/releases
+# 2. Extract to a stable location (e.g., C:\maestro)
+# 3. Add bin folder to PATH:
+setx PATH "%PATH%;C:\maestro\bin"
+# 4. Restart terminal
+```
+
+### Method 4: Maestro Studio Desktop (GUI)
+
+Maestro Studio Desktop is a lightweight IDE for visual test creation:
+
+| Platform | Installer |
+|----------|-----------|
+| **Windows** | `MaestroStudio.exe` |
+| **macOS** | `MaestroStudio.dmg` (drag to Applications) |
+| **Linux** | `MaestroStudio.AppImage` (requires `chmod +x` and `--no-sandbox`) |
+
+Download from https://maestro.dev/
 
 ## Environment Configuration
+
+### JAVA_HOME Setup (Required -- Java 17+)
+
+```bash
+# Find Java installation
+/usr/libexec/java_home -v 17
+
+# Add to profile
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+
+# Verify
+source ~/.zshrc
+echo $JAVA_HOME
+java -version  # Must show JDK 17+
+```
+
+**Alternative -- Install via SDKMAN:**
+```bash
+curl -s "https://get.sdkman.io" | bash
+sdk install java 17.0.5-tem
+```
 
 ### ANDROID_HOME Setup
 
@@ -97,34 +134,20 @@ echo $ANDROID_HOME
 adb --version  # Should show version
 ```
 
-### JAVA_HOME Setup
-
-```bash
-# Find Java installation
-/usr/libexec/java_home -v 17
-
-# Add to profile
-echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
-
-# Verify
-echo $JAVA_HOME
-java -version  # Should show JDK 17+
-```
-
 ### Verify Environment
 
 ```bash
 maestro doctor
 
 # Output shows:
-✓ Maestro CLI version 1.35.0
-✓ Java JDK 17.0.5 (JAVA_HOME set correctly)
-✓ Android SDK 33.0.0 (ANDROID_HOME: /Users/dev/Library/Android/sdk)
-✓ Android Emulator: Available (1 emulator)
-✓ iOS Simulator: Available (6 simulators)
-✓ Network: Connected
-
-Status: Ready for testing ✓
+# Maestro CLI version 2.x.x
+# Java JDK 17.x.x (JAVA_HOME set correctly)
+# Android SDK (ANDROID_HOME: /Users/dev/Library/Android/sdk)
+# Android Emulator: Available
+# iOS Simulator: Available
+# Network: Connected
+#
+# Status: Ready for testing
 ```
 
 ## Device Setup
@@ -135,14 +158,10 @@ Status: Ready for testing ✓
 # List available emulators
 emulator -list-avds
 
-# Output:
-# Pixel_6_Pro_API_33
-# Pixel_5_API_30
+# Start emulator (Pixel 8 recommended)
+emulator -avd Pixel_8_API_34
 
-# Start emulator
-emulator -avd Pixel_6_Pro_API_33
-
-# Or use Android Studio: Tools → Device Manager → Create Device
+# Or use Android Studio: Tools > Device Manager > Create Device
 
 # Verify connection
 maestro devices
@@ -154,65 +173,62 @@ maestro devices
 # List simulators
 xcrun simctl list devices
 
-# Start simulator (uses Simulator app)
+# Start simulator
 open -a Simulator
 
-# Or via Xcode: Xcode → Open Developer Tool → Simulator
+# Or via Xcode: Xcode > Open Developer Tool > Simulator
 
 # Verify
 maestro devices
-
-# Output shows:
-# iPhone 14 Pro (iOS 16.0)
-# iPhone SE (iOS 15.1)
 ```
 
 ### Real Android Device
 
-1. **Enable Developer Mode:**
-   ```
-   Settings → About → Build Number (tap 7 times)
-   ```
-
-2. **Enable USB Debugging:**
-   ```
-   Settings → Developer Options → USB Debugging
-   ```
-
-3. **Connect via USB:**
-   ```bash
-   adb devices
-   # Output: <device_id> device
-   ```
-
-4. **Authorize Computer:**
-   - Tap "Allow" on device prompt
-   - Verify: `maestro devices`
+1. **Enable Developer Mode:** Settings > About > Build Number (tap 7 times)
+2. **Enable USB Debugging:** Settings > Developer Options > USB Debugging
+3. **Connect via USB:** `adb devices` should show device
+4. **Authorize Computer:** Tap "Allow" on device prompt
 
 ### Real iOS Device
 
-1. **Enable Developer Mode:**
-   ```
-   Settings → Privacy → Developer Mode (toggle on)
-   ```
+1. **Enable Developer Mode:** Settings > Privacy > Developer Mode (toggle on)
+2. **Trust Computer:** Settings > General > Device Management > Trust
+3. **Connect via USB:** `maestro devices` should show device
 
-2. **Trust Computer:**
-   ```
-   Settings → General → Device Management → Trust [Computer]
-   ```
+### Specify Device for Tests
 
-3. **Connect via USB:**
-   ```bash
-   # Verify connection
-   maestro devices
-   ```
+```bash
+# Run on specific device (v2.1+ supports --device flag on test command)
+maestro test flow.yaml --device emulator-5554
 
-4. **Install Certificate:**
-   - Open Xcode
-   - Xcode → Preferences → Accounts
-   - Add Apple ID
-   - Download certificate
+# Filter by platform (v2.1+)
+maestro test .maestro/ --platform ios
+
+# Sharding across multiple devices
+maestro test .maestro/ --shard-all 3
+maestro test .maestro/ --shard-split 3
+```
+
+## Environment Variables
+
+### Driver Startup Timeout
+
+```bash
+# Default: 15,000ms (Android), 120,000ms (iOS)
+# Extend for slow CI machines:
+export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000  # 3 minutes
+```
+
+### Built-in Environment Variables (v2.2+)
+
+| Variable | Description |
+|----------|-------------|
+| `MAESTRO_DEVICE_UDID` | UDID of the device running the test |
+| `MAESTRO_SHARD_ID` | Shard identifier when using `--shard-*` |
+| `MAESTRO_SHARD_INDEX` | Zero-based shard index |
 
 ---
 
-**Next:** See **03-core-concepts.md** for Flow fundamentals, Commands, and Selectors.
+**See Also:** [03-core-concepts.md](03-core-concepts.md) for Flow fundamentals, Commands, and Selectors.
+
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli

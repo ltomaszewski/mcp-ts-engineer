@@ -357,4 +357,4 @@ describe('Network-dependent component', () => {
 
 ---
 
-**Source Repository**: https://github.com/react-native-netinfo/react-native-netinfo
+**Version:** 12.x | **Source:** https://github.com/react-native-netinfo/react-native-netinfo

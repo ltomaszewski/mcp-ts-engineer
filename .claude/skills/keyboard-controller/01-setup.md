@@ -118,7 +118,7 @@ export default function RootLayout() {
 | `statusBarTranslucent` | `boolean` | `true` | Whether StatusBar is translucent on Android. Library enables edge-to-edge by default. |
 | `navigationBarTranslucent` | `boolean` | `true` | Whether NavigationBar is translucent on Android. |
 | `preserveEdgeToEdge` | `boolean` | `false` | Keep edge-to-edge mode always enabled even when module is disabled. Useful with `react-native-edge-to-edge`. |
-| `preload` | `boolean` | `true` | Preload keyboard to eliminate initial focus lag. Calls `KeyboardController.preload()` internally. |
+| `preload` | `boolean` | `true` | Preload keyboard to eliminate initial focus lag (iOS only). Calls `KeyboardController.preload()` internally. |
 | `enabled` | `boolean` | `true` | Whether the module is enabled. Controls initial state; use `useKeyboardController` hook to change at runtime. |
 
 ### Prevent Keyboard Flash on Launch
@@ -145,8 +145,9 @@ KeyboardController.preload();
 
 | RN Version | Keyboard Controller | Notes |
 |------------|-------------------|-------|
-| 0.81+ | 1.19+ | Recommended, Fabric default |
-| 0.73+ | 1.19+ | Supported |
+| 0.81+ | 1.20+ | Recommended, Fabric default |
+| 0.73+ | 1.20+ | Supported |
+| 0.70+ | 1.20.5+ | Compatibility patch |
 | 0.72 | 1.18.x | Legacy |
 
 ### iOS
@@ -181,4 +182,4 @@ npm list react-native-reanimated
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation

@@ -19,22 +19,22 @@ Verify your `android/build.gradle` configuration:
 ```gradle
 buildscript {
   ext {
-    buildToolsVersion = "33.0.0"
-    minSdkVersion = 21
-    compileSdkVersion = 33
-    targetSdkVersion = 33
+    buildToolsVersion = "35.0.0"
+    minSdkVersion = 24
+    compileSdkVersion = 35
+    targetSdkVersion = 35
   }
-  
+
   dependencies {
-    classpath "com.android.tools.build:gradle:7.4.2"
+    classpath "com.android.tools.build:gradle:8.x"
   }
 }
 ```
 
 **Key Points**:
-- Ensure `minSdkVersion` is 21 or higher
+- Ensure `minSdkVersion` is 24 or higher (React Native 0.76+ requirement)
 - Match `compileSdkVersion` and `targetSdkVersion`
-- Use Gradle 7.x or higher
+- Use Gradle 8.x (required by RN 0.76+)
 - Clean build: `./gradlew clean build`
 
 **Source**: https://github.com/react-native-netinfo/react-native-netinfo#getting-started
@@ -427,4 +427,4 @@ global.debugNetwork = debugNetworkState;
 
 ---
 
-**Source Repository**: https://github.com/react-native-netinfo/react-native-netinfo#troubleshooting
+**Version:** 12.x | **Source:** https://github.com/react-native-netinfo/react-native-netinfo

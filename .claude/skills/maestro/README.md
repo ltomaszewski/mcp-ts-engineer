@@ -27,7 +27,7 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 
 ## Module Navigation Guide
 
-This knowledge base is organized into **10 self-contained modules** optimized for LLM context windows. Each module is independently retrievable and includes cross-references for broader context.
+This knowledge base is organized into **12 self-contained modules** optimized for LLM context windows. Each module is independently retrievable and includes cross-references for broader context.
 
 ### Core Modules
 
@@ -112,8 +112,7 @@ appId: com.example.app
 ### Selectors: Multiple Strategies
 - **By visible text**: `tapOn: "Login"`
 - **By testID**: `tapOn: { id: "login_button" }`
-- **By XPath**: `tapOn: { xpath: "//Button[@text='Login']" }`
-- **By coordinates**: `tapOn: [150, 200]` (avoid - fragile)
+- **By coordinates**: `tapOn: { point: "150,200" }` (avoid - fragile)
 
 ### Automatic Waiting
 Maestro automatically waits for UI elements to appear, animations to complete, and network responses - no manual delays needed.
@@ -202,9 +201,9 @@ Maestro automatically waits for UI elements to appear, animations to complete, a
 
 ## Version & Compatibility
 
-- **Maestro Version:** 1.35.0+ (documentation current as of February 2026)
-- **Android:** API Level 16+
-- **iOS:** 11.0+
+- **Maestro Version:** 2.2.0 (documentation current as of February 2026)
+- **Android:** API Level 29+
+- **iOS:** 16+
 - **React Native:** Full support with testID integration
 - **Platforms:** Android, iOS, React Native, Web
 
@@ -214,7 +213,7 @@ Maestro automatically waits for UI elements to appear, animations to complete, a
 
 | Metric | Value |
 |--------|-------|
-| **Total Modules** | 11 |
+| **Total Modules** | 12 |
 | **Total Words** | 85,000+ |
 | **Code Examples** | 107+ |
 | **Reference Tables** | 25+ |
@@ -225,4 +224,4 @@ Maestro automatically waits for UI elements to appear, animations to complete, a
 
 ---
 
-**Last Updated:** December 27, 2025 | **Status:** Complete | **Format:** Modular LLM-Optimized Architecture
+**Last Updated:** February 22, 2026 | **Status:** Complete | **Format:** Modular LLM-Optimized Architecture

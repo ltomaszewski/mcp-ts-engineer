@@ -236,4 +236,4 @@ When wrapping form elements with `testID`:
 
 ---
 
-**Source:** https://docs.maestro.dev/platform-support/react-native
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/platform-support/react-native

@@ -1,25 +1,27 @@
 ---
 name: maestro
-description: "Maestro E2E testing framework - YAML-based flows, selectors, assertions, gestures, scroll, swipe, repeat, runFlow, environment variables, CI integration, React Native testID. Use when writing end-to-end tests, automating UI flows, debugging test failures, or setting up mobile CI testing."
+description: "Maestro E2E testing framework v2.x - YAML-based flows, selectors, assertions, gestures, scroll, swipe, repeat, runFlow, environment variables, CI integration, React Native testID. Use when writing end-to-end tests, automating UI flows, debugging test failures, or setting up mobile CI testing."
 ---
 
 # Maestro
 
-Mobile E2E testing framework with human-readable YAML flows, automatic waiting, and cross-platform support.
+Mobile and web E2E testing framework with human-readable YAML flows, automatic waiting, and cross-platform support.
 
-**CLI:** `maestro`
+**CLI:** `maestro` | **Current Version:** 2.2.0 | **Java:** 17+
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
-- Writing E2E test flows in YAML for iOS or Android
+**LOAD THIS SKILL** when user is:
+- Writing E2E test flows in YAML for iOS, Android, or Web
 - Setting up Maestro in a React Native or Expo project
 - Automating mobile UI interactions (tap, swipe, scroll, input)
 - Configuring CI/CD pipelines with Maestro tests
 - Debugging flaky or failing Maestro flows
 - Recording flows with Maestro Studio
+- Setting up Maestro MCP for AI-assisted testing
+- Building iOS simulator apps with xcodebuild for E2E testing
 
 ---
 
@@ -32,6 +34,8 @@ LOAD THIS SKILL when user is:
 4. Keep flows focused on one feature per file -- easier to debug and maintain
 5. Use `runFlow` for shared setup (login, onboarding) -- reduces duplication
 6. Run flows on real devices or simulators -- Maestro requires an actual device or emulator
+7. Use Java 17+ (required since v2.0) -- older versions will fail
+8. Use `url` field for web flows -- `appId` no longer accepts URLs (v2.0 breaking change)
 
 **NEVER:**
 1. Use coordinate-based tapping (`point: "100,200"`) -- breaks across screen sizes
@@ -39,6 +43,7 @@ LOAD THIS SKILL when user is:
 3. Hardcode credentials in YAML files -- use `env` variables or `--env` CLI flag
 4. Chain many actions without assertions -- makes debugging impossible when failures occur
 5. Ignore `--debug-output` on failures -- contains screenshots and hierarchy data
+6. Use Rhino JavaScript engine -- deprecated in v2.0, GraalJS is the default
 
 ---
 
@@ -67,13 +72,17 @@ appId: com.myapp
     id: "home-screen"
 ```
 
-### Flow with Environment Variables
+### Flow with Environment Variables and Hooks
 
 ```yaml
 appId: com.myapp
 env:
   EMAIL: test@example.com
   PASSWORD: ${TEST_PASSWORD}
+onFlowStart:
+  - runFlow: helpers/clear-state.yaml
+onFlowComplete:
+  - runFlow: helpers/cleanup.yaml
 ---
 - launchApp:
     clearState: true
@@ -89,7 +98,7 @@ env:
     id: "home-screen"
 ```
 
-### Scroll Until Visible
+### Scroll Until Visible with Retry
 
 ```yaml
 - scrollUntilVisible:
@@ -97,6 +106,7 @@ env:
       id: "settings-item"
     direction: DOWN
     timeout: 10000
+    speed: 60
 
 - tapOn:
     id: "settings-item"
@@ -175,6 +185,16 @@ env:
     id: "next-button"
 ```
 
+**BAD** -- URL in appId (broken since v2.0):
+```yaml
+appId: https://example.com
+```
+
+**GOOD** -- Use url field for web:
+```yaml
+url: https://example.com
+```
+
 ---
 
 ## Quick Reference
@@ -184,21 +204,35 @@ env:
 | `maestro test` | Run a single flow | `maestro test .maestro/login.yaml` |
 | `maestro test` | Run all flows in directory | `maestro test .maestro/` |
 | `maestro studio` | Open GUI recorder | `maestro studio` |
+| `maestro hierarchy` | Print view hierarchy | `maestro hierarchy` |
+| `maestro check-syntax` | Validate flow YAML syntax (v1.40+) | `maestro check-syntax flow.yaml` |
+| `maestro chat` | AI assistant for Maestro (MaestroGPT) (v1.40+) | `maestro chat` |
 | `--debug-output` | Save debug artifacts | `maestro test flow.yaml --debug-output ./debug` |
 | `--env` | Pass environment variable | `maestro test flow.yaml --env EMAIL=test@x.com` |
 | `--device` | Target specific device | `maestro test flow.yaml --device emulator-5554` |
+| `--platform` | Filter by platform | `maestro test .maestro/ --platform ios` |
+| `--format` | Output report format | `maestro test flow.yaml --format junit` |
+| `--test-output-dir` | Set artifact output dir | `maestro test flow.yaml --test-output-dir ./results` |
+| `--shard-all` | Run all flows on all devices | `maestro test .maestro/ --shard-all 3` |
+| `--shard-split` | Split flows across devices | `maestro test .maestro/ --shard-split 3` |
 
 | Selector | Syntax | Use Case |
 |----------|--------|----------|
 | By ID | `id: "button"` | React Native `testID` |
-| By text | `text: "Submit"` | Static visible labels |
-| By regex | `text: "Welcome.*"` | Partial text matching |
+| By text | `text: "Submit"` | Static visible labels (regex) |
 | By index | `index: 0` | First match among duplicates |
 | By point | `point: "50%,50%"` | Center of screen (relative) |
+| By state | `enabled: true` | Match enabled/checked/focused |
+| Relative: below | `below: { id: "header" }` | Element below another |
+| Relative: above | `above: { text: "Footer" }` | Element above another |
+| Relative: containsChild | `containsChild: { text: "X" }` | Parent containing child |
+| Relative: containsDescendants | `containsDescendants: [...]` | Parent with all listed descendants |
+| Relative: childOf | `childOf: { id: "parent" }` | Child of specified parent |
+| By traits | `traits: "text"` | Match by trait (text, long-text, square) |
 
 | Command | Syntax | Purpose |
 |---------|--------|---------|
-| `launchApp` | `- launchApp` | Start app (clears state by default) |
+| `launchApp` | `- launchApp` | Start app (clearState defaults to false) |
 | `tapOn` | `- tapOn: { id: "x" }` | Tap element |
 | `longPressOn` | `- longPressOn: { id: "x" }` | Long press element |
 | `doubleTapOn` | `- doubleTapOn: { id: "x" }` | Double tap element |
@@ -210,14 +244,20 @@ env:
 | `scrollUntilVisible` | See example above | Scroll to find element |
 | `assertVisible` | `- assertVisible: { id: "x" }` | Assert element exists |
 | `assertNotVisible` | `- assertNotVisible: { id: "x" }` | Assert element hidden |
+| `assertScreenshot` | `- assertScreenshot: "name"` | Visual regression testing (v2.2+) |
 | `runFlow` | `- runFlow: other.yaml` | Execute sub-flow |
 | `copyTextFrom` | `- copyTextFrom: { id: "x" }` | Copy text to clipboard |
 | `pasteText` | `- pasteText` | Paste copied text |
+| `setClipboard` | `- setClipboard: "text"` | Set clipboard directly (v2.1+) |
+| `setPermissions` | `- setPermissions: {...}` | Set app permissions (v2.1+) |
+| `setOrientation` | `- setOrientation: LANDSCAPE_LEFT` | Set device orientation: PORTRAIT, LANDSCAPE_LEFT, LANDSCAPE_RIGHT, UPSIDE_DOWN (v2.0+) |
 | `repeat` | See example above | Loop commands N times |
+| `retry` | `- retry: { maxRetries: 3 }` | Retry on failure |
 | `back` | `- back` | Android back button |
 | `hideKeyboard` | `- hideKeyboard` | Dismiss keyboard |
 | `takeScreenshot` | `- takeScreenshot: "name"` | Capture screenshot |
-| `evalScript` | `- evalScript: ${...}` | Run inline JavaScript |
+| `evalScript` | `- evalScript: ${...}` | Run inline JavaScript (GraalJS) |
+| `assertWithAI` | `- assertWithAI: "description"` | AI-powered visual assertion |
 
 ---
 
@@ -240,4 +280,4 @@ env:
 
 ---
 
-**Version:** Maestro 1.x | **Source:** https://docs.maestro.dev/
+**Version:** Maestro 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

@@ -294,4 +294,4 @@ TEST_EMAIL=john@company.com TEST_PASSWORD=ProdPassword maestro test login.yaml
 
 ---
 
-**Next:** See **09-cicd-integration.md** for CI/CD pipeline setup.
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

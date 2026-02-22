@@ -1,6 +1,6 @@
 # Setup & Configuration - Sentry React Native
 
-Complete setup guide for @sentry/react-native v6.x in React Native and Expo projects.
+Complete setup guide for @sentry/react-native v8.x in React Native and Expo projects.
 
 ---
 
@@ -24,6 +24,41 @@ npx expo install @sentry/react-native
 
 ---
 
+## Minimum Version Requirements (v8)
+
+### iOS / macOS / tvOS
+
+| Platform | Minimum Version |
+|----------|-----------------|
+| iOS | 15.0+ |
+| macOS | 10.14+ |
+| tvOS | 15.0+ |
+| Xcode | 16.4+ |
+
+### Android
+
+| Requirement | Minimum Version |
+|-------------|-----------------|
+| Android Gradle Plugin | 7.4.0+ |
+| Sentry Android Gradle Plugin | 6.0.0 |
+| Kotlin | 1.8+ |
+
+### Self-Hosted Sentry
+
+| Requirement | Minimum Version |
+|-------------|-----------------|
+| Sentry Server | 25.11.1+ |
+
+### Native SDK Dependencies (v8)
+
+| Component | Version |
+|-----------|---------|
+| Cocoa SDK | v9.1.0+ |
+| Sentry CLI | v3.1.0+ |
+| Android Gradle Plugin | v6.0.0 |
+
+---
+
 ## Expo Plugin Configuration
 
 Add to `app.json` or `app.config.js`:
@@ -44,6 +79,14 @@ Add to `app.json` or `app.config.js`:
 }
 ```
 
+### Expo Plugin Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `organization` | string | Sentry organization slug |
+| `project` | string | Sentry project slug |
+| `useNativeInit` | boolean | Enable native initialization for app start error capture (v8+) |
+
 ---
 
 ## Basic Initialization
@@ -61,6 +104,68 @@ Sentry.init({
 });
 
 export default Sentry.wrap(App);
+```
+
+---
+
+## Native Initialization (v8+)
+
+Version 8 introduces native initialization to capture crashes and errors during React Native bridge setup, bundle loading, and native module initialization.
+
+### sentry.options.json
+
+Create `sentry.options.json` in the React Native project root with the same options as `Sentry.init()`:
+
+```json
+{
+  "dsn": "YOUR_DSN",
+  "environment": "production",
+  "tracesSampleRate": 0.1
+}
+```
+
+### iOS Native Init
+
+Set `autoInitializeNativeSdk: false` in JS and follow the Cocoa SDK initialization:
+
+```typescript
+Sentry.init({
+  dsn: 'YOUR_DSN',
+  autoInitializeNativeSdk: false,
+});
+```
+
+### Android Native Init
+
+Add to `AndroidManifest.xml`:
+
+```xml
+<meta-data
+  android:name="io.sentry.auto-init"
+  tools:replace="android:value"
+  android:value="true"
+/>
+```
+
+### Expo Native Init
+
+Use the `useNativeInit` Expo plugin option:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "your-org-slug",
+          "project": "your-project-slug",
+          "useNativeInit": true
+        }
+      ]
+    ]
+  }
+}
 ```
 
 ---
@@ -84,6 +189,7 @@ export default Sentry.wrap(App);
 | `sendDefaultPii` | boolean | `false` | Include PII from integrations |
 | `maxValueLength` | number | `250` | Truncation limit for single values |
 | `normalizeDepth` | number | `3` | Tree-walking depth for context normalization |
+| `normalizeMaxBreadth` | number | `1000` | Max object/array properties included |
 
 ### Error Filtering
 
@@ -105,6 +211,7 @@ export default Sentry.wrap(App);
 | `tracesSampler` | function | -- | Dynamic per-transaction sampling function |
 | `tracePropagationTargets` | string[] | -- | URL patterns receiving trace headers |
 | `enableAutoPerformanceTracing` | boolean | `true` | Automatic performance monitoring |
+| `propagateTraceparent` | boolean | `false` | W3C traceparent header propagation alongside sentry-trace and baggage headers |
 
 ### React Native Specific Options
 
@@ -121,6 +228,16 @@ export default Sentry.wrap(App);
 | `enableNdkScopeSync` | boolean | `true` | Java-to-NDK scope sync (Android) |
 | `attachThreads` | boolean | `false` | Auto-attach all threads (Android) |
 | `onReady` | function | -- | Callback after native SDK init completes |
+| `enableCaptureFailedRequests` | boolean | `false` | HTTP error capture |
+| `enableNativeNagger` | boolean | `true` | Show native nagger alert when SDK init fails |
+
+### Logs Options (v7.7.0+)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enableLogs` | boolean | `false` | Activate log capturing in Sentry |
+| `beforeSendLog` | function | -- | Modify/filter logs before transmission |
+| `logsOrigin` | string | -- | Log source: `'native'`, `'js'`, or `'all'` |
 
 ### Session Replay Options
 
@@ -128,6 +245,14 @@ export default Sentry.wrap(App);
 |--------|------|---------|-------------|
 | `replaysSessionSampleRate` | number | -- | Session replay sampling rate |
 | `replaysOnErrorSampleRate` | number | -- | Error-triggered replay sampling rate |
+
+### Transport Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `transport` | function | -- | Custom event transmission implementation |
+| `transportOptions` | object | -- | Headers and fetch config for requests |
+| `shutdownTimeout` | number | `2000` | Ms to wait for pending events before closing |
 
 ---
 
@@ -192,6 +317,42 @@ module.exports = withSentryConfig(getDefaultConfig(__dirname), {
 
 ---
 
+## Migration from v6 to v8
+
+### Removed in v7
+
+| Removed | Replacement |
+|---------|-------------|
+| `captureUserFeedback()` | `captureFeedback()` |
+| `autoSessionTracking` option | `enableAutoSessionTracking` option |
+
+### Changed in v7
+
+| Change | Details |
+|--------|---------|
+| App Start span names | "Cold/Warm App Start" changed to "Cold/Warm Start" |
+| Expo detection | Uses `ExpoGo` module instead of `appOwnership` |
+| Minimum Expo SDK | 50+ required |
+| JavaScript SDK | Updated to v10 (includes v9 + v10 breaking changes) |
+| Android SDK | Updated to v8 |
+| Self-hosted Sentry | 25.2.0+ required |
+
+### New in v8
+
+| Feature | Details |
+|---------|---------|
+| Native initialization | Capture app start crashes via `sentry.options.json` |
+| Tombstone integration | Android 12+ native crash detail via `io.sentry.tombstone.enable` manifest key |
+| iOS replay filtering | `includedViewClasses` / `excludedViewClasses` |
+| Expo `useNativeInit` | Auto native init for app start error capture |
+| Minimum iOS | 15.0+ (was 11.0+) |
+| Minimum Xcode | 16.4+ |
+| Cocoa SDK | v9.1.0+ |
+| Sentry CLI | v3.1.0+ |
+| Self-hosted Sentry | 25.11.1+ |
+
+---
+
 ## Verification
 
 Throw a test error to confirm events reach Sentry:
@@ -209,4 +370,4 @@ Check the Sentry dashboard for the event within 30 seconds.
 
 ---
 
-**Version:** 6.x | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/
+**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/

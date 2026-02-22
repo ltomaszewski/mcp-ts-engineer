@@ -8,7 +8,7 @@
 
 ### set(key, value)
 
-Stores a value. Type is inferred from the value argument.
+Stores a value. Type is inferred from the value argument. Throws an error if the save fails (v4.0.0+).
 
 ```typescript
 import { createMMKV } from 'react-native-mmkv';
@@ -74,12 +74,12 @@ const keys: string[] = storage.getAllKeys();
 // ["user.name", "user.age", "user.premium"]
 ```
 
-### remove(key)
+### remove(key): boolean
 
-**Note:** In v4, `delete()` was renamed to `remove()`.
+**Note:** In v4, `delete()` was renamed to `remove()`. Returns `true` if the key existed and was removed, `false` otherwise. Added in v4.0.0.
 
 ```typescript
-storage.remove('user.name');
+const wasRemoved = storage.remove('user.name'); // true if key existed
 ```
 
 ### clearAll()
@@ -153,6 +153,8 @@ Or use the `useMMKVObject<T>()` hook which handles this automatically (see [05-a
 
 ## Import Data Between Instances
 
+`importAllFrom()` copies all data from another MMKV instance and returns the count of imported entries. Added in v4.1.0.
+
 ```typescript
 const source = createMMKV({ id: 'source' });
 const target = createMMKV({ id: 'target' });
@@ -160,8 +162,9 @@ const target = createMMKV({ id: 'target' });
 source.set('key1', 'value1');
 source.set('key2', 'value2');
 
-// Copy all data from source to target
-target.importAllFrom(source);
+// Copy all data from source to target -- returns count
+const importedCount: number = target.importAllFrom(source);
+console.log(`Imported ${importedCount} entries`); // 2
 ```
 
 ---
@@ -176,4 +179,4 @@ target.importAllFrom(source);
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv

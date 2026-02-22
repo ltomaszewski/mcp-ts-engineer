@@ -1,6 +1,6 @@
 # Core API - Sentry React Native
 
-Error capture, user identification, breadcrumbs, scopes, and context enrichment.
+Error capture, user identification, breadcrumbs, scopes, context enrichment, and user feedback.
 
 ---
 
@@ -9,6 +9,8 @@ Error capture, user identification, breadcrumbs, scopes, and context enrichment.
 Captures an error event and sends it to Sentry.
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 // Basic
 Sentry.captureException(error);
 
@@ -33,6 +35,8 @@ Sentry.captureException(error, {
 Captures a text message event.
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 // Basic
 Sentry.captureMessage('User completed onboarding');
 
@@ -64,12 +68,76 @@ Sentry.captureMessage('Checkout abandoned', {
 Sends a manually constructed event.
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 Sentry.captureEvent({
   message: 'Manual event',
   level: 'info',
   tags: { source: 'analytics' },
   extra: { data: someData },
 });
+```
+
+---
+
+## captureFeedback()
+
+Captures user feedback. Replaces the removed `captureUserFeedback()` API (removed in v7).
+
+### Signature
+
+```typescript
+Sentry.captureFeedback(
+  feedback: SendFeedbackParams,
+  hint?: FeedbackHint,
+): string // Returns the event ID
+```
+
+### SendFeedbackParams
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | No | User's full name |
+| `email` | string | No | User's email address |
+| `message` | string | Yes | Feedback content |
+| `associatedEventId` | string | No | Links feedback to a specific error event |
+
+### FeedbackHint
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `captureContext` | object | Tags and other metadata |
+| `attachments` | array | File attachments |
+
+### Examples
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+// Basic feedback
+Sentry.captureFeedback({
+  name: 'John Doe',
+  email: 'john@doe.com',
+  message: 'The checkout flow is broken.',
+});
+
+// Feedback linked to an error event
+const eventId = Sentry.captureMessage('Checkout failure');
+Sentry.captureFeedback({
+  name: 'Jane Smith',
+  email: 'jane@example.com',
+  message: 'I cannot complete my purchase.',
+  associatedEventId: eventId,
+});
+
+// Feedback with additional context and attachments
+Sentry.captureFeedback(
+  { message: 'I really like your App, thanks!' },
+  {
+    captureContext: { tags: { source: 'feedback-form' } },
+    attachments: [{ filename: 'screenshot.txt', data: 'base64data' }],
+  },
+);
 ```
 
 ---
@@ -81,6 +149,8 @@ Sentry.captureEvent({
 Sets the current user context. Persists across all subsequent events.
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 // On login
 Sentry.setUser({
   id: user.id,
@@ -92,6 +162,16 @@ Sentry.setUser({
 // On logout -- ALWAYS clear
 Sentry.setUser(null);
 ```
+
+### User Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Unique user identifier |
+| `email` | string | User email address |
+| `username` | string | Display name |
+| `ip_address` | string | IP address or `'{{auto}}'` for auto-detection |
+| Custom keys | any | Additional user properties |
 
 ### setTag()
 
@@ -134,6 +214,8 @@ Breadcrumbs record a trail of events leading up to an error.
 ### addBreadcrumb()
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 Sentry.addBreadcrumb({
   category: 'navigation',
   message: 'User navigated to checkout',
@@ -222,6 +304,8 @@ Sentry.init({
 Creates an isolated scope for error-specific context. Does not persist globally.
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 Sentry.withScope((scope) => {
   scope.setTag('critical', 'true');
   scope.setLevel('fatal');
@@ -232,16 +316,18 @@ Sentry.withScope((scope) => {
 // Tags/level revert after this block
 ```
 
-### configureScope()
+### Scope Methods
 
-Modifies the global scope (persists across events).
-
-```typescript
-Sentry.configureScope((scope) => {
-  scope.setTag('app_state', 'foreground');
-  scope.setUser({ id: user.id });
-});
-```
+| Method | Description |
+|--------|-------------|
+| `scope.setTag(key, value)` | Set a searchable tag |
+| `scope.setLevel(level)` | Set severity level |
+| `scope.setExtra(key, value)` | Add extra data |
+| `scope.setUser(user)` | Set user context |
+| `scope.setContext(name, data)` | Set structured context |
+| `scope.setFingerprint(values)` | Control error grouping |
+| `scope.addBreadcrumb(breadcrumb)` | Add a breadcrumb |
+| `scope.clear()` | Clear all scope data |
 
 ---
 
@@ -250,17 +336,20 @@ Sentry.configureScope((scope) => {
 Ensure pending events are sent before the app goes to background:
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
 import { AppState } from 'react-native';
 import { useEffect } from 'react';
 
-useEffect(() => {
-  const subscription = AppState.addEventListener('change', (state) => {
-    if (state === 'background') {
-      Sentry.flush(2000); // Wait up to 2 seconds
-    }
-  });
-  return () => subscription.remove();
-}, []);
+function useFlushOnBackground(): void {
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        Sentry.flush(2000); // Wait up to 2 seconds
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+}
 ```
 
 ---
@@ -301,4 +390,33 @@ const user = await safeApiCall(
 
 ---
 
-**Version:** 6.x | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/
+## Available Integrations
+
+### Default Integrations
+
+| Integration | Purpose |
+|-------------|---------|
+| Dedupe | Deduplicate events |
+| FunctionToString | Converts function references to strings |
+| Breadcrumbs | Auto-capture breadcrumbs |
+| LinkedErrors | Chain related errors |
+| HttpContext (UserAgent) | Add HTTP context |
+
+### Optional Integrations
+
+| Integration | Purpose |
+|-------------|---------|
+| `mobileReplayIntegration()` | Session replay for mobile |
+| `reactNavigationIntegration()` | React Navigation performance tracing |
+| `browserReplayIntegration()` | Session replay for web |
+| Redux integration | Track Redux state |
+| Component tracking | Monitor component lifecycle |
+| React component names | Add component names to events |
+| Consola integration | Send Consola logs to Sentry |
+| Console logging | Capture console API calls as Sentry logs |
+| HttpClient | Enhanced HTTP error capture |
+| RewriteFrames | Modify stack frame URLs |
+
+---
+
+**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/

@@ -63,7 +63,7 @@ Render custom content **inside** the keyboard area. The content appears as part 
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `enabled` | `boolean` | -- | When `true`, attaches content to keyboard. When `false`, detaches. |
+| `enabled` | `boolean` | `true` | When `true`, attaches content to keyboard. When `false`, detaches. |
 
 ### Example
 
@@ -241,4 +241,4 @@ const styles = StyleSheet.create({
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/views/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/views/

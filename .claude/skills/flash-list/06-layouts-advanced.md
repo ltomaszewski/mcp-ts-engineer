@@ -1,6 +1,6 @@
-# FlashList v1.7.x - Layouts & Advanced Usage
+# FlashList v2.x - Layouts & Advanced Usage
 
-**Grid layouts, masonry, horizontal, inverted, sticky headers, sections**
+**Grid layouts, masonry, horizontal, chat (maintainVisibleContentPosition), sticky headers, sections**
 
 **Source:** https://shopify.github.io/flash-list/docs/usage
 
@@ -10,7 +10,7 @@
 
 ### Basic Grid (numColumns)
 
-Use `numColumns` for grid layouts. Items fill in zig-zag order (left-to-right, top-to-bottom). Only works with `horizontal={false}`.
+Use `numColumns` for grid layouts. Items fill in zig-zag order (left-to-right, top-to-bottom). Only works with `horizontal={false}`. In v2, grid items equalize heights when side-by-side items differ.
 
 ```typescript
 import React, { useCallback } from 'react';
@@ -24,7 +24,7 @@ interface Product {
   imageUrl: string;
 }
 
-const ProductGrid = ({ products }: { products: Product[] }) => {
+const ProductGrid = ({ products }: { products: Product[] }): React.ReactElement => {
   const renderItem = useCallback(({ item }: { item: Product }) => (
     <View style={{ flex: 1, margin: 8, backgroundColor: '#f5f5f5', borderRadius: 8 }}>
       <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 150 }} />
@@ -41,7 +41,6 @@ const ProductGrid = ({ products }: { products: Product[] }) => {
         data={products}
         numColumns={2}
         renderItem={renderItem}
-        estimatedItemSize={230}
         keyExtractor={(item) => item.id}
       />
     </View>
@@ -51,7 +50,7 @@ const ProductGrid = ({ products }: { products: Product[] }) => {
 
 ### Grid with Full-Width Items (overrideItemLayout)
 
-Use `overrideItemLayout` to make specific items span multiple columns:
+Use `overrideItemLayout` to make specific items span multiple columns. In v2, only `span` is supported; `size` is no longer available.
 
 ```typescript
 interface ListItem {
@@ -60,7 +59,7 @@ interface ListItem {
   title: string;
 }
 
-const MixedGrid = ({ items }: { items: ListItem[] }) => {
+const MixedGrid = ({ items }: { items: ListItem[] }): React.ReactElement => {
   const renderItem = useCallback(({ item }: { item: ListItem }) => {
     if (item.type === 'banner') {
       return (
@@ -82,13 +81,11 @@ const MixedGrid = ({ items }: { items: ListItem[] }) => {
         data={items}
         numColumns={2}
         renderItem={renderItem}
-        estimatedItemSize={150}
         getItemType={(item) => item.type}
         keyExtractor={(item) => item.id}
         overrideItemLayout={(layout, item, _index, maxColumns) => {
           if (item.type === 'banner') {
             layout.span = maxColumns;  // Full width
-            layout.size = 120;         // Known height
           }
         }}
       />
@@ -99,25 +96,26 @@ const MixedGrid = ({ items }: { items: ListItem[] }) => {
 
 ---
 
-## Masonry Layouts (MasonryFlashList)
+## Masonry Layouts (v2: `masonry` prop)
 
-In v1.7.x, masonry (Pinterest-style) layouts use the separate `MasonryFlashList` component, not a prop on `FlashList`.
+In v2, masonry (Pinterest-style) layouts use the `masonry` prop on `FlashList`. The separate `MasonryFlashList` component from v1 is deprecated.
 
 ```typescript
-import { MasonryFlashList } from '@shopify/flash-list';
+import React, { useCallback } from 'react';
+import { View, Image } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
 interface GalleryImage {
   id: string;
   url: string;
-  height: number;
 }
 
-const MasonryGallery = ({ images }: { images: GalleryImage[] }) => {
+const MasonryGallery = ({ images }: { images: GalleryImage[] }): React.ReactElement => {
   const renderItem = useCallback(({ item }: { item: GalleryImage }) => (
     <View style={{ margin: 4, borderRadius: 8, overflow: 'hidden' }}>
       <Image
         source={{ uri: item.url }}
-        style={{ width: '100%', height: item.height }}
+        style={{ width: '100%', height: 200 }}
         resizeMode="cover"
       />
     </View>
@@ -125,48 +123,53 @@ const MasonryGallery = ({ images }: { images: GalleryImage[] }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <MasonryFlashList
+      <FlashList
         data={images}
+        masonry
         numColumns={2}
         renderItem={renderItem}
-        estimatedItemSize={200}
         keyExtractor={(item) => item.id}
-        optimizeItemArrangement={true}
       />
     </View>
   );
 };
 ```
 
-### MasonryFlashList-Specific Props
+### Masonry with Custom Spans
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `optimizeItemArrangement` | `boolean` | `false` | Balances column heights for a more even layout |
-| `overrideItemLayout` | `function` | -- | Override estimated size per item (important for masonry) |
-
-**Note:** `MasonryFlashList` shares most props with `FlashList` (data, renderItem, estimatedItemSize, keyExtractor, etc.) but is a separate import.
+Use `overrideItemLayout` with `span` to create items that span multiple columns:
 
 ```typescript
-import { MasonryFlashList } from '@shopify/flash-list';
-
-<MasonryFlashList
+<FlashList
   data={images}
+  masonry
   numColumns={3}
   renderItem={renderItem}
-  estimatedItemSize={150}
-  optimizeItemArrangement={true}
+  keyExtractor={(item) => item.id}
   overrideItemLayout={(layout, item) => {
-    layout.size = item.height;  // Provide exact height for better layout
+    if (item.featured) {
+      layout.span = 2;  // Item spans 2 of 3 columns
+    }
   }}
 />
 ```
+
+### Masonry-Specific Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `masonry` | `boolean` | `false` | Enable masonry layout |
+| `numColumns` | `number` | `1` | Number of columns (must be > 1 for masonry) |
+| `optimizeItemArrangement` | `boolean` | `true` | Reorder items to reduce column height differences |
+| `overrideItemLayout` | `function` | -- | Override column span per item (`layout.span` only; no `layout.size` in v2) |
+
+**Note:** `getColumnFlex` from v1's `MasonryFlashList` is not supported in v2.
 
 ---
 
 ## Horizontal Lists (Carousel)
 
-Set `horizontal={true}` for horizontal scrolling. When horizontal, `estimatedItemSize` refers to item **width**.
+Set `horizontal={true}` for horizontal scrolling. In v2, horizontal items support any size and are resizable. Automatic height adjustment when nested in vertical FlashLists.
 
 ```typescript
 import React, { useCallback } from 'react';
@@ -179,7 +182,7 @@ interface CarouselItem {
   color: string;
 }
 
-const HorizontalCarousel = ({ items }: { items: CarouselItem[] }) => {
+const HorizontalCarousel = ({ items }: { items: CarouselItem[] }): React.ReactElement => {
   const renderItem = useCallback(({ item }: { item: CarouselItem }) => (
     <View
       style={{
@@ -204,7 +207,6 @@ const HorizontalCarousel = ({ items }: { items: CarouselItem[] }) => {
         data={items}
         horizontal={true}
         renderItem={renderItem}
-        estimatedItemSize={200}
         keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
@@ -216,14 +218,16 @@ const HorizontalCarousel = ({ items }: { items: CarouselItem[] }) => {
 
 **Note:** For horizontal lists, the parent must have a defined **height** (not just `flex: 1`).
 
+**Known issue:** Horizontal lists + RTL cannot read padding from `contentContainerStyle`. Apply padding to header component instead.
+
 ---
 
-## Chat App Pattern (Inverted List)
+## Chat App Pattern (maintainVisibleContentPosition)
 
-Use `inverted={true}` for chat-style lists where newest content appears at the bottom. The list renders bottom-to-top using scale transforms.
+In v2, `inverted` is deprecated. Use `maintainVisibleContentPosition` with reversed data for chat-style lists. This approach is more robust and avoids the scale transform issues of `inverted`.
 
 ```typescript
-import React, { useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 
@@ -234,11 +238,9 @@ interface Message {
   isOwn: boolean;
 }
 
-const ChatList = ({ messages }: { messages: Message[] }) => {
-  const listRef = useRef<FlashList<Message>>(null);
-
-  // Data should be in reverse chronological order (newest first)
-  const reversedMessages = [...messages].reverse();
+const ChatList = ({ messages }: { messages: Message[] }): React.ReactElement => {
+  // Reverse data so newest messages are at the bottom
+  const reversed = [...messages].reverse();
 
   const renderItem = useCallback(({ item }: { item: Message }) => (
     <View
@@ -266,12 +268,15 @@ const ChatList = ({ messages }: { messages: Message[] }) => {
   return (
     <View style={{ flex: 1 }}>
       <FlashList
-        ref={listRef}
-        data={reversedMessages}
+        data={reversed}
         renderItem={renderItem}
-        estimatedItemSize={80}
         keyExtractor={(item) => item.id}
-        inverted={true}
+        maintainVisibleContentPosition={{
+          autoscrollToBottomThreshold: 0.2,
+          startRenderingFromBottom: true,
+        }}
+        onStartReached={() => { /* load older messages */ }}
+        onStartReachedThreshold={0.5}
       />
     </View>
   );
@@ -280,14 +285,15 @@ const ChatList = ({ messages }: { messages: Message[] }) => {
 
 **Tips for chat lists:**
 - Use `drawDistance={500}` or higher to reduce blank areas when scrolling up
-- Pre-sort messages in reverse chronological order
+- Use `onStartReached` to load older messages (replaces `onEndReached` with `inverted`)
 - Use `keyExtractor` with message IDs for correct recycling
+- If data reordering causes unwanted item movement, set `maintainVisibleContentPosition={{ disabled: true }}`
 
 ---
 
 ## Sticky Headers
 
-Use `stickyHeaderIndices` to make specific items stick to the top of the list as the user scrolls past them.
+Use `stickyHeaderIndices` to make specific items stick to the top of the list. In v2, sticky headers use the Animated API for seamless transitions.
 
 ```typescript
 interface SectionItem {
@@ -296,7 +302,7 @@ interface SectionItem {
   type: 'header' | 'row';
 }
 
-const SectionList = ({ items }: { items: SectionItem[] }) => {
+const SectionList = ({ items }: { items: SectionItem[] }): React.ReactElement => {
   // Calculate header indices
   const stickyIndices = items
     .map((item, index) => (item.type === 'header' ? index : -1))
@@ -322,7 +328,6 @@ const SectionList = ({ items }: { items: SectionItem[] }) => {
       <FlashList
         data={items}
         renderItem={renderItem}
-        estimatedItemSize={50}
         keyExtractor={(item) => item.id}
         getItemType={(item) => item.type}
         stickyHeaderIndices={stickyIndices}
@@ -332,12 +337,36 @@ const SectionList = ({ items }: { items: SectionItem[] }) => {
 };
 ```
 
+### stickyHeaderConfig (v2.2.0+)
+
+Advanced sticky header configuration:
+
+```typescript
+import { BlurView } from 'expo-blur';
+
+<FlashList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  stickyHeaderIndices={stickyIndices}
+  stickyHeaderConfig={{
+    useNativeDriver: true,
+    offset: 50,         // Distance from top where headers stick
+    backdropComponent: <BlurView style={StyleSheet.absoluteFill} />,
+    hideRelatedCell: true,
+  }}
+  onChangeStickyIndex={(current, previous) => {
+    console.log(`Sticky changed from ${previous} to ${current}`);
+  }}
+/>
+```
+
 ---
 
 ## Infinite Scroll (Pagination)
 
 ```typescript
-const PaginatedList = () => {
+const PaginatedList = (): React.ReactElement => {
   const [data, setData] = useState<Item[]>([]);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -368,7 +397,6 @@ const PaginatedList = () => {
       <FlashList
         data={data}
         renderItem={renderItem}
-        estimatedItemSize={60}
         keyExtractor={(item) => item.id}
         onEndReached={fetchMore}
         onEndReachedThreshold={0.5}
@@ -383,11 +411,28 @@ const PaginatedList = () => {
 
 ---
 
+## Reanimated Integration
+
+FlashList v2 works with `react-native-reanimated`. Use `renderScrollComponent` to pass an animated scroll view:
+
+```typescript
+import Animated from 'react-native-reanimated';
+
+<FlashList
+  data={data}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  renderScrollComponent={Animated.ScrollView}
+/>
+```
+
+---
+
 ## Next Steps
 
-- Read **07-migration-troubleshooting.md** for FlatList migration guide
+- Read **07-migration-troubleshooting.md** for FlatList and v1 migration guide
 - Read **05-performance-guide.md** for optimization strategies
 
 ---
 
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/usage
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/usage

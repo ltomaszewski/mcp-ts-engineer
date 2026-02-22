@@ -7,18 +7,42 @@ A **Flow** is a YAML file containing a sequence of test steps representing a use
 ### Flow Anatomy
 
 ```yaml
-# Header: App identifier
+# Header: app config, env vars, hooks
 appId: com.example.app
+name: "Login Flow"
+tags:
+  - auth
+  - smoke
+env:
+  USERNAME: testuser
+  PASSWORD: ${TEST_PASSWORD}
+onFlowStart:
+  - runFlow: helpers/setup.yaml
+onFlowComplete:
+  - runFlow: helpers/teardown.yaml
 
 # Separator (required)
 ---
 
-# Body: Array of steps/commands
-- launchApp
+# Body: sequential array of commands
+- launchApp:
+    clearState: true
 - tapOn: "Login"
-- inputText: "test@example.com"
+- inputText: ${USERNAME}
 - assertVisible: "Welcome"
 ```
+
+### Flow Configuration Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `appId` | string | Package name (Android) or bundle ID (iOS) |
+| `url` | string | URL for web flows (v2.0+ -- replaces URL in appId) |
+| `name` | string | Custom name for the flow (used in reports) |
+| `tags` | string[] | Tags for filtering with `--include-tags` / `--exclude-tags` |
+| `env` | object | Key-value environment variables scoped to this flow |
+| `onFlowStart` | command[] | Commands executed before the flow starts |
+| `onFlowComplete` | command[] | Commands executed after flow finishes (pass or fail) |
 
 ### Minimal Valid Flow
 
@@ -28,26 +52,38 @@ appId: com.example.app
 - launchApp
 ```
 
-This launches the app and verifies it starts without errors.
+### Web Flow (v2.0+)
+
+```yaml
+url: https://example.com
+---
+- launchApp
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+```
 
 ### Complete User Journey Flow
 
 ```yaml
 appId: com.banking.app
+env:
+  EMAIL: ${TEST_EMAIL}
+  PASS: ${TEST_PASSWORD}
 ---
-
 # 1. Launch app
-- launchApp
+- launchApp:
+    clearState: true
 - assertVisible: "Login Screen"
 
 # 2. Perform login
-- tapOn: "Email Input"
-- inputText: "user@example.com"
-
-- tapOn: "Password Input"  
-- inputText: "SecurePassword123"
-
-- tapOn: "Sign In"
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASS}
+- tapOn:
+    id: "sign-in-btn"
 - assertVisible: "Dashboard"
 
 # 3. Navigate to transfers
@@ -68,163 +104,239 @@ appId: com.banking.app
 
 ### Action Commands (User Interactions)
 
-These commands simulate user interactions:
-
 | Command | Purpose | Example |
 |---------|---------|---------|
 | `launchApp` | Start application | `- launchApp` |
 | `tapOn` | Click/tap UI element | `- tapOn: "Button"` |
+| `doubleTapOn` | Double-tap element | `- doubleTapOn: { id: "img" }` |
+| `longPressOn` | Long press element | `- longPressOn: { id: "item" }` |
 | `inputText` | Type text into field | `- inputText: "hello"` |
-| `swipe` | Perform swipe gesture | `- swipe: {start: [x,y], end: [x,y]}` |
-| `scroll` | Scroll container | `- scroll: {direction: "down"}` |
+| `eraseText` | Delete characters | `- eraseText: 10` |
+| `pressKey` | Press device key | `- pressKey: Enter` |
+| `swipe` | Perform swipe gesture | `- swipe: { direction: LEFT }` |
+| `scroll` | Scroll container | `- scroll` |
+| `scrollUntilVisible` | Scroll to element | See YAML reference |
 | `back` | Navigate back | `- back` |
-| `openLink` | Open URL | `- openLink: "https://..."` |
-| `pressKey` | Press device key | `- pressKey: "ENTER"` |
+| `openLink` | Open URL/deep link | `- openLink: "myapp://route"` |
+| `hideKeyboard` | Dismiss keyboard | `- hideKeyboard` |
+| `copyTextFrom` | Copy element text | `- copyTextFrom: { id: "x" }` |
+| `pasteText` | Paste clipboard | `- pasteText` |
+| `setClipboard` | Set clipboard directly (v2.1+) | `- setClipboard: "text"` |
+| `setOrientation` | Set device orientation (v2.0+) | `- setOrientation: LANDSCAPE` |
+| `setPermissions` | Set app permissions (v2.1+) | `- setPermissions: { ... }` |
+| `setLocation` | Set GPS coordinates | `- setLocation: { lat, lng }` |
+| `addMedia` | Add to device gallery | `- addMedia: "photo.jpg"` |
 
 ### Assertion Commands (Verification)
-
-These commands verify application state:
 
 | Command | Purpose | Example |
 |---------|---------|---------|
 | `assertVisible` | Element is visible | `- assertVisible: "Success"` |
 | `assertNotVisible` | Element is hidden | `- assertNotVisible: "Error"` |
-| `assertTrue` | Variable is true | `- assertTrue: ${VAR}` |
+| `assertTrue` | JS expression is true | `- assertTrue: ${VAR > 0}` |
+| `assertWithAI` | AI visual assertion | `- assertWithAI: "login form shown"` |
+| `assertNoDefectsWithAi` | AI defect detection | `- assertNoDefectsWithAi` |
+| `assertScreenshot` | Visual regression (v2.2+) | `- assertScreenshot: "login"` |
+
+### Flow Control Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `runFlow` | Execute sub-flow | `- runFlow: login.yaml` |
+| `repeat` | Loop commands | See YAML reference |
+| `retry` | Retry on failure | `- retry: { maxRetries: 3 }` |
+| `extendedWaitUntil` | Wait for condition | See YAML reference |
+| `waitForAnimationToEnd` | Wait for animations | `- waitForAnimationToEnd` |
+| `evalScript` | Run inline JavaScript | `- evalScript: ${...}` |
+| `runScript` | Run external JS file | `- runScript: setup.js` |
 
 ## Selectors: Identifying Elements
 
-Maestro supports multiple element identification strategies:
+Maestro supports multiple element identification strategies. All text fields in selectors support **regular expressions**.
 
 ### 1. By Visible Text (Most Common)
 
 ```yaml
 - tapOn: "Login"
 - tapOn: "Submit Order"
-- tapOn: "Cancel"
+- tapOn: "Cancel.*"  # regex match
 ```
 
-**Advantages:**
-- Doesn't require app modifications
-- Works cross-platform
-- Human-readable
+**Advantages:** Doesn't require app modifications, works cross-platform, human-readable.
+**Limitations:** Case-sensitive, text might change, i18n complicates things.
 
-**Limitations:**
-- Case-sensitive
-- Text might change
-- Multilingual apps complicated
-
-### 2. By testID (React Native)
+### 2. By testID / Accessibility ID (Recommended)
 
 ```yaml
 - tapOn:
     id: "login_button"
-
-- inputText:
-    id: "email_input"
-    text: "user@example.com"
+- tapOn:
+    id: "email.*"  # regex match
 ```
 
-**Advantages:**
-- Stable across UI changes
-- Explicit targeting
-- Not affected by text changes
+**Advantages:** Stable across UI changes, not affected by text changes.
+**Implementation (React Native):** `<Button testID="login_button" />`
 
-**Implementation (React Native):**
-```jsx
-<Button testID="login_button" title="Login" />
-<TextInput testID="email_input" />
+### 3. By Relative Position
+
+```yaml
+# Element below another
+- tapOn:
+    below:
+      text: "Username"
+
+# Element above another
+- tapOn:
+    above:
+      id: "footer"
+
+# Element left/right of another
+- tapOn:
+    leftOf:
+      text: "Price"
+
+- tapOn:
+    rightOf:
+      id: "label"
+
+# Parent containing a specific child
+- tapOn:
+    containsChild:
+      text: "Submit"
+
+# Child of a specific parent
+- tapOn:
+    childOf:
+      id: "form-container"
+    text: "Submit"
+
+# Parent containing all listed descendants
+- tapOn:
+    containsDescendants:
+      - text: "Title"
+      - id: "subtitle"
 ```
 
-### 3. By XPath (Advanced)
+### 4. By Element State
 
 ```yaml
 - tapOn:
-    xpath: "//Button[contains(@text, 'Login')]"
+    text: "Submit"
+    enabled: true
+
+- assertVisible:
+    id: "checkbox"
+    checked: true
 
 - tapOn:
-    xpath: "//EditText[@resource-id='password_input']"
+    id: "field"
+    focused: true
 ```
 
-**Advantages:**
-- Powerful matching
-- Complex element selection
-- Parent/child relationships
-
-**Common XPath Patterns:**
-```xpath
-//Button[@text='Login']              # Exact text match
-//Button[contains(@text, 'Log')]     # Partial text
-//View[@resource-id='button_1']      # By resource ID
-//*[position()=1]                    # First element
-```
-
-### 4. By Coordinates (Last Resort)
+### 5. By Index (Disambiguation)
 
 ```yaml
-- tapOn: [150, 200]  # x: 150, y: 200
+# First element matching "Item"
+- tapOn:
+    text: "Item"
+    index: 0
+
+# Negative index for last element (v2.0.6+)
+- tapOn:
+    text: "Item"
+    index: -1
 ```
 
-**Disadvantages:**
-- Fragile (breaks on layout changes)
-- Device-specific
-- Hard to maintain
-
-## Variables: Dynamic Test Data
-
-### Declaring Variables
+### 6. By Point / Coordinates (Last Resort)
 
 ```yaml
-appId: com.example.app
----
+# Relative (percentage-based)
+- tapOn:
+    point: "50%,50%"
 
-# Set variable
-- setVar: USER_EMAIL = "john@example.com"
-
-# Use variable
-- inputText: ${USER_EMAIL}
-
-# Set boolean variable
-- setVar: IS_LOGGED_IN = "true"
-
-# Assert variable
-- assertTrue: ${IS_LOGGED_IN}
+# Absolute pixels
+- tapOn:
+    point: "100,200"
 ```
+
+### Combining Selectors
+
+Selectors can be combined for precise targeting:
+
+```yaml
+- tapOn:
+    text: "Submit"
+    enabled: true
+    index: 0
+```
+
+## Variables and JavaScript
 
 ### Environment Variables
 
+```yaml
+appId: com.example.app
+env:
+  EMAIL: test@example.com
+  PASSWORD: ${TEST_PASSWORD}  # from CLI or system env
+---
+- inputText: ${EMAIL}
+- inputText: ${PASSWORD}
+```
+
 ```bash
-# Pass variables from command line
-USER_EMAIL=test@example.com \
-USER_PASSWORD=password123 \
+# Pass from CLI
+maestro test flow.yaml --env EMAIL=test@x.com --env PASSWORD=secret
+
+# Or from system environment
+export TEST_PASSWORD=secret
 maestro test flow.yaml
 ```
 
-**In Flow:**
+### JavaScript with GraalJS (v2.0+)
+
+The default JavaScript engine is **GraalJS** (Rhino is deprecated).
+
 ```yaml
-appId: com.example.app
----
-- launchApp
-- inputText: ${USER_EMAIL}
-- inputText: ${USER_PASSWORD}
-- tapOn: "Sign In"
+# evalScript -- inline JS using output object
+- evalScript: ${output.timestamp = Date.now()}
+- evalScript: ${output.name = "User " + Math.floor(Math.random() * 1000)}
+- inputText: ${output.name}
+
+# DataFaker for random test data (v2.0+)
+- evalScript: ${output.email = faker.internet().emailAddress()}
+- inputText: ${output.email}
+
+# runScript -- external JS file
+- runScript: scripts/setup-data.js
+```
+
+### Conditions
+
+Four condition types available with `when` or `while`:
+
+| Condition | Description | Example |
+|-----------|-------------|---------|
+| `visible` | Element is visible | `visible: "Dismiss"` |
+| `notVisible` | Element is not visible | `notVisible: "Loading"` |
+| `platform` | Current platform matches | `platform: Android` |
+| `true` | JS expression is true | `true: ${output.count < 10}` |
+
+Conditions can be combined (AND logic):
+
+```yaml
+- runFlow:
+    when:
+      platform: Android
+      visible: "Allow Notifications"
+    file: dismiss-notification.yaml
 ```
 
 ## Execution Model
 
 ### Sequential Execution
 
-Maestro executes steps in order, top to bottom:
-
-```yaml
-appId: com.example.app
----
-- launchApp              # Step 1 executes
-- tapOn: "Menu"          # Step 2 executes after Step 1 completes
-- tapOn: "Settings"      # Step 3 executes after Step 2 completes
-- assertVisible: "Home"  # Step 4 executes after Step 3 completes
-```
-
-If any step fails, execution stops immediately.
+Maestro executes steps top to bottom. If any step fails, execution stops immediately.
 
 ### Automatic Waiting
 
@@ -235,7 +347,7 @@ Maestro intelligently waits for:
 - Content to load
 
 ```yaml
-# No manual delays needed!
+# No manual delays needed
 - tapOn: "Search"
 - inputText: "products"
 - tapOn: "Submit"
@@ -251,17 +363,24 @@ When a step fails:
 4. Debug info printed
 5. Exit code `1` returned
 
-```bash
-$ maestro test flow.yaml
-✓ launchApp
-✓ tapOn "Login"
-✗ assertVisible "Dashboard"
-  Error: Element not found after 30s timeout
-  Screenshot: maestro-results/failure.png
+### Hooks (v2.0+)
 
-✗ Test failed (2/3 steps passed)
+Hooks run commands before/after every flow:
+
+```yaml
+onFlowStart:
+  - runFlow: helpers/login.yaml
+  - runScript: setup.js
+onFlowComplete:
+  - runFlow: helpers/teardown.yaml
 ```
+
+**Hook behavior:**
+- `onFlowStart` failure: Flow marked Failed, body skipped, but `onFlowComplete` still runs
+- `onFlowComplete` failure: Flow marked Failed regardless of body result
 
 ---
 
-**Next:** See **06-yaml-syntax.md** for complete command reference with all parameters.
+**See Also:** [06-yaml-syntax.md](06-yaml-syntax.md) for complete command reference with all parameters.
+
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

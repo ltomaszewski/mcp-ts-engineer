@@ -32,6 +32,8 @@ const userData = await Sentry.startSpan(
 ### Nested Spans
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 const result = await Sentry.startSpan(
   { name: 'checkout', op: 'task' },
   async () => {
@@ -114,6 +116,21 @@ span.end();
 | `onlyIfParent` | boolean | No | Skip creation if no parent exists |
 | `forceTransaction` | boolean | No | Display as transaction in Sentry UI |
 
+### Common Operation Types
+
+| Op | Use Case |
+|----|----------|
+| `http.client` | Outgoing HTTP requests |
+| `http.server` | Incoming HTTP requests |
+| `db` | Database operations |
+| `db.query` | Specific database queries |
+| `function` | Function execution |
+| `task` | Background or multi-step tasks |
+| `file.upload` | File upload operations |
+| `file.download` | File download operations |
+| `serialize` | Data serialization |
+| `ui.render` | UI rendering |
+
 ---
 
 ## Span Attributes and Methods
@@ -121,6 +138,8 @@ span.end();
 ### Setting Attributes
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 Sentry.startSpan(
   {
     name: 'processOrder',
@@ -140,13 +159,27 @@ Sentry.startSpan(
 ### Modifying Active Span
 
 ```typescript
+import * as Sentry from '@sentry/react-native';
+
 const span = Sentry.getActiveSpan();
 if (span) {
   span.setAttribute('result.status', 'success');
   span.setAttributes({ 'result.count': 42, 'result.cached': false });
   span.updateName('processOrder:completed');
+  span.setHttpStatus(200);
 }
 ```
+
+### Span Instance Methods
+
+| Method | Description |
+|--------|-------------|
+| `span.setAttribute(key, value)` | Set a single attribute |
+| `span.setAttributes(attrs)` | Set multiple attributes |
+| `span.updateName(name)` | Change span name |
+| `span.setStatus({ code, message })` | Set span status (1=ok, 2=error) |
+| `span.setHttpStatus(statusCode)` | Set HTTP status code |
+| `span.end()` | End the span (manual spans only) |
 
 ---
 
@@ -277,8 +310,9 @@ Sentry.init({
 | `maskAllImages` | boolean | `true` | Mask all images in replay |
 | `maskAllVectors` | boolean | `true` | Mask all vector graphics in replay |
 | `screenshotStrategy` | `'pixelCopy'` \| `'canvas'` | `'pixelCopy'` | Android screenshot method |
-| `includedViewClasses` | string[] | -- | iOS: only capture these view classes |
-| `excludedViewClasses` | string[] | -- | iOS: exclude these view classes |
+| `includedViewClasses` | string[] | -- | iOS: only traverse these view classes (v8+) |
+| `excludedViewClasses` | string[] | -- | iOS: exclude these view classes (v8+) |
+| `beforeErrorSampling` | function | -- | Filter which error replays are captured |
 
 ### beforeErrorSampling
 
@@ -304,6 +338,11 @@ Sentry.mobileReplayIntegration({
 |--------|-------------|--------------------------|----------------------|
 | `replaysSessionSampleRate` | Continuous recording of all sessions | `0.1` (10%) | `1.0` (100%) |
 | `replaysOnErrorSampleRate` | Buffered recording, captured on error (up to 60s pre-error) | `1.0` (100%) | `1.0` (100%) |
+
+### Sampling Evaluation Order
+
+1. **Session sampling** evaluates first; if triggered, continuous recording begins
+2. **Error sampling** activates only if session sampling does not trigger, buffering up to one minute of events prior to the error
 
 ### Session Lifecycle
 
@@ -331,11 +370,11 @@ Sentry.init({
   // Performance
   tracesSampleRate: 0.1,
   enableAutoPerformanceTracing: true,
-  integrations: [navigationIntegration],
 
   // Session Replay
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
+
   integrations: [
     navigationIntegration,
     Sentry.mobileReplayIntegration({
@@ -346,8 +385,6 @@ Sentry.init({
 });
 ```
 
-**Requirement:** Session replay requires `@sentry/react-native` v6.5.0+.
-
 ---
 
-**Version:** 6.x | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/
+**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/

@@ -13,10 +13,10 @@ Low-level access to keyboard lifecycle events. All callbacks run as Reanimated w
 ```typescript
 useKeyboardHandler(
   handlers: {
-    onStart?: (e: KeyboardHandlerEvent) => void;
-    onMove?: (e: KeyboardHandlerEvent) => void;
-    onInteractive?: (e: KeyboardHandlerEvent) => void;
-    onEnd?: (e: KeyboardHandlerEvent) => void;
+    onStart?: (e: NativeEvent) => void;
+    onMove?: (e: NativeEvent) => void;
+    onInteractive?: (e: NativeEvent) => void;
+    onEnd?: (e: NativeEvent) => void;
   },
   dependencies: any[]
 );
@@ -25,11 +25,11 @@ useKeyboardHandler(
 ### Event Payload
 
 ```typescript
-interface KeyboardHandlerEvent {
+interface NativeEvent {
   height: number;      // Keyboard height in pixels
   progress: number;    // 0 (closed) to 1 (opened)
   duration: number;    // Animation duration in ms
-  target: number;      // Focused TextInput tag, or -1 if unavailable
+  target: number;      // Focused TextInput tag
 }
 ```
 
@@ -267,4 +267,4 @@ onEnd: (e) => {
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/hooks/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/hooks/

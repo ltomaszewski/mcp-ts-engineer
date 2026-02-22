@@ -30,18 +30,18 @@ Error: Could not find element with text "Login"
     amount: 3
 - tapOn: "Element"
 
-# ✅ Solution 4: Use XPath
+# ✅ Solution 4: Use regex text matching
 - tapOn:
-    xpath: "//Button[contains(@text, 'Log')]"
+    text: "Log.*"
 ```
 
 **Debug Steps:**
 ```bash
 # Show view hierarchy
-maestro test flow.yaml --view-hierarchy
+maestro hierarchy
 
 # Enable detailed logs
-maestro test flow.yaml --debug-output
+maestro test flow.yaml --debug-output ./debug
 
 # Use Studio to inspect
 maestro studio
@@ -221,7 +221,7 @@ adb shell pm list packages | grep your.app
 - [ ] Run `maestro doctor` to verify environment
 - [ ] Check `maestro devices` for connected devices
 - [ ] Run with `--debug-output` to see step details
-- [ ] Use `--view-hierarchy` to inspect elements
+- [ ] Use `maestro hierarchy` to inspect elements
 - [ ] Check element text is exact match
 - [ ] Verify testID exists in component
 - [ ] Ensure proper scrolling before tapping
@@ -263,4 +263,4 @@ adb shell pm list packages | grep your.app
 
 ---
 
-**Learn More:** https://maestro.dev
+**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/

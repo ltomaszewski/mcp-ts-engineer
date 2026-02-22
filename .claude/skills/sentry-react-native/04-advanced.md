@@ -1,6 +1,6 @@
 # Advanced Patterns - Sentry React Native
 
-ErrorBoundary, offline events, source maps, and testing.
+ErrorBoundary, offline events, source maps, event filtering, fingerprinting, and testing.
 
 ---
 
@@ -10,6 +10,7 @@ React component that catches JavaScript errors in its child tree, reports them t
 
 ```typescript
 import * as Sentry from '@sentry/react-native';
+import { View, Text, Button } from 'react-native';
 
 function App(): React.JSX.Element {
   return (
@@ -59,6 +60,10 @@ function App(): React.JSX.Element {
 
 ```typescript
 import * as Sentry from '@sentry/react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
 
 function App(): React.JSX.Element {
   return (
@@ -172,7 +177,7 @@ module.exports = withSentryConfig(getDefaultConfig(__dirname), {
 
 ### Manual Source Map Upload
 
-For non-EAS builds, use the Sentry CLI:
+For non-EAS builds, use the Sentry CLI (v3+ required for v8):
 
 ```bash
 npx sentry-cli sourcemaps upload \
@@ -271,13 +276,41 @@ Touch events appear as breadcrumbs with category `touch` and the component name.
 
 ---
 
+## Fingerprinting
+
+Control how Sentry groups errors:
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+// Using withScope
+Sentry.withScope((scope) => {
+  // Group all payment errors together
+  scope.setFingerprint(['payment-error', paymentProvider]);
+  Sentry.captureException(error);
+});
+
+// Using beforeSend
+Sentry.init({
+  dsn: 'YOUR_DSN',
+  beforeSend(event) {
+    if (event.tags?.feature === 'payment') {
+      event.fingerprint = ['payment-error', event.tags.provider ?? 'unknown'];
+    }
+    return event;
+  },
+});
+```
+
+---
+
 ## Testing Sentry Integration
 
 ### Verify Events Reach Sentry
 
 ```typescript
-// Add a test button in development
 import * as Sentry from '@sentry/react-native';
+import { View, Button } from 'react-native';
 
 function DevTools(): React.JSX.Element | null {
   if (!__DEV__) return null;
@@ -315,16 +348,41 @@ export const init = jest.fn();
 export const wrap = jest.fn((component) => component);
 export const captureException = jest.fn();
 export const captureMessage = jest.fn();
+export const captureFeedback = jest.fn();
 export const setUser = jest.fn();
 export const setTag = jest.fn();
 export const setContext = jest.fn();
 export const setExtra = jest.fn();
 export const addBreadcrumb = jest.fn();
-export const withScope = jest.fn((callback) => callback({ setTag: jest.fn(), setLevel: jest.fn(), setExtra: jest.fn(), setFingerprint: jest.fn() }));
+export const withScope = jest.fn((callback) =>
+  callback({
+    setTag: jest.fn(),
+    setLevel: jest.fn(),
+    setExtra: jest.fn(),
+    setFingerprint: jest.fn(),
+    setUser: jest.fn(),
+    setContext: jest.fn(),
+    addBreadcrumb: jest.fn(),
+    clear: jest.fn(),
+  }),
+);
 export const startSpan = jest.fn((_options, callback) => callback());
+export const startSpanManual = jest.fn((_options, callback) =>
+  callback({ setAttribute: jest.fn(), setStatus: jest.fn(), end: jest.fn() }),
+);
+export const startInactiveSpan = jest.fn(() => ({
+  setAttribute: jest.fn(),
+  setStatus: jest.fn(),
+  end: jest.fn(),
+}));
+export const getActiveSpan = jest.fn();
 export const flush = jest.fn();
 
 export const ErrorBoundary = ({ children }: { children: React.ReactNode }) => children;
+export const reactNavigationIntegration = jest.fn(() => ({
+  registerNavigationContainer: jest.fn(),
+}));
+export const mobileReplayIntegration = jest.fn(() => ({}));
 ```
 
 ### Test Error Capture
@@ -353,6 +411,18 @@ describe('ErrorReporting', () => {
       }),
     );
   });
+
+  it('captures user feedback', () => {
+    Sentry.captureFeedback({
+      name: 'Test User',
+      email: 'test@example.com',
+      message: 'Something is broken',
+    });
+
+    expect(Sentry.captureFeedback).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Something is broken' }),
+    );
+  });
 });
 ```
 
@@ -367,29 +437,37 @@ Sentry.init({
 
 ---
 
-## Fingerprinting
+## Android-Specific: Tombstone Integration (v8+)
 
-Control how Sentry groups errors:
+On Android 12+, the Tombstone integration provides more detailed thread information in native crash events. This is configured via the Android native layer, not through JS `Sentry.init()`:
 
-```typescript
-Sentry.withScope((scope) => {
-  // Group all payment errors together
-  scope.setFingerprint(['payment-error', paymentProvider]);
-  Sentry.captureException(error);
-});
-
-// Or set default fingerprint in beforeSend
-Sentry.init({
-  dsn: 'YOUR_DSN',
-  beforeSend(event) {
-    if (event.tags?.feature === 'payment') {
-      event.fingerprint = ['payment-error', event.tags.provider ?? 'unknown'];
-    }
-    return event;
-  },
-});
+**Via AndroidManifest.xml:**
+```xml
+<meta-data
+  android:name="io.sentry.tombstone.enable"
+  android:value="true"
+/>
 ```
+
+**Via native code:**
+```kotlin
+options.isTombstoneEnabled = true
+```
+
+**Via sentry.options.json** (if using native initialization):
+Configure in the native layer as part of native Sentry options.
 
 ---
 
-**Version:** 6.x | **Source:** https://docs.sentry.io/platforms/react-native/
+## App Start Error Capture (v8+)
+
+Version 8 can capture crashes and errors during:
+- React Native bridge setup
+- JavaScript bundle loading
+- Native module initialization
+
+This requires native initialization via `sentry.options.json` or the Expo `useNativeInit` plugin option. See [01-setup.md](01-setup.md) for configuration details.
+
+---
+
+**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/

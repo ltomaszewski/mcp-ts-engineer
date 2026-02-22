@@ -11,12 +11,13 @@ Universal keyboard handling for React Native with smooth native animations and R
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Building forms that need keyboard-aware layouts
 - Implementing smooth keyboard show/hide animations
 - Adding keyboard toolbars with prev/next field navigation
 - Creating interactive keyboard dismiss gestures (iOS / Android 11+)
 - Replacing KeyboardAvoidingView with a more reliable solution
+- Migrating from Reanimated `useAnimatedKeyboard` (deprecated in reanimated 4.2.0)
 
 ---
 
@@ -57,12 +58,15 @@ export default function App() {
 ### KeyboardAwareScrollView for Forms
 
 ```typescript
+import React, { useRef } from 'react';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { TextInput, View } from 'react-native';
 
 export function FormScreen() {
+  const scrollRef = useRef<KeyboardAwareScrollView>(null);
+
   return (
-    <KeyboardAwareScrollView bottomOffset={20}>
+    <KeyboardAwareScrollView ref={scrollRef} bottomOffset={20}>
       <View style={{ padding: 16 }}>
         <TextInput placeholder="Email" />
         <TextInput placeholder="Password" secureTextEntry />
@@ -70,6 +74,9 @@ export function FormScreen() {
     </KeyboardAwareScrollView>
   );
 }
+
+// Programmatically ensure focused input is visible (v1.20.0+)
+// scrollRef.current?.assureFocusedInputVisible();
 ```
 
 ### Keyboard Animation with Reanimated
@@ -222,8 +229,11 @@ useKeyboardHandler({
 |------|-----|---------|
 | Wrap app | `KeyboardProvider` | `<KeyboardProvider>...</KeyboardProvider>` |
 | Keyboard-aware scroll | `KeyboardAwareScrollView` | `<KeyboardAwareScrollView bottomOffset={20}>` |
+| Ensure input visible | `assureFocusedInputVisible()` | `scrollRef.current?.assureFocusedInputVisible()` |
 | Animate with keyboard (Reanimated) | `useReanimatedKeyboardAnimation()` | `const { height, progress } = useReanimatedKeyboardAnimation()` |
 | Animate with keyboard (Animated) | `useKeyboardAnimation()` | `const { height, progress } = useKeyboardAnimation()` |
+| Reanimated compat hook | `useAnimatedKeyboard()` | `const { height, state } = useAnimatedKeyboard()` |
+| Reactive keyboard state | `useKeyboardState()` | `const isVisible = useKeyboardState((s) => s.isVisible)` |
 | Custom keyboard logic | `useKeyboardHandler()` | `useKeyboardHandler({ onMove: (e) => { 'worklet'; ... } }, [])` |
 | Focused input events | `useFocusedInputHandler()` | `useFocusedInputHandler({ onChangeText: (e) => { 'worklet'; ... } }, [])` |
 | Field navigation toolbar | `KeyboardToolbar` | `<KeyboardToolbar><KeyboardToolbar.Prev /><KeyboardToolbar.Next /><KeyboardToolbar.Done /></KeyboardToolbar>` |
@@ -254,4 +264,4 @@ useKeyboardHandler({
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

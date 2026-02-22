@@ -150,7 +150,7 @@ Imperative API for keyboard control.
 | `dismiss` | `(options?) => Promise<void>` | Hide keyboard. Options: `{ keepFocus?: boolean, animated?: boolean }` |
 | `setInputMode` | `(mode: AndroidSoftInputModes) => void` | Set Android soft input mode at runtime |
 | `setDefaultMode` | `() => void` | Restore mode from AndroidManifest.xml |
-| `preload` | `() => void` | Preload keyboard to eliminate first-focus lag |
+| `preload` | `() => void` | Preload keyboard to eliminate first-focus lag (iOS only) |
 | `isVisible` | `() => boolean` | Check current keyboard visibility |
 | `state` | `() => KeyboardEventData` | Get current keyboard state (height, duration, etc.) |
 | `setFocusTo` | `(direction: 'prev' \| 'current' \| 'next') => void` | Move focus between inputs |
@@ -219,12 +219,12 @@ Event listener API for keyboard show/hide lifecycle. Emits four events on all pl
 
 ```typescript
 interface KeyboardEventData {
-  height: number;       // Keyboard height in px
-  duration: number;     // Animation duration in ms
-  timestamp: number;    // Event time from native thread
-  target: number;       // Focused TextInput tag
-  type: string;         // keyboardType of focused input
-  appearance: string;   // keyboardAppearance of focused input
+  height: number;              // Keyboard height in px
+  duration: number;            // Animation duration in ms
+  timestamp: number;           // Event time from native thread
+  target: number;              // Focused TextInput tag
+  type: TextInputProps['keyboardType']; // keyboardType of focused input
+  appearance: 'dark' | 'light'; // keyboardAppearance of focused input
 }
 ```
 
@@ -253,6 +253,101 @@ function useKeyboardVisibility() {
 
 ---
 
+## useAnimatedKeyboard (v1.20.0+)
+
+Compatibility hook for migrating from `react-native-reanimated`'s deprecated `useAnimatedKeyboard`. Drop-in replacement -- just change the import.
+
+### Return Type
+
+```typescript
+interface AnimatedKeyboardResult {
+  height: SharedValue<number>;              // 0 to keyboard height in px
+  state: SharedValue<number>;               // KeyboardState: UNKNOWN, OPENING, OPEN, CLOSING, CLOSED
+}
+```
+
+### Migration from Reanimated
+
+```typescript
+// Before (deprecated in reanimated 4.2.0)
+import { useAnimatedKeyboard } from 'react-native-reanimated';
+
+// After (v1.20.0+) -- just change the import
+import { useAnimatedKeyboard } from 'react-native-keyboard-controller';
+
+function MyComponent() {
+  const { height, state } = useAnimatedKeyboard();
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: -height.value }],
+  }));
+
+  return <Animated.View style={style}>{/* content */}</Animated.View>;
+}
+```
+
+**Note:** Requires `KeyboardProvider` at root (unlike the reanimated version).
+
+---
+
+## useKeyboardState
+
+Reactive access to current keyboard state. Accepts an optional selector function to prevent unnecessary re-renders.
+
+### Signature
+
+```typescript
+function useKeyboardState(): KeyboardState;
+function useKeyboardState<T>(selector: (state: KeyboardState) => T): T;
+```
+
+### Return Type
+
+```typescript
+type KeyboardState = {
+  isVisible: boolean;
+  height: number;
+  duration: number;                        // animation duration in ms
+  timestamp: number;                       // native thread event timestamp
+  target: number;                          // focused TextInput tag
+  type: TextInputProps['keyboardType'];    // keyboardType from focused TextInput
+  appearance: 'dark' | 'light';            // keyboardAppearance from focused TextInput
+};
+```
+
+### Usage
+
+```typescript
+import { useKeyboardState } from 'react-native-keyboard-controller';
+import { View, Text, StyleSheet } from 'react-native';
+
+function KeyboardInfo() {
+  // Select only what you need to minimize re-renders
+  const isVisible = useKeyboardState((state) => state.isVisible);
+  const height = useKeyboardState((state) => state.height);
+
+  if (!isVisible) return null;
+
+  return (
+    <View style={styles.info}>
+      <Text>Keyboard height: {height}px</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  info: { padding: 8, backgroundColor: '#f0f0f0' },
+});
+```
+
+### Best Practices
+
+- **Use selectors** to pick only needed fields -- prevents re-renders on irrelevant changes
+- **Do not use for animations** -- use `useReanimatedKeyboardAnimation` instead
+- **Do not read in event handlers** -- use `KeyboardController.isVisible()` or `KeyboardController.state()` directly
+
+---
+
 ## Performance: Animated vs Reanimated
 
 ```typescript
@@ -273,4 +368,4 @@ const style = useAnimatedStyle(() => ({
 
 ---
 
-**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/
+**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/

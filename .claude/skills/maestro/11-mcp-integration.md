@@ -402,14 +402,13 @@ appId: com.example.app
 - assertVisible: "Login"
 
 - tapOn: "Login Button"
-- inputText: 
+- tapOn:
     id: "email_input"
-    text: "user@example.com"
+- inputText: "user@example.com"
 
-- tapOn: "Password Field"
-- inputText:
+- tapOn:
     id: "password_input"
-    text: "password123"
+- inputText: "password123"
 
 - tapOn: "Submit"
 - assertVisible: "Dashboard"

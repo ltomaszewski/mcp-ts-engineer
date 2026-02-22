@@ -152,13 +152,15 @@ function getGenerationSpeed(gen: NetInfoCellularGeneration): string {
 ```typescript
 interface WiFiDetails {
   isConnectionExpensive: boolean;
-  ssid?: string;        // Android, iOS*, Windows
-  bssid?: string;       // Android, iOS*, Windows*
-  strength?: number;    // Android, Windows
-  ipAddress?: string;   // Android, iOS, macOS, Windows
-  subnet?: string;      // Android, iOS, macOS
-  frequency?: number;   // Android, Windows (MHz)
-  linkSpeed?: number;   // Android (Mbps)
+  ssid: string | null;        // Android, iOS*, Windows
+  bssid: string | null;       // Android, iOS*, Windows*
+  strength: number | null;    // Android, Windows (0-100)
+  ipAddress: string | null;   // Android, iOS, macOS, Windows
+  subnet: string | null;      // Android, iOS, macOS
+  frequency: number | null;   // Android, Windows (MHz)
+  linkSpeed: number | null;   // Android (Mbps)
+  rxLinkSpeed: number | null; // Android Q+ (Mbps, receive)
+  txLinkSpeed: number | null; // Android Q+ (Mbps, transmit)
 }
 ```
 
@@ -175,6 +177,8 @@ interface WiFiDetails {
 | `subnet` | ✓ | ✓ | ✓ | ✗ |
 | `frequency` | ✓ | ✗ | ✗ | ✓ |
 | `linkSpeed` | ✓ | ✗ | ✗ | ✗ |
+| `rxLinkSpeed` | ✓ (Q+) | ✗ | ✗ | ✗ |
+| `txLinkSpeed` | ✓ (Q+) | ✗ | ✗ | ✗ |
 
 ---
 
@@ -185,8 +189,8 @@ interface WiFiDetails {
 ```typescript
 interface CellularDetails {
   isConnectionExpensive: boolean;
-  cellularGeneration: NetInfoCellularGeneration;
-  carrier?: string; // Android, iOS
+  cellularGeneration: NetInfoCellularGeneration | null;
+  carrier: string | null; // Android, iOS
 }
 ```
 
@@ -219,9 +223,9 @@ interface OtherConnectionDetails {
 ```typescript
 interface NetInfoConfiguration {
   reachabilityUrl: string;
-  reachabilityHeaders: object | Headers | string[][];
-  reachabilityMethod: NetInfoMethodType;
-  reachabilityTest: (response: Response) => boolean | Promise<boolean>;
+  reachabilityHeaders?: Record<string, string>;
+  reachabilityMethod?: NetInfoMethodType;
+  reachabilityTest: (response: Response) => Promise<boolean>;
   reachabilityShortTimeout: number;
   reachabilityLongTimeout: number;
   reachabilityRequestTimeout: number;
@@ -236,9 +240,9 @@ interface NetInfoConfiguration {
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `reachabilityUrl` | `string` | `'https://clients3.google.com/generate_204'` | HTTP endpoint for internet test |
-| `reachabilityHeaders` | `object \| Headers \| string[][]` | `{}` | Custom HTTP headers |
-| `reachabilityMethod` | `'HEAD' \| 'GET'` | `'HEAD'` | HTTP method for requests |
-| `reachabilityTest` | `(response: Response) => boolean \| Promise<boolean>` | Status 204 check | Response validation |
+| `reachabilityHeaders` | `Record<string, string>` | `{}` | Custom HTTP headers (optional) |
+| `reachabilityMethod` | `'HEAD' \| 'GET'` | `'HEAD'` | HTTP method for requests (optional) |
+| `reachabilityTest` | `(response: Response) => Promise<boolean>` | Status 204 check | Response validation |
 | `reachabilityShortTimeout` | `number` | `5000` | Check interval offline (ms) |
 | `reachabilityLongTimeout` | `number` | `60000` | Check interval online (ms) |
 | `reachabilityRequestTimeout` | `number` | `15000` | Request timeout (ms) |
@@ -360,4 +364,4 @@ if (isWiFiConnected(state)) {
 
 ---
 
-**Source Repository**: https://github.com/react-native-netinfo/react-native-netinfo
+**Version:** 12.x | **Source:** https://github.com/react-native-netinfo/react-native-netinfo

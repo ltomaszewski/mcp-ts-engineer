@@ -1,13 +1,13 @@
 ---
 name: flash-list
-description: "@shopify/flash-list v1.7.x performant lists - cell recycling, estimatedItemSize, getItemType, overrideItemLayout, grid, horizontal, inverted. Use when implementing large lists, optimizing scroll performance, migrating from FlatList, or building grid/masonry layouts."
+description: "@shopify/flash-list v2.x performant lists - cell recycling, automatic sizing, getItemType, overrideItemLayout, masonry prop, maintainVisibleContentPosition, useRecyclingState, grid, horizontal. New Architecture required. Use when implementing large lists, optimizing scroll performance, migrating from FlatList/v1, or building grid/masonry layouts."
 ---
 
-# FlashList
+# FlashList v2
 
-High-performance list component by Shopify with cell recycling -- drop-in FlatList replacement delivering up to 5x faster UI thread and 10x faster JS thread performance.
+High-performance list component by Shopify with cell recycling -- drop-in FlatList replacement delivering up to 5x faster UI thread and 10x faster JS thread performance. v2 is a ground-up rewrite: JS-only (no native code), automatic sizing, New Architecture required.
 
-**Package:** `@shopify/flash-list`
+**Package:** `@shopify/flash-list@^2.0.0`
 
 ---
 
@@ -17,26 +17,32 @@ LOAD THIS SKILL when user is:
 - Implementing large or infinite scrolling lists
 - Optimizing list scroll performance or debugging blank areas
 - Creating grid layouts with `numColumns`
+- Building masonry (Pinterest-style) layouts
 - Migrating from React Native `FlatList` to FlashList
-- Building chat interfaces with `inverted` lists
+- Migrating from FlashList v1.x to v2.x
+- Building chat interfaces with `maintainVisibleContentPosition`
+- Managing per-item state in recycled cells with `useRecyclingState`
+- Using sticky headers with `stickyHeaderConfig`
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Set `estimatedItemSize` -- FlashList uses this to pre-allocate render buffer; omitting it causes blank areas and a console warning
+1. Require React Native New Architecture -- FlashList v2 does not run on the old architecture (bridge)
 2. Use `keyExtractor` with stable unique IDs -- prevents recycling bugs when items reorder
-3. Memoize `renderItem` with `useCallback` -- avoids re-creating the function every render, which forces all items to re-render
+3. Memoize `renderItem` with `useCallback` -- avoids re-creating the function every render, forcing all items to re-render
 4. Use `getItemType` for heterogeneous lists -- maintains separate recycle pools per type, preventing expensive layout recalculations
 5. Ensure parent container has defined dimensions -- FlashList needs `flex: 1` or explicit height on its parent
+6. Use `useRecyclingState` for per-item state -- resets automatically when dependencies change during recycling
 
 **NEVER:**
-1. Omit `estimatedItemSize` -- causes poor performance, blank cells, and console warnings
+1. Use `estimatedItemSize` in v2 -- removed; FlashList v2 handles all sizing automatically
 2. Use array index as key -- breaks recycling correctness when items are inserted, removed, or reordered
-3. Use `useState` for per-item state -- state persists across recycled cells; use external state keyed by item ID instead
+3. Use `useState` for per-item state -- state persists across recycled cells; use `useRecyclingState` or external state keyed by item ID
 4. Wrap FlashList in a `ScrollView` -- FlashList manages its own scroll; nesting causes layout and performance issues
 5. Test performance in dev mode -- dev mode adds debugging overhead; always benchmark in release builds
+6. Use `MasonryFlashList` -- deprecated in v2; use `masonry` prop on `FlashList` instead
 
 ---
 
@@ -45,13 +51,16 @@ LOAD THIS SKILL when user is:
 ### Basic List
 
 ```typescript
-import { FlashList } from '@shopify/flash-list';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
-interface Item { id: string; title: string; }
+interface Item {
+  id: string;
+  title: string;
+}
 
-export function MyList({ data }: { data: Item[] }) {
+export function MyList({ data }: { data: Item[] }): React.ReactElement {
   const renderItem = useCallback(({ item }: { item: Item }) => (
     <View style={{ padding: 16 }}>
       <Text>{item.title}</Text>
@@ -59,120 +68,189 @@ export function MyList({ data }: { data: Item[] }) {
   ), []);
 
   return (
-    <FlashList
-      data={data}
-      renderItem={renderItem}
-      estimatedItemSize={80}
-      keyExtractor={(item) => item.id}
-    />
+    <View style={{ flex: 1 }}>
+      <FlashList
+        data={data}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
+    </View>
   );
 }
 ```
 
-### Grid Layout
+### Masonry Layout (v2)
 
 ```typescript
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={150}
-  numColumns={2}
-  keyExtractor={(item) => item.id}
-/>
+import React, { useCallback } from 'react';
+import { View, Text, Image } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+
+interface GalleryItem {
+  id: string;
+  url: string;
+  title: string;
+}
+
+export function MasonryGallery({ data }: { data: GalleryItem[] }): React.ReactElement {
+  const renderItem = useCallback(({ item }: { item: GalleryItem }) => (
+    <View style={{ margin: 4, borderRadius: 8, overflow: 'hidden' }}>
+      <Image source={{ uri: item.url }} style={{ width: '100%', height: 200 }} />
+      <Text style={{ padding: 8 }}>{item.title}</Text>
+    </View>
+  ), []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlashList
+        data={data}
+        masonry
+        numColumns={2}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
+    </View>
+  );
+}
 ```
 
-### Heterogeneous List (Multiple Item Types)
+### Chat List with maintainVisibleContentPosition (v2)
 
 ```typescript
-const renderItem = useCallback(({ item }: { item: ListItem }) => {
-  switch (item.type) {
-    case 'header': return <HeaderComponent data={item.data} />;
-    case 'footer': return <FooterComponent data={item.data} />;
-    default: return <ItemComponent data={item.data} />;
-  }
-}, []);
+import React, { useCallback } from 'react';
+import { View, Text } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}
-  getItemType={(item) => item.type}
-  keyExtractor={(item) => item.id}
-/>
+interface Message {
+  id: string;
+  text: string;
+  isOwn: boolean;
+}
+
+export function ChatList({ messages }: { messages: Message[] }): React.ReactElement {
+  const reversed = [...messages].reverse();
+
+  const renderItem = useCallback(({ item }: { item: Message }) => (
+    <View style={{ padding: 8, flexDirection: 'row', justifyContent: item.isOwn ? 'flex-end' : 'flex-start' }}>
+      <View style={{ maxWidth: '75%', backgroundColor: item.isOwn ? '#007AFF' : '#e5e5ea', borderRadius: 16, padding: 12 }}>
+        <Text style={{ color: item.isOwn ? '#fff' : '#000' }}>{item.text}</Text>
+      </View>
+    </View>
+  ), []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlashList
+        data={reversed}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        maintainVisibleContentPosition={{
+          autoscrollToBottomThreshold: 0.2,
+          startRenderingFromBottom: true,
+        }}
+        onStartReached={() => { /* load older messages */ }}
+        onStartReachedThreshold={0.5}
+      />
+    </View>
+  );
+}
 ```
 
-### Infinite Scroll (Pagination)
+### Recycling-Safe Per-Item State (v2)
 
 ```typescript
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={80}
-  onEndReached={fetchNextPage}
-  onEndReachedThreshold={0.5}
-  ListFooterComponent={isLoading ? <ActivityIndicator /> : null}
-/>
-```
+import React, { useCallback } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { FlashList, useRecyclingState } from '@shopify/flash-list';
 
-### Performance Debugging
+interface Item {
+  id: string;
+  title: string;
+  liked: boolean;
+}
 
-```typescript
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={80}
-  onBlankArea={(event) => {
-    console.warn('Blank area detected:', event);
-  }}
-  drawDistance={250}
-/>
+function ItemComponent({ item }: { item: Item }): React.ReactElement {
+  const [liked, setLiked] = useRecyclingState(item.liked, [item.id]);
+
+  return (
+    <View style={{ padding: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text>{item.title}</Text>
+      <Pressable onPress={() => setLiked(!liked)}>
+        <Text>{liked ? 'Unlike' : 'Like'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export function LikeableList({ data }: { data: Item[] }): React.ReactElement {
+  const renderItem = useCallback(({ item }: { item: Item }) => (
+    <ItemComponent item={item} />
+  ), []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlashList data={data} renderItem={renderItem} keyExtractor={(item) => item.id} />
+    </View>
+  );
+}
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** -- Missing estimatedItemSize:
-```typescript
-<FlashList data={data} renderItem={renderItem} />
-```
-
-**GOOD** -- Always provide estimatedItemSize:
+**BAD** -- Using estimatedItemSize (removed in v2):
 ```typescript
 <FlashList data={data} renderItem={renderItem} estimatedItemSize={80} />
 ```
 
-**BAD** -- Inline renderItem (re-created every render):
+**GOOD** -- v2 handles sizing automatically:
 ```typescript
+<FlashList data={data} renderItem={renderItem} keyExtractor={(item) => item.id} />
+```
+
+**BAD** -- Using deprecated MasonryFlashList:
+```typescript
+import { MasonryFlashList } from '@shopify/flash-list';
+<MasonryFlashList data={data} numColumns={2} renderItem={renderItem} estimatedItemSize={200} />
+```
+
+**GOOD** -- Using masonry prop on FlashList:
+```typescript
+import { FlashList } from '@shopify/flash-list';
+<FlashList data={data} masonry numColumns={2} renderItem={renderItem} />
+```
+
+**BAD** -- Using inverted prop (deprecated in v2):
+```typescript
+<FlashList data={messages} renderItem={renderItem} inverted={true} />
+```
+
+**GOOD** -- Using maintainVisibleContentPosition with reversed data:
+```typescript
+const reversed = [...messages].reverse();
 <FlashList
-  data={data}
-  renderItem={({ item }) => <Text>{item.title}</Text>}
-  estimatedItemSize={80}
+  data={reversed}
+  renderItem={renderItem}
+  maintainVisibleContentPosition={{ startRenderingFromBottom: true, autoscrollToBottomThreshold: 0.2 }}
+  onStartReached={loadOlderMessages}
 />
-```
-
-**GOOD** -- Memoized renderItem:
-```typescript
-const renderItem = useCallback(({ item }) => (
-  <Text>{item.title}</Text>
-), []);
-<FlashList data={data} renderItem={renderItem} estimatedItemSize={80} />
 ```
 
 **BAD** -- useState for per-item state (persists across recycled cells):
 ```typescript
-const Item = ({ item }) => {
-  const [expanded, setExpanded] = useState(false); // Leaks across cells!
+const Item = ({ item }: { item: Item }) => {
+  const [expanded, setExpanded] = useState(false);
   return <View>{expanded && <Details />}</View>;
 };
 ```
 
-**GOOD** -- External state keyed by item ID:
+**GOOD** -- useRecyclingState resets on dependency change:
 ```typescript
-const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-const renderItem = useCallback(({ item }) => (
-  <View>{expandedIds.has(item.id) && <Details />}</View>
-), [expandedIds]);
+const Item = ({ item }: { item: Item }) => {
+  const [expanded, setExpanded] = useRecyclingState(false, [item.id]);
+  return <View>{expanded && <Details />}</View>;
+};
 ```
 
 ---
@@ -181,20 +259,25 @@ const renderItem = useCallback(({ item }) => (
 
 | Task | Prop/Method | Example |
 |------|-------------|---------|
-| Set item height estimate | `estimatedItemSize` | `estimatedItemSize={80}` |
 | Create grid | `numColumns` | `numColumns={2}` |
+| Enable masonry | `masonry` | `masonry numColumns={2}` |
 | Handle multiple types | `getItemType` | `getItemType={(item) => item.type}` |
-| Debug blank areas | `onBlankArea` | `onBlankArea={(e) => console.log(e)}` |
 | Sticky section headers | `stickyHeaderIndices` | `stickyHeaderIndices={[0, 5]}` |
+| Configure sticky headers | `stickyHeaderConfig` | `stickyHeaderConfig={{ offset: 50 }}` |
 | Increase draw buffer | `drawDistance` | `drawDistance={250}` |
 | Scroll to item | `scrollToIndex()` | `ref.current?.scrollToIndex({ index: 5 })` |
 | Scroll to end | `scrollToEnd()` | `ref.current?.scrollToEnd({ animated: true })` |
-| Inverted list (chat) | `inverted` | `inverted={true}` |
+| Chat list (bottom-up) | `maintainVisibleContentPosition` | `maintainVisibleContentPosition={{ startRenderingFromBottom: true }}` |
+| Load older content | `onStartReached` | `onStartReached={fetchOlder}` |
 | Horizontal carousel | `horizontal` | `horizontal={true}` |
 | Infinite scroll | `onEndReached` | `onEndReached={fetchMore}` |
 | Pull to refresh | `onRefresh` + `refreshing` | `onRefresh={refresh} refreshing={loading}` |
 | Custom column span | `overrideItemLayout` | See `03-api-props.md` |
 | Empty state | `ListEmptyComponent` | `ListEmptyComponent={<Empty />}` |
+| Per-item state | `useRecyclingState` | `useRecyclingState(init, [item.id])` |
+| Layout-aware state | `useLayoutState` | `useLayoutState(initialValue)` |
+| Cap recycle pool | `maxItemsInRecyclePool` | `maxItemsInRecyclePool={50}` |
+| Get visible items | `getVisibleIndices()` | `ref.current?.getVisibleIndices()` |
 
 ---
 
@@ -203,13 +286,13 @@ const renderItem = useCallback(({ item }) => (
 | When you need | Load |
 |---------------|------|
 | Installation and setup | [01-setup-installation.md](01-setup-installation.md) |
-| Cell recycling explained | [02-core-concepts.md](02-core-concepts.md) |
+| Cell recycling and state hooks | [02-core-concepts.md](02-core-concepts.md) |
 | All props with types/defaults | [03-api-props.md](03-api-props.md) |
-| Ref methods (scroll, etc.) | [04-api-methods-hooks.md](04-api-methods-hooks.md) |
+| Ref methods and hooks | [04-api-methods-hooks.md](04-api-methods-hooks.md) |
 | Performance optimization | [05-performance-guide.md](05-performance-guide.md) |
-| Grid, horizontal, chat layouts | [06-layouts-advanced.md](06-layouts-advanced.md) |
-| FlatList migration + troubleshooting | [07-migration-troubleshooting.md](07-migration-troubleshooting.md) |
+| Grid, masonry, chat layouts | [06-layouts-advanced.md](06-layouts-advanced.md) |
+| v1-to-v2 migration + troubleshooting | [07-migration-troubleshooting.md](07-migration-troubleshooting.md) |
 
 ---
 
-**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/

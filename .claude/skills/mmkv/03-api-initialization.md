@@ -13,7 +13,7 @@ Factory function to create an MMKV storage instance (v4 API).
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `id` | `string` | `'mmkv.default'` | Unique identifier for the storage file |
-| `encryptionKey` | `string` | `undefined` | AES encryption key for data at rest |
+| `encryptionKey` | `string` | `undefined` | AES encryption key for data at rest (max 16 bytes) |
 | `path` | `string` | Platform default | Custom root directory for storage files |
 | `mode` | `'single-process' \| 'multi-process'` | `'single-process'` | Multi-process sync for app groups/extensions |
 | `readOnly` | `boolean` | `false` | Prevent write operations |
@@ -147,18 +147,46 @@ export function getStorage(): MMKV {
 
 ---
 
+## Instance Properties
+
+### id (read-only)
+
+Returns the identifier string for this MMKV instance. Added in v4.0.1.
+
+```typescript
+const storage = createMMKV({ id: 'app.config' });
+console.log(storage.id); // "app.config"
+
+const defaultStorage = createMMKV();
+console.log(defaultStorage.id); // "mmkv.default"
+```
+
+### isReadOnly (read-only)
+
+Returns whether this instance was created with `readOnly: true`.
+
+```typescript
+const readOnlyStorage = createMMKV({ id: 'config', readOnly: true });
+console.log(readOnlyStorage.isReadOnly); // true
+```
+
+---
+
 ## Global Utilities
 
-| Function | Description |
-|----------|-------------|
-| `existsMMKV(id)` | Check if an MMKV instance file exists on disk |
-| `deleteMMKV(id)` | Permanently delete an MMKV instance and its data file |
+Functions added in v4.1.0 for managing MMKV instances at the file level.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `existsMMKV(id)` | `boolean` | Check if an MMKV instance file exists on disk |
+| `deleteMMKV(id)` | `boolean` | Permanently delete an MMKV instance and its data file |
 
 ```typescript
 import { existsMMKV, deleteMMKV } from 'react-native-mmkv';
 
 if (existsMMKV('user.old-data')) {
-  deleteMMKV('user.old-data');
+  const wasDeleted = deleteMMKV('user.old-data');
+  console.log('Deleted:', wasDeleted); // true
 }
 ```
 
@@ -191,4 +219,4 @@ const s = createMMKV({ encryptionKey: key ?? undefined });
 
 ---
 
-**Version:** 4.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv
