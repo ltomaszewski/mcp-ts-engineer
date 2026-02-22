@@ -6,7 +6,7 @@
 
 | Component | Requirement | Details |
 |-----------|-------------|---------|
-| **Node.js** | 16.0.0+ | JavaScript runtime |
+| **Node.js** | 18.0.0+ | JavaScript runtime |
 | **Memory** | 2GB minimum, 8GB recommended | RAM allocation |
 | **Disk Space** | 2GB | Tools + dependencies |
 | **macOS** | 10.13+ | For iOS development |

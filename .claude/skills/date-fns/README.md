@@ -72,7 +72,7 @@
 ✅ **06-api-advanced.md** (Special operations & conversions)
 - `intervalToDuration()` for converting intervals to Duration objects
 - `toDate()` for flexible type conversion (number, string, Date)
-- `toUnixTime()` and `fromUnixTime()` for timestamp operations
+- `getUnixTime()` and `fromUnixTime()` for timestamp operations
 - `getTime()` for millisecond timestamps
 - `getUnixTime()` for Unix timestamps in seconds
 - `eachDayOfInterval()` and `eachMonthOfInterval()` for iterations
@@ -161,7 +161,7 @@
 | 03-api-formatting.md | 360 | 900+ | 5 | 15+ | format, parse, parseISO, formatDistance, formatRelative |
 | 04-api-manipulation.md | 320 | 850+ | 15+ | 15+ | add, sub, setX, startOf*, endOf* |
 | 05-api-query.md | 300+ | 800+ | 15+ | 10+ | isValid, isBefore, difference*, compare* |
-| 06-api-advanced.md | 280+ | 750+ | 10+ | 10+ | intervalToDuration, toDate, toUnixTime, getters |
+| 06-api-advanced.md | 280+ | 750+ | 10+ | 10+ | intervalToDuration, toDate, getUnixTime, getters |
 | 07-locales-i18n.md | 260+ | 700+ | 0 | 8+ | Locales, custom locales, DST, performance |
 | 08-practical-guides.md | 350+ | 900+ | 0 | 15+ | Ranges, business days, age, calendar, validation |
 | **TOTAL** | **2840+** | **7350+** | **80+** | **95+** | **50+ topics** |
@@ -288,7 +288,7 @@ date-fns/
 
 **Framework**: date-fns (Modern JavaScript date utility library)
 **Documentation Version**: v4.1.0 (September 17, 2024)
-**Knowledge Base Date**: December 2024
+**Knowledge Base Date**: February 2026
 **Official Repository**: https://github.com/date-fns/date-fns
 **Documentation**: https://date-fns.org
 
@@ -337,7 +337,7 @@ For improvements or corrections, refer to:
 
 ---
 
-**Generated**: December 27, 2024
+**Generated**: February 22, 2026
 **Total Modules**: 9 (1 master + 8 core)
 **Total Content**: 2840+ lines, 7350+ tokens
 **Functions Documented**: 80+

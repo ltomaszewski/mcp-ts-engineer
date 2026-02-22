@@ -425,4 +425,4 @@ Check that component has `'use client'` directive at top.
 
 ---
 
-**Source:** https://react-hook-form.com/get-started
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/get-started

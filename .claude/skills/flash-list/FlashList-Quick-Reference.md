@@ -1,4 +1,4 @@
-# FlashList Quick Reference Card
+# FlashList v1.7.x - Quick Reference Card
 
 **Compact cheat sheet for FlashList development**
 
@@ -25,46 +25,45 @@ import { FlashList } from '@shopify/flash-list';
 <FlashList
   data={data}
   renderItem={({ item }) => <Text>{item.title}</Text>}
-  estimatedItemSize={100}  // Average item height
+  estimatedItemSize={80}
   keyExtractor={(item) => item.id}
 />
 ```
 
 ---
 
-## Critical Props
+## Essential Props
 
 | Prop | Type | Purpose |
 |------|------|---------|
 | `data` | `T[]` | Items to render |
-| `renderItem` | `function` | Render each item |
+| `renderItem` | `(info) => ReactElement` | Render each item |
 | `estimatedItemSize` | `number` | Average item height (px) |
-| `keyExtractor` | `function` | Unique key per item |
-| `getItemType` | `function` | Type for different item styles |
-| `numColumns` | `number` | Grid columns (0-based) |
-| `masonry` | `boolean` | Pinterest-style layout |
+| `keyExtractor` | `(item, index) => string` | Unique key per item |
+| `getItemType` | `(item) => string` | Type for different item styles |
+| `numColumns` | `number` | Grid columns |
 | `horizontal` | `boolean` | Horizontal scrolling |
-| `onEndReached` | `function` | Called at bottom |
-| `onLoad` | `function` | Called when loaded |
+| `inverted` | `boolean` | Bottom-to-top (chat) |
+| `drawDistance` | `number` | Pre-render buffer (px) |
+| `onEndReached` | `() => void` | Called near bottom |
+| `onBlankArea` | `(event) => void` | Blank space detected |
+| `extraData` | `any` | Triggers re-render |
 
 ---
 
-## State Management
+## State in Recycled Cells
 
 ```typescript
-import { useRecyclingState } from '@shopify/flash-list';
+// BAD: useState persists across recycled cells
+const [expanded, setExpanded] = useState(false);
 
-// ✅ CORRECT: For item-specific state
-const [isExpanded, setIsExpanded] = useRecyclingState(
-  false,
-  [item.id],  // Dependency - resets on change
-  () => {
-    // Optional reset callback
-  }
-);
+// GOOD: External state keyed by item ID
+const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+const renderItem = useCallback(({ item }) => (
+  <View>{expandedIds.has(item.id) && <Details />}</View>
+), [expandedIds]);
 
-// ❌ WRONG: Regular useState persists across recycled cells
-const [isExpanded, setIsExpanded] = useState(false);
+<FlashList extraData={expandedIds} ... />
 ```
 
 ---
@@ -72,7 +71,7 @@ const [isExpanded, setIsExpanded] = useState(false);
 ## Scroll Control
 
 ```typescript
-const listRef = useRef<FlashList>(null);
+const listRef = useRef<FlashList<Item>>(null);
 
 // Scroll to item
 listRef.current?.scrollToIndex({
@@ -84,8 +83,8 @@ listRef.current?.scrollToIndex({
 // Scroll to end
 listRef.current?.scrollToEnd({ animated: true });
 
-// Get visible items
-const visibleIndices = listRef.current?.getVisibleIndices() || [];
+// Scroll to offset
+listRef.current?.scrollToOffset({ offset: 500, animated: true });
 ```
 
 ---
@@ -93,28 +92,22 @@ const visibleIndices = listRef.current?.getVisibleIndices() || [];
 ## Performance Optimization
 
 ```typescript
-// 1. Accurate estimate size
+// 1. Accurate estimated size
 <FlashList estimatedItemSize={100} />
 
-// 2. Use getItemType for mixed content
-<FlashList
-  getItemType={(item) => item.type}  // Separate pools
-/>
+// 2. Type-based recycling for mixed content
+<FlashList getItemType={(item) => item.type} />
 
-// 3. Memoize expensive components
-const MemoizedItem = memo(({ item }) => (
-  <View>{item.title}</View>
-), (prev, next) => prev.item.id === next.item.id);
+// 3. Memoize renderItem
+const renderItem = useCallback(({ item }) => (
+  <MemoizedItem item={item} />
+), []);
 
 // 4. Monitor blank areas
-<FlashList
-  onBlankArea={({ blankArea }) => {
-    if (blankArea > 0) console.warn('Blank area detected');
-  }}
-/>
+<FlashList onBlankArea={(e) => console.warn(e.blankArea)} />
 
-// 5. Test in release mode
-npx react-native run-android --variant release
+// 5. Test in release mode only
+// npx react-native run-android --variant release
 ```
 
 ---
@@ -122,29 +115,33 @@ npx react-native run-android --variant release
 ## Grid Layout
 
 ```typescript
-// 2-column grid
 <FlashList
   data={data}
   numColumns={2}
   renderItem={({ item }) => (
-    <View style={{ flex: 1 }}>
-      {/* Item content */}
+    <View style={{ flex: 1, margin: 8 }}>
+      <Text>{item.title}</Text>
     </View>
   )}
   estimatedItemSize={200}
 />
+```
 
-// Masonry (variable heights)
-<FlashList
+---
+
+## Masonry Layout
+
+```typescript
+import { MasonryFlashList } from '@shopify/flash-list';
+
+<MasonryFlashList
+  data={images}
   numColumns={2}
-  masonry={true}
-  optimizeItemArrangement={true}
   renderItem={({ item }) => (
-    <Image
-      style={{ height: item.height, width: '100%' }}
-    />
+    <Image style={{ height: item.height, width: '100%' }} source={{ uri: item.url }} />
   )}
-  estimatedItemSize={250}
+  estimatedItemSize={200}
+  optimizeItemArrangement={true}
 />
 ```
 
@@ -156,45 +153,28 @@ npx react-native run-android --variant release
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={100}
+  estimatedItemSize={80}
   onEndReached={() => fetchMore()}
-  onEndReachedThreshold={0.3}  // Trigger 30% before bottom
+  onEndReachedThreshold={0.3}
   ListFooterComponent={isLoading ? <Spinner /> : null}
 />
 ```
 
 ---
 
-## Chat App Pattern
+## Chat Pattern (Inverted)
 
 ```typescript
-const reversedMessages = [...messages].reverse();
+const reversed = [...messages].reverse();
 
 <FlashList
-  data={reversedMessages}
+  data={reversed}
   renderItem={({ item }) => <ChatBubble msg={item} />}
   estimatedItemSize={80}
   inverted={true}
-  maintainVisibleContentPosition={{
-    autoscrollToBottomThreshold: 0.1,
-    startRenderingFromBottom: true,
-  }}
-  scrollToEnd({ animated: true })  // Jump to latest
+  keyExtractor={(item) => item.id}
 />
 ```
-
----
-
-## Performance Benchmarks
-
-| Metric | Improvement |
-|--------|-------------|
-| UI Thread FPS | **5x faster** |
-| JS Thread FPS | **10x faster** |
-| Memory | **4% less** |
-| Blank Area | **50% less** |
-
-Device tested: Moto G10 (low-end Android)
 
 ---
 
@@ -202,79 +182,49 @@ Device tested: Moto G10 (low-end Android)
 
 | Problem | Solution |
 |---------|----------|
-| **useState state persists** | Use `useRecyclingState` with dependencies |
-| **Blank cells visible** | Increase `estimatedItemSize` |
-| **Slow with mixed items** | Add `getItemType` prop |
-| **Index keys fail on reorder** | Use stable `keyExtractor` |
-| **Dev mode looks slow** | Test in release mode only |
-| **No type pool separation** | Use `getItemType` for different item types |
+| State persists across cells | Use external state + `extraData` |
+| Blank cells visible | Increase `estimatedItemSize` or `drawDistance` |
+| Slow with mixed items | Add `getItemType` |
+| Index keys break on reorder | Use `keyExtractor` with unique IDs |
+| Dev mode looks slow | Test release builds only |
+| Nothing renders | Add `flex: 1` to parent container |
+| Wrapped in ScrollView | Remove ScrollView, use ListHeaderComponent |
 
 ---
 
-## Hooks
+## Unsupported FlatList Props
 
-```typescript
-import {
-  useRecyclingState,     // State that resets on recycle
-  useLayoutState,        // State for layout changes
-  useMappingHelper,      // Helper for safe .map()
-  useBlankAreaTracker,   // Track blank areas
-  useFlashListContext,   // Access list from children
-} from '@shopify/flash-list';
-```
+`getItemLayout`, `windowSize`, `maxToRenderPerBatch`, `initialNumToRender`, `updateCellsBatchingPeriod`, `disableVirtualization`, `columnWrapperStyle`
 
 ---
 
 ## Migration from FlatList
 
 ```typescript
-// Before
-import { FlatList } from 'react-native';
-<FlatList data={data} renderItem={renderItem} />
-
-// After
+// 1. Change import
 import { FlashList } from '@shopify/flash-list';
+
+// 2. Add estimatedItemSize
 <FlashList
   data={data}
   renderItem={renderItem}
-  estimatedItemSize={100}  // ADD THIS
-  keyExtractor={(item) => item.id}  // Make stable
+  estimatedItemSize={80}  // ADD THIS
+  keyExtractor={(item) => item.id}
 />
+
+// 3. Ensure parent has flex: 1
+// 4. Remove unsupported props
+// 5. Test in release mode
 ```
-
----
-
-## Unsupported Props
-
-❌ `disableVirtualization`  
-❌ `getItemLayout`  
-❌ `initialNumToRender`  
-❌ `maxToRenderPerBatch`  
-❌ `windowSize`  
-❌ `updateCellsBatchingPeriod`  
 
 ---
 
 ## Resources
 
 - **Docs**: https://shopify.github.io/flash-list/docs/
-- **Blog**: https://shopify.engineering/flashlist-v2
 - **GitHub**: https://github.com/Shopify/flash-list
 - **NPM**: https://www.npmjs.com/package/@shopify/flash-list
 
 ---
 
-## Pro Tips
-
-✅ Use `estimatedItemSize` = average item height  
-✅ Use `getItemType` for mixed content types  
-✅ Always use stable `keyExtractor`  
-✅ Use `useRecyclingState` for item-level state  
-✅ Test performance in release mode  
-✅ Monitor `onBlankArea` for issues  
-✅ Memoize expensive renderItem components  
-
----
-
-**Version**: 1.0 | **Updated**: December 27, 2025  
-**Official Authority**: Shopify Engineering
+**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/

@@ -5,24 +5,42 @@ The `@nestjs/config` module centralizes configuration loading, validation, and i
 ## Basic Setup
 
 ```typescript
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Make config accessible throughout the app
+      isGlobal: true,
       envFilePath: '.env',
-      cache: true, // Cache environment variables
+      cache: true,
     }),
   ],
 })
 export class AppModule {}
 ```
 
+### ConfigModule.forRoot Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `isGlobal` | `boolean` | `false` | Make ConfigModule available everywhere |
+| `envFilePath` | `string \| string[]` | `'.env'` | Path(s) to .env file(s) |
+| `ignoreEnvFile` | `boolean` | `false` | Skip loading .env file |
+| `ignoreEnvVars` | `boolean` | `false` | Skip reading OS env vars |
+| `cache` | `boolean` | `false` | Cache environment variables in memory |
+| `expandVariables` | `boolean` | `false` | Enable variable expansion (`${VAR}`) |
+| `load` | `Function[]` | `[]` | Namespaced config factory functions |
+| `validationSchema` | `Joi.ObjectSchema` | — | Joi validation schema |
+| `validationOptions` | `object` | `{ allowUnknown: true, abortEarly: false }` | Joi validation options |
+| `validate` | `Function` | — | Custom validation function |
+
 ## Environment Variable Validation with Joi
 
 ```typescript
-import * as Joi from '@hapi/joi';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import * as Joi from 'joi';
 
 @Module({
   imports: [
@@ -33,12 +51,13 @@ import * as Joi from '@hapi/joi';
           .valid('development', 'production', 'test')
           .default('development'),
         PORT: Joi.number().default(3000),
-        DATABASE_HOST: Joi.string().required(),
+        MONGO_URI: Joi.string().required(),
         JWT_SECRET: Joi.string().min(32).required(),
+        JWT_EXPIRATION: Joi.string().default('1h'),
       }),
       validationOptions: {
         allowUnknown: true,
-        abortEarly: false, // Show all errors
+        abortEarly: false,
       },
     }),
   ],
@@ -67,13 +86,13 @@ class EnvironmentVariables {
   PORT: number;
 
   @IsString()
-  DATABASE_HOST: string;
+  MONGO_URI: string;
 
   @IsString()
   JWT_SECRET: string;
 }
 
-export function validate(config: Record<string, unknown>) {
+export function validate(config: Record<string, unknown>): EnvironmentVariables {
   const validatedConfig = plainToClass(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });
@@ -100,20 +119,20 @@ ConfigModule.forRoot({ validate })
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('database', () => ({
-  host: process.env.DATABASE_HOST,
-  port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
-  username: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
+  uri: process.env.MONGO_URI,
+  dbName: process.env.DATABASE_NAME || 'myapp',
 }));
 
 // config/jwt.config.ts
 export default registerAs('jwt', () => ({
   secret: process.env.JWT_SECRET,
-  expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+  expiresIn: process.env.JWT_EXPIRATION || '1h',
+  refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
 }));
 
 // app.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 
@@ -130,23 +149,77 @@ export class AppModule {}
 
 ## Using Configuration in Services
 
+**CRITICAL:** Always use explicit `@Inject()` -- esbuild/tsx does not emit decorator metadata.
+
 ```typescript
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DatabaseService {
-  constructor(private configService: ConfigService) {}
+  constructor(
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {}
 
-  getDatabaseConfig() {
-    // Access nested config
-    const host = this.configService.get<string>('database.host');
-    const port = this.configService.get<number>('database.port');
+  getDatabaseConfig(): { uri: string; dbName: string } {
+    return {
+      uri: this.configService.get<string>('database.uri'),
+      dbName: this.configService.get<string>('database.dbName', 'myapp'),
+    };
+  }
+}
+```
 
-    // With default value
-    const timeout = this.configService.get<number>('database.timeout', 5000);
+### ConfigService API
 
-    return { host, port, timeout };
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `get` | `get<T>(key: string): T \| undefined` | Get config value |
+| `get` | `get<T>(key: string, defaultValue: T): T` | Get with default |
+| `getOrThrow` | `getOrThrow<T>(key: string): T` | Get or throw if undefined |
+
+```typescript
+// Usage examples
+const port = this.configService.get<number>('PORT');
+const secret = this.configService.getOrThrow<string>('JWT_SECRET');
+const timeout = this.configService.get<number>('TIMEOUT', 5000);
+```
+
+## Typed Configuration with registerAs
+
+```typescript
+// config/jwt.config.ts
+import { registerAs } from '@nestjs/config';
+
+export interface JwtConfig {
+  secret: string;
+  expiresIn: string;
+  refreshExpiresIn: string;
+}
+
+export default registerAs('jwt', (): JwtConfig => ({
+  secret: process.env.JWT_SECRET!,
+  expiresIn: process.env.JWT_EXPIRATION || '1h',
+  refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
+}));
+```
+
+### Injecting Namespaced Config Directly
+
+```typescript
+import { Injectable, Inject } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
+import jwtConfig from '../config/jwt.config';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @Inject(jwtConfig.KEY)
+    private readonly jwt: ConfigType<typeof jwtConfig>,
+  ) {}
+
+  getSecret(): string {
+    return this.jwt.secret; // Fully typed, no get<T>() needed
   }
 }
 ```
@@ -155,12 +228,19 @@ export class DatabaseService {
 
 ```typescript
 // users/config/users.config.ts
+import { registerAs } from '@nestjs/config';
+
 export default registerAs('users', () => ({
   maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS, 10) || 5,
   sessionTimeout: parseInt(process.env.SESSION_TIMEOUT, 10) || 3600,
 }));
 
 // users/users.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import usersConfig from './config/users.config';
+import { UsersService } from './users.service';
+
 @Module({
   imports: [ConfigModule.forFeature(usersConfig)],
   providers: [UsersService],
@@ -168,13 +248,41 @@ export default registerAs('users', () => ({
 export class UsersModule {}
 ```
 
+## Async Module Configuration with ConfigService
+
+```typescript
+import { Module, Inject } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+@Module({
+  imports: [
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.getOrThrow<string>('MONGO_URI'),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
 ## Best Practices
 
-1. **Validate at startup** - Fail early on misconfiguration
-2. **Use isGlobal: true** - Make ConfigModule accessible everywhere
-3. **Centralize configuration** - Avoid `process.env` scattered in code
-4. **Use namespacing** - Organize related settings into logical groups
-5. **Type-safe access** - Use TypeScript interfaces for config objects
-6. **Security first** - Add `.env` to `.gitignore`
-7. **Environment-specific files** - Support `.env.development`, `.env.production`
-8. **Cache configuration** - Use `cache: true` for performance
+| Practice | Rationale |
+|----------|-----------|
+| Validate at startup | Fail early on misconfiguration |
+| Use `isGlobal: true` | Avoid importing ConfigModule everywhere |
+| Use `registerAs` namespaces | Organize related settings into logical groups |
+| Use `ConfigType<typeof config>` | Full type safety without `get<T>()` |
+| Always `@Inject(ConfigService)` | Required for esbuild/tsx compatibility |
+| Add `.env` to `.gitignore` | Never commit secrets |
+| Commit `.env.example` | Document required variables |
+| Use `cache: true` | Avoid re-reading env vars on each access |
+| Use `getOrThrow` for required values | Explicit failure over silent `undefined` |
+
+---
+
+**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/techniques/configuration

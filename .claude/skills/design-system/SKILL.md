@@ -1,5 +1,6 @@
 ---
 name: design-system
+version: "WCAG 2.2"
 description: Design system fundamentals - tokens, components, accessibility, WCAG 2.2 compliance. Use when creating design systems, defining tokens (colors, typography, spacing), or ensuring accessibility standards.
 ---
 
@@ -334,4 +335,4 @@ const Button = ({ onClick, children }) => (
 
 ---
 
-**Source:** Internal design system standards
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

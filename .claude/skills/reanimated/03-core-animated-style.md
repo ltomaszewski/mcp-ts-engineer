@@ -1,102 +1,65 @@
-# Core: useAnimatedStyle Hook
+# Core: useAnimatedStyle, useAnimatedProps, useAnimatedRef
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/  
-**Version:** 4.2.1  
-**Category:** Core Hooks | Style Binding
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/
 
 ---
 
-## 📋 Overview
+## Overview
 
-`useAnimatedStyle` creates a **reactive style object** that automatically updates when shared values change. It's the bridge between animated state (shared values) and visual output (component styles).
-
-**Key Characteristics:**
-- Executes on UI thread (no re-renders needed)
-- Returns plain style object compatible with `Animated.View`, `Animated.Text`, etc.
-- Reactive to changes in shared values and dependencies
-- Supports all React Native style properties
-- Performance-optimized (only updates affected styles)
+These hooks bridge animated state (shared values) to visual output. `useAnimatedStyle` creates reactive style objects, `useAnimatedProps` animates non-style props, and `useAnimatedRef` provides references for measurement and scrolling.
 
 ---
 
-## 🔧 Type Definition
+## useAnimatedStyle
+
+Creates a reactive style object that automatically updates on the UI thread when shared values change.
 
 ```typescript
 function useAnimatedStyle<T extends ViewStyle>(
   styleUpdater: () => T,
-  dependencies?: DependencyList,
-  adapters?: StyleAdapter
-): Animated.AnimatedStyle<T>;
+  dependencies?: DependencyList
+): AnimatedStyleProp<T>;
 ```
-
----
-
-## 📖 Full API Reference
-
-### `useAnimatedStyle(styleUpdater, dependencies?, adapters?)`
-
-**Description:** Creates a style object that updates reactively when shared values referenced in `styleUpdater` change.
-
-**Parameters:**
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `styleUpdater` | `() => StyleObject` | ✅ Yes | Function returning style object (executed on UI thread) |
-| `dependencies` | `Dependency[]` | ❌ No | Array of external dependencies (rarely needed; Reanimated infers automatically) |
-| `adapters` | `StyleAdapter` | ❌ No | Custom prop adapters for complex animations |
+| `styleUpdater` | `() => T` | Yes | Function returning style object, executes on UI thread |
+| `dependencies` | `DependencyList` | No | External dependencies (Reanimated auto-tracks shared values) |
 
-**Returns:** `Animated.AnimatedStyle<T>` — Style object to pass to Animated component's `style` prop
+**Returns:** Animated style object to pass to `Animated.View`, `Animated.Text`, etc.
 
----
+### Basic Usage
 
-## 💻 Basic Example
-
-```javascript
-import { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming 
+```typescript
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
 } from 'react-native-reanimated';
-import Animated from 'react-native-reanimated';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Pressable } from 'react-native';
 
 function FadeAnimation() {
   const opacity = useSharedValue(1);
 
-  // Create animated style
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
   const handlePress = () => {
     opacity.value = withTiming(0, { duration: 500 });
   };
 
   return (
-    <Animated.View style={[styles.box, animatedStyle]} />
+    <Pressable onPress={handlePress}>
+      <Animated.View style={[styles.box, animatedStyle]} />
+    </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  box: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'blue',
-  },
-});
 ```
-
----
-
-## 🎯 Style Properties
-
-`useAnimatedStyle` supports all React Native style properties:
 
 ### Transform Properties
 
-```javascript
+```typescript
 const rotation = useSharedValue(0);
 const scale = useSharedValue(1);
 const translateX = useSharedValue(0);
@@ -110,219 +73,234 @@ const animatedStyle = useAnimatedStyle(() => ({
 }));
 ```
 
-### Color Properties
-
-```javascript
-const backgroundColor = useSharedValue('blue');
-
-const animatedStyle = useAnimatedStyle(() => ({
-  backgroundColor: backgroundColor.value,
-  // Note: Reanimated has interpolateColor() for color transitions
-}));
-```
-
-### Layout Properties
-
-```javascript
-const width = useSharedValue(100);
-const height = useSharedValue(100);
-
-const animatedStyle = useAnimatedStyle(() => ({
-  width: width.value,
-  height: height.value,
-  marginTop: 10 * width.value,
-}));
-```
-
-### Opacity & Filter
-
-```javascript
-const opacity = useSharedValue(1);
-
-const animatedStyle = useAnimatedStyle(() => ({
-  opacity: opacity.value,
-}));
-```
-
----
-
-## 🔄 Reactivity Behavior
-
-### Automatic Dependency Tracking
-
-Reanimated automatically tracks which shared values are referenced in the callback:
-
-```javascript
-const opacity = useSharedValue(1);
-const scale = useSharedValue(1);
-const unused = useSharedValue(999);
-
-const animatedStyle = useAnimatedStyle(() => {
-  return {
-    opacity: opacity.value,     // ✅ Tracked
-    transform: [{ scale: scale.value }], // ✅ Tracked
-    // unused.value not referenced, so not tracked ✅
-  };
-});
-
-// When opacity or scale change, style updates automatically
-// Changes to unused don't trigger style updates
-```
-
-### Manual Dependencies (Advanced)
-
-For external variables, specify dependencies manually:
-
-```javascript
-const animationDuration = 500; // External variable
-
-const animatedStyle = useAnimatedStyle(
-  () => {
-    return {
-      opacity: opacity.value,
-      // duration is captured but...
-    };
-  },
-  [animationDuration] // ...specify here to ensure updates
-);
-```
-
----
-
-## 📋 Common Patterns
-
-### Conditional Styling
-
-```javascript
-const isPressed = useSharedValue(false);
-
-const animatedStyle = useAnimatedStyle(() => {
-  return {
-    backgroundColor: isPressed.value ? 'red' : 'blue',
-    opacity: isPressed.value ? 0.8 : 1,
-  };
-});
-```
-
-### Multiple Transforms
-
-```javascript
-const rotation = useSharedValue(0);
-const translateY = useSharedValue(0);
-const scale = useSharedValue(1);
-
-const animatedStyle = useAnimatedStyle(() => ({
-  transform: [
-    { rotate: `${rotation.value}deg` },
-    { translateY: translateY.value },
-    { scale: scale.value },
-  ],
-}));
-```
-
 ### Combining with Static Styles
 
-```javascript
-const opacity = useSharedValue(1);
-
-const animatedStyle = useAnimatedStyle(() => ({
-  opacity: opacity.value,
-}));
-
+```typescript
 return (
   <Animated.View
     style={[
-      styles.staticBox,        // Static styles (StyleSheet)
-      animatedStyle,           // Animated styles
-      { marginTop: 20 },      // Inline static styles
+      styles.staticBox,   // Static styles (StyleSheet)
+      animatedStyle,       // Animated styles
+      { marginTop: 20 },  // Inline static styles
     ]}
   />
 );
 ```
 
-### Interpolation
+### Interpolation Inside Style
 
-```javascript
-import { Extrapolate, interpolate } from 'react-native-reanimated';
+```typescript
+import { interpolate, Extrapolation } from 'react-native-reanimated';
 
 const scrollOffset = useSharedValue(0);
 
 const animatedStyle = useAnimatedStyle(() => {
   const opacity = interpolate(
     scrollOffset.value,
-    [0, 100, 200],        // Input range
-    [0, 0.5, 1],          // Output range
-    Extrapolate.CLAMP
+    [0, 100, 200],
+    [0, 0.5, 1],
+    Extrapolation.CLAMP
   );
-
   return { opacity };
 });
 ```
 
+### Color Interpolation
+
+```typescript
+import { interpolateColor } from 'react-native-reanimated';
+
+const progress = useSharedValue(0);
+
+const animatedStyle = useAnimatedStyle(() => ({
+  backgroundColor: interpolateColor(
+    progress.value,
+    [0, 1],
+    ['#FF0000', '#00FF00']
+  ),
+}));
+```
+
 ---
 
-## ⚠️ Critical Rules
+## useAnimatedProps
 
-### Rule 1: Don't Mutate Shared Values in styleUpdater
+Animates non-style props (e.g., SVG attributes, text content). Same API as `useAnimatedStyle`.
 
-```javascript
-const opacity = useSharedValue(1);
+```typescript
+function useAnimatedProps<T extends Record<string, any>>(
+  updater: () => T,
+  dependencies?: DependencyList,
+  adapters?: PropAdapter[]
+): AnimatedProps<T>;
+```
 
-// ❌ WRONG: Mutating inside styleUpdater
-const badStyle = useAnimatedStyle(() => {
-  opacity.value = withTiming(0); // DON'T DO THIS!
-  return { opacity: opacity.value };
-});
+### SVG Example
 
-// ✅ CORRECT: Mutate outside, read inside
-const goodStyle = useAnimatedStyle(() => {
-  return { opacity: opacity.value };
-});
+```typescript
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
-// Then mutate in callbacks:
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function AnimatedSVG() {
+  const radius = useSharedValue(50);
+
+  const animatedProps = useAnimatedProps(() => ({
+    r: radius.value,
+  }));
+
+  return (
+    <Svg>
+      <AnimatedCircle cx="100" cy="100" animatedProps={animatedProps} />
+    </Svg>
+  );
+}
+```
+
+---
+
+## useAnimatedRef
+
+Returns a ref for use with `measure()` and `scrollTo()`.
+
+```typescript
+function useAnimatedRef<T extends Component>(): AnimatedRef<T>;
+```
+
+Takes no arguments. Returns an object with `current` property available after mount.
+
+```typescript
+import Animated, { useAnimatedRef } from 'react-native-reanimated';
+
+function App() {
+  const animatedRef = useAnimatedRef();
+
+  return <Animated.View ref={animatedRef} />;
+}
+```
+
+**Platform support:** Android, iOS, Web.
+
+---
+
+## measure()
+
+Retrieve component dimensions and position. Must be called from the UI thread.
+
+```typescript
+function measure<T extends Component>(
+  animatedRef: AnimatedRef<T>
+): MeasuredDimensions | null;
+
+interface MeasuredDimensions {
+  x: number;      // Relative to parent
+  y: number;      // Relative to parent
+  width: number;
+  height: number;
+  pageX: number;  // Relative to screen
+  pageY: number;  // Relative to screen
+}
+```
+
+Returns `null` if component is not yet rendered. Always check for null.
+
+```typescript
+import { useAnimatedRef, measure, runOnUI } from 'react-native-reanimated';
+
+const animatedRef = useAnimatedRef();
+
 const handlePress = () => {
-  opacity.value = withTiming(0);
+  runOnUI(() => {
+    'worklet';
+    const measurement = measure(animatedRef);
+    if (measurement === null) return;
+    console.log('Width:', measurement.width);
+    console.log('Page position:', measurement.pageX, measurement.pageY);
+  })();
 };
 ```
 
-### Rule 2: Pass to Animated Components Only
+---
 
-```javascript
-import Animated from 'react-native-reanimated';
-import { View } from 'react-native';
+## scrollTo()
 
-const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+Programmatically scroll a scrollable component. Must be called from the UI thread.
 
-// ✅ CORRECT: Pass to Animated.View
-<Animated.View style={animatedStyle} />
-
-// ❌ WRONG: Pass to regular View (no effect)
-<View style={animatedStyle} />
+```typescript
+function scrollTo<T extends Component>(
+  animatedRef: AnimatedRef<T>,
+  x: number,
+  y: number,
+  animated: boolean
+): void;
 ```
 
-### Rule 3: Animated Components Must Be Wrapped
+| Parameter | Type | Description |
+|---|---|---|
+| `animatedRef` | `AnimatedRef<T>` | Ref connected to a ScrollView or FlatList |
+| `x` | `number` | Horizontal offset in pixels |
+| `y` | `number` | Vertical offset in pixels |
+| `animated` | `boolean` | `true` for smooth scroll, `false` for instant |
 
-```javascript
-import Animated from 'react-native-reanimated';
+```typescript
+import Animated, {
+  useAnimatedRef,
+  useDerivedValue,
+  scrollTo,
+} from 'react-native-reanimated';
 
-// ✅ CORRECT: Use Animated.View
-<Animated.View style={animatedStyle} />
+function ScrollExample() {
+  const animatedRef = useAnimatedRef();
+  const scrollOffset = useSharedValue(0);
 
-// ✅ CORRECT: For custom components
-const AnimatedCustom = Animated.createAnimatedComponent(CustomComponent);
-<AnimatedCustom style={animatedStyle} />
+  useDerivedValue(() => {
+    scrollTo(animatedRef, 0, scrollOffset.value, true);
+  });
+
+  return <Animated.ScrollView ref={animatedRef}>{/* content */}</Animated.ScrollView>;
+}
 ```
 
 ---
 
-## 🔗 Integration with Animated Components
+## useAnimatedReaction
 
-### Built-in Animated Components
+React to changes in computed values. Similar to `useEffect` for worklets.
 
-```javascript
+```typescript
+function useAnimatedReaction<T>(
+  prepare: () => T,
+  react: (current: T, previous: T | null) => void,
+  dependencies?: DependencyList
+): void;
+```
+
+```typescript
+import { useAnimatedReaction, useSharedValue } from 'react-native-reanimated';
+
+const scrollOffset = useSharedValue(0);
+const isScrolledDown = useSharedValue(false);
+
+useAnimatedReaction(
+  () => scrollOffset.value > 100,
+  (current, previous) => {
+    if (current !== previous) {
+      isScrolledDown.value = current;
+    }
+  }
+);
+```
+
+---
+
+## Animated Components
+
+### Built-in
+
+```typescript
 import Animated from 'react-native-reanimated';
 
-// All of these accept animated styles
 <Animated.View style={animatedStyle} />
 <Animated.Text style={animatedStyle} />
 <Animated.Image style={animatedStyle} />
@@ -332,128 +310,93 @@ import Animated from 'react-native-reanimated';
 
 ### Custom Components
 
-```javascript
+```typescript
 import Animated from 'react-native-reanimated';
-import { Button } from 'react-native';
+import { TextInput } from 'react-native';
 
-const AnimatedButton = Animated.createAnimatedComponent(Button);
-
-const animatedStyle = useAnimatedStyle(() => ({
-  opacity: opacity.value,
-}));
-
-return <AnimatedButton style={animatedStyle} />;
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 ```
 
 ---
 
-## 📊 Example: Complete Button Animation
+## Critical Rules
 
-```javascript
-import {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
-import Animated from 'react-native-reanimated';
-import { Pressable, StyleSheet } from 'react-native';
+1. **Pass animated styles only to Animated components** -- regular `View` ignores them
+2. **Do not mutate shared values inside styleUpdater** -- causes infinite loops
+3. **Reanimated auto-tracks shared value dependencies** -- manual deps rarely needed
+4. **Avoid expensive computations in styleUpdater** -- runs on every frame
 
-function AnimatedButton() {
-  const scale = useSharedValue(1);
-  const backgroundColor = useSharedValue('blue');
+---
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: backgroundColor.value,
-  }));
+## interpolate()
 
-  const handlePressIn = () => {
-    scale.value = withTiming(0.9, { duration: 100 });
-  };
+Map input ranges to output ranges.
 
-  const handlePressOut = () => {
-    scale.value = withTiming(1, {
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-    });
-  };
+```typescript
+function interpolate(
+  value: number,
+  inputRange: number[],
+  outputRange: (number | string)[],
+  extrapolation?: Extrapolation | { extrapolateLeft?: Extrapolation; extrapolateRight?: Extrapolation }
+): number;
 
-  return (
-    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
-      <Animated.View style={[styles.button, animatedStyle]}>
-        <Animated.Text style={styles.text}>Press Me</Animated.Text>
-      </Animated.View>
-    </Pressable>
-  );
+enum Extrapolation {
+  EXTEND = 'extend',
+  CLAMP = 'clamp',
+  IDENTITY = 'identity',
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 100,
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
 ```
 
----
-
-## 🎯 Performance Considerations
-
-### Avoid Expensive Computations
-
-```javascript
-// ❌ AVOID: Expensive computation in every frame
-const animatedStyle = useAnimatedStyle(() => {
-  const complexCalculation = JSON.parse(JSON.stringify(largeObject)); // Slow!
-  return { opacity: opacity.value };
-});
-
-// ✅ CORRECT: Compute outside, reference in worklet
-const precomputed = useMemo(() => largeObject, []);
-const animatedStyle = useAnimatedStyle(() => {
-  return { opacity: opacity.value };
-});
-```
-
-### Limit Recomputation with Dependencies
-
-```javascript
-// Only recompute when dependencies change
-const animatedStyle = useAnimatedStyle(
-  () => ({
-    opacity: opacity.value,
-  }),
-  [someVariable] // Add dependency if external variable used
+```typescript
+const opacity = interpolate(
+  scrollOffset.value,
+  [0, 100, 200],
+  [0, 0.5, 1],
+  Extrapolation.CLAMP
 );
 ```
 
 ---
 
-## 🔗 Cross-References
+## interpolateColor()
 
-- **useSharedValue:** See [02-core-shared-values.md](./02-core-shared-values.md) to create animated state
-- **Animations:** See [04-animations-timing-spring.md](./04-animations-timing-spring.md) to create animations
-- **Gestures:** See [07-gestures-events.md](./07-gestures-events.md) to bind gestures to styles
-- **useAnimatedProps:** For animating non-style properties (like text content)
-- **Best Practices:** See [09-best-practices.md](./09-best-practices.md) for optimization
+Interpolate between colors.
+
+```typescript
+function interpolateColor(
+  value: number,
+  inputRange: number[],
+  outputRange: string[],
+  colorSpace?: 'RGB' | 'HSV' | 'LAB'
+): string;
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `value` | `number` | -- | Input value |
+| `inputRange` | `number[]` | -- | Ascending array of input breakpoints |
+| `outputRange` | `string[]` | -- | Color strings (named, hex, rgba) |
+| `colorSpace` | `'RGB' \| 'HSV' \| 'LAB'` | `'RGB'` | Interpolation color model |
+
+Returns interpolated color as `rgba(r, g, b, a)` string.
+
+```typescript
+const backgroundColor = interpolateColor(
+  progress.value,
+  [0, 0.5, 1],
+  ['red', '#FFD700', 'green'],
+  'RGB'
+);
+```
 
 ---
 
-## 📚 Official Documentation
+## Cross-References
 
-- **useAnimatedStyle Reference:** https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/
-- **Animated Components:** https://docs.swmansion.com/react-native-reanimated/docs/core/createAnimatedComponent/
-- **Interpolation:** https://docs.swmansion.com/react-native-reanimated/docs/animations/interpolate/
+- **Shared values:** [02-core-shared-values.md](02-core-shared-values.md)
+- **Animations:** [04-animations-timing-spring.md](04-animations-timing-spring.md)
+- **Gestures:** [07-gestures-events.md](07-gestures-events.md)
+- **Best practices:** [09-best-practices.md](09-best-practices.md)
 
 ---
-
-**Last Updated:** December 2024  
-**Verified For:** Reanimated 4.2.1
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/ | https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedProps/ | https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedRef/ | https://docs.swmansion.com/react-native-reanimated/docs/utilities/interpolateColor/

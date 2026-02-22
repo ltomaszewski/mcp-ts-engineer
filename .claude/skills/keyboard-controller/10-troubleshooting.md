@@ -1,6 +1,6 @@
 # Keyboard Controller: Troubleshooting
 
-**Debugging, performance, common issues**
+**Debugging, performance, common issues and solutions.**
 
 ---
 
@@ -12,18 +12,18 @@
 
 **Solutions:**
 
-1. **Switch to Reanimated** (best performance):
+1. **Switch to Reanimated** (UI thread, best performance):
 ```typescript
-// ❌ Less efficient
+// Less efficient (bridge thread)
 const { height } = useKeyboardAnimation();
 
-// ✅ More efficient
+// More efficient (UI thread)
 const { height } = useReanimatedKeyboardAnimation();
 ```
 
-2. **Optimize onMove handler:**
+2. **Optimize worklet handlers:**
 ```typescript
-// ❌ Heavy computation
+// Bad: heavy computation in worklet
 useKeyboardHandler({
   onMove: (e) => {
     'worklet';
@@ -32,7 +32,7 @@ useKeyboardHandler({
   },
 }, []);
 
-// ✅ Lightweight handler
+// Good: lightweight handler
 useKeyboardHandler({
   onMove: (e) => {
     'worklet';
@@ -41,17 +41,24 @@ useKeyboardHandler({
 }, []);
 ```
 
+3. **Enable ProMotion on iOS:**
+```xml
+<!-- ios/YourApp/Info.plist -->
+<key>CADisableMinimumFrameDurationOnPhone</key>
+<true/>
+```
+
 ---
 
 ## Keyboard Not Appearing
 
-**Symptoms:** Tapping TextInput doesn't show keyboard.
+**Symptoms:** Tapping TextInput does not show keyboard.
 
 **Solutions:**
 
-1. Verify `KeyboardProvider` is at app root
-2. Check Android manifest has soft input mode
-3. Explicitly set input mode:
+1. Verify `KeyboardProvider` wraps the entire app
+2. Check Android manifest has correct `windowSoftInputMode`
+3. Try setting input mode explicitly:
 ```typescript
 import { KeyboardController, AndroidSoftInputModes } from 'react-native-keyboard-controller';
 
@@ -61,12 +68,13 @@ useEffect(() => {
   );
 }, []);
 ```
+4. Test on a physical device (simulators can behave differently)
 
 ---
 
 ## Keyboard Covers Input
 
-**Symptoms:** Focused TextInput is behind keyboard.
+**Symptoms:** Focused TextInput is behind the keyboard.
 
 **Solutions:**
 
@@ -77,10 +85,12 @@ useEffect(() => {
 </KeyboardAwareScrollView>
 ```
 
-2. Increase `bottomOffset`:
+2. Increase `bottomOffset` if input is still partially hidden:
 ```typescript
 <KeyboardAwareScrollView bottomOffset={100}>
 ```
+
+3. Ensure TextInput is inside the scroll view, not outside it.
 
 ---
 
@@ -88,12 +98,12 @@ useEffect(() => {
 
 ### SharedValue Not Updating
 
-1. Ensure Reanimated is installed:
+1. Ensure `react-native-reanimated` is installed:
 ```bash
-npm install react-native-reanimated
+npm list react-native-reanimated
 ```
 
-2. Check babel plugin:
+2. Check Reanimated babel plugin is configured:
 ```javascript
 // babel.config.js
 module.exports = {
@@ -101,21 +111,28 @@ module.exports = {
 };
 ```
 
+3. Clean build after adding plugin:
+```bash
+npx expo start --clear
+# or
+cd ios && rm -rf Pods && pod install && cd ..
+```
+
 ### Worklet Not Executing
 
 ```typescript
-// ❌ Missing worklet directive
+// Missing 'worklet' directive -- will not execute
 useKeyboardHandler({
   onMove: (e) => {
-    // This won't execute
+    keyboardHeight.value = e.height; // silently fails
   },
 }, []);
 
-// ✅ With worklet directive
+// With directive -- works correctly
 useKeyboardHandler({
   onMove: (e) => {
     'worklet';
-    // This executes on native thread
+    keyboardHeight.value = e.height;
   },
 }, []);
 ```
@@ -124,7 +141,8 @@ useKeyboardHandler({
 
 ## Build Issues
 
-### Pod Installation Fails
+### Pod Installation Fails (iOS)
+
 ```bash
 cd ios
 rm -rf Pods Podfile.lock
@@ -133,80 +151,77 @@ pod install
 cd ..
 ```
 
-### Gradle Build Failure
+### Gradle Build Failure (Android)
+
 ```bash
 cd android
 ./gradlew clean
-./gradlew build
 cd ..
-npm run android
+npx react-native run-android
+```
+
+### Expo Build Issues
+
+```bash
+npx expo prebuild --clean
+npx expo run:ios
+```
+
+**Note:** react-native-keyboard-controller is not compatible with Expo Go. Use `expo run:ios` / `expo run:android` or a custom dev client.
+
+---
+
+## Keyboard Flash on Launch
+
+If the keyboard briefly appears when the app launches, disable preloading:
+
+```typescript
+<KeyboardProvider preload={false}>
+  <YourApp />
+</KeyboardProvider>
 ```
 
 ---
 
 ## Debugging Checklist
 
-### Animations don't work
+### Animations not working
 - [ ] `KeyboardProvider` wraps entire app
-- [ ] Using correct hook
-- [ ] Style is applied correctly
-- [ ] Platform is iOS/Android (not web)
+- [ ] Using correct hook (`useReanimatedKeyboardAnimation` preferred)
+- [ ] Animated style is applied to an `Animated.View`
+- [ ] Testing on iOS or Android (not web)
 - [ ] No TypeScript errors
 
-### Keyboard doesn't show
+### Keyboard does not show
 - [ ] TextInput is not disabled
-- [ ] Android manifest configured
-- [ ] No console errors
-- [ ] Try on physical device
+- [ ] Android manifest has `windowSoftInputMode` configured
+- [ ] No console errors in Metro
+- [ ] Testing on physical device
 
 ### Forms scroll incorrectly
-- [ ] Using `KeyboardAwareScrollView`
-- [ ] `bottomOffset` is set
-- [ ] ScrollView is scrollable
+- [ ] Using `KeyboardAwareScrollView` (not `KeyboardAvoidingView`)
+- [ ] `bottomOffset` is set to a reasonable value
+- [ ] ScrollView content is tall enough to scroll
+- [ ] `keyboardShouldPersistTaps="handled"` if taps are not registering
 
----
-
-## FPS Monitoring
-
-```typescript
-function PerformanceMonitor() {
-  useEffect(() => {
-    let frameCount = 0;
-    let lastTime = Date.now();
-
-    const checkFPS = () => {
-      frameCount++;
-      const now = Date.now();
-      const elapsed = now - lastTime;
-
-      if (elapsed >= 1000) {
-        console.log(`FPS: ${frameCount}`);
-        frameCount = 0;
-        lastTime = now;
-      }
-
-      requestAnimationFrame(checkFPS);
-    };
-
-    checkFPS();
-  }, []);
-
-  return null;
-}
-```
+### Toolbar not showing
+- [ ] `KeyboardToolbar` is rendered as a sibling of the scroll view (not inside it)
+- [ ] Multiple TextInputs exist in the view hierarchy
+- [ ] No absolute positioning that covers the toolbar
 
 ---
 
 ## Getting Help
 
-1. **Check issues:** https://github.com/kirillzyusko/react-native-keyboard-controller/issues
-2. **Open new issue with:**
+1. **GitHub Issues:** https://github.com/kirillzyusko/react-native-keyboard-controller/issues
+2. **GitHub Discussions:** https://github.com/kirillzyusko/react-native-keyboard-controller/discussions
+3. **When filing an issue, include:**
    - React Native version
+   - Keyboard Controller version
    - Device/OS version
    - Minimal reproducible example
    - Console errors
-3. **Discussions:** https://github.com/kirillzyusko/react-native-keyboard-controller/discussions
 
 ---
 
-**See Also**: [Setup](01-setup.md) | [Implementation Guides](06-implementation-guides.md)
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

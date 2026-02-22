@@ -2,7 +2,7 @@
 
 **Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api/queries
 
-**Version:** 13.3.3
+**Version:** ^13.0.0
 
 ---
 
@@ -18,6 +18,25 @@
 | `queryAllBy*()` | No | Element[] | No | Multiple elements, may not exist |
 | `findBy*()` | Yes | Promise<Element> | Yes | Single element, wait for it |
 | `findAllBy*()` | Yes | Promise<Element[]> | Yes | Multiple elements, wait for them |
+
+### v13 Removed Queries
+
+The following query methods were **removed in v13**:
+
+| Removed Query | Migration |
+|---------------|-----------|
+| `*ByA11yState()` | Use `*ByRole()` with state options (`{ checked, disabled, selected, busy, expanded }`) or `toHaveAccessibilityState()` matcher |
+| `*ByA11yValue()` | Use `*ByRole()` or `toHaveAccessibleValue()` matcher |
+
+```typescript
+// v12 (REMOVED):
+screen.getByA11yState({ checked: true });
+screen.getByA11yValue({ min: 0, max: 100, now: 50 });
+
+// v13 (CORRECT):
+screen.getByRole('checkbox', { checked: true });
+expect(slider).toHaveAccessibleValue({ min: 0, max: 100, now: 50 });
+```
 
 ---
 

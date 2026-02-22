@@ -37,13 +37,15 @@ The `Query` object extends `AsyncGenerator<SDKMessage, void>` with additional me
 | Method | Description |
 |--------|-------------|
 | `interrupt()` | Interrupt current operation |
-| `rewindFiles()` | Rewind file changes |
+| `rewindFiles(uuid)` | Rewind file changes to a checkpoint (requires `enableFileCheckpointing: true`) |
 | `setPermissionMode(mode)` | Change permission mode |
 | `setModel(model)` | Change model |
 | `setMaxThinkingTokens(n)` | Set thinking token limit |
 | `supportedCommands()` | Get supported commands |
 | `supportedModels()` | Get available models |
 | `mcpServerStatus()` | Get MCP server status |
+| `reconnectMcpServer(name)` | Reconnect a disconnected MCP server |
+| `toggleMcpServer(name, enabled)` | Enable/disable an MCP server |
 | `accountInfo()` | Get account information |
 
 ---
@@ -58,13 +60,14 @@ interface Options {
   maxThinkingTokens?: number;
 
   // Tool Configuration
-  allowedTools?: string[];
-  disallowedTools?: string[];
-  tools?: Tool[];
+  allowedTools?: string[];          // Allowlist of tool names
+  disallowedTools?: string[];       // Blocklist of tool names
+  tools?: Tool[] | "preset" | [];   // Custom tools, preset set, or empty array
 
   // Prompts
-  systemPrompt?: string | { preset: "claude_code" };
+  systemPrompt?: string | { type: "preset"; preset: "claude_code" };
   appendSystemPrompt?: string;
+  settingSources?: ("user" | "project" | "local")[];  // v0.2: Settings not auto-loaded
 
   // Execution Limits
   maxTurns?: number;
@@ -84,20 +87,41 @@ interface Options {
   // Hooks
   hooks?: HooksConfig;
 
-  // Subagent Configuration
-  subagents?: Record<string, AgentDefinition>;
+  // Subagent / Agent Configuration
+  agents?: Record<string, AgentDefinition>;  // v0.2: renamed from "subagents"
 
   // Sandbox
   sandbox?: SandboxConfig;
 
+  // Plugins
+  plugins?: PluginConfig[];
+
   // Session
   sessionId?: string;
   resumeSession?: string;
+  forkSession?: string;       // v0.2: Fork from existing session
+
+  // File Checkpointing
+  enableFileCheckpointing?: boolean;  // v0.2: Enable rewindFiles(uuid)
 
   // Structured Output
   outputSchema?: JSONSchema;
+  outputFormat?: "json" | "text";     // v0.2: Control output format
+
+  // Debugging
+  debug?: boolean;             // v0.2: Enable debug logging
+  debugFile?: string;          // v0.2: Write debug logs to file
+
+  // Beta Features
+  betas?: string[];            // v0.2: Opt into beta features
 }
 ```
+
+> **v0.2 Migration Notes:**
+> - `systemPrompt` preset syntax changed: use `{ type: "preset", preset: "claude_code" }` instead of `{ preset: "claude_code" }` (old form still works but is deprecated)
+> - Settings are **not auto-loaded** from disk. Pass `settingSources: ["user", "project", "local"]` to load `.claude/settings.json` files
+> - `subagents` renamed to `agents`
+> - `tools` accepts an empty array `[]` to disable all custom tools, or `"preset"` for built-in tool set
 
 ---
 
@@ -125,18 +149,19 @@ query({ prompt: "Analyze architecture", options: { model: "opus" } })
 ### Minimal (Default)
 
 ```typescript
-// SDK uses minimal system prompt by default
+// SDK uses minimal system prompt by default (NOT the full Claude Code prompt)
+// v0.2: System prompt is NOT loaded by default — you must explicitly set it
 query({ prompt: "Hello" })
 ```
 
 ### Full Claude Code Prompt
 
 ```typescript
-// Include full Claude Code capabilities
+// Include full Claude Code capabilities — must be explicitly set in v0.2
 query({
   prompt: "Refactor this module",
   options: {
-    systemPrompt: { preset: "claude_code" }
+    systemPrompt: { type: "preset", preset: "claude_code" }
   }
 })
 ```
@@ -156,10 +181,11 @@ query({
 ### Append to Default
 
 ```typescript
-// Add to default prompt without replacing
+// Add to preset prompt without replacing
 query({
   prompt: "...",
   options: {
+    systemPrompt: { type: "preset", preset: "claude_code" },
     appendSystemPrompt: "Always explain your reasoning step by step."
   }
 })
@@ -331,12 +357,39 @@ query({
   prompt: "Run tests",
   options: {
     sandbox: {
+      type: "docker",          // v0.2: explicit sandbox type
       enabled: true,
       allowedPaths: ["/project/src", "/project/tests"],
       networkAccess: false
     }
   }
 })
+```
+
+---
+
+## File Checkpointing
+
+Enable file checkpointing to rewind file changes to any point during execution.
+
+```typescript
+const q = query({
+  prompt: "Refactor the codebase",
+  options: {
+    enableFileCheckpointing: true   // v0.2: required to use rewindFiles()
+  }
+});
+
+for await (const message of q) {
+  if (message.type === "assistant") {
+    // Each assistant message has a uuid that can be used as checkpoint
+    console.log("Checkpoint UUID:", message.uuid);
+  }
+}
+
+// Rewind all file changes to a specific checkpoint
+await q.rewindFiles("checkpoint-uuid-here");
+```
 ```
 
 ---
@@ -359,6 +412,18 @@ query({
   prompt: "Continue where we left off",
   options: {
     resumeSession: "session-id-from-previous"
+  }
+})
+```
+
+### Fork Session (v0.2)
+
+```typescript
+// Fork from an existing session (branch the conversation)
+query({
+  prompt: "Try an alternative approach",
+  options: {
+    forkSession: "session-id-to-fork-from"
   }
 })
 ```
@@ -391,7 +456,8 @@ for message in query(
         "allowed_tools": ["Read", "Glob"],  # snake_case in Python
         "max_turns": 10,
         "max_budget_usd": 1.0,
-        "system_prompt": {"preset": "claude_code"},
+        "system_prompt": {"type": "preset", "preset": "claude_code"},  # v0.2 syntax
+        "setting_sources": ["user", "project", "local"],  # v0.2: must explicitly load
         "permission_mode": "acceptEdits",
         "cwd": "/path/to/project"
     }
@@ -406,5 +472,12 @@ for message in query(
 1. **Always set `maxTurns`** for automated pipelines to prevent runaway costs
 2. **Use `maxBudgetUsd`** for production deployments
 3. **Prefer `allowedTools`** over `disallowedTools` for security (whitelist)
-4. **Use `systemPrompt: { preset: "claude_code" }`** when you need full capabilities
-5. **Set `cwd`** explicitly rather than relying on process working directory
+4. **Explicitly set `systemPrompt`** -- v0.2 does NOT load the Claude Code prompt by default. Use `systemPrompt: { type: "preset", preset: "claude_code" }` when you need full capabilities
+5. **Pass `settingSources`** if you need settings from `.claude/settings.json` loaded (not auto-loaded in v0.2)
+6. **Set `cwd`** explicitly rather than relying on process working directory
+7. **Enable `enableFileCheckpointing`** when you need the ability to rewind file changes
+8. **Use `debug: true` or `debugFile`** during development for detailed execution logs
+
+---
+
+**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

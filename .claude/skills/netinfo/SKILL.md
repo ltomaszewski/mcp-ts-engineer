@@ -1,5 +1,6 @@
 ---
 name: netinfo
+version: "11.x"
 description: "@react-native-community/netinfo network connectivity - state, type, listeners, offline handling. Use when working with @react-native-community/netinfo, checking network status, or handling offline mode."
 ---
 

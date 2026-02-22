@@ -1,8 +1,6 @@
-# Implementation Guides & Common Patterns
+# Implementation Patterns -- Expo Notifications SDK 54
 
-**Module Purpose**: Step-by-step guides, real-world patterns, and complete code examples for common notification use cases.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Complete setup guides, token management, deep linking, and production patterns.
 
 ---
 
@@ -11,7 +9,7 @@
 ### Step 1: Install Dependencies
 
 ```bash
-npx expo install expo-notifications expo-device expo-task-manager expo-constants
+npx expo install expo-notifications expo-device expo-constants
 ```
 
 ### Step 2: Configure app.json
@@ -19,15 +17,13 @@ npx expo install expo-notifications expo-device expo-task-manager expo-constants
 ```json
 {
   "expo": {
-    "name": "MyNotificationApp",
-    "slug": "my-notification-app",
     "plugins": [
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification_icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": ["./assets/notification_sound.wav"]
+          "sounds": ["./assets/notification-sound.wav"]
         }
       ]
     ]
@@ -35,233 +31,175 @@ npx expo install expo-notifications expo-device expo-task-manager expo-constants
 }
 ```
 
-### Step 3: Create Notification Service Module
-
-**File: `src/services/notificationService.ts`**
+### Step 3: Create Notification Service
 
 ```typescript
+// src/services/notifications.ts
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-export function setupNotificationHandler() {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+// Set handler at module scope
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+export async function setupAndroidChannels(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Default',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 250, 250, 250],
+  });
+
+  await Notifications.setNotificationChannelAsync('alerts', {
+    name: 'Alerts',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'default',
   });
 }
 
-export async function registerForPushNotifications() {
+export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
-    console.log('Must use physical device for push notifications');
+    console.log('Push notifications require physical device');
     return null;
   }
-  
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  
-  if (existingStatus !== 'granted') {
+
+  // Android: create channel before requesting permissions
+  await setupAndroidChannels();
+
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  let finalStatus = existing;
+
+  if (existing !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-  
-  if (finalStatus !== 'granted') {
-    console.log('Failed to get push notification permission');
-    return null;
-  }
-  
-  try {
-    const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) throw new Error('Project ID not found');
-    
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
-    return token.data;
-  } catch (error) {
-    console.error('Failed to get Expo push token:', error);
-    return null;
-  }
-}
 
-export async function setupAndroidChannels() {
-  if (Platform.OS !== 'android') return;
-  
-  try {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default Notifications',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  } catch (error) {
-    console.error('Error setting up channels:', error);
+  if (finalStatus !== 'granted') {
+    console.log('Notification permission denied');
+    return null;
   }
+
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId) throw new Error('Project ID not found');
+
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+  return data;
 }
 ```
 
-### Step 4: Initialize in App Component
-
-**File: `App.tsx`**
+### Step 4: Initialize in Root Layout
 
 ```typescript
-import React, { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+// app/_layout.tsx
+import { useEffect, useRef } from 'react';
+import { Stack } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { 
-  setupNotificationHandler, 
-  registerForPushNotifications,
-  setupAndroidChannels,
-} from './src/services/notificationService';
+import { registerForPushNotifications } from '../src/services/notifications';
 
-export default function App() {
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
-  
+export default function RootLayout() {
+  const receivedRef = useRef<Notifications.EventSubscription>();
+  const responseRef = useRef<Notifications.EventSubscription>();
+
   useEffect(() => {
-    setupNotificationHandler();
-    setupAndroidChannels();
-    
-    registerForPushNotifications().then(token => {
+    registerForPushNotifications().then((token) => {
       if (token) {
         console.log('Push token:', token);
+        // Send token to your backend
       }
     });
-    
-    notificationListener.current = 
-      Notifications.addNotificationReceivedListener(notification => {
-        console.log('Notification received:', notification);
-      });
-    
-    responseListener.current = 
-      Notifications.addNotificationResponseReceivedListener(response => {
-        console.log('User interacted with notification:', response);
-      });
-    
+
+    receivedRef.current = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log('Received:', notification.request.content.title);
+      }
+    );
+
+    responseRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log('Tapped:', response.notification.request.content.title);
+      }
+    );
+
     return () => {
-      notificationListener.current?.remove();
-      responseListener.current?.remove();
+      receivedRef.current?.remove();
+      responseRef.current?.remove();
     };
   }, []);
-  
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Your app content */}
-    </View>
-  );
+
+  return <Stack />;
 }
 ```
 
 ---
 
-## Push Token Management
-
-### Token Registration Pattern
-
-```typescript
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export async function registerTokenWithBackend(
-  expoPushToken: string,
-  userId: string
-) {
-  try {
-    await AsyncStorage.setItem('expoPushToken', expoPushToken);
-    
-    const response = await fetch('https://your-api.com/notifications/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        token: expoPushToken,
-        platform: Platform.OS,
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to register token');
-    }
-    
-    console.log('Token registered successfully');
-  } catch (error) {
-    console.error('Error registering token:', error);
-  }
-}
-
-export function monitorPushTokenChanges(userId: string) {
-  const subscription = Notifications.addPushTokenListener((newToken) => {
-    console.log('Push token changed:', newToken.data);
-    registerTokenWithBackend(newToken.data, userId);
-  });
-  
-  return () => subscription.remove();
-}
-```
-
----
-
-## Deep Linking with Notifications
-
-### Navigation Setup
-
-**File: `src/navigation/deepLinking.ts`**
+## Token Management Pattern
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-export async function handleDeepLinking() {
-  const response = await Notifications.getLastNotificationResponseAsync();
-  
-  if (response?.notification) {
-    const url = response.notification.request.content.data?.url;
-    if (typeof url === 'string') {
-      return url;
-    }
+export async function registerTokenWithBackend(
+  token: string,
+  userId: string
+): Promise<void> {
+  const response = await fetch('https://api.example.com/push-tokens', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      token,
+      platform: Platform.OS,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to register token');
   }
-  
-  return undefined;
 }
 
-export function setupDeepLinkingListener(callback: (url: string) => void) {
-  const subscription = Notifications.addNotificationResponseReceivedListener(
-    (response) => {
-      const url = response.notification.request.content.data?.url;
-      if (typeof url === 'string') {
-        callback(url);
-      }
-    }
-  );
-  
+export function monitorTokenChanges(userId: string): () => void {
+  const subscription = Notifications.addPushTokenListener((newToken) => {
+    registerTokenWithBackend(newToken.data, userId).catch((err) => {
+      console.error('Failed to update token:', err);
+    });
+  });
+
   return () => subscription.remove();
 }
 ```
 
-**File: `App.tsx` (with Expo Router)**
+---
+
+## Deep Linking with Expo Router
 
 ```typescript
-import React, { useEffect } from 'react';
-import { router } from 'expo-router';
-import { handleDeepLinking, setupDeepLinkingListener } from './src/navigation/deepLinking';
+// app/_layout.tsx
+import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
-export default function App() {
+function NotificationDeepLinkHandler(): null {
+  const router = useRouter();
+  const lastResponse = Notifications.useLastNotificationResponse();
+
   useEffect(() => {
-    handleDeepLinking().then(url => {
-      if (url) {
-        router.push(url);
-      }
-    });
-    
-    const unsubscribe = setupDeepLinkingListener((url) => {
+    if (!lastResponse) return;
+
+    const url = lastResponse.notification.request.content.data?.url;
+    if (typeof url === 'string') {
       router.push(url);
-    });
-    
-    return unsubscribe;
-  }, []);
-  
-  return (
-    // Your app
-  );
+    }
+  }, [lastResponse, router]);
+
+  return null;
 }
 ```
 
@@ -269,285 +207,179 @@ export default function App() {
 
 ## Custom Notification Sounds
 
-### Setting Up Custom Sounds
-
-**Step 1: Add Sound File**
+### Step 1: Add sound file to `assets/`
 
 ```
-assets/
-  notification_sound.wav
+assets/notification-sound.wav
 ```
 
-**Step 2: Configure app.json**
+### Step 2: Declare in app.json
 
 ```json
 {
   "expo": {
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "sounds": [
-            "./assets/notification_sound.wav"
-          ]
-        }
-      ]
+      ["expo-notifications", { "sounds": ["./assets/notification-sound.wav"] }]
     ]
   }
 }
 ```
 
-**Step 3: Use in Notification**
+### Step 3: Use in notification
 
 ```typescript
 await Notifications.scheduleNotificationAsync({
   content: {
-    title: 'Alert',
-    body: 'Custom sound notification',
-    sound: 'notification_sound.wav',
+    title: 'Custom Sound',
+    body: 'This uses a custom sound',
+    sound: 'notification-sound.wav',
   },
-  trigger: {
-    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-    seconds: 5,
-  },
+  trigger: null,
 });
 ```
 
 ---
 
-## Reminder Notifications
-
-### Daily Reminder
+## Daily Reminder Pattern
 
 ```typescript
+import * as Notifications from 'expo-notifications';
+
 export async function scheduleDailyReminder(
-  hour: number = 9,
-  minute: number = 0,
-  title: string = 'Daily Reminder'
-) {
-  try {
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body: 'Remember to check your tasks',
-        sound: 'default',
-        badge: 1,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        dateComponents: {
-          hour,
-          minute,
-          second: 0,
-        },
-        repeats: true,
-      },
-    });
-    
-    console.log(`Daily reminder scheduled at ${hour}:${minute}`);
-    return id;
-  } catch (error) {
-    console.error('Error scheduling daily reminder:', error);
+  hour: number,
+  minute: number,
+  title: string,
+  body: string
+): Promise<string> {
+  // Cancel existing daily reminders
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const notif of scheduled) {
+    if (notif.content.data?.type === 'daily_reminder') {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
   }
+
+  return await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      sound: 'default',
+      data: { type: 'daily_reminder' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
+  });
 }
 
-// Usage: Schedule daily at 9 AM
-scheduleDailyReminder(9, 0, 'Daily Task Reminder');
+export async function cancelDailyReminder(): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const notif of scheduled) {
+    if (notif.content.data?.type === 'daily_reminder') {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
+  }
+}
 ```
 
 ---
 
-## Badge Management
+## Badge Management Pattern
 
 ```typescript
-export async function incrementUnreadCount() {
-  try {
-    const current = await Notifications.getBadgeCountAsync();
-    const newCount = (current || 0) + 1;
-    
-    const success = await Notifications.setBadgeCountAsync(newCount);
-    console.log(`Badge updated to ${newCount}:`, success);
-  } catch (error) {
-    console.error('Error updating badge:', error);
-  }
+import * as Notifications from 'expo-notifications';
+
+export async function clearBadge(): Promise<void> {
+  await Notifications.setBadgeCountAsync(0);
 }
 
-export async function clearBadge() {
-  try {
-    await Notifications.setBadgeCountAsync(0);
-    console.log('Badge cleared');
-  } catch (error) {
-    console.error('Error clearing badge:', error);
-  }
-}
+export function setupBadgeListeners(): () => void {
+  const receivedSub = Notifications.addNotificationReceivedListener(
+    async () => {
+      const current = await Notifications.getBadgeCountAsync();
+      await Notifications.setBadgeCountAsync(current + 1);
+    }
+  );
 
-export function syncBadgeWithNotifications() {
-  const subscription = Notifications.addNotificationResponseReceivedListener(
-    async (response) => {
+  const responseSub = Notifications.addNotificationResponseReceivedListener(
+    async () => {
       const current = await Notifications.getBadgeCountAsync();
       if (current > 0) {
         await Notifications.setBadgeCountAsync(current - 1);
       }
     }
   );
-  
-  return () => subscription.remove();
+
+  return () => {
+    receivedSub.remove();
+    responseSub.remove();
+  };
 }
 ```
 
 ---
 
-## Error Handling & Retry Logic
+## Permission Check Utility
 
 ```typescript
-export class NotificationQueue {
-  private queue: Array<{
-    notification: any;
-    retries: number;
-    timestamp: number;
-  }> = [];
-  
-  async scheduleWithRetry(
-    notification: any,
-    maxRetries: number = 3
-  ) {
-    try {
-      return await Notifications.scheduleNotificationAsync(notification);
-    } catch (error) {
-      console.error('Error scheduling notification:', error);
-      
-      if (maxRetries > 0) {
-        this.queue.push({
-          notification,
-          retries: maxRetries - 1,
-          timestamp: Date.now(),
-        });
-        
-        setTimeout(() => this.processQueue(), 5000);
-      }
-    }
-  }
-  
-  private async processQueue() {
-    for (const item of this.queue) {
-      try {
-        await Notifications.scheduleNotificationAsync(item.notification);
-        this.queue = this.queue.filter(q => q !== item);
-      } catch (error) {
-        console.error('Retry failed:', error);
-        if (item.retries > 0) {
-          item.retries--;
-        } else {
-          this.queue = this.queue.filter(q => q !== item);
-          console.error('Max retries exceeded');
-        }
-      }
-    }
-  }
+import * as Notifications from 'expo-notifications';
+
+export async function getPermissionStatus(): Promise<{
+  granted: boolean;
+  canAsk: boolean;
+}> {
+  const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+  return {
+    granted: status === 'granted',
+    canAsk: canAskAgain,
+  };
+}
+
+export async function ensurePermissions(): Promise<boolean> {
+  const { granted, canAsk } = await getPermissionStatus();
+
+  if (granted) return true;
+  if (!canAsk) return false;
+
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status === 'granted';
 }
 ```
 
 ---
 
-## Permission Checking Utility
+## Testing Notifications Locally
 
 ```typescript
-export class NotificationPermissions {
-  static async checkStatus() {
-    const status = await Notifications.getPermissionsAsync();
-    
-    return {
-      granted: status.granted,
-      ios: status.ios?.status,
-      message: this.getStatusMessage(status),
-    };
-  }
-  
-  private static getStatusMessage(status: any): string {
-    if (!status.granted) {
-      return 'Notifications are disabled';
-    }
-    
-    if (status.ios?.status === 'AUTHORIZED') {
-      return 'Fully authorized for notifications';
-    }
-    
-    if (status.ios?.status === 'PROVISIONAL') {
-      return 'Provisionally authorized (silent)';
-    }
-    
-    return 'Notifications enabled';
-  }
-  
-  static async requestPermissionsIfNeeded(): Promise<boolean> {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    
-    if (existingStatus === 'granted') {
-      return true;
-    }
-    
-    const { status: newStatus } = await Notifications.requestPermissionsAsync();
-    return newStatus === 'granted';
-  }
+export async function sendTestNotification(): Promise<string> {
+  return await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Test Notification',
+      body: 'This is a test notification',
+      data: { test: true },
+    },
+    trigger: null,
+  });
+}
+
+export async function sendDelayedTestNotification(
+  seconds: number
+): Promise<string> {
+  return await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Delayed Test',
+      body: `This fired after ${seconds} seconds`,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds,
+    },
+  });
 }
 ```
 
 ---
 
-## Testing Notifications
-
-```typescript
-export async function runNotificationTests() {
-  console.log('🧪 Running notification tests...\n');
-  
-  try {
-    // Test 1: Schedule immediate notification
-    console.log('Test 1: Schedule immediate notification');
-    const id1 = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Test 1',
-        body: 'Immediate notification',
-      },
-      trigger: null,
-    });
-    console.log(`✅ Scheduled with ID: ${id1}\n`);
-    
-    // Test 2: Schedule delayed notification
-    console.log('Test 2: Schedule notification in 5 seconds');
-    const id2 = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Test 2',
-        body: 'Delayed notification',
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 5,
-      },
-    });
-    console.log(`✅ Scheduled with ID: ${id2}\n`);
-    
-    // Test 3: List all scheduled
-    console.log('Test 3: List all scheduled notifications');
-    const all = await Notifications.getAllScheduledNotificationsAsync();
-    console.log(`✅ Total scheduled: ${all.length}\n`);
-    
-    // Test 4: Check badge
-    console.log('Test 4: Badge management');
-    await Notifications.setBadgeCountAsync(5);
-    const badge = await Notifications.getBadgeCountAsync();
-    console.log(`✅ Badge count: ${badge}\n`);
-    
-    // Test 5: Permissions
-    console.log('Test 5: Permission check');
-    const perms = await Notifications.getPermissionsAsync();
-    console.log(`✅ Permissions granted: ${perms.granted}\n`);
-    
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-  }
-}
-```
-
----
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

@@ -446,4 +446,4 @@ const debouncedEmailCheck = debounce(async (value) => {
 
 ---
 
-**Source:** https://react-hook-form.com/api/useform/register
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/api/useform/register

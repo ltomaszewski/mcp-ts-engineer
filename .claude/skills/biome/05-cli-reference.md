@@ -1,358 +1,217 @@
 # CLI Reference
 
-**Source:** [https://biomejs.dev/reference/cli/](https://biomejs.dev/reference/cli/)
+**Source:** https://biomejs.dev/reference/cli/
 
 ---
 
-## CLI Command Summary
+## Command Summary
 
 | Command | Function | Use Case |
 |---------|----------|----------|
-| `biome check` | Formatter + Linter + Imports | Default comprehensive check |
+| `biome check` | Formatter + Linter + Assists | Default comprehensive check |
 | `biome lint` | Linter only | Find violations |
 | `biome format` | Formatter only | Format code |
-| `biome ci` | Formatter + Linter + Imports (CI mode) | CI pipelines |
+| `biome ci` | Formatter + Linter + Assists (CI) | CI pipelines (read-only) |
 | `biome init` | Initialize config | Project setup |
 | `biome migrate` | Migrate from other tools | ESLint/Prettier migration |
+| `biome search` | Structural code search | GritQL pattern matching |
+| `biome start` | Start daemon server | Performance optimization |
+| `biome stop` | Stop daemon server | Cleanup |
+| `biome version` | Show version info | Diagnostics |
+| `biome rage` | Debugging info | Bug reports |
+| `biome explain` | Show documentation | Rule reference |
+| `biome clean` | Clear daemon logs | Maintenance |
+| `biome lsp-proxy` | LSP handler | Editor integration |
 
 ---
 
 ## biome check
 
-**Description:** Runs formatter, linter, and import sorting on files.
+Runs formatter, linter, and assists on files.
 
-**Syntax:**
 ```bash
 npx biome check [OPTIONS] [PATH...]
 ```
 
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `PATH` | string | Files or directories to check |
+| Flag | Type | Description |
+|------|------|-------------|
 | `--write` | flag | Apply safe fixes to files |
-| `--unsafe` | flag | Apply unsafe fixes |
+| `--unsafe` | flag | Apply unsafe fixes too |
 | `--fix` | flag | Alias for `--write` |
+| `--staged` | flag | Check only git staged files |
+| `--changed` | flag | Check only changed files |
+| `--since=REF` | string | Compare against branch reference |
 | `--formatter-enabled` | boolean | Enable/disable formatter |
 | `--linter-enabled` | boolean | Enable/disable linter |
-| `--staged` | flag | Check only staged files |
-| `--changed` | flag | Check only changed files |
-
-**Code Example:**
+| `--assist-enabled` | boolean | Enable/disable assists |
 
 ```bash
-# Check all files
-npx biome check .
-
-# Check and apply fixes
-npx biome check --write .
-
-# Apply unsafe fixes
-npx biome check --write --unsafe src/
-
-# Check staged files
-npx biome check --staged
-
-# Check changed files
-npx biome check --changed
+npx biome check .                      # Dry run
+npx biome check --write .              # Apply safe fixes
+npx biome check --write --unsafe src/  # Apply all fixes
+npx biome check --staged               # Staged files only
+npx biome check --changed              # Changed files only
+npx biome check --since=main           # Changed since main branch
 ```
-
-**Return:**
-- Exit code 0: All checks passed
-- Exit code 1: Violations found
 
 ---
 
 ## biome lint
 
-**Description:** Run linting checks on files.
+Run linting checks only.
 
-**Syntax:**
 ```bash
 npx biome lint [OPTIONS] [PATH...]
 ```
 
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `PATH` | string | Files/directories to lint |
+| Flag | Type | Description |
+|------|------|-------------|
 | `--write` | flag | Apply safe fixes |
 | `--unsafe` | flag | Apply unsafe fixes |
-| `--only` | string | Run only specific rule(s) |
-| `--skip` | string | Skip specific rule(s) |
-| `--staged` | flag | Lint only staged files |
-| `--changed` | flag | Lint only changed files |
-
-**Code Example:**
+| `--only` | string | Run specific rule(s)/group(s)/domain(s) |
+| `--skip` | string | Skip specific rule(s)/group(s)/domain(s) |
+| `--staged` | flag | Lint staged files only |
+| `--changed` | flag | Lint changed files only |
+| `--suppress` | flag | Add suppression comments instead of fixing |
+| `--reason` | string | Suppression reason text |
+| `--profile-rules` | flag | Capture rule execution timing |
 
 ```bash
-# Lint all files
-npx biome lint .
-
-# Lint and fix
-npx biome lint --write src/
-
-# Apply unsafe fixes
-npx biome lint --write --unsafe src/
-
-# Lint only correctness rules
-npx biome lint --only=correctness src/
-
-# Skip style rules
-npx biome lint --skip=style src/
-
-# Lint staged files
-npx biome lint --staged
+npx biome lint .                          # Lint all
+npx biome lint --write src/               # Lint and fix
+npx biome lint --write --unsafe src/      # Include unsafe fixes
+npx biome lint --only=correctness src/    # Only correctness rules
+npx biome lint --skip=style src/          # Skip style rules
+npx biome lint --staged                   # Staged files
+npx biome lint --suppress --reason="migrated from eslint" src/
 ```
-
-**Return:**
-- Exit code 0: No violations
-- Exit code 1: Violations found
 
 ---
 
 ## biome format
 
-**Description:** Run formatter on files.
+Run formatter only.
 
-**Syntax:**
 ```bash
 npx biome format [OPTIONS] [PATH...]
 ```
 
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `PATH` | string | Files/directories to format |
+| Flag | Type | Description |
+|------|------|-------------|
 | `--write` | flag | Write formatted output to files |
-| `--indent-style` | string | Indentation style (tab\|space) |
-| `--indent-width` | number | Spaces per indent level |
-| `--line-width` | number | Max line length |
-| `--quote-style` | string | Quote style (double\|single) |
-| `--semicolons` | string | Semicolon insertion |
-| `--trailing-commas` | string | Trailing comma behavior |
-
-**Code Example:**
+| `--indent-style` | string | Override indent style |
+| `--indent-width` | number | Override indent width |
+| `--line-width` | number | Override line width |
+| `--quote-style` | string | Override quote style |
+| `--semicolons` | string | Override semicolons |
+| `--trailing-commas` | string | Override trailing commas |
+| `--format-with-errors` | flag | Format files with syntax errors |
 
 ```bash
-# Format all files
-npx biome format --write .
-
-# Preview formatting
-npx biome format src/
-
-# Format with specific indentation
-npx biome format --write --indent-width=4 src/
-
-# Format with custom line width
-npx biome format --write --line-width=120 src/
-
-# Use single quotes
-npx biome format --write --quote-style=single src/
-
-# Format without semicolons
-npx biome format --write --semicolons=as-needed src/
+npx biome format --write .                  # Format all
+npx biome format src/                       # Preview (dry run)
+npx biome format --write --indent-width=4 . # Override indent
+npx biome format --write --quote-style=single .
 ```
-
-**Return:**
-- Exit code 0: Success
-- Exit code 1: Formatting errors
 
 ---
 
 ## biome ci
 
-**Description:** Run checks in CI mode (read-only).
+Run checks in CI mode (read-only, fails on violations).
 
-**Syntax:**
 ```bash
 npx biome ci [OPTIONS] [PATH...]
 ```
 
-**Code Example:**
-
 ```bash
-# Check all files in CI
-npx biome ci .
-
-# Check only changed files
-npx biome ci --changed
-
-# Disable formatter in CI
-npx biome ci --formatter-enabled=false
+npx biome ci .                             # Full CI check
+npx biome ci --changed                     # Only changed files
+npx biome ci --formatter-enabled=false     # Skip formatting
 ```
-
-**Return:**
-- Exit code 0: All checks passed
-- Exit code 1: Violations or formatting needed
 
 ---
 
 ## biome init
 
-**Description:** Initialize a new Biome configuration file.
-
-**Syntax:**
-```bash
-npx biome init [OPTIONS]
-```
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `--jsonc` | flag | Create config in JSONC format |
-
-**Code Example:**
+Initialize new configuration file.
 
 ```bash
-# Create default biome.json
-npx biome init
-
-# Create with JSONC format
-npx biome init --jsonc
+npx biome init           # Create biome.json
+npx biome init --jsonc   # Create biome.jsonc
 ```
-
-**Return:** Creates `biome.json` or `biome.jsonc` with defaults
 
 ---
 
 ## biome migrate
 
-**Description:** Migrate configuration from other tools.
-
-**Syntax:**
-```bash
-npx biome migrate [SUBCOMMAND]
-```
-
-**Subcommands:**
-
-### biome migrate eslint
+Migrate from other tools.
 
 ```bash
-npx biome migrate eslint
+npx biome migrate eslint     # Read ESLint config, update biome.json
+npx biome migrate prettier   # Read Prettier config, update biome.json
 ```
-
-**Behavior:** Reads ESLint config and updates biome.json
 
 ---
 
-### biome migrate prettier
+## biome search (v2, experimental)
+
+Structural code search with GritQL patterns:
 
 ```bash
-npx biome migrate prettier
+npx biome search 'console.log($msg)' src/
 ```
-
-**Behavior:** Reads Prettier config and updates biome.json
-
----
-
-## biome version
-
-**Description:** Display Biome version information.
-
-**Syntax:**
-```bash
-npx biome version
-```
-
-**Return:** Version number
 
 ---
 
 ## Global Options
 
-### --colors
-**Type:** `<off|force>`
+| Flag | Type | Description |
+|------|------|-------------|
+| `--colors` | `off` \| `force` | Output color mode |
+| `--use-server` | flag | Connect to running daemon |
+| `--verbose` | flag | Print additional diagnostics |
+| `--config-path` | string | Override config file path |
+| `--max-diagnostics` | `none` \| number | Limit diagnostics shown |
+| `--skip-parse-errors` | flag | Ignore syntax errors |
+| `--no-errors-on-unmatched` | flag | Suppress unmatched file errors |
+| `--error-on-warnings` | flag | Exit with error on warnings |
+| `--diagnostic-level` | `info` \| `warn` \| `error` | Filter diagnostics |
+| `--reporter` | string | Output format |
+| `--reporter-file` | string | Write report to file |
+| `--stdin-file-path` | string | Virtual path for stdin input |
 
-Control output formatting.
+### Reporter Formats
 
-```bash
-npx biome lint --colors=off src/
-npx biome lint --colors=force src/
-```
-
----
-
-### --verbose
-**Type:** Flag
-
-Print additional diagnostics.
-
-```bash
-npx biome check --verbose .
-```
-
----
-
-### --config-path
-**Type:** String
-
-Override config file path.
-
-```bash
-npx biome check --config-path=custom/biome.json src/
-```
-
----
-
-### --max-diagnostics
-**Type:** Number
-
-Limit diagnostics shown.
+| Reporter | Description |
+|----------|-------------|
+| `default` | Human-readable terminal output |
+| `json` | JSON format |
+| `json-pretty` | Pretty-printed JSON |
+| `github` | GitHub Actions annotations |
+| `gitlab` | GitLab CI annotations |
+| `junit` | JUnit XML format |
+| `summary` | Summary only |
+| `checkstyle` | Checkstyle XML |
+| `rdjson` | ReviewDog JSON |
+| `sarif` | SARIF format |
 
 ```bash
-npx biome lint --max-diagnostics=100 src/
-```
-
----
-
-### --error-on-warnings
-**Type:** Flag
-
-Exit with error if warnings found.
-
-```bash
-npx biome check --error-on-warnings .
-```
-
----
-
-### --reporter
-**Type:** String
-
-Change output format.
-
-```bash
-# JSON output
-npx biome lint --reporter=json src/ | jq
-
-# GitHub Actions format
-npx biome check --reporter=github .
-
-# JUnit XML
+npx biome check --reporter=github .        # GitHub Actions
 npx biome check --reporter=junit . > results.xml
+npx biome lint --reporter=json src/ | jq
 ```
 
 ---
 
-## Performance Optimization
+## Daemon Mode
 
-Use daemon for repeated operations:
+Use daemon for faster repeated operations:
 
 ```bash
-# Start daemon
-npx biome start
-
-# Use daemon
-npx biome check --use-server .
-
-# Stop daemon
-npx biome stop
+npx biome start                    # Start daemon
+npx biome check --use-server .     # Use daemon
+npx biome stop                     # Stop daemon
 ```
 
 ---
@@ -367,5 +226,4 @@ npx biome stop
 
 ---
 
-**Document Version:** 2.3.10  
-**Last Updated:** December 2024
+**Version:** 2.x (^2.4.4) | **Source:** https://biomejs.dev/reference/cli/

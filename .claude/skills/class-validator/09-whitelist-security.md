@@ -1,52 +1,23 @@
-# Whitelist and Security
+# Whitelist & Security
 
-## The Security Problem
+## The Mass-Assignment Problem
 
-Without proper validation, attackers can:
-- Pollute object prototypes
-- Override internal properties
-- Cause mass-assignment vulnerabilities
-- Bypass business logic
-
-## The Solution
+Without whitelist protection, attackers can inject arbitrary properties into DTOs:
 
 ```typescript
-app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,              // Remove unexpected properties
-  forbidNonWhitelisted: true,   // Throw error for unexpected properties
-  transform: true,              // Auto-transform to DTO types
-}));
+// Request body: { name: "John", email: "john@test.com", isAdmin: true, role: "superadmin" }
+// Without whitelist: ALL properties pass through to the service layer
 ```
 
-## How It Works
-
-**Without whitelist:**
-```typescript
-// Request: { name: "John", email: "john@example.com", isAdmin: true }
-// Result: All properties pass through, including isAdmin
-```
-
-**With whitelist: true:**
-```typescript
-// Request: { name: "John", email: "john@example.com", isAdmin: true }
-// Result: { name: "John", email: "john@example.com" }
-// isAdmin is silently removed
-```
-
-**With whitelist + forbidNonWhitelisted:**
-```typescript
-// Request: { name: "John", email: "john@example.com", isAdmin: true }
-// Result: 400 Bad Request
-// Error: "property isAdmin should not exist"
-```
-
-## Complete Security Configuration
+## Solution: Whitelist Configuration
 
 ```typescript
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
+
 app.useGlobalPipes(new ValidationPipe({
   // Security
-  whitelist: true,
-  forbidNonWhitelisted: true,
+  whitelist: true,              // Strip properties without decorators
+  forbidNonWhitelisted: true,   // Throw error for unexpected properties
 
   // Type safety
   transform: true,
@@ -60,9 +31,9 @@ app.useGlobalPipes(new ValidationPipe({
 
   // Custom error formatting
   exceptionFactory: (errors) => {
-    const messages = errors.map(error => ({
+    const messages = errors.map((error) => ({
       field: error.property,
-      errors: Object.values(error.constraints || {}),
+      errors: Object.values(error.constraints ?? {}),
     }));
     return new BadRequestException({
       statusCode: 400,
@@ -73,10 +44,69 @@ app.useGlobalPipes(new ValidationPipe({
 }));
 ```
 
-## Best Practices
+## Behavior Comparison
 
-1. **Always use whitelist + forbidNonWhitelisted in production**
-2. **Define explicit DTOs for every endpoint**
-3. **Use @IsOptional() for optional fields**
-4. **Enable transformation for type safety**
-5. **Fail fast with stopAtFirstError**
+| Config | `{ name: "John", isAdmin: true }` | Result |
+|--------|----------------------------------|--------|
+| No options | `{ name: "John", isAdmin: true }` | **isAdmin passes through** |
+| `whitelist: true` | `{ name: "John" }` | isAdmin silently stripped |
+| `whitelist + forbidNonWhitelisted` | **400 Bad Request** | Error: "property isAdmin should not exist" |
+
+## forbidUnknownValues (Default: true)
+
+Rejects validation of unknown (non-class) objects. **Keep this enabled:**
+
+```typescript
+import { validate } from 'class-validator';
+
+// This FAILS with forbidUnknownValues: true (default)
+const errors = await validate({ random: 'object' });
+// Error: unknown object passed to validation
+
+// This WORKS — proper class instance
+import { plainToInstance } from 'class-transformer';
+const dto = plainToInstance(CreateUserDto, { name: 'John' });
+const errors = await validate(dto);
+```
+
+## Security Best Practices
+
+1. **Always** enable `whitelist: true` and `forbidNonWhitelisted: true` in production
+2. **Define explicit DTOs** for every endpoint -- never reuse entity classes as DTOs
+3. **Use `@IsOptional()`** for optional fields instead of omitting decorators
+4. **Enable `transform: true`** for type safety (string "1" becomes number 1)
+5. **Use `stopAtFirstError: true`** to fail fast and reduce error info leakage
+6. **Set `disableErrorMessages`** in production to avoid exposing validation logic
+7. **Never use `forbidUnknownValues: false`** -- unknown objects bypass all validation
+
+## Separate Create vs Update DTOs
+
+```typescript
+import { IsString, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
+
+export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+// All fields become optional, keeps all validators
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+
+// Removes password field entirely
+export class UpdateProfileDto extends PartialType(
+  OmitType(CreateUserDto, ['password'] as const),
+) {}
+```
+
+---
+
+**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator

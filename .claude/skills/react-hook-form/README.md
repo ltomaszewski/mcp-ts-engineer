@@ -1,4 +1,4 @@
-# React Hook Form 7.69.0 - Modular Knowledge Base
+# React Hook Form 7.71.2 - Modular Knowledge Base
 
 > Performant, flexible, and extensible forms with easy-to-use validation. LLM-optimized modular architecture for context efficiency.
 
@@ -226,7 +226,7 @@ const { register } = useForm({ resolver: yupResolver(schema) });
 
 ## Version & Compatibility
 
-- **React Hook Form Version:** 7.69.0 (latest 7.x)
+- **React Hook Form Version:** 7.71.2 (latest 7.x)
 - **React Versions:** 16.8+ (hooks required)
 - **TypeScript Support:** Full (3.5+)
 - **Bundle Size:** ~8.5kb gzipped
@@ -234,4 +234,4 @@ const { register } = useForm({ resolver: yupResolver(schema) });
 
 ---
 
-**Last Updated:** December 2025 | **Status:** Complete with official documentation alignment | **Content:** 11 self-contained modules
+**Last Updated:** February 2026 | **Status:** Complete with official documentation alignment | **Content:** 11 self-contained modules

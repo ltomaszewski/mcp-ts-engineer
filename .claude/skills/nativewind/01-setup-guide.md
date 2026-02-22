@@ -1,7 +1,7 @@
 # Setup Guide - NativeWind v4
 
 **Source:** https://www.nativewind.dev/docs/getting-started/installation  
-**Last Verified:** October 14, 2025  
+**Last Verified:** February 2026  
 **Version:** NativeWind v4
 
 ---
@@ -42,10 +42,10 @@ Install NativeWind and its peer dependencies:
 npm install nativewind tailwindcss react-native-reanimated react-native-safe-area-context
 ```
 
-**Dependency Versions (as of Oct 2025):**
-- `nativewind`: ^4.0.0
-- `tailwindcss`: ^4.0.0
-- `react-native-reanimated`: ^3.0.0+
+**Dependency Versions (as of Feb 2026):**
+- `nativewind`: ^4.1.23
+- `tailwindcss`: 3.4.17
+- `react-native-reanimated`: ^4.2.2
 - `react-native-safe-area-context`: ^4.0.0+
 
 #### Step 2: Setup Tailwind CSS
@@ -602,9 +602,9 @@ After successful setup, you're ready to:
 
 ## Version Information
 
-- **NativeWind Version:** 4.0+
-- **Tailwind CSS Version:** 4.0+
-- **Minimum Node Version:** 16.0.0 (recommended: 18+)
-- **Last Updated:** October 14, 2025
+- **NativeWind Version:** 4.1.23+
+- **Tailwind CSS Version:** 3.4.17
+- **Minimum Node Version:** 24
+- **Last Updated:** February 2026
 
 **Source:** https://www.nativewind.dev/docs/getting-started/installation

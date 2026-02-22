@@ -1,414 +1,382 @@
-# API: Advanced Utilities — date-fns v4.1.0
+# API: Advanced Utilities -- date-fns v4.1.0
 
-## intervalToDuration() — Interval to Duration
+> Intervals, durations, timestamps, iteration functions, and timezone operations.
 
-**Purpose:** Convert date interval to Duration object with components (years, months, days, hours, etc.).
+**Source:** https://date-fns.org/docs/intervalToDuration
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/intervalToDuration/index.ts
+---
+
+## intervalToDuration() -- Interval to Duration
+
+Converts a date interval `{ start, end }` into a `Duration` object with broken-down components.
 
 ### Signature
 
 ```typescript
-function intervalToDuration(
-  interval: Interval,
-  options?: IntervalToDurationOptions
-): Duration
+function intervalToDuration(interval: Interval): Duration
+
+interface Duration {
+  years?: number;
+  months?: number;
+  weeks?: number;
+  days?: number;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+}
 ```
 
-### Code Examples
-
-```javascript
-import { intervalToDuration, subDays, format } from 'date-fns';
-
-const date1 = new Date(2024, 11, 27);
-const date2 = subDays(date1, 5);
+```typescript
+import { intervalToDuration } from 'date-fns';
 
 const duration = intervalToDuration({
-  start: date2,
-  end: date1,
+  start: new Date(2026, 0, 1, 10, 0, 0),
+  end: new Date(2026, 3, 15, 14, 30, 45),
 });
+// { months: 3, days: 14, hours: 4, minutes: 30, seconds: 45 }
 
-console.log(duration);
-//=> { days: 5 }
-
-// Complex duration
-const start = new Date(2024, 0, 1, 10, 30, 45);
-const end = new Date(2024, 3, 15, 14, 45, 20);
-
-const complex = intervalToDuration({ start, end });
-console.log(complex);
-//=> { months: 3, days: 14, hours: 4, minutes: 14, seconds: 35 }
+// Simple example
+intervalToDuration({
+  start: new Date(2026, 0, 1),
+  end: new Date(2026, 0, 6),
+});
+// { days: 5 }
 ```
 
 ---
 
-## toDate() — Convert to Date
+## formatDuration() -- Duration to String
 
-**Purpose:** Convert various input types to JavaScript Date object.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/toDate/index.ts
-
-### Signature
+See `03-api-formatting.md` for full documentation. Quick reference:
 
 ```typescript
-function toDate(argument: Date | number | string): Date
-```
+import { formatDuration, intervalToDuration } from 'date-fns';
 
-### Code Examples
+formatDuration({ hours: 2, minutes: 30 });
+// "2 hours 30 minutes"
 
-```javascript
-import { toDate, isValid } from 'date-fns';
+const duration = intervalToDuration({
+  start: new Date(2026, 0, 1),
+  end: new Date(2026, 3, 15),
+});
+formatDuration(duration);
+// "3 months 14 days"
 
-// From number (Unix timestamp in milliseconds)
-toDate(0);                                    // Jan 1, 1970
-toDate(1703692800000);                        // Dec 27, 2024
-
-// From Date (returns same)
-toDate(new Date(2024, 11, 27));              // Dec 27, 2024
-
-// From string (attempts ISO parse)
-toDate('2024-12-27');                         // Dec 27, 2024
-toDate('2024-12-27T15:30:45Z');              // Dec 27, 2024 15:30:45
-
-// Invalid conversion
-const invalid = toDate('invalid');
-isValid(invalid);                             // false
+formatDuration(duration, { format: ['months', 'days'], delimiter: ', ' });
+// "3 months, 14 days"
 ```
 
 ---
 
-## toUnixTime() — Date to Unix Timestamp
+## Timestamp Functions
 
-**Purpose:** Convert Date to Unix timestamp (seconds since epoch).
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/toUnixTime/index.ts
-
-### Signature
+### getUnixTime() -- Date to Unix Seconds
 
 ```typescript
-function toUnixTime(date: Date | number): number
+function getUnixTime(date: Date | number): number
 ```
 
-### Code Examples
+```typescript
+import { getUnixTime } from 'date-fns';
 
-```javascript
-import { toUnixTime, fromUnixTime, format } from 'date-fns';
-
-const date = new Date(2024, 11, 27, 0, 0, 0);
-
-const unixSeconds = toUnixTime(date);
-console.log(unixSeconds);
-//=> 1735689600 (seconds, not milliseconds)
-
-// Convert back
-const restored = fromUnixTime(unixSeconds);
-console.log(format(restored, 'PPPP'));
-//=> "Friday, December 27, 2024"
+getUnixTime(new Date(2026, 0, 25));
+// 1737763200 (seconds since epoch)
 ```
 
----
-
-## fromUnixTime() — Unix Timestamp to Date
-
-**Purpose:** Convert Unix timestamp (seconds) to JavaScript Date.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/fromUnixTime/index.ts
-
-### Signature
+### fromUnixTime() -- Unix Seconds to Date
 
 ```typescript
 function fromUnixTime(unixTime: number): Date
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { fromUnixTime, format } from 'date-fns';
 
-// Create date from Unix timestamp
-fromUnixTime(0);                    // Jan 1, 1970
-fromUnixTime(1735689600);          // Dec 27, 2024
-
-const date = fromUnixTime(1735689600);
-console.log(format(date, 'PPPP'));
-//=> "Friday, December 27, 2024"
+const date = fromUnixTime(1737763200);
+format(date, 'PPPP');
+// "Sunday, January 25, 2026"
 ```
 
----
-
-## getTime() — Get Milliseconds Since Epoch
-
-**Purpose:** Get milliseconds since Unix epoch (same as Date.getTime()).
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getTime/index.ts
-
-### Signature
+### getTime() -- Date to Milliseconds
 
 ```typescript
 function getTime(date: Date | number): number
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { getTime } from 'date-fns';
 
-const date = new Date(2024, 11, 27);
+getTime(new Date(2026, 0, 25));
+// 1737763200000 (milliseconds since epoch)
+```
 
-const ms = getTime(date);
-console.log(ms);
-//=> 1735689600000 (milliseconds)
+### toDate() -- Convert to Date
 
-// Useful for: storing timestamps, comparing dates
-const now = getTime(new Date());
-const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-console.log(getTime(tomorrow) > now);  // true
+```typescript
+function toDate(argument: Date | number | string): Date
+```
+
+```typescript
+import { toDate, isValid } from 'date-fns';
+
+toDate(1737763200000);                  // from milliseconds
+toDate(new Date(2026, 0, 25));          // passthrough
+toDate('2026-01-25');                    // from string
+
+const result = toDate('invalid');
+isValid(result);                         // false
 ```
 
 ---
 
-## min() & max() — Find Min/Max Date
-
-**Purpose:** Find earliest or latest date from an array.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/min/index.ts
-
-### Signature
+## min() / max() -- Find Earliest/Latest
 
 ```typescript
-function min(datesArray: (Date | number)[]): Date
-function max(datesArray: (Date | number)[]): Date
+function min(dates: (Date | number)[]): Date
+function max(dates: (Date | number)[]): Date
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { min, max } from 'date-fns';
 
 const dates = [
-  new Date(2024, 11, 25),
-  new Date(2024, 11, 27),
-  new Date(2024, 11, 26),
+  new Date(2026, 0, 25),
+  new Date(2026, 0, 20),
+  new Date(2026, 0, 30),
 ];
 
-min(dates);
-//=> Tue Dec 25 2024
-
-max(dates);
-//=> Fri Dec 27 2024
-
-// Practical use case: find earliest deadline
-const deadlines = [
-  new Date('2024-12-30'),
-  new Date('2024-12-28'),
-  new Date('2024-12-31'),
-];
-
-const urgent = min(deadlines);
-console.log('Most urgent deadline:', urgent);
+min(dates);  // Jan 20, 2026
+max(dates);  // Jan 30, 2026
 ```
 
 ---
 
-## isWithinInterval() — Date Within Interval?
+## Interval Functions
 
-**Purpose:** Check if date falls within a date range.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isWithinInterval/index.ts
-
-### Signature
+### isWithinInterval()
 
 ```typescript
-function isWithinInterval(
-  date: Date | number,
-  interval: Interval,
-  options?: IsWithinIntervalOptions
+function isWithinInterval(date: Date | number, interval: Interval): boolean
+```
+
+```typescript
+import { isWithinInterval } from 'date-fns';
+
+isWithinInterval(new Date(2026, 0, 25), {
+  start: new Date(2026, 0, 20),
+  end: new Date(2026, 0, 30),
+});
+// true
+```
+
+### areIntervalsOverlapping()
+
+```typescript
+function areIntervalsOverlapping(
+  intervalLeft: Interval,
+  intervalRight: Interval,
+  options?: { inclusive?: boolean }
 ): boolean
 ```
 
-### Code Examples
+```typescript
+import { areIntervalsOverlapping } from 'date-fns';
 
-```javascript
-import { isWithinInterval, addDays } from 'date-fns';
+areIntervalsOverlapping(
+  { start: new Date(2026, 0, 10), end: new Date(2026, 0, 20) },
+  { start: new Date(2026, 0, 15), end: new Date(2026, 0, 25) },
+);
+// true (they overlap from Jan 15-20)
 
-const start = new Date(2024, 11, 20);
-const end = new Date(2024, 11, 31);
-const dateInRange = new Date(2024, 11, 25);
-const dateOutOfRange = new Date(2025, 0, 5);
+areIntervalsOverlapping(
+  { start: new Date(2026, 0, 10), end: new Date(2026, 0, 15) },
+  { start: new Date(2026, 0, 20), end: new Date(2026, 0, 25) },
+);
+// false (no overlap)
 
-isWithinInterval(dateInRange, { start, end });
-//=> true
-
-isWithinInterval(dateOutOfRange, { start, end });
-//=> false
-
-// Practical: Check if event is within business hours
-function isBusinessHours(dateTime) {
-  const start = new Date(dateTime);
-  start.setHours(9, 0, 0, 0);
-  
-  const end = new Date(dateTime);
-  end.setHours(17, 0, 0, 0);
-  
-  return isWithinInterval(dateTime, { start, end });
-}
+// inclusive: treat touching endpoints as overlapping
+areIntervalsOverlapping(
+  { start: new Date(2026, 0, 10), end: new Date(2026, 0, 15) },
+  { start: new Date(2026, 0, 15), end: new Date(2026, 0, 20) },
+  { inclusive: true },
+);
+// true (endpoints touch)
 ```
 
 ---
 
-## Timezone Functions (v4.0+)
+## Iteration Functions
 
-These functions are from the `@date-fns/tz` package.
-
-### TZDate — Timezone-Aware Date
-
-**Purpose:** Create a date in a specific timezone.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/tz/TZDate/index.ts
-
-### Signature
+### eachDayOfInterval()
 
 ```typescript
-class TZDate extends Date {
-  constructor(
-    year: number,
-    month: number,
-    date?: number,
-    hours?: number,
-    minutes?: number,
-    seconds?: number,
-    milliseconds?: number,
-    timeZone?: string
-  )
-}
+function eachDayOfInterval(interval: Interval, options?: { step?: number }): Date[]
 ```
 
-### Code Examples
+```typescript
+import { eachDayOfInterval, format } from 'date-fns';
 
-```javascript
+const days = eachDayOfInterval({
+  start: new Date(2026, 0, 20),
+  end: new Date(2026, 0, 25),
+});
+// [Jan 20, Jan 21, Jan 22, Jan 23, Jan 24, Jan 25]
+
+// With step (every other day)
+const everyOther = eachDayOfInterval(
+  { start: new Date(2026, 0, 20), end: new Date(2026, 0, 28) },
+  { step: 2 },
+);
+// [Jan 20, Jan 22, Jan 24, Jan 26, Jan 28]
+```
+
+### eachWeekOfInterval()
+
+```typescript
+function eachWeekOfInterval(interval: Interval, options?: { weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6 }): Date[]
+```
+
+```typescript
+import { eachWeekOfInterval, format } from 'date-fns';
+
+const weeks = eachWeekOfInterval({
+  start: new Date(2026, 0, 1),
+  end: new Date(2026, 0, 31),
+});
+// Array of week start dates in January 2026
+
+// With Monday as week start
+const mondayWeeks = eachWeekOfInterval(
+  { start: new Date(2026, 0, 1), end: new Date(2026, 0, 31) },
+  { weekStartsOn: 1 },
+);
+```
+
+### eachMonthOfInterval()
+
+```typescript
+function eachMonthOfInterval(interval: Interval): Date[]
+```
+
+```typescript
+import { eachMonthOfInterval, format } from 'date-fns';
+
+const months = eachMonthOfInterval({
+  start: new Date(2026, 0, 1),
+  end: new Date(2026, 5, 30),
+});
+// [Jan 1, Feb 1, Mar 1, Apr 1, May 1, Jun 1]
+
+months.map((m) => format(m, 'MMMM yyyy'));
+// ["January 2026", "February 2026", ..., "June 2026"]
+```
+
+### eachHourOfInterval()
+
+```typescript
+import { eachHourOfInterval } from 'date-fns';
+
+const hours = eachHourOfInterval({
+  start: new Date(2026, 0, 25, 9, 0),
+  end: new Date(2026, 0, 25, 17, 0),
+});
+// [9:00, 10:00, 11:00, ..., 17:00]
+```
+
+---
+
+## Timezone Functions (@date-fns/tz)
+
+Requires `@date-fns/tz` package: `npm install @date-fns/tz`
+
+### TZDate -- Timezone-Aware Date
+
+```typescript
 import { TZDate } from '@date-fns/tz';
 import { format, addDays } from 'date-fns';
 
-// Create date in Singapore timezone
-const sgDate = new TZDate(2025, 0, 1, 12, 0, 0, 'Asia/Singapore');
-console.log(format(sgDate, 'yyyy-MM-dd HH:mm:ss'));
-//=> "2025-01-01 12:00:00"
+const sgDate = new TZDate(2026, 0, 25, 12, 0, 0, 'Asia/Singapore');
+format(sgDate, 'yyyy-MM-dd HH:mm:ss');
+// "2026-01-25 12:00:00"
 
-// Create date in New York timezone
-const nyDate = new TZDate(2025, 0, 1, 12, 0, 0, 'America/New_York');
-console.log(format(nyDate, 'yyyy-MM-dd HH:mm:ss'));
-//=> "2025-01-01 12:00:00" (different UTC offset)
+const nyDate = new TZDate(2026, 0, 25, 12, 0, 0, 'America/New_York');
+format(nyDate, 'yyyy-MM-dd HH:mm:ss');
+// "2026-01-25 12:00:00" (different UTC offset)
 
 // Arithmetic preserves timezone
 const tomorrow = addDays(sgDate, 1);
-console.log(format(tomorrow, 'yyyy-MM-dd')); // Still in Singapore TZ
+// Still in Asia/Singapore timezone
 ```
 
 ---
 
-## utcToZonedTime() — UTC to Timezone
+## Common Patterns
 
-**Purpose:** Convert UTC date to specific timezone (v4.0+).
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/tz/utcToZonedTime/index.ts
-
-### Signature
+### Calendar Month Grid
 
 ```typescript
-function utcToZonedTime(
-  date: Date | string | number,
-  timeZone: string
-): Date
+import { eachDayOfInterval, startOfMonth, endOfMonth, startOfWeek, endOfWeek, format } from 'date-fns';
+
+function getCalendarDays(date: Date): Date[] {
+  const monthStart = startOfMonth(date);
+  const monthEnd = endOfMonth(date);
+  const calStart = startOfWeek(monthStart);
+  const calEnd = endOfWeek(monthEnd);
+
+  return eachDayOfInterval({ start: calStart, end: calEnd });
+}
+
+const days = getCalendarDays(new Date(2026, 0, 1));
+// Returns all days needed for a full calendar grid (including padding days)
 ```
 
-### Code Examples
+### Event Overlap Detection
 
-```javascript
-import { utcToZonedTime } from '@date-fns/tz';
-import { format } from 'date-fns';
+```typescript
+import { areIntervalsOverlapping } from 'date-fns';
 
-const utcDate = new Date('2024-12-27T00:00:00Z');
+interface Event { start: Date; end: Date; title: string }
 
-// Convert to Singapore time
-const sgTime = utcToZonedTime(utcDate, 'Asia/Singapore');
-console.log(format(sgTime, 'yyyy-MM-dd HH:mm:ss'));
-//=> "2024-12-27 08:00:00" (+8 offset)
-
-// Convert to New York time
-const nyTime = utcToZonedTime(utcDate, 'America/New_York');
-console.log(format(nyTime, 'yyyy-MM-dd HH:mm:ss'));
-//=> "2024-12-26 19:00:00" (-5 offset)
-```
-
----
-
-## zonedTimeToUtc() — Timezone to UTC
-
-**Purpose:** Convert timezone-aware time to UTC.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/tz/zonedTimeToUtc/index.ts
-
-### Code Examples
-
-```javascript
-import { zonedTimeToUtc } from '@date-fns/tz';
-import { format } from 'date-fns';
-
-// Local time in Singapore
-const sgLocal = new Date(2024, 11, 27, 8, 0, 0);
-
-const utc = zonedTimeToUtc(sgLocal, 'Asia/Singapore');
-console.log(format(utc, "yyyy-MM-dd HH:mm:ss 'UTC'"));
-//=> "2024-12-27 00:00:00 UTC"
-```
-
----
-
-## Advanced Pattern: Find Available Slots
-
-```javascript
-import { isWithinInterval, addMinutes, startOfDay, endOfDay, eachHourOfInterval } from 'date-fns';
-
-function findAvailableSlots(date, busyIntervals, slotDuration = 60) {
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
-  
-  const allSlots = eachHourOfInterval({
-    start: dayStart,
-    end: dayEnd,
-  }).map(slot => ({
-    start: slot,
-    end: addMinutes(slot, slotDuration),
-  }));
-  
-  return allSlots.filter(slot =>
-    !busyIntervals.some(busy =>
-      isWithinInterval(slot.start, busy) ||
-      isWithinInterval(slot.end, busy)
+function hasConflict(newEvent: Event, events: Event[]): boolean {
+  return events.some((event) =>
+    areIntervalsOverlapping(
+      { start: newEvent.start, end: newEvent.end },
+      { start: event.start, end: event.end },
     )
   );
 }
+```
 
-// Find 1-hour slots not conflicting with meetings
-const busy = [
-  { start: new Date(2024, 11, 27, 9, 0), end: new Date(2024, 11, 27, 10, 0) },
-  { start: new Date(2024, 11, 27, 14, 0), end: new Date(2024, 11, 27, 15, 0) },
-];
+### Countdown Timer
 
-findAvailableSlots(new Date(2024, 11, 27), busy);
+```typescript
+import { intervalToDuration, formatDuration } from 'date-fns';
+
+function getCountdown(targetDate: Date): string {
+  const now = new Date();
+  if (now >= targetDate) return 'Expired';
+
+  const duration = intervalToDuration({ start: now, end: targetDate });
+  return formatDuration(duration, {
+    format: ['days', 'hours', 'minutes'],
+    delimiter: ', ',
+  });
+}
+
+getCountdown(new Date(2026, 11, 31));
+// "340 days, 9 hours, 30 minutes"
 ```
 
 ---
 
-## Module Navigation
+## Cross-References
 
-- **Manipulation:** `04-api-manipulation.md` (Date arithmetic)
-- **Query & comparison:** `05-api-query.md` (Date inspection)
-- 📍 **You are here:** API: Advanced Utilities (06-api-advanced.md)
-- **Localization:** `07-locales-i18n.md` (International support)
-- **Practical patterns:** `08-practical-guides.md` (Real-world recipes)
-- **Complete index:** `00-master-index.md`
+- **Formatting (formatDuration):** `03-api-formatting.md`
+- **Manipulation:** `04-api-manipulation.md`
+- **Query and comparison:** `05-api-query.md`
+- **Localization:** `07-locales-i18n.md`
+- **Practical recipes:** `08-practical-guides.md`
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/docs/intervalToDuration

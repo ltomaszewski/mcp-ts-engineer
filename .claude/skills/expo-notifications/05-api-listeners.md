@@ -1,306 +1,196 @@
-# Notification Handling & Event Listeners
+# Event Listeners -- Expo Notifications SDK 54
 
-**Module Purpose**: Complete guide to handling incoming notifications, event listeners, and lifecycle management.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
-
----
-
-## Notification Handler Setup
-
-### `setNotificationHandler(handler)`
-
-**Purpose**: Define app behavior for foreground notifications and success/failure callbacks.
-
-**Code Example - Basic Handler**:
-
-```typescript
-import * as Notifications from 'expo-notifications';
-
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    console.log('Notification received:', notification);
-    
-    return {
-      shouldShowAlert: true,      // Show system alert
-      shouldPlaySound: true,      // Play sound
-      shouldSetBadge: false,      // Don't change badge
-      shouldShowBanner: true,     // Show as banner (iOS 14+)
-      shouldShowList: true,       // Show in notification list
-    };
-  },
-  
-  handleSuccess: (notificationId) => {
-    console.log('✅ Notification displayed:', notificationId);
-  },
-  
-  handleError: (notificationId, error) => {
-    console.error('❌ Notification failed:', notificationId, error);
-  },
-});
-```
+Notification event listeners, deep linking from notifications, and lifecycle management.
 
 ---
 
 ## Event Listeners
 
-### `addNotificationReceivedListener(listener)`
+### addNotificationReceivedListener(listener)
 
-**Purpose**: Listen for notifications arriving while app is running (foreground or background).
-
-**Parameters**:
+Listen for notifications arriving while the app is running (foreground).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `listener` | `(notification) => void` | Callback function |
+| `listener` | `(notification: Notification) => void` | Callback with notification data |
 
-**Return Type**: `EventSubscription` (has `.remove()` method)
-
-**Code Example**:
+**Returns:** `EventSubscription` (call `.remove()` to unsubscribe)
 
 ```typescript
 import * as Notifications from 'expo-notifications';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
-export function NotificationListener() {
+export function useNotificationReceived(): void {
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener(
       (notification) => {
-        console.log('📬 Notification arrived');
-        console.log('Title:', notification.request.content.title);
-        console.log('Body:', notification.request.content.body);
-        console.log('Data:', notification.request.content.data);
+        const { title, body, data } = notification.request.content;
+        console.log('Received:', title, body);
+        console.log('Data:', data);
       }
     );
-    
+
     return () => subscription.remove();
   }, []);
-  
-  return null;
 }
 ```
 
 ---
 
-### `addNotificationResponseReceivedListener(listener)`
+### addNotificationResponseReceivedListener(listener)
 
-**Purpose**: Listen for user tapping on notifications.
-
-**Parameters**:
+Listen for user tapping on notifications (foreground, background, or cold start).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `listener` | `(response) => void` | Callback with user action |
+| `listener` | `(response: NotificationResponse) => void` | Callback with user action |
 
-**Return Type**: `EventSubscription`
-
-**Code Example - Basic Response**:
+**Returns:** `EventSubscription`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
-export function NotificationResponseListener() {
+export function useNotificationResponse(
+  onResponse: (data: Record<string, unknown>) => void
+): void {
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        console.log('👆 User tapped notification');
-        const notification = response.notification;
-        
-        console.log('Notification ID:', notification.request.identifier);
-        console.log('Title:', notification.request.content.title);
-        console.log('User Action:', response.actionIdentifier);
+        const { actionIdentifier, userText } = response;
+        const { data } = response.notification.request.content;
+
+        console.log('Action:', actionIdentifier);
+        if (userText) console.log('User text:', userText);
+
+        if (data) onResponse(data);
       }
     );
-    
+
     return () => subscription.remove();
-  }, []);
-  
-  return null;
+  }, [onResponse]);
 }
 ```
 
 ---
 
-### `addPushTokenListener(listener)`
+### addPushTokenListener(listener)
 
-**Purpose**: Listen for changes to the device's push token.
-
-**Parameters**:
+Listen for changes to the device push token (token rotation).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `listener` | `(token) => void` | Callback with new token |
+| `listener` | `(token: { data: string, type: string }) => void` | Callback with new token |
 
-**Return Type**: `EventSubscription`
-
-**Code Example**:
+**Returns:** `EventSubscription`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
-export function PushTokenListener() {
+export function usePushTokenListener(
+  onTokenChange: (token: string) => void
+): void {
   useEffect(() => {
     const subscription = Notifications.addPushTokenListener((newToken) => {
-      console.log('🔑 Push token changed:', newToken.data);
-      
-      // Send to your backend
-      fetch('https://your-api.com/update-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: newToken.data }),
-      });
+      console.log('Token changed:', newToken.data);
+      onTokenChange(newToken.data);
     });
-    
+
     return () => subscription.remove();
-  }, []);
-  
-  return null;
+  }, [onTokenChange]);
 }
+```
+
+---
+
+### addNotificationsDroppedListener(listener)
+
+Listen for when notifications are dropped (e.g., device received too many).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `listener` | `() => void` | Callback when notifications dropped |
+
+**Returns:** `EventSubscription`
+
+```typescript
+import * as Notifications from 'expo-notifications';
+
+const subscription = Notifications.addNotificationsDroppedListener(() => {
+  console.warn('Some notifications were dropped');
+});
 ```
 
 ---
 
 ## Last Notification Response
 
-### `getLastNotificationResponseAsync()`
+### getLastNotificationResponseAsync()
 
-**Purpose**: Get the notification that the user tapped to open the app.
+Get the notification response that launched/resumed the app. Use for cold-start deep linking.
 
-**Return Type**: `Promise<NotificationResponse | null>`
-
-**Code Example - Deep Linking**:
+**Returns:** `Promise<NotificationResponse | null>`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
-import React, { useEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useEffect } from 'react';
 
-export function InitialNotificationHandler() {
-  const navigation = useNavigation();
-  
+export function useInitialNotification(
+  navigate: (screen: string, params?: Record<string, unknown>) => void
+): void {
   useEffect(() => {
-    Notifications.getLastNotificationResponseAsync()
-      .then((response) => {
-        if (!response) {
-          console.log('App not opened from notification');
-          return;
-        }
-        
-        console.log('App opened from notification');
-        const { data, title } = response.notification.request.content;
-        
-        if (data?.screen) {
-          navigation.navigate(data.screen, data.params);
-        }
-      });
-  }, [navigation]);
-  
-  return null;
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+
+      const { data } = response.notification.request.content;
+      if (data?.screen && typeof data.screen === 'string') {
+        navigate(data.screen, data.params as Record<string, unknown>);
+      }
+    });
+  }, [navigate]);
 }
 ```
 
 ---
 
-## Foreground Notification Behavior
+### clearLastNotificationResponseAsync()
 
-### Platform Differences
+Clear the stored last notification response.
 
-**iOS Behavior**:
-- Notifications in foreground don't show by default
-- Must configure handler to show alerts
-- Banner appears if `shouldShowBanner: true`
-
-**Android Behavior**:
-- High-priority notifications show heads-up
-- Low-priority notifications appear silently
-- Behavior depends on channel importance
-
-**Code Example - Platform-Specific Handling**:
+**Returns:** `Promise<void>`
 
 ```typescript
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
-
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const { title, body } = notification.request.content;
-    
-    if (Platform.OS === 'ios') {
-      // Always show on iOS
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-      };
-    } else {
-      // Android - rely on channel importance
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: false,  // Sound from channel
-        shouldSetBadge: false,
-        shouldShowList: true,
-      };
-    }
-  },
-});
+await Notifications.clearLastNotificationResponseAsync();
 ```
 
 ---
 
-## Complete Notification Setup
+### useLastNotificationResponse()
+
+React hook that returns the last notification response. Re-renders when a new response arrives.
+
+**Returns:** `NotificationResponse | null | undefined`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
-import React, { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
-export function useNotifications() {
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
-  
+export function NotificationHandler(): null {
+  const router = useRouter();
+  const lastResponse = Notifications.useLastNotificationResponse();
+
   useEffect(() => {
-    // 1. Set handler
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-      handleSuccess: (id) => {
-        console.log('✅ Notification:', id);
-      },
-      handleError: (id, error) => {
-        console.error('❌ Error:', error);
-      },
-    });
-    
-    // 2. Listen for notifications arriving
-    notificationListener.current = 
-      Notifications.addNotificationReceivedListener((notification) => {
-        console.log('📬 Received:', notification.request.content.title);
-      });
-    
-    // 3. Listen for user interaction
-    responseListener.current = 
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log('👆 Tapped:', response.notification.request.content.title);
-      });
-    
-    // 4. Check if app was opened by notification
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) {
-        console.log('App opened from notification');
-      }
-    });
-    
-    // Cleanup
-    return () => {
-      notificationListener.current?.remove();
-      responseListener.current?.remove();
-    };
-  }, []);
+    if (!lastResponse) return;
+
+    const { data } = lastResponse.notification.request.content;
+    if (data?.url && typeof data.url === 'string') {
+      router.push(data.url);
+    }
+  }, [lastResponse, router]);
+
+  return null;
 }
 ```
 
@@ -315,26 +205,21 @@ interface Notification {
   request: {
     identifier: string;
     content: {
-      title?: string;
-      body?: string;
-      sound?: string;
-      badge?: number;
-      color?: string;
-      data?: Record<string, any>;
-      categoryIdentifier?: string;
-      threadId?: string;
-      subtitle?: string;
-      priority?: string;
-      vibrate?: number[];
-      sticky?: boolean;
+      title: string | null;
+      subtitle: string | null;
+      body: string | null;
+      sound: string | null;
+      badge: number | null;
+      data: Record<string, unknown>;
+      categoryIdentifier: string | null;
     };
     trigger: NotificationTrigger | null;
   };
-  date: number;
+  date: number; // Unix timestamp
 }
 ```
 
-### Response Interface
+### NotificationResponse Interface
 
 ```typescript
 interface NotificationResponse {
@@ -344,62 +229,93 @@ interface NotificationResponse {
 }
 ```
 
+The `actionIdentifier` is `Notifications.DEFAULT_ACTION_IDENTIFIER` when user taps the notification itself (not an action button).
+
 ---
 
-## Extracting Data from Notifications
+## Complete Listener Setup
 
 ```typescript
 import * as Notifications from 'expo-notifications';
+import { useEffect, useRef } from 'react';
 
-export class NotificationExtractor {
-  static extractNotificationData(notification: Notification) {
-    const content = notification.request.content;
-    
-    return {
-      id: notification.request.identifier,
-      title: content.title,
-      body: content.body,
-      data: content.data,
-      timestamp: new Date(notification.date),
-      sound: content.sound,
-      badge: content.badge,
-      color: content.color,
+export function useNotifications(
+  onData: (data: Record<string, unknown>) => void
+): void {
+  const receivedRef = useRef<Notifications.EventSubscription>();
+  const responseRef = useRef<Notifications.EventSubscription>();
+
+  useEffect(() => {
+    // Listen for incoming notifications
+    receivedRef.current = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log('Received:', notification.request.content.title);
+      }
+    );
+
+    // Listen for user taps
+    responseRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const { data } = response.notification.request.content;
+        if (data) onData(data);
+      }
+    );
+
+    // Check if app was opened from notification
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        const { data } = response.notification.request.content;
+        if (data) onData(data);
+      }
+    });
+
+    return () => {
+      receivedRef.current?.remove();
+      responseRef.current?.remove();
     };
-  }
-  
-  static extractResponseData(response: NotificationResponse) {
-    const { notification, actionIdentifier, userText } = response;
-    const content = notification.request.content;
-    
-    return {
-      notificationId: notification.request.identifier,
-      action: actionIdentifier,
-      userReply: userText,
-      data: content.data,
-      timestamp: new Date(notification.date),
-    };
-  }
+  }, [onData]);
 }
 ```
 
 ---
 
-## Common Patterns
-
-### Increment Badge on Notification
+## Deep Linking Pattern with Expo Router
 
 ```typescript
-Notifications.addNotificationReceivedListener(async (notification) => {
-  const current = await Notifications.getBadgeCountAsync();
-  const newCount = (current || 0) + 1;
-  await Notifications.setBadgeCountAsync(newCount);
-});
+import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+
+export function useNotificationDeepLinks(): void {
+  const router = useRouter();
+  const lastResponse = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    if (!lastResponse) return;
+
+    const url = lastResponse.notification.request.content.data?.url;
+    if (typeof url === 'string') {
+      router.push(url);
+    }
+  }, [lastResponse, router]);
+}
 ```
 
-### Clear Badge on User Interaction
+---
+
+## Badge Management with Listeners
 
 ```typescript
-Notifications.addNotificationResponseReceivedListener(async (response) => {
+import * as Notifications from 'expo-notifications';
+
+// Increment badge on notification received
+Notifications.addNotificationReceivedListener(async () => {
+  const current = await Notifications.getBadgeCountAsync();
+  await Notifications.setBadgeCountAsync(current + 1);
+});
+
+// Decrement badge on notification tapped
+Notifications.addNotificationResponseReceivedListener(async () => {
   const current = await Notifications.getBadgeCountAsync();
   if (current > 0) {
     await Notifications.setBadgeCountAsync(current - 1);
@@ -407,41 +323,6 @@ Notifications.addNotificationResponseReceivedListener(async (response) => {
 });
 ```
 
-### Log All Notification Lifecycle Events
-
-```typescript
-export function setupNotificationLogging() {
-  Notifications.setNotificationHandler({
-    handleNotification: async (notification) => {
-      console.log('[HANDLER] Processing notification');
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      };
-    },
-    handleSuccess: (id) => {
-      console.log('[SUCCESS] Displayed:', id);
-    },
-    handleError: (id, error) => {
-      console.log('[ERROR] Failed:', id, error);
-    },
-  });
-  
-  Notifications.addNotificationReceivedListener((notif) => {
-    console.log('[RECEIVED]', notif.request.content.title);
-  });
-  
-  Notifications.addNotificationResponseReceivedListener((response) => {
-    console.log('[RESPONSE]', response.actionIdentifier);
-  });
-  
-  Notifications.addPushTokenListener((token) => {
-    console.log('[TOKEN]', token.data);
-  });
-}
-```
-
 ---
 
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

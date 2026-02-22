@@ -1,51 +1,43 @@
-# 📱 FlashList Knowledge Base
+# FlashList v1.7.x - Knowledge Base
 
-**High-performance React Native list component by Shopify**
+**Package:** `@shopify/flash-list` v1.7.x
+**Target:** React Native 0.81.5, TypeScript ^5.9.3
 
-## 📚 Documentation Structure
+---
 
-FlashList knowledge base is organized into modular, context-optimized guides:
+## Module Index
 
-| File | Topic | Use When |
-|------|-------|----------|
-| **01-setup-installation.md** | Installation & configuration | Getting started with FlashList |
-| **02-core-concepts.md** | Cell recycling, virtualization | Understanding how FlashList works |
-| **03-api-props.md** | Props reference | Need to use specific props |
-| **04-api-methods-hooks.md** | Methods & custom hooks | Calling methods or using hooks |
-| **05-performance-guide.md** | Optimization & benchmarks | Improving performance |
-| **06-layouts-advanced.md** | Grid, masonry, carousel | Building complex layouts |
-| **07-migration-troubleshooting.md** | FlatList migration & issues | Migrating from FlatList or debugging |
+| Module | File | Purpose |
+|--------|------|---------|
+| **SKILL** | `SKILL.md` | Quick reference, critical rules, core patterns |
+| **Master Index** | `00-master-index.md` | Overview, navigation, version notes |
+| **Setup** | `01-setup-installation.md` | Installation, Expo/CLI config, minimum example |
+| **Core Concepts** | `02-core-concepts.md` | Cell recycling, render lifecycle, state management |
+| **Props Reference** | `03-api-props.md` | All props with TypeScript types and defaults |
+| **Methods & Ref** | `04-api-methods-hooks.md` | Scroll methods, ref access patterns |
+| **Performance** | `05-performance-guide.md` | Optimization, blank area debugging, best practices |
+| **Layouts** | `06-layouts-advanced.md` | Grid, masonry, horizontal, inverted, sticky headers |
+| **Migration** | `07-migration-troubleshooting.md` | FlatList migration, common issues, debugging |
+| **Quick Reference** | `FlashList-Quick-Reference.md` | Compact cheat sheet |
 
-## 🚀 Quick Start
+---
 
-### New to FlashList?
-1. Read **01-setup-installation.md**
-2. Read **02-core-concepts.md**
-3. Reference **03-api-props.md** as needed
+## Navigation by Task
 
-### Migrating from FlatList?
-1. Read **07-migration-troubleshooting.md**
-2. Reference **03-api-props.md**
-3. Check **05-performance-guide.md** for optimization
+- **Getting started** -- `SKILL.md` then `01-setup-installation.md`
+- **Understanding recycling** -- `02-core-concepts.md`
+- **Looking up a prop** -- `03-api-props.md`
+- **Scroll methods** -- `04-api-methods-hooks.md`
+- **Performance optimization** -- `05-performance-guide.md`
+- **Grid or masonry layout** -- `06-layouts-advanced.md`
+- **Chat/inverted list** -- `06-layouts-advanced.md`
+- **Migrating from FlatList** -- `07-migration-troubleshooting.md`
+- **Quick lookup** -- `FlashList-Quick-Reference.md`
 
-### Building layouts?
-1. Read **06-layouts-advanced.md**
-2. Reference **03-api-props.md**
+---
 
-## 📊 Coverage
+## Official Sources
 
-✅ Installation (React Native, Expo, TypeScript)
-✅ Core concepts (cell recycling, virtualization)
-✅ 30+ props reference
-✅ Methods & hooks API
-✅ Performance benchmarks & optimization
-✅ 8+ layout patterns
-✅ FlatList migration guide
-✅ Troubleshooting & debugging
-
-## 🔗 Official Sources
-
-- [Official Docs](https://shopify.github.io/flash-list/docs/)
-- [Engineering Blog](https://shopify.engineering/flashlist-v2)
-- [GitHub](https://github.com/Shopify/flash-list)
-- [NPM](https://www.npmjs.com/package/@shopify/flash-list)
+- **Docs:** https://shopify.github.io/flash-list/docs/
+- **GitHub:** https://github.com/Shopify/flash-list
+- **NPM:** https://www.npmjs.com/package/@shopify/flash-list

@@ -1,252 +1,212 @@
-# Animation Modifiers: withSequence, withRepeat, withDecay
+# Animation Modifiers: withSequence, withRepeat, withDelay, withDecay
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/animations/
-**Version:** 4.2.1
-**Category:** Animation Modifiers | Combinators
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withSequence/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withRepeat/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withDelay/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withDecay/
 
 ---
 
-## 📋 Overview
+## Overview
 
-Reanimated provides modifier functions that combine and chain animations:
-
-1. **`withSequence`** — Run animations sequentially
-2. **`withRepeat`** — Repeat animations with optional delay
-3. **`withDecay`** — Physics-based decay for gesture-driven interactions
-
-These modifiers enable complex animation patterns by chaining `withTiming`, `withSpring`, and each other.
+Modifier functions combine and chain animations:
+- **`withSequence`** -- run animations one after another
+- **`withRepeat`** -- loop animations with optional reversal
+- **`withDelay`** -- add a delay before an animation starts
+- **`withDecay`** -- physics-based momentum (gesture fling)
 
 ---
 
-## 🔗 withSequence - Animation Chaining
+## withSequence
 
-### API Reference
+Run multiple animations sequentially. Each completes before the next begins.
 
-**Signature:**
 ```typescript
-function withSequence(
-  ...animations: AnimationObject[]
-): AnimationObject;
+function withSequence(...animations: AnimationObject[]): AnimationObject;
 ```
-
-**Description:** Runs multiple animations in sequence, each completing before the next begins.
-
----
 
 ### Basic Usage
 
 ```typescript
-import { useSharedValue, withSequence, withTiming, withSpring } from 'react-native-reanimated';
+import { withSequence, withTiming, withSpring, useSharedValue } from 'react-native-reanimated';
 
-const animatedValue = useSharedValue(0);
+const scale = useSharedValue(1);
 
-// Sequence: Timing → Spring → Timing
-const animate = () => {
-  animatedValue.value = withSequence(
-    withTiming(100, { duration: 500 }),  // First animation
-    withSpring(0, { damping: 5 }),       // Second animation
-    withTiming(50, { duration: 300 })    // Third animation
+const handlePress = () => {
+  scale.value = withSequence(
+    withTiming(0.9, { duration: 100 }),   // Step 1: scale down
+    withSpring(1.1, { damping: 8 }),      // Step 2: bounce up
+    withTiming(1, { duration: 200 })      // Step 3: settle
   );
 };
 ```
 
----
-
-### Parameters
-
-| Property | Type | Description |
-|---|---|---|
-| `animations` | `...AnimationObject[]` | Variable number of animation objects (withTiming, withSpring, withDecay) |
-
----
-
-### Return Value
-
-Returns an `AnimationObject` that represents the entire sequence. When assigned to a shared value, all animations run in order.
-
----
-
-### Practical Example: Bounce & Settle
+### Shake Animation
 
 ```typescript
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import { View } from 'react-native';
+const offsetX = useSharedValue(0);
 
-export const BounceComponent = () => {
-  const scale = useSharedValue(1);
-
-  const handlePress = () => {
-    scale.value = withSequence(
-      // Scale up quickly
-      withSpring(1.2, { damping: 3, mass: 1, stiffness: 100 }),
-      // Scale down to 1.05 (overshoot)
-      withSpring(1.05, { damping: 8 }),
-      // Final settle
-      withTiming(1, { duration: 200 })
-    );
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={[animatedStyle, { width: 50, height: 50, backgroundColor: 'blue' }]}
-      onTouchStart={handlePress}
-    />
+const shake = () => {
+  offsetX.value = withSequence(
+    withTiming(-10, { duration: 50 }),
+    withRepeat(withTiming(10, { duration: 100 }), 3, true),
+    withTiming(0, { duration: 50 })
   );
 };
 ```
 
 ---
 
-## 🔄 withRepeat - Animation Looping
+## withRepeat
 
-### API Reference
+Repeat an animation multiple times with optional direction reversal.
 
-**Signature:**
 ```typescript
 function withRepeat(
   animation: AnimationObject,
   numberOfReps?: number,
   reverse?: boolean,
-  callback?: (finished: boolean) => void
+  callback?: (finished?: boolean, current?: AnimatableValue) => void
 ): AnimationObject;
 ```
 
-**Description:** Repeats an animation multiple times, with optional reversal and delay between repetitions.
-
----
-
-### Configuration
-
-| Property | Type | Default | Description |
+| Parameter | Type | Default | Description |
 |---|---|---|---|
-| `animation` | `AnimationObject` | **Required** | The animation to repeat (withTiming, withSpring) |
-| `numberOfReps` | `number` | `-1` | Number of repetitions (-1 = infinite) |
-| `reverse` | `boolean` | `false` | Reverse direction on each repetition |
-| `callback` | `(finished: boolean) => void` | `undefined` | Called when repetition completes |
+| `animation` | `AnimationObject` | Required | Animation to repeat |
+| `numberOfReps` | `number` | `-1` | Repetition count. `-1` = infinite |
+| `reverse` | `boolean` | `false` | Reverse direction each repetition |
+| `callback` | `(finished?, current?) => void` | `undefined` | Called after all repetitions complete |
 
----
-
-### Basic Usage
+### Infinite Pulse
 
 ```typescript
-import { useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { withRepeat, withTiming, useSharedValue, useEffect } from 'react-native-reanimated';
 
 const opacity = useSharedValue(1);
 
-// Infinite fade in/out
-const startPulse = () => {
+useEffect(() => {
   opacity.value = withRepeat(
     withTiming(0.3, { duration: 1000 }),
-    -1,  // Infinite repetitions
-    true // Reverse on each rep
+    -1,   // Infinite
+    true   // Reverse (pulse effect)
   );
-};
+}, []);
 ```
 
----
-
-### Combining withSequence & withRepeat
-
-```typescript
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
-import { View } from 'react-native';
-
-export const PulseAnimation = () => {
-  const opacity = useSharedValue(1);
-  const scale = useSharedValue(1);
-
-  const startAnimation = () => {
-    // Create a sequence: grow → shrink → pause
-    const sequence = withSequence(
-      withTiming(1.2, { duration: 300 }),
-      withTiming(1, { duration: 300 })
-    );
-
-    // Repeat the sequence infinitely
-    scale.value = withRepeat(sequence, -1);
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={[animatedStyle, { width: 60, height: 60, backgroundColor: 'green' }]}
-      onTouchStart={startAnimation}
-    />
-  );
-};
-```
-
----
-
-### With Callback
+### Finite Rotation
 
 ```typescript
 const rotation = useSharedValue(0);
 
 rotation.value = withRepeat(
-  withTiming(360, { duration: 1000 }),
-  5,      // Repeat 5 times
-  false,  // Don't reverse
+  withTiming(360, { duration: 1000, easing: Easing.linear }),
+  5,      // 5 times
+  false,  // No reverse (continuous spin)
   (finished) => {
-    if (finished) {
-      console.log('Animation completed');
-    }
+    'worklet';
+    if (finished) console.log('Rotation complete');
   }
+);
+```
+
+### Combined with withSequence
+
+```typescript
+const scale = useSharedValue(1);
+
+// Heartbeat: grow-shrink repeated infinitely
+scale.value = withRepeat(
+  withSequence(
+    withTiming(1.2, { duration: 300 }),
+    withTiming(1, { duration: 300 })
+  ),
+  -1 // Infinite
 );
 ```
 
 ---
 
-## 📉 withDecay - Gesture Physics
+## withDelay
 
-### API Reference
+Add a delay before an animation starts.
 
-**Signature:**
 ```typescript
-function withDecay(
-  config: WithDecayConfig,
-  callback?: (finished: boolean) => void
-): AnimationObject;
+function withDelay<T extends AnimatableValue>(
+  delayMs: number,
+  delayedAnimation: T,
+  reduceMotion?: ReduceMotion
+): T;
+```
 
-interface WithDecayConfig {
-  velocity: number;          // Starting velocity (pixels/ms)
-  deceleration?: number;    // Friction (0-1, default: 0.998)
-  velocityFactor?: number;  // Scale velocity (default: 1)
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `delayMs` | `number` | Required | Delay in milliseconds before animation starts |
+| `delayedAnimation` | `T` | Required | The animation to delay |
+| `reduceMotion` | `ReduceMotion` | `System` | Accessibility setting |
+
+### Basic Delay
+
+```typescript
+import { withDelay, withTiming } from 'react-native-reanimated';
+
+// Fade in after 500ms
+opacity.value = withDelay(500, withTiming(1, { duration: 300 }));
+```
+
+### Staggered Entrance
+
+```typescript
+function StaggeredList({ items }: { items: Item[] }) {
+  return items.map((item, index) => {
+    const opacity = useSharedValue(0);
+
+    useEffect(() => {
+      opacity.value = withDelay(
+        index * 100, // Each item delayed by 100ms more
+        withTiming(1, { duration: 300 })
+      );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      opacity: opacity.value,
+    }));
+
+    return <Animated.View key={item.id} style={animatedStyle} />;
+  });
 }
 ```
 
-**Description:** Physics-based decay animation for natural gesture-driven interactions (scrolling, flinging).
-
 ---
 
-### Configuration
+## withDecay
 
-| Property | Type | Default | Description |
+Physics-based decay animation for momentum/fling gestures. The value decelerates from an initial velocity.
+
+```typescript
+function withDecay(
+  config: WithDecayConfig,
+  callback?: (finished?: boolean, current?: AnimatableValue) => void
+): number;
+
+interface WithDecayConfig {
+  velocity?: number;           // default: 0
+  deceleration?: number;       // default: 0.998
+  clamp?: [number, number];    // optional bounds
+  velocityFactor?: number;     // default: 1
+  rubberBandEffect?: boolean;  // default: false
+  rubberBandFactor?: number;   // default: 0.6
+  reduceMotion?: ReduceMotion; // default: System
+}
+```
+
+### Config Parameters
+
+| Parameter | Type | Default | Description |
 |---|---|---|---|
-| `velocity` | `number` | **Required** | Initial velocity (pixels/millisecond) |
+| `velocity` | `number` | `0` | Initial velocity (pixels/second) |
 | `deceleration` | `number` | `0.998` | Friction factor (0-1). Lower = faster stop |
-| `velocityFactor` | `number` | `1` | Multiplier for velocity (useful for scaling) |
-
----
+| `clamp` | `[min, max]` | `[]` | Boundary limits. Required for `rubberBandEffect` |
+| `velocityFactor` | `number` | `1` | Velocity multiplier |
+| `rubberBandEffect` | `boolean` | `false` | Bounce over clamp limits |
+| `rubberBandFactor` | `number` | `0.6` | Rubber band strength (0 = hard stop, 1 = no resistance) |
+| `reduceMotion` | `ReduceMotion` | `System` | Accessibility setting |
 
 ### Pan Gesture with Decay
 
@@ -254,230 +214,139 @@ interface WithDecayConfig {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedGestureHandler,
   withDecay,
 } from 'react-native-reanimated';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
-import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-export const DraggableWithDecay = () => {
-  const translationX = useSharedValue(0);
-  const translationY = useSharedValue(0);
+function DraggableWithDecay() {
+  const translateX = useSharedValue(0);
+  const contextX = useSharedValue(0);
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (event, context) => {
-      context.startX = translationX.value;
-      context.startY = translationY.value;
-    },
-    onActive: (event, context) => {
-      translationX.value = context.startX + event.translationX;
-      translationY.value = context.startY + event.translationY;
-    },
-    onEnd: (event) => {
-      // Apply decay with gesture velocity
-      translationX.value = withDecay({
+  const pan = Gesture.Pan()
+    .onStart(() => {
+      contextX.value = translateX.value;
+    })
+    .onUpdate((event) => {
+      translateX.value = contextX.value + event.translationX;
+    })
+    .onEnd((event) => {
+      translateX.value = withDecay({
         velocity: event.velocityX,
-        deceleration: 0.98,
+        deceleration: 0.998,
+        clamp: [-200, 200],
       });
-      translationY.value = withDecay({
-        velocity: event.velocityY,
-        deceleration: 0.98,
-      });
-    },
-  });
+    });
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translationX.value },
-      { translateY: translationY.value },
-    ],
+    transform: [{ translateX: translateX.value }],
   }));
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PanGestureHandler onGestureEvent={gestureHandler}>
-        <Animated.View
-          style={[
-            animatedStyle,
-            {
-              width: 80,
-              height: 80,
-              backgroundColor: 'purple',
-              borderRadius: 40,
-            },
-          ]}
-        />
-      </PanGestureHandler>
-    </GestureHandlerRootView>
+    <GestureDetector gesture={pan}>
+      <Animated.View style={[styles.box, animatedStyle]} />
+    </GestureDetector>
   );
-};
+}
 ```
+
+### With Rubber Band Effect
+
+```typescript
+translateX.value = withDecay({
+  velocity: event.velocityX,
+  clamp: [-200, 200],
+  rubberBandEffect: true,   // Bounce at boundaries
+  rubberBandFactor: 0.6,    // Moderate resistance
+});
+```
+
+### Deceleration Tuning
+
+| Value | Behavior |
+|---|---|
+| `0.95` | Rapid stop |
+| `0.998` | Natural deceleration (default) |
+| `0.999` | Very slow, extended coast |
 
 ---
 
-### Scroll Deceleration
-
-```typescript
-// Mimicking natural scroll deceleration
-const scrollPosition = useSharedValue(0);
-
-const handleScrollEnd = (event: any) => {
-  scrollPosition.value = withDecay({
-    velocity: event.velocity,
-    deceleration: 0.996, // Slightly slower deceleration for smooth scrolling
-  });
-};
-```
-
----
-
-## ♿ Reduce Motion & Accessibility
-
-### Detecting Reduce Motion
-
-```typescript
-import { useWindowDimensions } from 'react-native';
-import { useSharedValue, withTiming } from 'react-native-reanimated';
-
-// In React Native, detect via AccessibilityInfo (platform-specific)
-import { AccessibilityInfo } from 'react-native';
-
-export const useReduceMotion = () => {
-  const [reduceMotion, setReduceMotion] = React.useState(false);
-
-  React.useEffect(() => {
-    AccessibilityInfo.isScreenReaderEnabled().then((enabled) => {
-      setReduceMotion(enabled);
-    });
-  }, []);
-
-  return reduceMotion;
-};
-```
-
-### Conditional Animation Durations
-
-```typescript
-import { useSharedValue, withTiming, withRepeat } from 'react-native-reanimated';
-
-export const AccessibleAnimation = () => {
-  const reduceMotion = useReduceMotion();
-  const opacity = useSharedValue(1);
-
-  const startAnimation = () => {
-    const duration = reduceMotion ? 100 : 1000; // Instant vs normal
-
-    opacity.value = withRepeat(
-      withTiming(0.5, { duration }),
-      -1,
-      true
-    );
-  };
-
-  return null; // Component logic...
-};
-```
-
----
-
-## 🎯 Common Animation Patterns
+## Common Animation Patterns
 
 ### Bounce Enter + Exit
 
 ```typescript
 const scale = useSharedValue(0);
 
-// Enter animation
 const enter = () => {
   scale.value = withSequence(
-    withTiming(0.5, { duration: 0 }),
-    withSpring(1.1, { damping: 3 }),
+    withTiming(0, { duration: 0 }),
+    withSpring(1.1, { damping: 8 }),
     withTiming(1, { duration: 100 })
   );
 };
 
-// Exit animation
 const exit = () => {
   scale.value = withSequence(
     withTiming(0.8, { duration: 100 }),
-    withSpring(0, { damping: 5 })
+    withTiming(0, { duration: 200 })
   );
 };
 ```
 
-### Shimmer Loading Effect
+### Shimmer Loading
 
 ```typescript
 const shimmer = useSharedValue(0);
 
-const startShimmer = () => {
+useEffect(() => {
   shimmer.value = withRepeat(
-    withTiming(100, { duration: 1500 }),
+    withTiming(1, { duration: 1500, easing: Easing.linear }),
     -1,
-    true
+    false
   );
-};
+}, []);
 ```
 
-### Cancelable Animation with Cleanup
+### Cancelable Infinite Animation
 
 ```typescript
+import { cancelAnimation, withRepeat, withTiming, useSharedValue } from 'react-native-reanimated';
+
 const rotation = useSharedValue(0);
 
-const startRotation = () => {
+const start = () => {
   rotation.value = withRepeat(
-    withTiming(360, { duration: 2000 }),
+    withTiming(360, { duration: 2000, easing: Easing.linear }),
     -1
   );
 };
 
-const stopRotation = () => {
-  // Reset and stop
-  rotation.value = 0;
+const stop = () => {
+  cancelAnimation(rotation);
 };
 
 // Cleanup on unmount
-React.useEffect(() => {
-  return () => {
-    stopRotation();
-  };
+useEffect(() => {
+  return () => cancelAnimation(rotation);
 }, []);
 ```
 
 ---
 
-## ⚠️ Important Notes
+## Important Notes
 
-### Chaining Limits
-
-While `withSequence` can chain unlimited animations, deeply nested sequences (>10) may impact performance on older devices.
-
-### Callback Semantics
-
-- **`withRepeat` callback**: Called after ALL repetitions complete
-- **`withTiming`/`withSpring` callbacks**: Called after the individual animation completes (not each repeat)
-
-### Memory Management
-
-- Infinite loops (`numberOfReps: -1`) continue until component unmounts or animation is reassigned
-- Always clean up animations in `useEffect` cleanup functions to prevent memory leaks
-
-### Deceleration Tuning
-
-- `deceleration: 0.998` = natural, long deceleration
-- `deceleration: 0.95` = rapid stop
-- `deceleration: 0.999` = very slow, extended deceleration
+- **Callback semantics:** `withRepeat` callback fires after ALL repetitions. `withTiming`/`withSpring` callbacks fire after each individual animation.
+- **Memory:** Infinite loops (`-1`) continue until the component unmounts or animation is reassigned/cancelled. Always clean up in `useEffect` return.
+- **Chaining depth:** Deeply nested sequences (>10) may impact performance on older devices.
 
 ---
 
-## 🔗 Cross-References
+## Cross-References
 
-- **Core Animations:** See [04-animations-timing-spring.md](./04-animations-timing-spring.md)
-- **Animation Styles:** See [03-core-animated-style.md](./03-core-animated-style.md)
-- **Gesture Integration:** See [07-gestures-events.md](./07-gestures-events.md)
-- **Best Practices:** See [09-best-practices.md](./09-best-practices.md)
+- **Core animations:** [04-animations-timing-spring.md](04-animations-timing-spring.md)
+- **useAnimatedStyle:** [03-core-animated-style.md](03-core-animated-style.md)
+- **Gestures:** [07-gestures-events.md](07-gestures-events.md)
+- **Layout animations:** [08-layout-animations.md](08-layout-animations.md)
 
 ---
-
-**Last Updated:** December 2024
-**Version Aligned:** Reanimated 4.2.1 (React Native New Architecture)
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withSequence/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withRepeat/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withDelay/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withDecay/

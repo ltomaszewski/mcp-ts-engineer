@@ -1,4 +1,9 @@
-# TSDoc Documentation
+# 05 - TSDoc Documentation
+
+**Source:** https://tsdoc.org/ | https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Basic Function Documentation
 
@@ -183,3 +188,9 @@ export class UserService {
   }
 }
 ```
+
+---
+
+**Source:** https://tsdoc.org/
+**TypeScript:** 5.9
+**Last Updated:** February 2026

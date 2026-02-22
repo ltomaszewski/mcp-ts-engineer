@@ -1,50 +1,57 @@
 # Keyboard Controller: Migration Guides
 
-**Upgrading from other keyboard libraries**
+**Upgrading from other keyboard libraries.**
 
 ---
 
-## From react-native-reanimated
+## From react-native-reanimated useAnimatedKeyboard
 
-### useAnimatedKeyboard → useReanimatedKeyboardAnimation
+### Before (Reanimated)
 
-Nearly identical API:
-
-#### Before (Reanimated)
 ```typescript
-import { useAnimatedKeyboard } from 'react-native-reanimated';
+import { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 function OldComponent() {
   const { height, state } = useAnimatedKeyboard();
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const style = useAnimatedStyle(() => ({
     transform: [{ translateY: height.value * -1 }],
   }));
 
-  return <Animated.View style={animatedStyle} />;
+  return <Animated.View style={style} />;
 }
 ```
 
-#### After (Keyboard Controller)
+### After (Keyboard Controller)
+
 ```typescript
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 function NewComponent() {
-  const { height } = useReanimatedKeyboardAnimation();
+  const { height, progress } = useReanimatedKeyboardAnimation();
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const style = useAnimatedStyle(() => ({
     transform: [{ translateY: height.value * -1 }],
   }));
 
-  return <Animated.View style={animatedStyle} />;
+  return <Animated.View style={style} />;
 }
 ```
+
+**Key differences:**
+- Returns `progress` (0-1) instead of `state` enum
+- Requires `KeyboardProvider` at root
+- Provides additional hooks (`useKeyboardHandler`) for lifecycle events
+- Includes prebuilt components (Toolbar, AwareScrollView)
 
 ---
 
 ## From react-native-keyboard-aware-scroll-view
 
 ### Before (Unmaintained)
+
 ```typescript
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -62,6 +69,7 @@ function OldForm() {
 ```
 
 ### After (keyboard-controller)
+
 ```typescript
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
@@ -81,7 +89,9 @@ function NewForm() {
 |----------|----------|-------|
 | `extraHeight` | `bottomOffset` | Same functionality |
 | `enableOnAndroid` | `enabled` | Now cross-platform |
-| `onKeyboardWillShow` | — | Use `useKeyboardHandler` |
+| `onKeyboardWillShow` | -- | Use `useKeyboardHandler` or `KeyboardEvents` |
+| `onKeyboardWillHide` | -- | Use `useKeyboardHandler` or `KeyboardEvents` |
+| `ScrollViewComponent` | `ScrollViewComponent` | Same name |
 
 ---
 
@@ -89,27 +99,29 @@ function NewForm() {
 
 | Feature | keyboard-controller | reanimated | keyboard-aware-scroll-view |
 |---------|-------------------|------------|--------------------------|
-| iOS | ✅ | ✅ | ✅ |
-| Android | ✅ | ✅ | ✅ |
-| Maintained | ✅ Active | ✅ Active | ❌ Unmaintained |
-| Animated.Value | ✅ | ❌ | ✅ |
-| Reanimated | ✅ | ✅ | ❌ |
-| ScrollView | ✅ | ❌ | ✅ |
-| Interactive Dismiss | ✅ | ✅ | ❌ |
-| Fabric | ✅ | ✅ | ❌ |
+| iOS | Yes | Yes | Yes |
+| Android | Yes | Yes | Yes |
+| Maintained | Active | Active | Unmaintained |
+| Animated.Value | Yes | No | Yes |
+| Reanimated SharedValue | Yes | Yes | No |
+| ScrollView component | Yes | No | Yes |
+| Interactive Dismiss | Yes | Yes | No |
+| Fabric support | Yes | Yes | No |
+| Toolbar | Yes | No | No |
+| Lifecycle hooks | Yes | No | No |
 
 ---
 
 ## Migration Checklist
 
-- [ ] Install `react-native-keyboard-controller`
-- [ ] Add `KeyboardProvider` at root
-- [ ] Replace old imports
-- [ ] Update prop names
-- [ ] Remove old package
-- [ ] Run pod install
-- [ ] Test all forms
+- [ ] Install `react-native-keyboard-controller` and `react-native-reanimated`
+- [ ] Add `KeyboardProvider` at app root
+- [ ] Replace old imports with keyboard-controller equivalents
+- [ ] Update prop names (see mapping table)
+- [ ] Remove old package (`npm uninstall react-native-keyboard-aware-scroll-view`)
+- [ ] Run `pod install` on iOS
+- [ ] Test all forms on both platforms
 
 ---
 
-**See Also**: [Setup](01-setup.md) | [Core API](02-core-api.md)
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

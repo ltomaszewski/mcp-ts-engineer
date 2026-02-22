@@ -147,13 +147,13 @@ function validateConfig(config: AgentConfig): void {
 
 ```dockerfile
 # Dockerfile for agent runtime
-FROM node:20-slim
+FROM node:24-slim
 
 # Non-root user
 RUN groupadd -r agent && useradd -r -g agent -d /home/agent agent
 
 # Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code@latest
+RUN npm install -g @anthropic-ai/claude-agent-sdk@latest
 
 # Install SDK
 WORKDIR /app
@@ -447,3 +447,7 @@ async function retryAgent(
 - [ ] Scaling plan for load increases
 - [ ] Incident response procedure
 - [ ] Log retention policy
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

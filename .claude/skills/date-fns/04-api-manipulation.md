@@ -1,24 +1,18 @@
-# API: Manipulation Functions — date-fns v4.1.0
+# API: Manipulation Functions -- date-fns v4.1.0
 
-## add() — Generic Date Addition
+> Date arithmetic (add/sub), component setters, and period boundary functions.
 
-**Purpose:** Add specified amount of time to a date.
+**Source:** https://date-fns.org/docs/add
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/add/index.ts
+---
+
+## add() -- Generic Addition
 
 ### Signature
 
 ```typescript
-function add(
-  date: Date | number,
-  duration: Duration,
-  options?: OptionsWithTZ
-): Date
-```
+function add(date: Date | number, duration: Duration): Date
 
-### Duration Object
-
-```typescript
 interface Duration {
   years?: number;
   months?: number;
@@ -31,301 +25,254 @@ interface Duration {
 }
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { add, format } from 'date-fns';
 
-const date = new Date(2024, 11, 27);
+const date = new Date(2026, 0, 25);
 
-// Single unit addition
-add(date, { days: 5 });      // +5 days
-add(date, { months: 1 });    // +1 month
-add(date, { years: 1 });     // +1 year
-add(date, { hours: 3 });     // +3 hours
-
-// Multiple units
-const result = add(date, {
-  years: 1,
-  months: 2,
-  days: 5,
-  hours: 3,
-  minutes: 15,
-});
-
-console.log(format(result, 'PPPP, pp'));
-//=> "Monday, March 03, 2026, 3:15 PM"
+add(date, { days: 5 });               // Jan 30
+add(date, { months: 1 });             // Feb 25
+add(date, { years: 1, months: 2 });   // Mar 25, 2027
+add(date, { hours: 3, minutes: 15 }); // Jan 25, 03:15
 ```
 
 ---
 
-## sub() — Generic Date Subtraction
+## sub() -- Generic Subtraction
 
-**Purpose:** Subtract specified amount of time from a date.
+```typescript
+function sub(date: Date | number, duration: Duration): Date
+```
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/sub/index.ts
-
-```javascript
+```typescript
 import { sub, format } from 'date-fns';
 
-const date = new Date(2024, 11, 27);
+const date = new Date(2026, 0, 25);
 
-sub(date, { days: 3 });           // -3 days
-sub(date, { months: 6 });         // -6 months
-sub(date, { days: 7, hours: 2 }); // -7 days and 2 hours
-
-const past = sub(date, { 
-  years: 1,
-  months: 1,
-  days: 1,
-});
-
-console.log(format(past, 'PPPP'));
-//=> "Saturday, November 26, 2023"
+sub(date, { days: 5 });                // Jan 20
+sub(date, { months: 2 });              // Nov 25, 2025
+sub(date, { years: 1, days: 10 });     // Jan 15, 2025
 ```
 
 ---
 
-## addDays() & subDays() — Day Arithmetic
+## Specialized Add/Sub Functions
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/addDays/index.ts
+All share the same signature: `(date: Date | number, amount: number) => Date`
 
-```javascript
-import { addDays, subDays, format } from 'date-fns';
+### Days
 
-const date = new Date(2024, 11, 27);
+```typescript
+import { addDays, subDays } from 'date-fns';
 
-addDays(date, 1);   // Tomorrow
-addDays(date, 7);   // Next week
-subDays(date, 3);   // 3 days ago
-
-console.log(format(addDays(date, 5), 'PPPP'));
-//=> "Wednesday, January 01, 2025"
+const date = new Date(2026, 0, 25);
+addDays(date, 1);    // Jan 26 (tomorrow)
+addDays(date, 7);    // Feb 1 (next week)
+subDays(date, 3);    // Jan 22 (3 days ago)
 ```
 
----
+### Weeks
 
-## addMonths() & subMonths() — Month Arithmetic
+```typescript
+import { addWeeks, subWeeks } from 'date-fns';
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/addMonths/index.ts
+const date = new Date(2026, 0, 25);
+addWeeks(date, 1);   // Feb 1
+addWeeks(date, 4);   // Feb 22
+subWeeks(date, 2);   // Jan 11
+```
 
-```javascript
-import { addMonths, subMonths, format } from 'date-fns';
+### Months
 
-const date = new Date(2024, 0, 31); // Jan 31
+```typescript
+import { addMonths, subMonths } from 'date-fns';
 
-addMonths(date, 1);  // Feb 29, 2024 (leap year, adjusted)
+const date = new Date(2026, 0, 31); // Jan 31
+addMonths(date, 1);  // Feb 28 (clamped to month end)
 addMonths(date, 2);  // Mar 31
-subMonths(date, 1);  // Dec 31, 2023
-
-// Month-end handling
-const endOfMonth = new Date(2024, 0, 31);
-const nextMonth = addMonths(endOfMonth, 1);
-console.log(format(nextMonth, 'yyyy-MM-dd'));
-//=> "2024-02-29" (leap year)
+subMonths(date, 1);  // Dec 31, 2025
 ```
 
----
+**Month-end handling:** If the target month has fewer days, the result is clamped to the last day of that month. Example: Jan 31 + 1 month = Feb 28 (or Feb 29 in leap year).
 
-## addYears() & subYears() — Year Arithmetic
+### Years
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/addYears/index.ts
-
-```javascript
-import { addYears, subYears, format } from 'date-fns';
+```typescript
+import { addYears, subYears } from 'date-fns';
 
 const date = new Date(2024, 1, 29); // Feb 29 (leap year)
-
-addYears(date, 1);   // Feb 28, 2025 (not leap year)
+addYears(date, 1);   // Feb 28, 2025 (clamped, non-leap)
 addYears(date, 4);   // Feb 29, 2028 (leap year)
-subYears(date, 1);   // Feb 29, 2023 (leap year)
+subYears(date, 1);   // Feb 28, 2023
+```
 
-console.log(format(addYears(date, 1), 'yyyy-MM-dd'));
-//=> "2025-02-28" (adjusted)
+### Hours
+
+```typescript
+import { addHours, subHours } from 'date-fns';
+
+const date = new Date(2026, 0, 25, 14, 0); // 2:00 PM
+addHours(date, 3);   // 5:00 PM
+addHours(date, 12);  // 2:00 AM next day
+subHours(date, 2);   // 12:00 PM
+```
+
+### Minutes
+
+```typescript
+import { addMinutes, subMinutes } from 'date-fns';
+
+const date = new Date(2026, 0, 25, 14, 30);
+addMinutes(date, 45);   // 3:15 PM
+subMinutes(date, 30);   // 2:00 PM
+```
+
+### Seconds
+
+```typescript
+import { addSeconds, subSeconds } from 'date-fns';
+
+const date = new Date(2026, 0, 25, 14, 30, 0);
+addSeconds(date, 90);   // 2:31:30 PM
+subSeconds(date, 45);   // 2:29:15 PM
 ```
 
 ---
 
-## setYear() — Set Year
+## Setter Functions
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/setYear/index.ts
+All return a new Date with the specified component changed.
 
-```javascript
-import { setYear, format } from 'date-fns';
+### setYear() / setMonth() / setDate()
 
-const date = new Date(2024, 11, 27);
+```typescript
+import { setYear, setMonth, setDate, format } from 'date-fns';
 
-setYear(date, 2025); // Change to 2025
-setYear(date, 2000); // Y2K
+const date = new Date(2026, 0, 25);
 
-console.log(format(setYear(date, 2026), 'PPPP'));
-//=> "Saturday, December 27, 2026"
+setYear(date, 2028);   // Jan 25, 2028
+setMonth(date, 5);     // Jun 25, 2026 (0-indexed: 5 = June)
+setDate(date, 1);      // Jan 1, 2026
+setDate(date, 31);     // Jan 31, 2026
+```
+
+### setHours() / setMinutes() / setSeconds()
+
+```typescript
+import { setHours, setMinutes, setSeconds } from 'date-fns';
+
+const date = new Date(2026, 0, 25, 14, 30, 0);
+
+setHours(date, 9);      // 9:30:00 AM
+setMinutes(date, 0);    // 2:00:00 PM
+setSeconds(date, 30);   // 2:30:30 PM
 ```
 
 ---
 
-## setMonth() — Set Month
+## Period Boundaries -- startOf*
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/setMonth/index.ts
+All return a new Date set to the beginning of the specified period.
 
-```javascript
-import { setMonth, format } from 'date-fns';
+### startOfDay() / startOfWeek() / startOfMonth() / startOfYear()
 
-const date = new Date(2024, 11, 27); // December
+```typescript
+import { startOfDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 
-setMonth(date, 0);   // January
-setMonth(date, 5);   // June
-setMonth(date, 11);  // December
+const date = new Date(2026, 0, 25, 14, 30, 45);
 
-console.log(format(setMonth(date, 5), 'MMMM yyyy'));
-//=> "June 2024"
+startOfDay(date);     // Jan 25, 2026 00:00:00.000
+startOfWeek(date);    // Jan 25, 2026 00:00:00.000 (Sunday)
+startOfWeek(date, { weekStartsOn: 1 });  // Jan 19, 2026 (Monday)
+startOfMonth(date);   // Jan 1, 2026 00:00:00.000
+startOfYear(date);    // Jan 1, 2026 00:00:00.000
 ```
 
 ---
 
-## setDate() — Set Day of Month
+## Period Boundaries -- endOf*
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/setDate/index.ts
+All return a new Date set to the last moment of the specified period (23:59:59.999).
 
-```javascript
-import { setDate, format } from 'date-fns';
+### endOfDay() / endOfWeek() / endOfMonth() / endOfYear()
 
-const date = new Date(2024, 11, 27);
+```typescript
+import { endOfDay, endOfWeek, endOfMonth, endOfYear } from 'date-fns';
 
-setDate(date, 1);    // First of month
-setDate(date, 15);   // Fifteenth
-setDate(date, 31);   // Last day
+const date = new Date(2026, 0, 25, 10, 30);
 
-console.log(format(setDate(date, 1), 'PPPP'));
-//=> "Friday, December 01, 2024"
-```
-
----
-
-## startOfDay() through startOfYear()
-
-**Purpose:** Set a date to the beginning of a specified period.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/startOfDay/index.ts
-
-```javascript
-import { startOfDay, startOfMonth, startOfYear, startOfWeek, format } from 'date-fns';
-
-const date = new Date(2024, 11, 27, 15, 30, 45);
-
-// Start of day: 00:00:00
-startOfDay(date);
-//=> Fri Dec 27 2024 00:00:00
-
-// Start of month: First day, 00:00:00
-startOfMonth(date);
-//=> Fri Dec 01 2024 00:00:00
-
-// Start of year: Jan 1, 00:00:00
-startOfYear(date);
-//=> Mon Jan 01 2024 00:00:00
-
-// Start of week: Sunday (default), 00:00:00
-startOfWeek(date);
-//=> Sun Dec 22 2024 00:00:00
-```
-
----
-
-## endOfDay() through endOfYear()
-
-**Purpose:** Set a date to the end of a specified period.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/endOfDay/index.ts
-
-```javascript
-import { endOfDay, endOfMonth, endOfYear, endOfWeek, format } from 'date-fns';
-
-const date = new Date(2024, 11, 27, 10, 30);
-
-// End of day: 23:59:59.999
-endOfDay(date);
-//=> Fri Dec 27 2024 23:59:59.999
-
-// End of month: Last day, 23:59:59.999
-endOfMonth(date);
-//=> Tue Dec 31 2024 23:59:59.999
-
-// End of year: Dec 31, 23:59:59.999
-endOfYear(date);
-//=> Tue Dec 31 2024 23:59:59.999
-
-// End of week: Saturday (with weekStartsOn), 23:59:59.999
-endOfWeek(date);
-//=> Sat Dec 28 2024 23:59:59.999
+endOfDay(date);     // Jan 25, 2026 23:59:59.999
+endOfWeek(date);    // Jan 31, 2026 23:59:59.999 (Saturday)
+endOfWeek(date, { weekStartsOn: 1 });  // Jan 25, 2026 (Sunday end)
+endOfMonth(date);   // Jan 31, 2026 23:59:59.999
+endOfYear(date);    // Dec 31, 2026 23:59:59.999
 ```
 
 ---
 
 ## Common Patterns
 
-### Pattern 1: Date Range Creation
+### Date Range Creation
 
-```javascript
+```typescript
 import { startOfMonth, endOfMonth } from 'date-fns';
 
-function getMonthRange(date) {
-  return {
-    start: startOfMonth(date),
-    end: endOfMonth(date),
-  };
+function getMonthRange(date: Date): { start: Date; end: Date } {
+  return { start: startOfMonth(date), end: endOfMonth(date) };
 }
-
-const range = getMonthRange(new Date());
-// { start: Dec 1, 00:00, end: Dec 31, 23:59:59 }
 ```
 
-### Pattern 2: Business Day Calculation
+### Add Business Days
 
-```javascript
-import { addDays } from 'date-fns';
+```typescript
+import { addDays, isWeekend } from 'date-fns';
 
-function addBusinessDays(date, days) {
+function addBusinessDays(date: Date, days: number): Date {
   let current = new Date(date);
   let added = 0;
-  
   while (added < days) {
     current = addDays(current, 1);
-    // 0 = Sunday, 6 = Saturday
-    if (current.getDay() !== 0 && current.getDay() !== 6) {
-      added++;
-    }
+    if (!isWeekend(current)) added++;
   }
-  
   return current;
 }
 
-addBusinessDays(new Date(2024, 11, 27), 5); // Add 5 business days
+addBusinessDays(new Date(2026, 0, 23), 5); // skip Sat/Sun
 ```
 
-### Pattern 3: Midnight Timestamp
+### Midnight Timestamp
 
-```javascript
+```typescript
 import { startOfDay, getTime } from 'date-fns';
 
-function getMidnightTimestamp(date) {
+function getMidnightMs(date: Date): number {
   return getTime(startOfDay(date));
 }
+```
 
-const timestamp = getMidnightTimestamp(new Date());
+### Next Occurrence of Weekday
+
+```typescript
+import { addDays, getDay } from 'date-fns';
+
+function nextMonday(date: Date): Date {
+  let d = addDays(date, 1);
+  while (getDay(d) !== 1) {
+    d = addDays(d, 1);
+  }
+  return d;
+}
 ```
 
 ---
 
-## Module Navigation
+## Cross-References
 
-- **Concepts:** `02-core-concepts.md` (Design philosophy)
-- **Formatting:** `03-api-formatting.md` (String ↔ Date conversion)
-- 📍 **You are here:** API: Manipulation Functions (04-api-manipulation.md)
-- **Query & comparison:** `05-api-query.md`
-- **Advanced utilities:** `06-api-advanced.md`
-- **Complete index:** `00-master-index.md`
+- **Formatting:** `03-api-formatting.md`
+- **Query and comparison:** `05-api-query.md`
+- **Intervals and durations:** `06-api-advanced.md`
+- **Practical recipes:** `08-practical-guides.md`
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/docs/add

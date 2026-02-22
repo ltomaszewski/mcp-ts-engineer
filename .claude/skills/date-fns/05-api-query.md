@@ -1,322 +1,326 @@
-# API: Query & Comparison Functions — date-fns v4.1.0
+# API: Query & Comparison Functions -- date-fns v4.1.0
 
-## isValid() — Validate Date
+> Date inspection, comparisons, differences, getters, and sorting functions.
 
-**Purpose:** Check if a value is a valid Date object.
+**Source:** https://date-fns.org/docs/isValid
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isValid/index.ts
+---
 
-### Signature
+## Validation
+
+### isValid()
 
 ```typescript
 function isValid(date: unknown): boolean
 ```
 
-### Code Examples
+```typescript
+import { isValid, parseISO, parse } from 'date-fns';
 
-```javascript
-import { isValid } from 'date-fns';
-
-// Valid dates
 isValid(new Date());                    // true
-isValid(new Date(2024, 11, 27));       // true
-isValid(new Date('2024-12-27'));       // true (if valid string)
-
-// Invalid dates
-isValid(new Date('invalid'));          // false
-isValid(new Date(NaN));                // false
-isValid('2024-12-27');                 // false (string, not Date)
+isValid(new Date(2026, 0, 25));         // true
+isValid(new Date('invalid'));           // false
+isValid(new Date(NaN));                 // false
+isValid('2026-01-25');                  // false (string, not Date)
 isValid(null);                          // false
-isValid(undefined);                     // false
 
 // Safe parsing pattern
-import { parse } from 'date-fns';
-
-const parsed = parse('2024-12-27', 'yyyy-MM-dd', new Date());
-if (isValid(parsed)) {
-  console.log('Valid date');
-} else {
-  console.error('Invalid date format');
-}
+const parsed = parse('2026-01-25', 'yyyy-MM-dd', new Date());
+if (isValid(parsed)) { /* use it */ }
 ```
 
 ---
 
-## isBefore() — Date A Before Date B?
+## Comparison Functions
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isBefore/index.ts
+### isBefore()
 
-```javascript
-import { isBefore, subDays } from 'date-fns';
+```typescript
+function isBefore(date: Date | number, dateToCompare: Date | number): boolean
+```
 
-const date = new Date(2024, 11, 27);
-const earlier = subDays(date, 5);
+```typescript
+import { isBefore } from 'date-fns';
 
-isBefore(earlier, date);     // true
-isBefore(date, earlier);     // false
-isBefore(date, date);        // false (equal, not before)
+const d1 = new Date(2026, 0, 20);
+const d2 = new Date(2026, 0, 25);
+
+isBefore(d1, d2);    // true
+isBefore(d2, d1);    // false
+isBefore(d1, d1);    // false (equal is not before)
+```
+
+### isAfter()
+
+```typescript
+function isAfter(date: Date | number, dateToCompare: Date | number): boolean
+```
+
+```typescript
+import { isAfter } from 'date-fns';
+
+isAfter(new Date(2026, 0, 25), new Date(2026, 0, 20));  // true
+isAfter(new Date(2026, 0, 20), new Date(2026, 0, 25));  // false
+```
+
+### isEqual()
+
+```typescript
+function isEqual(dateLeft: Date | number, dateRight: Date | number): boolean
+```
+
+```typescript
+import { isEqual } from 'date-fns';
+
+const d1 = new Date(2026, 0, 25, 12, 0, 0);
+const d2 = new Date(2026, 0, 25, 12, 0, 0);
+
+isEqual(d1, d2);  // true (same timestamp)
 ```
 
 ---
 
-## isAfter() — Date A After Date B?
+## Same-Period Checks
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isAfter/index.ts
+### isSameDay()
 
-```javascript
-import { isAfter, addDays } from 'date-fns';
-
-const date = new Date(2024, 11, 27);
-const later = addDays(date, 5);
-
-isAfter(later, date);        // true
-isAfter(date, later);        // false
-isAfter(date, date);         // false (equal, not after)
-```
-
----
-
-## isSameDay() — Same Day?
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isSameDay/index.ts
-
-```javascript
+```typescript
 import { isSameDay } from 'date-fns';
 
-const date1 = new Date(2024, 11, 27, 8, 0, 0);
-const date2 = new Date(2024, 11, 27, 20, 30, 0);
-const date3 = new Date(2024, 11, 28, 8, 0, 0);
+const morning = new Date(2026, 0, 25, 8, 0);
+const evening = new Date(2026, 0, 25, 20, 0);
+const nextDay = new Date(2026, 0, 26, 8, 0);
 
-isSameDay(date1, date2);     // true (same day, different times)
-isSameDay(date1, date3);     // false (different days)
-isSameDay(date1, date1);     // true
+isSameDay(morning, evening);  // true (same calendar day)
+isSameDay(morning, nextDay);  // false
+```
+
+### isSameMonth()
+
+```typescript
+import { isSameMonth } from 'date-fns';
+
+isSameMonth(new Date(2026, 0, 1), new Date(2026, 0, 31));  // true
+isSameMonth(new Date(2026, 0, 1), new Date(2026, 1, 1));   // false
+```
+
+### isSameYear()
+
+```typescript
+import { isSameYear } from 'date-fns';
+
+isSameYear(new Date(2026, 0, 1), new Date(2026, 11, 31));  // true
+isSameYear(new Date(2026, 0, 1), new Date(2027, 0, 1));    // false
 ```
 
 ---
 
-## isSameMonth() & isSameYear() & isSameQuarter()
+## Day-Type Checks
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isSameMonth/index.ts
+### isWeekend()
 
-```javascript
-import { isSameMonth, isSameYear, isSameQuarter } from 'date-fns';
+```typescript
+import { isWeekend } from 'date-fns';
 
-const date1 = new Date(2024, 0, 15);
-const date2 = new Date(2024, 0, 31);
-const date3 = new Date(2024, 1, 15);
-const date4 = new Date(2025, 0, 15);
+isWeekend(new Date(2026, 0, 24));  // true (Saturday)
+isWeekend(new Date(2026, 0, 25));  // true (Sunday)
+isWeekend(new Date(2026, 0, 26));  // false (Monday)
+```
 
-isSameMonth(date1, date2);     // true (both January 2024)
-isSameMonth(date1, date3);     // false (different months)
+### isFuture() / isPast() / isToday()
 
-isSameYear(date1, date3);      // true (both 2024)
-isSameYear(date1, date4);      // false (different years)
+```typescript
+import { isFuture, isPast, isToday, addDays, subDays } from 'date-fns';
 
-isSameQuarter(date1, date2);   // true (both Q1)
+isFuture(addDays(new Date(), 1));   // true
+isPast(subDays(new Date(), 1));     // true
+isToday(new Date());                // true
 ```
 
 ---
 
-## isWeekend() — Is Date a Weekend?
+## Difference Functions
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/isWeekend/index.ts
+All `differenceIn*` functions calculate: `dateLeft - dateRight`. Result is positive when `dateLeft > dateRight`.
 
-```javascript
-import { isWeekend, addDays } from 'date-fns';
+### differenceInDays()
 
-const friday = new Date(2024, 11, 27);
-const saturday = addDays(friday, 1);
-const monday = addDays(friday, 3);
+```typescript
+import { differenceInDays } from 'date-fns';
 
-isWeekend(friday);           // false
-isWeekend(saturday);         // true
-isWeekend(monday);           // false
+const d1 = new Date(2026, 0, 20);
+const d2 = new Date(2026, 0, 25);
+
+differenceInDays(d2, d1);  // 5
+differenceInDays(d1, d2);  // -5
+```
+
+### differenceInWeeks()
+
+```typescript
+import { differenceInWeeks } from 'date-fns';
+
+differenceInWeeks(new Date(2026, 1, 8), new Date(2026, 0, 25));  // 2
+```
+
+### differenceInMonths()
+
+```typescript
+import { differenceInMonths } from 'date-fns';
+
+differenceInMonths(new Date(2026, 6, 1), new Date(2026, 0, 1));  // 6
+```
+
+### differenceInYears()
+
+```typescript
+import { differenceInYears } from 'date-fns';
+
+differenceInYears(new Date(2028, 0, 1), new Date(2026, 0, 1));  // 2
+```
+
+### differenceInHours()
+
+```typescript
+import { differenceInHours } from 'date-fns';
+
+const d1 = new Date(2026, 0, 25, 8, 0);
+const d2 = new Date(2026, 0, 25, 14, 30);
+
+differenceInHours(d2, d1);  // 6
+```
+
+### differenceInMinutes()
+
+```typescript
+import { differenceInMinutes } from 'date-fns';
+
+const d1 = new Date(2026, 0, 25, 14, 0);
+const d2 = new Date(2026, 0, 25, 14, 45);
+
+differenceInMinutes(d2, d1);  // 45
+```
+
+### differenceInSeconds()
+
+```typescript
+import { differenceInSeconds } from 'date-fns';
+
+const d1 = new Date(2026, 0, 25, 14, 0, 0);
+const d2 = new Date(2026, 0, 25, 14, 0, 30);
+
+differenceInSeconds(d2, d1);  // 30
 ```
 
 ---
 
-## getYear() — Get Year
+## Getter Functions
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getYear/index.ts
+### Date Component Getters
 
-```javascript
-import { getYear } from 'date-fns';
+| Function | Returns | Range | Example |
+|----------|---------|-------|---------|
+| `getYear(date)` | Calendar year | - | `2026` |
+| `getMonth(date)` | Month (0-indexed) | `0-11` | `0` = January |
+| `getDate(date)` | Day of month | `1-31` | `25` |
+| `getDay(date)` | Day of week | `0-6` | `0` = Sunday |
+| `getHours(date)` | Hour | `0-23` | `14` |
+| `getMinutes(date)` | Minute | `0-59` | `30` |
+| `getSeconds(date)` | Second | `0-59` | `45` |
+| `getDaysInMonth(date)` | Days in month | `28-31` | `31` |
+| `getDayOfYear(date)` | Day of year | `1-366` | `25` |
+| `getWeek(date)` | Week number | `1-53` | `4` |
 
-getYear(new Date(2024, 11, 27));  // 2024
-getYear(new Date(2025, 0, 1));    // 2025
+```typescript
+import { getYear, getMonth, getDate, getDay, getHours, getMinutes, getSeconds, getDaysInMonth } from 'date-fns';
+
+const date = new Date(2026, 0, 25, 14, 30, 45);
+
+getYear(date);        // 2026
+getMonth(date);       // 0 (January, 0-indexed)
+getDate(date);        // 25
+getDay(date);         // 0 (Sunday)
+getHours(date);       // 14
+getMinutes(date);     // 30
+getSeconds(date);     // 45
+getDaysInMonth(date); // 31 (January)
+
+// Leap year check
+getDaysInMonth(new Date(2024, 1));  // 29 (February, leap year)
+getDaysInMonth(new Date(2025, 1));  // 28 (February, non-leap)
 ```
 
 ---
 
-## getMonth() — Get Month (0-11)
+## Sorting
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getMonth/index.ts
-
-```javascript
-import { getMonth } from 'date-fns';
-
-getMonth(new Date(2024, 0, 15));   // 0 (January)
-getMonth(new Date(2024, 11, 25));  // 11 (December)
-```
-
----
-
-## getDate() — Get Day of Month
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getDate/index.ts
-
-```javascript
-import { getDate } from 'date-fns';
-
-getDate(new Date(2024, 11, 27));  // 27
-getDate(new Date(2024, 11, 1));   // 1
-```
-
----
-
-## getDay() — Get Weekday (0=Sunday)
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getDay/index.ts
-
-```javascript
-import { getDay } from 'date-fns';
-
-getDay(new Date(2024, 11, 27));   // 5 (Friday)
-getDay(new Date(2024, 11, 28));   // 6 (Saturday)
-getDay(new Date(2024, 11, 29));   // 0 (Sunday)
-```
-
----
-
-## getDaysInMonth() — Days in Month
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/getDaysInMonth/index.ts
-
-```javascript
-import { getDaysInMonth } from 'date-fns';
-
-getDaysInMonth(new Date(2024, 0));   // 31 (January)
-getDaysInMonth(new Date(2024, 1));   // 29 (February, leap year)
-getDaysInMonth(new Date(2023, 1));   // 28 (February, non-leap)
-getDaysInMonth(new Date(2024, 3));   // 30 (April)
-```
-
----
-
-## differenceInDays() — Difference in Days
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/differenceInDays/index.ts
-
-```javascript
-import { differenceInDays, addDays } from 'date-fns';
-
-const date1 = new Date(2024, 11, 27);
-const date2 = addDays(date1, 5);
-
-differenceInDays(date2, date1);   // 5
-differenceInDays(date1, date2);   // -5 (order matters)
-```
-
----
-
-## differenceInMonths() & differenceInYears()
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/differenceInMonths/index.ts
-
-```javascript
-import { differenceInMonths, differenceInYears, addMonths, addYears } from 'date-fns';
-
-const date1 = new Date(2024, 0, 15);
-const date2 = addYears(date1, 2);
-
-differenceInYears(date2, date1);   // 2
-
-const date3 = addMonths(date1, 6);
-differenceInMonths(date3, date1);  // 6
-```
-
----
-
-## compareAsc() & compareDesc() — Sorting
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/compareAsc/index.ts
+### compareAsc() / compareDesc()
 
 ```typescript
 function compareAsc(dateLeft: Date | number, dateRight: Date | number): -1 | 0 | 1
 function compareDesc(dateLeft: Date | number, dateRight: Date | number): -1 | 0 | 1
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { compareAsc, compareDesc } from 'date-fns';
 
 const dates = [
-  new Date(1995, 6, 2),
-  new Date(1987, 1, 11),
-  new Date(1989, 6, 10),
+  new Date(2026, 6, 2),
+  new Date(2026, 1, 11),
+  new Date(2026, 6, 10),
 ];
 
-// Ascending
-dates.sort(compareAsc);
-//=> [Feb 11 1987, Jul 10 1989, Jul 2 1995]
-
-// Descending
-dates.sort(compareDesc);
-//=> [Jul 2 1995, Jul 10 1989, Feb 11 1987]
+dates.sort(compareAsc);   // [Feb 11, Jul 2, Jul 10]
+dates.sort(compareDesc);  // [Jul 10, Jul 2, Feb 11]
 ```
 
 ---
 
-## Common Query Patterns
+## Common Patterns
 
-### Pattern 1: Age Calculation
+### Age Calculation
 
-```javascript
+```typescript
 import { differenceInYears } from 'date-fns';
 
-function getAge(birthDate) {
+function getAge(birthDate: Date): number {
   return differenceInYears(new Date(), birthDate);
 }
 
-getAge(new Date(1990, 5, 15));  // Age based on birthdate
+getAge(new Date(1990, 5, 15));  // 35 (in 2026)
 ```
 
-### Pattern 2: Business Hours Check
+### Business Hours Check
 
-```javascript
-import { getHours } from 'date-fns';
+```typescript
+import { getHours, getDay } from 'date-fns';
 
-function isBusinessHours(date) {
+function isBusinessHours(date: Date): boolean {
   const hour = getHours(date);
-  const day = date.getDay();
-  
-  return hour >= 9 && hour < 17 && day > 0 && day < 6;
+  const day = getDay(date);
+  return day >= 1 && day <= 5 && hour >= 9 && hour < 17;
 }
 ```
 
-### Pattern 3: Future Event Check
+### Upcoming Event Filter
 
-```javascript
-import { isFuture, addDays, differenceInDays } from 'date-fns';
+```typescript
+import { isFuture, differenceInDays } from 'date-fns';
 
-function isUpcomingEvent(date) {
-  const daysUntil = differenceInDays(date, new Date());
-  return isFuture(date) && daysUntil <= 30;
+function isUpcoming(eventDate: Date, withinDays: number = 30): boolean {
+  return isFuture(eventDate) && differenceInDays(eventDate, new Date()) <= withinDays;
 }
 ```
 
 ---
 
-## Module Navigation
+## Cross-References
 
-- **Formatting:** `03-api-formatting.md` (String ↔ Date conversion)
-- **Manipulation:** `04-api-manipulation.md` (Date arithmetic)
-- 📍 **You are here:** API: Query & Comparison (05-api-query.md)
-- **Advanced utilities:** `06-api-advanced.md`
+- **Formatting:** `03-api-formatting.md`
+- **Manipulation:** `04-api-manipulation.md`
+- **Intervals and durations:** `06-api-advanced.md`
 - **Practical patterns:** `08-practical-guides.md`
-- **Complete index:** `00-master-index.md`
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/docs/isValid

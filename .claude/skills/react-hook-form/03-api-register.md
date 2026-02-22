@@ -1,475 +1,305 @@
 # API Reference: register() & Controller
 
-> Field registration API, inline validation rules, and Controller component for UI libraries.
+> Field registration API, all inline validation rules, value transformations, and Controller component for UI libraries and React Native.
 
-**Source:** [https://react-hook-form.com/api/useform/register](https://react-hook-form.com/api/useform/register)
+**Source:** [https://react-hook-form.com/docs/useform/register](https://react-hook-form.com/docs/useform/register)
 
 ---
 
 ## register() Function
 
+### Signature
+
+```typescript
+function register(
+  name: string,
+  options?: RegisterOptions
+): { onChange, onBlur, ref, name, min?, max?, maxLength?, minLength?, pattern?, required?, disabled? }
+```
+
+**Important:** `register` works only with DOM elements that expose a `ref`. For React Native `TextInput` and UI libraries without ref support, use `Controller` instead.
+
+---
+
+### register Options (Complete)
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `required` | `boolean \| string \| { value: boolean; message: string }` | Field must have a value |
+| `min` | `number \| string \| { value: number; message: string }` | Minimum numeric value |
+| `max` | `number \| string \| { value: number; message: string }` | Maximum numeric value |
+| `minLength` | `number \| { value: number; message: string }` | Minimum string length |
+| `maxLength` | `number \| { value: number; message: string }` | Maximum string length |
+| `pattern` | `RegExp \| { value: RegExp; message: string }` | Regex pattern match |
+| `validate` | `Function \| Record<string, Function>` | Custom sync/async validation |
+| `valueAsNumber` | `boolean` | Convert to number (like `parseFloat`) |
+| `valueAsDate` | `boolean` | Convert to Date object |
+| `setValueAs` | `(value: any) => any` | Custom value transform |
+| `disabled` | `boolean` | Disable field (excluded from submission) |
+| `onChange` | `(e: SyntheticEvent) => void` | Custom onChange handler (called alongside RHF) |
+| `onBlur` | `(e: SyntheticEvent) => void` | Custom onBlur handler (called alongside RHF) |
+| `value` | `unknown` | Override field value |
+| `shouldUnregister` | `boolean` | Unregister on unmount |
+| `deps` | `string \| string[]` | Trigger validation on dependent fields |
+
+---
+
 ### Basic Registration
 
-**Description:** Connect HTML inputs to form state using the spread operator.
-
 ```typescript
+import { useForm } from 'react-hook-form';
+
 const { register } = useForm();
 
-// Text input
 <input {...register('email')} />
-
-// Password input
 <input {...register('password')} type="password" />
-
-// Textarea
 <textarea {...register('message')} />
-
-// Select dropdown
 <select {...register('category')}>
   <option value="">Select...</option>
-  <option value="sports">Sports</option>
-  <option value="music">Music</option>
+  <option value="tech">Technology</option>
 </select>
-
-// Checkbox
-<input {...register('agreeToTerms')} type="checkbox" />
-
-// Radio buttons
-<label>
-  <input {...register('gender')} type="radio" value="male" />
-  Male
-</label>
-<label>
-  <input {...register('gender')} type="radio" value="female" />
-  Female
-</label>
+<input {...register('agree')} type="checkbox" />
 ```
 
 ---
 
-## Inline Validation Rules
-
-### Overview
-
-Pass validation rules as the second argument to `register()`. See `05-validation-rules.md` for detailed rule reference.
-
-### required
-
-**Description:** Field must have a value.
+### Validation Rules
 
 ```typescript
-// With custom message
+// required
 <input {...register('email', { required: 'Email is required' })} />
 
-// Boolean (generic error)
-<input {...register('email', { required: true })} />
+// min / max
+<input type="number" {...register('age', {
+  min: { value: 18, message: 'Must be 18+' },
+  max: { value: 120, message: 'Invalid age' },
+})} />
+
+// minLength / maxLength
+<input {...register('password', {
+  minLength: { value: 8, message: 'Min 8 chars' },
+  maxLength: { value: 64, message: 'Max 64 chars' },
+})} />
+
+// pattern
+<input {...register('email', {
+  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' },
+})} />
+
+// validate (single)
+<input {...register('username', {
+  validate: (value) => value !== 'admin' || 'Reserved username',
+})} />
+
+// validate (multiple named)
+<input {...register('password', {
+  validate: {
+    hasUpper: (v) => /[A-Z]/.test(v) || 'Need uppercase',
+    hasNumber: (v) => /\d/.test(v) || 'Need number',
+    hasSpecial: (v) => /[!@#$%]/.test(v) || 'Need special char',
+  },
+})} />
+
+// validate (async)
+<input {...register('email', {
+  validate: async (value) => {
+    const res = await fetch(`/api/check-email?email=${value}`);
+    const { available } = await res.json();
+    return available || 'Email already taken';
+  },
+})} />
 ```
-
----
-
-### min & max
-
-**Description:** Numeric bounds validation.
-
-```typescript
-<input
-  type="number"
-  {...register('age', {
-    min: { value: 18, message: 'Must be 18 or older' }
-  })}
-/>
-
-<input
-  type="number"
-  {...register('rating', {
-    max: { value: 5, message: 'Max rating is 5' }
-  })}
-/>
-```
-
----
-
-### minLength & maxLength
-
-**Description:** String length validation.
-
-```typescript
-<input
-  {...register('password', {
-    minLength: { value: 8, message: 'Minimum 8 characters' }
-  })}
-  type="password"
-/>
-
-<input
-  {...register('username', {
-    maxLength: { value: 20, message: 'Maximum 20 characters' }
-  })}
-/>
-```
-
----
-
-### pattern
-
-**Description:** Regex pattern matching.
-
-```typescript
-{/* Email */}
-<input
-  {...register('email', {
-    pattern: {
-      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      message: 'Invalid email format'
-    }
-  })}
-/>
-
-{/* Phone (10 digits) */}
-<input
-  {...register('phone', {
-    pattern: {
-      value: /^\d{10}$/,
-      message: 'Phone must be 10 digits'
-    }
-  })}
-/>
-
-{/* Alphanumeric only */}
-<input
-  {...register('username', {
-    pattern: {
-      value: /^[a-zA-Z0-9]+$/,
-      message: 'Only letters and numbers allowed'
-    }
-  })}
-/>
-```
-
----
-
-### validate
-
-**Description:** Custom validation function.
-
-```typescript
-{/* Single validation */}
-<input
-  {...register('password', {
-    validate: (value) =>
-      value.length >= 8 || 'Password must be 8+ characters'
-  })}
-/>
-
-{/* Async validation (e.g., check email availability) */}
-<input
-  {...register('email', {
-    validate: async (value) => {
-      const response = await fetch(`/api/check-email?email=${value}`);
-      const { available } = await response.json();
-      return available || 'Email already taken';
-    }
-  })}
-/>
-
-{/* Multiple validations */}
-<input
-  {...register('username', {
-    validate: {
-      minLength: (v) => v.length >= 3 || 'Min 3 characters',
-      unique: async (v) => !(await checkUserExists(v)) || 'Username taken',
-      pattern: (v) => /^[a-z0-9_]+$/.test(v) || 'Invalid format'
-    }
-  })}
-/>
-```
-
----
-
-### disabled
-
-**Description:** Disable field input.
-
-```typescript
-// Always disabled
-<input {...register('readonly', { disabled: true })} />
-
-// Conditionally disabled
-const isAdmin = user?.role === 'admin';
-<input {...register('role', { disabled: !isAdmin })} />
-```
-
-**Important:** Disabled fields are NOT included in form submission.
 
 ---
 
 ### Value Transformations
 
-### valueAsNumber
-
-**Description:** Convert string input to number automatically.
-
 ```typescript
-<input
-  type="text"
-  {...register('age', { valueAsNumber: true })}
-/>
-{/* Input "25" becomes number 25 */}
+// valueAsNumber -- auto-parse to number
+<input type="number" {...register('age', { valueAsNumber: true })} />
+
+// valueAsDate -- auto-parse to Date
+<input type="date" {...register('birthDate', { valueAsDate: true })} />
+
+// setValueAs -- custom transform
+<input {...register('email', {
+  setValueAs: (v: string) => v.trim().toLowerCase(),
+})} />
 ```
 
 ---
 
-### valueAsDate
-
-**Description:** Convert to Date object automatically.
+### onChange, onBlur, value, deps
 
 ```typescript
-<input
-  type="date"
-  {...register('birthDate', { valueAsDate: true })}
-/>
-{/* Selected date becomes Date object */}
-```
+// Custom onChange alongside RHF onChange
+<input {...register('search', {
+  onChange: (e) => debouncedSearch(e.target.value),
+})} />
 
----
+// Custom onBlur alongside RHF onBlur
+<input {...register('name', {
+  onBlur: (e) => analytics.track('field_blur', { field: 'name' }),
+})} />
 
-### setValueAs
+// Override value
+<input {...register('hiddenField', { value: 'fixed-value' })} />
 
-**Description:** Custom value transformation function.
-
-```typescript
-{/* Trim whitespace */}
-<input
-  {...register('name', {
-    setValueAs: (value) => value.trim()
-  })}
-/>
-
-{/* Convert to lowercase */}
-<input
-  {...register('email', {
-    setValueAs: (value) => value.toLowerCase()
-  })}
-/>
-
-{/* Parse JSON */}
-<input
-  {...register('metadata', {
-    setValueAs: (value) => JSON.parse(value)
-  })}
-/>
+// deps -- trigger validation on dependent field when this changes
+<input {...register('password')} />
+<input {...register('confirmPassword', {
+  deps: ['password'], // re-validate confirmPassword when password changes
+  validate: (value, formValues) =>
+    value === formValues.password || 'Passwords must match',
+})} />
 ```
 
 ---
 
 ## Controller Component
 
-**Description:** Use Controller for UI component libraries that don't expose a ref (Material-UI, Chakra UI, React Select).
+**Use Controller for:** React Native inputs, Material UI, Chakra UI, React Select, or any component that does not expose a DOM `ref`.
 
-### Basic Usage
+### Signature
+
+```typescript
+<Controller
+  name={string}
+  control={Control}
+  render={({ field, fieldState, formState }) => ReactElement}
+  rules?: RegisterOptions
+  defaultValue?: unknown
+  shouldUnregister?: boolean
+  disabled?: boolean
+/>
+```
+
+### Controller Props (Complete)
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | `string` | Yes | Field name (unique within form) |
+| `control` | `Control` | Yes | `control` object from `useForm()` |
+| `render` | `({ field, fieldState, formState }) => ReactElement` | Yes | Render function |
+| `rules` | `RegisterOptions` | No | Same validation rules as `register` |
+| `defaultValue` | `unknown` | No | Override form defaultValue for this field |
+| `shouldUnregister` | `boolean` | No | Unregister on unmount |
+| `disabled` | `boolean` | No | Disable field |
+
+### render Callback Arguments
+
+**field object:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `onChange` | `(...event: any[]) => void` | Send value to form |
+| `onBlur` | `() => void` | Notify form of blur |
+| `value` | `unknown` | Current field value |
+| `name` | `string` | Field name |
+| `ref` | `React.Ref` | Ref for focus management |
+| `disabled` | `boolean` | Disabled state |
+
+**fieldState object:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `invalid` | `boolean` | Field has error |
+| `isTouched` | `boolean` | Field has been blurred |
+| `isDirty` | `boolean` | Value differs from default |
+| `error` | `FieldError \| undefined` | Current error |
+
+---
+
+### Controller with React Native
 
 ```typescript
 import { useForm, Controller } from 'react-hook-form';
-import { TextField } from '@mui/material';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { View, TextInput, Text, Pressable } from 'react-native';
 
-const { control, handleSubmit } = useForm();
+const schema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Min 8 characters'),
+});
+type FormData = z.infer<typeof schema>;
 
-<form onSubmit={handleSubmit((data) => console.log(data))}>
-  <Controller
-    name="email"
-    control={control}
-    rules={{ required: 'Email required' }}
-    render={({ field, fieldState: { error } }) => (
-      <TextField
-        {...field}
-        label="Email"
-        error={!!error}
-        helperText={error?.message}
-      />
-    )}
-  />
-</form>
-```
-
----
-
-### Controller Props
-
-| Prop | Type | Description |
-|---|---|---|
-| `name` | string | Field name |
-| `control` | Control | Form control object (from useForm) |
-| `rules` | object | Validation rules (same as register) |
-| `render` | function | Render function receiving field and state |
-| `defaultValue` | any | Override form's defaultValue for this field |
-| `shouldUnregister` | boolean | Unregister field on unmount |
-
----
-
-### Complete Example with Material-UI
-
-```typescript
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
-import {
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel
-} from '@mui/material';
-
-interface FormData {
-  email: string;
-  category: string;
-  agreeToTerms: boolean;
-}
-
-export function MyForm() {
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting }
-  } = useForm<FormData>({
-    defaultValues: {
-      email: '',
-      category: '',
-      agreeToTerms: false
-    }
+export function LoginForm() {
+  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log(data);
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {/* Text field with validation */}
+    <View>
       <Controller
+        control={control}
         name="email"
-        control={control}
-        rules={{
-          required: 'Email required',
-          pattern: {
-            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            message: 'Invalid email'
-          }
-        }}
-        render={({ field, fieldState: { error } }) => (
-          <TextField
-            {...field}
-            label="Email"
-            type="email"
-            error={!!error}
-            helperText={error?.message}
-            fullWidth
-            margin="normal"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            placeholder="Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
           />
         )}
       />
+      {errors.email && <Text>{errors.email.message}</Text>}
 
-      {/* Select field */}
       <Controller
-        name="category"
         control={control}
-        rules={{ required: 'Category required' }}
-        render={({ field, fieldState: { error } }) => (
-          <Select
-            {...field}
-            label="Category"
-            error={!!error}
-            fullWidth
-            margin="normal"
-          >
-            <MenuItem value="">Select a category</MenuItem>
-            <MenuItem value="sports">Sports</MenuItem>
-            <MenuItem value="music">Music</MenuItem>
-            <MenuItem value="tech">Technology</MenuItem>
-          </Select>
-        )}
-      />
-
-      {/* Checkbox */}
-      <Controller
-        name="agreeToTerms"
-        control={control}
-        rules={{ required: 'You must agree to terms' }}
-        render={({ field, fieldState: { error } }) => (
-          <FormControlLabel
-            {...field}
-            control={<Checkbox />}
-            label="I agree to terms and conditions"
+        name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
           />
         )}
       />
+      {errors.password && <Text>{errors.password.message}</Text>}
 
-      <Button
-        type="submit"
-        variant="contained"
-        disabled={isSubmitting}
-        fullWidth
-        sx={{ mt: 2 }}
-      >
-        {isSubmitting ? 'Submitting...' : 'Submit'}
-      </Button>
-    </form>
+      <Pressable onPress={handleSubmit((data) => console.log(data))} disabled={isSubmitting}>
+        <Text>{isSubmitting ? 'Submitting...' : 'Login'}</Text>
+      </Pressable>
+    </View>
   );
 }
 ```
 
 ---
 
-### Controller with Custom Date Picker
+### Controller with Material UI (Web)
 
 ```typescript
 import { useForm, Controller } from 'react-hook-form';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { TextField, Button } from '@mui/material';
 
-interface FormData {
-  startDate: Date;
-  endDate: Date;
-}
+interface FormData { email: string; password: string }
 
-export function DateRangeForm() {
-  const { control, handleSubmit } = useForm<FormData>({
-    defaultValues: {
-      startDate: new Date(),
-      endDate: new Date()
-    }
+export function MuiForm() {
+  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+    defaultValues: { email: '', password: '' },
   });
 
   return (
     <form onSubmit={handleSubmit((data) => console.log(data))}>
       <Controller
-        name="startDate"
+        name="email"
         control={control}
-        rules={{ required: 'Start date required' }}
-        render={({ field }) => (
-          <DatePicker
-            selected={field.value}
-            onChange={(date) => field.onChange(date)}
-            onBlur={field.onBlur}
-            dateFormat="yyyy-MM-dd"
-          />
+        rules={{ required: 'Email required', pattern: {
+          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+          message: 'Invalid email',
+        }}}
+        render={({ field, fieldState: { error } }) => (
+          <TextField {...field} label="Email" error={!!error} helperText={error?.message} />
         )}
       />
-
-      <Controller
-        name="endDate"
-        control={control}
-        rules={{ required: 'End date required' }}
-        render={({ field }) => (
-          <DatePicker
-            selected={field.value}
-            onChange={(date) => field.onChange(date)}
-            onBlur={field.onBlur}
-            dateFormat="yyyy-MM-dd"
-          />
-        )}
-      />
-
-      <button type="submit">Submit</button>
+      <Button type="submit">Submit</Button>
     </form>
   );
 }
@@ -477,69 +307,33 @@ export function DateRangeForm() {
 
 ---
 
-## Patterns & Best Practices
+## Patterns
 
-### Combining register() and Controller
+### Combining register and Controller
 
-Use `register()` for native HTML elements, `Controller` for UI library components:
-
-```typescript
-const { register, control, handleSubmit } = useForm();
-
-<form onSubmit={handleSubmit((data) => console.log(data))}>
-  {/* Native input - use register */}
-  <input {...register('name', { required: true })} />
-
-  {/* Material-UI - use Controller */}
-  <Controller
-    name="email"
-    control={control}
-    rules={{ required: true }}
-    render={({ field }) => <TextField {...field} />}
-  />
-</form>
-```
-
-### Reusable Validated Components
+Use `register` for native HTML elements (web), `Controller` for UI library components and React Native:
 
 ```typescript
-// Custom TextInput component
-interface TextInputProps {
-  label: string;
-  error?: string;
-  [key: string]: any;
-}
+const { register, control } = useForm();
 
-function TextInput({ label, error, ...props }: TextInputProps) {
-  return (
-    <div>
-      <label>{label}</label>
-      <input {...props} />
-      {error && <p className="error">{error}</p>}
-    </div>
-  );
-}
+// Native input -- use register (web only)
+<input {...register('name', { required: true })} />
 
-// Use in form
-const { register, formState: { errors } } = useForm();
-
-<TextInput
-  label="Email"
-  error={errors.email?.message}
-  {...register('email', { required: 'Email required' })}
-/>
+// Material UI -- use Controller
+<Controller name="email" control={control}
+  render={({ field }) => <TextField {...field} />} />
 ```
 
 ---
 
 ## Cross-References
 
-- **Validation rules:** See `05-validation-rules.md`
+- **useForm options:** See `02-api-useform.md`
+- **Validation rules details:** See `05-validation-rules.md`
+- **useController hook:** See `07-custom-hooks-context.md`
 - **Advanced methods:** See `04-api-advanced-methods.md`
-- **Custom hooks & context:** See `07-custom-hooks-context.md`
 - **Patterns:** See `08-patterns-implementation.md`
-- **Best practices:** See `09-best-practices.md`
 
 ---
 
-**Source:** https://react-hook-form.com/api/useform/register
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/docs/useform/register

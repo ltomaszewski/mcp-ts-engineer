@@ -222,7 +222,7 @@ export class ScheduleModule {}
 })
 export class ScheduleModule {}
 
-// In service:
+// In service -- always explicit @Inject:
 constructor(
   @Inject(forwardRef(() => UserService))
   private readonly userService: UserService,
@@ -317,3 +317,7 @@ import type { TokenPayload } from './types/token.types';
 
 6. **Tests importing internal services from other modules**
    - Those services should either be exported or tests restructured
+
+---
+
+**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/modules

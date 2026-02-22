@@ -420,3 +420,7 @@ jq -r 'select(.event == "session_end") | "\(.session_id)\t$\(.cost_usd)"' agent.
 # Error summary
 jq -r 'select(.level == "error") | .error_message' agent.jsonl | sort | uniq -c | sort -rn
 ```
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

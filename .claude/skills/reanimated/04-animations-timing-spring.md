@@ -1,392 +1,288 @@
-# Animations: withTiming & withSpring
+# Animations: withTiming and withSpring
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/customizing-animation/  
-**Version:** 4.2.1  
-**Category:** Animation Functions | Core Hooks
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withTiming/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withSpring/
 
 ---
 
-## 📋 Overview
+## Overview
 
-Reanimated provides two fundamental animation functions:
+Reanimated provides two primary animation functions:
+1. **`withTiming`** -- duration-based animations with easing curves
+2. **`withSpring`** -- physics-based spring animations
 
-1. **`withTiming`** — Duration-based animations (frame-rate independent, easing-driven)
-2. **`withSpring`** — Physics-based animations (natural spring motion)
-
-Both support configuration objects and can be combined with `withSequence`, `withRepeat`, and callbacks.
+Both accept an optional callback fired on completion.
 
 ---
 
-## ⏱️ withTiming Animation
+## withTiming
 
-### API Reference
-
-**Signature:**
 ```typescript
-function withTiming(
-  targetValue: number,
+function withTiming<T extends AnimatableValue>(
+  toValue: T,
   config?: WithTimingConfig,
-  callback?: (finished: boolean) => void
-): AnimationObject;
+  callback?: (finished?: boolean, current?: AnimatableValue) => void
+): T;
+
+type AnimatableValue = number | string | number[];
 
 interface WithTimingConfig {
-  duration?: number;        // milliseconds (default: 300)
-  easing?: EasingFn;       // easing function (default: inOut(quad))
+  duration?: number;         // default: 300
+  easing?: EasingFunction;   // default: Easing.inOut(Easing.quad)
+  reduceMotion?: ReduceMotion; // default: ReduceMotion.System
 }
 ```
 
-**Description:** Animates a shared value to a target over a specified duration using an easing function.
+### Config Parameters
 
----
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `duration` | `number` | `300` | Animation length in milliseconds |
+| `easing` | `EasingFunction` | `Easing.inOut(Easing.quad)` | Velocity curve over time |
+| `reduceMotion` | `ReduceMotion` | `System` | Accessibility: `System`, `Always`, `Never` |
 
-### Configuration: Duration
+### Basic Examples
 
-Controls animation length in **milliseconds**.
-
-**Parameters:**
-
-| Property | Type | Default | Range | Description |
-|---|---|---|---|---|
-| `duration` | `number` | `300` | 0 - ∞ | Animation duration in milliseconds |
-
-**Example:**
-
-```javascript
-import { withTiming, useSharedValue } from 'react-native-reanimated';
+```typescript
+import { withTiming, Easing, useSharedValue } from 'react-native-reanimated';
 
 const opacity = useSharedValue(1);
 
-// Animate over 500ms
+// Default (300ms, inOut quad)
+opacity.value = withTiming(0);
+
+// Custom duration
 opacity.value = withTiming(0, { duration: 500 });
 
-// Quick animation (200ms)
+// Quick animation
 opacity.value = withTiming(1, { duration: 200 });
 
-// Slow animation (2 seconds)
-opacity.value = withTiming(0.5, { duration: 2000 });
-```
-
----
-
-### Configuration: Easing Functions
-
-Easing functions define **velocity curve** over time. Reanimated provides a built-in `Easing` module.
-
-**Default:** `Easing.inOut(Easing.quad)` — smooth start, middle speed, smooth end
-
-#### Common Easing Functions
-
-| Function | Behavior | Use Case |
-|---|---|---|
-| `linear` | Constant velocity | Rotations, looping animations |
-| `quad` | Quadratic curve | General purpose (default) |
-| `cubic` | Cubic curve | Smoother than quad |
-| `sin` | Sine wave | Natural, organic motion |
-| `exp` | Exponential | Fast acceleration |
-
-#### Easing Modifiers
-
-| Modifier | Effect |
-|---|---|
-| `in()` | Slow start, fast finish |
-| `out()` | Fast start, slow finish |
-| `inOut()` | Slow start, slow finish (default) |
-
-**Example:**
-
-```javascript
-import { Easing, withTiming, useSharedValue } from 'react-native-reanimated';
-
-const rotation = useSharedValue(0);
-
-// Linear rotation (constant speed)
-rotation.value = withTiming(360, {
-  duration: 1000,
-  easing: Easing.linear,
-});
-
-// Smooth cubic easing (in-out)
-rotation.value = withTiming(360, {
-  duration: 1000,
-  easing: Easing.inOut(Easing.cubic),
-});
-
-// Fast start, slow finish (out)
-rotation.value = withTiming(100, {
-  duration: 500,
-  easing: Easing.out(Easing.exp),
-});
-
-// Sine wave (organic motion)
-rotation.value = withTiming(180, {
-  duration: 800,
-  easing: Easing.sin,
-});
-```
-
-#### Pre-defined Easing Shortcuts
-
-```javascript
-Easing.linear        // Linear motion
-Easing.quad          // Quadratic (default base)
-Easing.cubic         // Cubic (smoother)
-Easing.sin           // Sine (natural)
-Easing.exp           // Exponential (dramatic)
-
-// With modifiers
-Easing.in(Easing.quad)     // Slow start
-Easing.out(Easing.quad)    // Slow finish
-Easing.inOut(Easing.quad)  // Default
-```
-
----
-
-### Callbacks
-
-Execute a function when animation completes.
-
-**Signature:**
-```typescript
-withTiming(
-  targetValue,
-  config,
-  (finished: boolean) => void  // finished = true when animation completes naturally
-)
-```
-
-**Example:**
-
-```javascript
-const opacity = useSharedValue(1);
-
+// With callback
 opacity.value = withTiming(0, { duration: 500 }, (finished) => {
+  'worklet';
   if (finished) {
-    console.log('Animation completed!');
-    // Trigger side effects: update React state, log analytics, etc.
+    console.log('Animation completed');
   }
 });
 ```
 
 ---
 
-## 🎯 withSpring Animation
+## Easing Functions
 
-### API Reference
+### Base Functions
 
-**Signature:**
+| Function | Behavior | Use Case |
+|---|---|---|
+| `Easing.linear` | Constant velocity | Rotations, looping |
+| `Easing.quad` | Quadratic curve | General purpose (default base) |
+| `Easing.cubic` | Cubic curve | Smoother than quad |
+| `Easing.sin` | Sine wave | Natural, organic |
+| `Easing.exp` | Exponential | Fast acceleration |
+| `Easing.circle` | Circular curve | Smooth start/end |
+| `Easing.bounce` | Bounce effect | Playful interactions |
+| `Easing.elastic(bounciness?)` | Elastic snap | Spring-like timing |
+| `Easing.poly(n)` | Polynomial degree n | Custom curves |
+| `Easing.back` | Slight overshoot | Anticipation effect |
+| `Easing.ease` | CSS ease equivalent | Web-familiar curve |
+| `Easing.bezier(x1, y1, x2, y2)` | Custom bezier | Precise control |
+
+### Easing Modifiers
+
+| Modifier | Effect | Example |
+|---|---|---|
+| `Easing.in(fn)` | Slow start, fast finish | `Easing.in(Easing.cubic)` |
+| `Easing.out(fn)` | Fast start, slow finish | `Easing.out(Easing.cubic)` |
+| `Easing.inOut(fn)` | Slow start and finish | `Easing.inOut(Easing.cubic)` |
+
+### Easing Examples
+
 ```typescript
-function withSpring(
-  targetValue: number,
-  config?: WithSpringConfig,
-  callback?: (finished: boolean) => void
-): AnimationObject;
+import { Easing, withTiming } from 'react-native-reanimated';
 
-interface WithSpringConfig {
-  mass?: number;                    // default: 1
-  damping?: number;                 // default: 10
-  stiffness?: number;               // default: 100
-  overshootClamping?: boolean;      // default: false
-  restSpeedThreshold?: number;      // default: 10
-  restDisplacementThreshold?: number; // default: 10
-}
-```
+// Linear rotation
+rotation.value = withTiming(360, {
+  duration: 1000,
+  easing: Easing.linear,
+});
 
-**Description:** Physics-based animation simulating a real spring. Creates natural, bouncy motion.
+// Smooth cubic ease in-out
+translateX.value = withTiming(100, {
+  duration: 500,
+  easing: Easing.inOut(Easing.cubic),
+});
 
----
+// Fast start, slow finish
+opacity.value = withTiming(1, {
+  duration: 400,
+  easing: Easing.out(Easing.exp),
+});
 
-### Configuration: Mass
+// Custom bezier (CSS transition equivalent)
+scale.value = withTiming(1.2, {
+  duration: 300,
+  easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+});
 
-Controls **inertia** — how hard it is to move and stop the object.
+// Bounce effect
+translateY.value = withTiming(0, {
+  duration: 800,
+  easing: Easing.out(Easing.bounce),
+});
 
-| Property | Type | Default | Effect |
-|---|---|---|---|
-| `mass` | `number` | `1` | Higher = sluggish, bouncy; Lower = responsive |
-
-**Visual Effect:**
-```javascript
-withSpring(targetValue, { mass: 0.5 })  // Lightweight, quick response
-withSpring(targetValue, { mass: 1 })    // Normal (default)
-withSpring(targetValue, { mass: 2 })    // Heavy, slow to move/stop
-```
-
-**Example:**
-
-```javascript
-import { withSpring, useSharedValue } from 'react-native-reanimated';
-
-const scale = useSharedValue(1);
-
-// Light spring (responsive)
-scale.value = withSpring(1.2, { mass: 0.5 });
-
-// Heavy spring (sluggish)
-scale.value = withSpring(1.2, { mass: 3 });
-```
-
----
-
-### Configuration: Stiffness (Tension)
-
-Controls **bounciness** — how much the spring oscillates.
-
-| Property | Type | Default | Effect |
-|---|---|---|---|
-| `stiffness` | `number` | `100` | Higher = tighter spring; Lower = loose spring |
-
-**Visual Effect:**
-```javascript
-withSpring(targetValue, { stiffness: 50 })   // Loose, stretchy spring
-withSpring(targetValue, { stiffness: 100 })  // Normal (default)
-withSpring(targetValue, { stiffness: 200 })  // Tight steel spring
-```
-
-**Analogy:**
-- **Low stiffness (50):** Rubber band
-- **Normal stiffness (100):** Steel spring
-- **High stiffness (200):** Very tight coil
-
----
-
-### Configuration: Damping (Friction)
-
-Controls **resistance** — how quickly oscillation dampens and the spring comes to rest.
-
-| Property | Type | Default | Effect |
-|---|---|---|---|
-| `damping` | `number` | `10` | Higher = faster settling; Lower = more bouncing |
-
-**Visual Effect:**
-```javascript
-withSpring(targetValue, { damping: 5 })   // Low friction, many bounces
-withSpring(targetValue, { damping: 10 })  // Normal (default)
-withSpring(targetValue, { damping: 20 })  // High friction, quick settle
-```
-
-**Real-World Analogy:**
-- **Low damping (5):** Spring bouncing in air
-- **Normal damping (10):** Spring in normal environment
-- **High damping (20):** Spring moving through thick oil
-
----
-
-### Complete Spring Configuration Example
-
-```javascript
-const position = useSharedValue(0);
-
-position.value = withSpring(100, {
-  mass: 1,              // Normal weight
-  stiffness: 100,       // Typical bounciness
-  damping: 10,          // Standard friction
-  overshootClamping: false,  // Allow overshoot
-  restSpeedThreshold: 10,     // Velocity threshold for "at rest"
-  restDisplacementThreshold: 10, // Distance threshold for "at rest"
+// Elastic snap
+scale.value = withTiming(1, {
+  duration: 600,
+  easing: Easing.out(Easing.elastic(2)),
 });
 ```
 
 ---
 
-### Advanced Config: Overshoot Clamping
+## withSpring
 
-Prevents the spring from overshooting the target value.
+```typescript
+function withSpring<T extends AnimatableValue>(
+  toValue: T,
+  config?: SpringConfig,
+  callback?: (finished?: boolean, current?: AnimatableValue) => void
+): T;
+```
 
-```javascript
-// With overshoot (default)
-withSpring(100, { overshootClamping: false })  // May exceed 100, bounce back
+### Physics-Based Config (default mode)
 
-// Clamped (no overshoot)
-withSpring(100, { overshootClamping: true })   // Stops at exactly 100, no bounce
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `damping` | `number` | `120` | How quickly spring slows down. Higher = faster settle |
+| `stiffness` | `number` | `900` | How bouncy the spring is. Higher = tighter |
+| `mass` | `number` | `4` | Weight of the spring. Lower = faster |
+| `velocity` | `number` | `0` | Initial velocity |
+| `overshootClamping` | `boolean` | `false` | Prevent bouncing past target |
+| `energyThreshold` | `number` | `6e-9` | Energy level to snap to rest |
+| `reduceMotion` | `ReduceMotion` | `System` | Accessibility setting |
+
+### Duration-Based Config (alternative mode)
+
+Mutually exclusive with physics-based parameters (damping/stiffness/mass).
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `duration` | `number` | `550` | Perceptual duration in ms (actual ~1.5x) |
+| `dampingRatio` | `number` | `1` | `1` = critical, `<1` = underdamped (bouncy), `>1` = overdamped |
+| `clamp` | `{ min?: number; max?: number }` | `undefined` | Limits movement scope |
+| `reduceMotion` | `ReduceMotion` | `System` | Accessibility setting |
+
+### Physics-Based Examples
+
+```typescript
+import { withSpring, useSharedValue } from 'react-native-reanimated';
+
+const scale = useSharedValue(1);
+
+// Default v4 spring (critically damped, fast)
+scale.value = withSpring(1.2);
+
+// Bouncy spring (low damping)
+scale.value = withSpring(1.2, {
+  damping: 8,
+  stiffness: 100,
+  mass: 1,
+});
+
+// Snappy spring (high stiffness, low mass)
+scale.value = withSpring(1.2, {
+  damping: 20,
+  stiffness: 300,
+  mass: 0.5,
+});
+
+// No overshoot
+translateX.value = withSpring(100, {
+  overshootClamping: true,
+});
+
+// With callback
+scale.value = withSpring(1, { damping: 10 }, (finished) => {
+  'worklet';
+  if (finished) console.log('Spring settled');
+});
+```
+
+### Duration-Based Examples
+
+```typescript
+// Critically damped (no bounce)
+offset.value = withSpring(100, {
+  duration: 300,
+  dampingRatio: 1,
+});
+
+// Underdamped (bouncy)
+offset.value = withSpring(100, {
+  duration: 500,
+  dampingRatio: 0.5,
+});
+
+// With bounds
+offset.value = withSpring(100, {
+  duration: 400,
+  clamp: { min: 0, max: 200 },
+});
+```
+
+### Using v3 Defaults for Backward Compatibility
+
+```typescript
+import { withSpring, Reanimated3DefaultSpringConfig } from 'react-native-reanimated';
+
+// Uses v3 defaults: damping=10, stiffness=100, mass=1
+offset.value = withSpring(100, Reanimated3DefaultSpringConfig);
 ```
 
 ---
 
-## 🔗 Combining with withSequence
+## cancelAnimation
 
-Chain multiple animations in sequence.
+Stop a running animation on a shared value.
 
-**Example:**
+```typescript
+function cancelAnimation(sharedValue: SharedValue<any>): void;
+```
 
-```javascript
-import { 
-  withTiming, 
-  withSpring, 
-  withSequence, 
-  useSharedValue,
-  Easing 
-} from 'react-native-reanimated';
+```typescript
+import { cancelAnimation, useSharedValue, withTiming } from 'react-native-reanimated';
 
-function ButtonPress() {
-  const scale = useSharedValue(1);
+const opacity = useSharedValue(1);
 
-  const handlePress = () => {
-    scale.value = withSequence(
-      // First: Scale down quickly
-      withTiming(0.9, { duration: 100, easing: Easing.in(Easing.quad) }),
-      // Then: Scale back up with spring
-      withSpring(1, { stiffness: 150, damping: 10 })
-    );
-  };
+const start = () => {
+  opacity.value = withTiming(0, { duration: 5000 });
+};
 
-  return null;
-}
+const stop = () => {
+  cancelAnimation(opacity); // Stops at current value
+};
 ```
 
 ---
 
-## 🔁 Combining with withRepeat
-
-Loop an animation indefinitely or N times.
-
-**Example:**
-
-```javascript
-import { 
-  withTiming, 
-  withRepeat, 
-  useSharedValue,
-  Easing 
-} from 'react-native-reanimated';
-
-function PulseAnimation() {
-  const opacity = useSharedValue(1);
-
-  useEffect(() => {
-    opacity.value = withRepeat(
-      withTiming(0.5, { duration: 500, easing: Easing.inOut(Easing.quad) }),
-      -1,    // -1 = infinite repeat
-      true   // reverse = true for pulse effect
-    );
-  }, []);
-
-  return null;
-}
-```
-
----
-
-## 📊 Comparison: withTiming vs withSpring
+## Comparison: withTiming vs withSpring
 
 | Aspect | `withTiming` | `withSpring` |
 |---|---|---|
-| **Type** | Duration-based | Physics-based |
-| **Predictability** | Exact duration | Variable (depends on physics) |
-| **Feel** | Mechanical | Natural, organic |
-| **Easing** | Full control | Determined by mass/stiffness/damping |
-| **Best For** | UI transitions, fades | Button presses, interactions |
-| **Performance** | Slightly faster | Slightly slower (physics calc) |
-| **Overshoot** | Can't overshoot | Bounces naturally |
-| **Config** | `duration`, `easing` | `mass`, `stiffness`, `damping` |
+| Type | Duration-based | Physics-based |
+| Predictability | Exact duration | Variable (depends on physics) |
+| Feel | Mechanical, controlled | Natural, organic |
+| Easing | Full control via Easing | Determined by damping/stiffness/mass |
+| Best for | UI transitions, fades, color changes | Button presses, drag snap-back, interactions |
+| Overshoot | Never overshoots | Can bounce naturally |
+| Config | `duration`, `easing` | `damping`, `stiffness`, `mass` or `duration`, `dampingRatio` |
 
 ---
 
-## 🎨 Common Patterns
+## Common Patterns
 
 ### Fade In/Out
 
-```javascript
-const opacity = useSharedValue(0);
-
+```typescript
 // Fade in
 opacity.value = withTiming(1, { duration: 300 });
 
@@ -394,62 +290,52 @@ opacity.value = withTiming(1, { duration: 300 });
 opacity.value = withTiming(0, { duration: 300 });
 ```
 
-### Scale Animation
+### Button Press Effect
 
-```javascript
+```typescript
 const scale = useSharedValue(1);
 
-// Pop-in with spring
-scale.value = withSpring(1, { stiffness: 150 });
+const handlePressIn = () => {
+  scale.value = withTiming(0.9, { duration: 100 });
+};
 
-// Smooth scale transition
-scale.value = withTiming(0.8, { duration: 400 });
+const handlePressOut = () => {
+  scale.value = withSpring(1);
+};
 ```
 
 ### Slide Animation
 
-```javascript
-const translateX = useSharedValue(0);
-
-// Slide with timing
+```typescript
+// Timing slide
 translateX.value = withTiming(100, {
   duration: 500,
   easing: Easing.inOut(Easing.cubic),
 });
 
-// Slide with spring
+// Spring slide
 translateX.value = withSpring(100);
 ```
 
 ---
 
-## ⚠️ Best Practices
+## Duration Guidelines
 
-1. **Choose timing for UI:** `withTiming` for fade, scale transitions
-2. **Choose spring for interaction:** `withSpring` for button presses, draggable objects
-3. **Adjust duration for context:** Shorter (200-300ms) for small elements, longer for modal transitions
-4. **Test easing visually:** Use playgrounds, don't rely on numbers alone
-5. **Avoid too much damping:** Can make animations feel laggy
-
----
-
-## 🔗 Cross-References
-
-- **Modifiers:** See [05-animations-modifiers.md](./05-animations-modifiers.md) for `withSequence`, `withRepeat`, `withDecay`
-- **useAnimatedStyle:** See [03-core-animated-style.md](./03-core-animated-style.md) to apply animations to styles
-- **Gestures:** See [07-gestures-events.md](./07-gestures-events.md) for gesture-driven animations
-- **Best Practices:** See [09-best-practices.md](./09-best-practices.md) for performance optimization
+| Context | Recommended Duration |
+|---|---|
+| Small elements, quick feedback | 150-250ms |
+| Normal UI transitions | 250-400ms |
+| Modal opens, page transitions | 400-600ms |
+| Complex multi-step animations | 600ms+ |
 
 ---
 
-## 📚 Official Documentation
+## Cross-References
 
-- **withTiming API:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withTiming/
-- **withSpring API:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withSpring/
-- **Easing Module:** https://docs.swmansion.com/react-native-reanimated/docs/animations/easing/
-- **Customizing Animations:** https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/customizing-animation/
+- **Modifiers (sequence, repeat, decay):** [05-animations-modifiers.md](05-animations-modifiers.md)
+- **useAnimatedStyle:** [03-core-animated-style.md](03-core-animated-style.md)
+- **Gestures:** [07-gestures-events.md](07-gestures-events.md)
+- **Layout animations:** [08-layout-animations.md](08-layout-animations.md)
 
 ---
-
-**Last Updated:** December 2024  
-**Verified For:** Reanimated 4.2.1
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/animations/withTiming/ | https://docs.swmansion.com/react-native-reanimated/docs/animations/withSpring/ | https://docs.swmansion.com/react-native-reanimated/docs/core/cancelAnimation/

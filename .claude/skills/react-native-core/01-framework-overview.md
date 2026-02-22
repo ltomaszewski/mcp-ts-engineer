@@ -1,441 +1,303 @@
-# React Native 0.83 - Framework Overview & Architecture
+# React Native 0.81.5 -- Framework Overview & Architecture
 
-**Core Concepts, Mental Model, and Platform Support**
-
----
-
-## 🎯 What is React Native?
-
-React Native is a framework for building iOS and Android apps using JavaScript and React. Unlike React for web, it compiles to native code and runs directly on mobile devices.
-
-**Key Principle**: "Learn once, write anywhere" — Use JavaScript skills to build true native applications.
-
-### Benefits
-- **Single codebase** for iOS and Android (with platform-specific customization)
-- **Native performance** — Direct access to platform APIs
-- **Hot reload** — See changes instantly during development
-- **JavaScript ecosystem** — Use npm packages and familiar tools
-- **Large community** — Mature framework with extensive libraries
+Core concepts, New Architecture (Fabric, TurboModules, JSI), Hermes engine, and development model.
 
 ---
 
-## 🏗️ Architecture Overview
+## What Is React Native
 
-### The Three Layers
+React Native is a framework for building native iOS and Android apps using React and JavaScript/TypeScript. Components render to real native views, not web views.
 
-```
-┌─────────────────────────────────────┐
-│    JavaScript Code (Your App)       │  <- React components, business logic
-├─────────────────────────────────────┤
-│  JavaScript Engine (Hermes/V8)      │  <- Parses and executes JS
-├─────────────────────────────────────┤
-│  React Native Bridge                │  <- Message passing between JS & Native
-├─────────────────────────────────────┤
-│    iOS (Swift/Objective-C)          │  <- Platform-specific implementation
-│    Android (Java/Kotlin)            │
-└─────────────────────────────────────┘
-```
+**Key principle:** "Learn once, write anywhere" -- use React skills to build true native applications that share most code across platforms.
 
-### Development Loop
+### Core Benefits
 
-1. **Write JavaScript/TypeScript** in your favorite editor
-2. **Metro Bundler** compiles code into device-readable format
-3. **JavaScript Engine** (Hermes or V8) executes your code
-4. **React Native Bridge** communicates between JS and native layers
-5. **Native modules** handle platform-specific operations
-6. **Device** renders the UI with native components
+| Benefit | Detail |
+|---------|--------|
+| Shared codebase | 85-95% code sharing between iOS and Android |
+| Native performance | Components compile to native platform views |
+| Fast refresh | See code changes instantly during development |
+| JS ecosystem | Full access to npm packages |
+| Large community | Mature framework backed by Meta |
 
 ---
 
-## 📋 Prerequisites
+## Architecture: New Architecture (Default)
 
-### System Requirements
+React Native 0.81.5 runs the New Architecture by default. The legacy architecture was frozen in RN 0.80 and fully removed as an option in RN 0.82.
 
-**Minimum:**
-- Node.js 20.19.4 or higher
-- npm 10+
+### The Four Pillars
 
-**macOS (iOS/Android):**
-- macOS 12+
-- Xcode 14+ (for iOS)
-- Android Studio 4.2+ (for Android)
-- Watchman (optional, recommended)
-
-**Windows (Android only):**
-- Windows 10+
-- Android Studio 4.2+
-- OpenJDK 17
-
-**Linux (Android only):**
-- Ubuntu 18.04+
-- Android Studio 4.2+
-- Node.js 20+
-
-### Development Environment
-
-Install prerequisites for your platform:
-
-**macOS:**
-```bash
-brew install node watchman
-brew install --cask zulu@17  # JDK 17
+```
+┌─────────────────────────────────────────────┐
+│   Your App (TypeScript/JSX)                 │
+├─────────────────────────────────────────────┤
+│   React (Reconciler)                        │
+├──────────────┬──────────────────────────────┤
+│  Fabric      │  TurboModules               │
+│  (Renderer)  │  (Native Modules)           │
+├──────────────┴──────────────────────────────┤
+│   JSI (JavaScript Interface)                │
+├─────────────────────────────────────────────┤
+│   Hermes Engine (JS Runtime)                │
+├─────────────────────────────────────────────┤
+│   Native Platform (iOS / Android)           │
+└─────────────────────────────────────────────┘
 ```
 
-**Windows:**
-```powershell
-choco install -y nodejs-lts microsoft-openjdk17
-```
+### JSI (JavaScript Interface)
 
-**Linux (Ubuntu/Debian):**
-```bash
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs watchman openjdk-17-jdk-headless
-```
+JSI replaces the old asynchronous bridge with direct, synchronous C++ bindings between JavaScript and native code. Benefits:
+- No JSON serialization overhead
+- Synchronous calls when needed
+- Direct memory sharing between JS and native
+- Host objects exposed to JavaScript
 
-See **[02-quickstart-setup.md](02-quickstart-setup.md)** for complete platform setup.
+### Fabric (New Renderer)
+
+Fabric is the new rendering system that replaces the legacy renderer:
+- Supports React concurrent features (Suspense, transitions)
+- Synchronous layout operations (no bridge latency)
+- Multi-priority rendering with interruption support
+- Immutable shadow tree for thread-safe UI updates
+- Works with Yoga layout engine for Flexbox calculations
+
+### TurboModules
+
+TurboModules replace legacy Native Modules:
+- Lazy loading -- modules loaded on first use, not at startup
+- Type-safe -- Codegen generates native interfaces from TypeScript specs
+- Synchronous calls -- via JSI, no async bridge serialization
+- C++ support -- cross-platform modules without platform-specific code
+
+### Codegen
+
+The React Native Codegen tool generates type-safe native code from your TypeScript/Flow specifications:
+- Generates C++ interfaces for TurboModules
+- Generates Fabric component view descriptors
+- Runs automatically during build (Android Gradle / iOS CocoaPods)
+- Ensures JS spec and native implementation stay in sync
 
 ---
 
-## 🎨 Core Concepts
+## Hermes Engine (Default)
 
-### 1. Components are Functions
+Hermes is Meta's JavaScript engine optimized for React Native. It is the default engine in RN 0.81.5.
 
-React Native uses functional components with hooks (same as React web):
+| Metric | Without Hermes | With Hermes | Improvement |
+|--------|---------------|-------------|-------------|
+| APK size | ~5 MB JS engine | ~2.5 MB | ~50% smaller |
+| Startup (TTI) | ~1000 ms | ~600 ms | ~40% faster |
+| Memory usage | ~100 MB | ~70 MB | ~30% less |
+
+Key features:
+- Ahead-of-time bytecode compilation (faster startup)
+- Optimized garbage collector
+- No JIT compilation (smaller binary, predictable performance)
+- ES2020+ support
+- Built-in Hermes debugger support
+
+Verify Hermes is active:
 
 ```typescript
-import { View, Text } from 'react-native';
-
-const MyComponent = ({ name }: { name: string }) => (
-  <View>
-    <Text>{name}</Text>
-  </View>
-);
+const isHermes = (): boolean => !!global.HermesInternal;
+console.log('Using Hermes:', isHermes());
 ```
 
-### 2. Components Render to Native Views
+**Note:** In RN 0.81, the built-in JavaScriptCore has been removed. Apps requiring JSC must use the community package `@react-native-community/javascriptcore`.
 
-Unlike web where components render to HTML:
+---
 
-```
-<View>        →  Android: android.widget.FrameLayout
-               →  iOS: UIView
+## Metro Bundler
 
-<Text>        →  Android: android.widget.TextView
-               →  iOS: UILabel
+Metro is the JavaScript bundler for React Native:
+- Watches files and hot-reloads changes
+- Transforms TypeScript/JSX to platform-ready bundles
+- Supports tree shaking and minification for production
+- Handles asset resolution (images, fonts)
 
-<ScrollView>  →  Android: android.widget.ScrollView
-               →  iOS: UIScrollView
-```
+### Metro Dev Server Keys
 
-### 3. Styling with StyleSheet
+| Key | Action |
+|-----|--------|
+| `r` | Reload app |
+| `d` | Open DevTools |
+| `j` | Open debugger |
+| `i` | Run on iOS |
+| `a` | Run on Android |
 
-No CSS in React Native. Use `StyleSheet.create()` with JS objects:
+---
+
+## Components Map to Native Views
+
+React Native components render to actual platform views:
+
+| React Native | iOS | Android |
+|-------------|-----|---------|
+| `<View>` | `UIView` | `android.view.ViewGroup` |
+| `<Text>` | `UILabel` / `UITextView` | `android.widget.TextView` |
+| `<Image>` | `UIImageView` | `android.widget.ImageView` |
+| `<ScrollView>` | `UIScrollView` | `android.widget.ScrollView` |
+| `<TextInput>` | `UITextField` | `android.widget.EditText` |
+
+---
+
+## Layout with Flexbox
+
+React Native uses Yoga (C++ Flexbox implementation) for layout. Key differences from CSS Flexbox:
+- `flexDirection` defaults to `column` (not `row`)
+- `alignContent` defaults to `flex-start` (not `stretch`)
+- `flexShrink` defaults to `0` (not `1`)
+- Dimensions are unitless (density-independent pixels)
+- `gap` property is supported
 
 ```typescript
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    flexDirection: 'column',
     justifyContent: 'center',
-  },
-});
-```
-
-**Advantages:**
-- Type-safe (TypeScript support)
-- Performance optimized (styles compiled once)
-- Platform-specific styles (if needed)
-
-### 4. Layout with Flexbox
-
-React Native uses Flexbox for layout (similar to CSS):
-
-```typescript
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,                  // Take full available space
-    flexDirection: 'column',  // Stack items vertically
-    justifyContent: 'center', // Center vertically
-    alignItems: 'center',     // Center horizontally
+    alignItems: 'center',
+    gap: 16,
   },
   row: {
-    flexDirection: 'row',     // Stack items horizontally
-    gap: 8,                   // Spacing between items
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
-```
-
-### 5. Native Modules for Platform Features
-
-Access platform-specific APIs through native modules:
-
-```typescript
-import { Camera, Location, Vibration } from 'react-native';
-
-// Use native camera
-const photo = await Camera.getPhoto();
-
-// Use native location
-const pos = await Location.getCurrentPosition();
-
-// Vibrate device
-Vibration.vibrate(100);
 ```
 
 ---
 
-## 📱 Platform Differences
+## Platform-Specific Code
 
-### iOS vs Android
-
-| Feature | iOS | Android | Handling |
-|---------|-----|---------|----------|
-| Safe Area | Notch, Dynamic Island | System bars | `useSafeAreaInsets()` |
-| Back button | Gesture (swipe) | Hardware button | Navigate manually |
-| TextInput | Single line default | Multiline default | Use `multiline` prop |
-| Permissions | Request at runtime | Request at install | Use Permissions API |
-| Navigation | Standard stack | Back stack concept | Use same approach |
-
-### Platform-Specific Code
+### Runtime Detection
 
 ```typescript
 import { Platform } from 'react-native';
 
-// Conditional imports
-const MyComponent = Platform.select({
-  ios: () => require('./ios/MyComponent'),
-  android: () => require('./android/MyComponent'),
-})();
+// Check OS
+if (Platform.OS === 'ios') { /* iOS-specific */ }
 
-// Conditional styling
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Platform.select({
-      ios: '#ffffff',
-      android: '#f5f5f5',
-    }),
-  },
+// Select by platform
+const padding = Platform.select({
+  ios: 20,
+  android: 16,
+  default: 16,
 });
 
-// Conditional rendering
-<View>
-  {Platform.OS === 'ios' && <Text>iOS only content</Text>}
-  {Platform.OS === 'android' && <Text>Android only content</Text>}
-</View>
+// Check version
+if (Platform.OS === 'android' && Platform.Version >= 33) {
+  // Android 13+ specific
+}
+```
+
+### File-Based Platform Extensions
+
+React Native resolves platform-specific files automatically:
+
+```
+MyComponent.ios.tsx    -- loaded on iOS
+MyComponent.android.tsx -- loaded on Android
+MyComponent.tsx        -- fallback for both
+```
+
+Import without extension:
+
+```typescript
+import { MyComponent } from './MyComponent'; // auto-resolves per platform
 ```
 
 ---
 
-## 🔄 Development Workflow
+## TypeScript Setup
 
-### 1. Create Project
+RN 0.81.5 ships with TypeScript support by default. Key configuration:
 
-```bash
-npx @react-native-community/cli@latest init MyProject --version 0.83
-cd MyProject
-npm install
-```
-
-### 2. Start Metro Bundler
-
-```bash
-npm start
-```
-
-Metro is the development server that bundles your code for the device.
-
-### 3. Run on Device
-
-**Android:**
-```bash
-# In new terminal
-npm run android
-```
-
-**iOS (macOS only):**
-```bash
-npm run ios
-```
-
-### 4. Hot Reload
-
-While Metro is running, press:
-- `r` to reload
-- `a` to open Android app
-- `i` to open iOS app
-- `d` to open DevTools
-
----
-
-## 🔌 Metro Bundler
-
-Metro is the JavaScript bundler for React Native. It:
-- Watches file changes
-- Hot reloads code instantly
-- Transforms JSX and modern JavaScript
-- Optimizes for mobile performance
-
-### Configuration
-
-`metro.config.js` (created automatically):
-
-```javascript
-const config = {
-  project: {
-    ios: {},
-    android: {},
-  },
-  transformer: {
-    getTransformOptions: async () => ({
-      transform: {
-        experimentalImportSupport: false,
-        inlineRequires: false,
-      },
-    }),
-  },
-};
-
-module.exports = config;
-```
-
----
-
-## 📦 JavaScript Engine
-
-React Native 0.83 supports two JavaScript engines:
-
-### Hermes (Default)
-- **Size**: 50% smaller APK/IPA
-- **Startup**: 40% faster
-- **Memory**: Lower usage
-- **Best for**: Production apps
-
-**Enable Hermes:**
-```gradle
-// android/app/build.gradle
-project.ext.react = [
-    enableHermes: true,
-]
-```
-
-### V8
-- **V8 is Google's engine (used in Node.js)**
-- **Better debugging**: Chrome DevTools
-- **Standard**: Same as web
-
-See **[08-hermes-optimization.md](08-hermes-optimization.md)** for complete Hermes setup.
-
----
-
-## 🎯 Project Structure
-
-```
-MyProject/
-├── android/          # Android native code
-│   ├── app/
-│   ├── build.gradle
-│   └── gradle.properties
-│
-├── ios/              # iOS native code
-│   ├── MyProject/
-│   ├── Pods/
-│   └── Podfile
-│
-├── node_modules/     # Dependencies
-├── app.json         # App metadata
-├── App.tsx          # Root component
-├── index.js         # Entry point
-├── package.json
-├── tsconfig.json
-└── metro.config.js
-```
-
----
-
-## 🚀 TypeScript Setup
-
-React Native 0.83 includes TypeScript by default.
-
-### Key Files
-
-**tsconfig.json:**
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
-    "lib": ["ES2020"],
-    "jsx": "react",
+    "target": "esnext",
+    "module": "commonjs",
+    "lib": ["es2021"],
+    "jsx": "react-jsx",
     "strict": true,
-    "esModuleInterop": true,
+    "moduleResolution": "node",
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "resolveJsonModule": true
   }
 }
 ```
 
-### Using TypeScript
-
-1. Use `.tsx` extension for components
-2. Type your props:
+### Common Type Imports
 
 ```typescript
-interface Props {
-  name: string;
-  age?: number;
-}
-
-const MyComponent = ({ name, age }: Props) => {
-  // Implementation
-};
-```
-
-3. Import types when needed:
-
-```typescript
-import { StyleProp, ViewStyle } from 'react-native';
-
-interface Props {
-  style?: StyleProp<ViewStyle>;
-}
+import type {
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+  ImageStyle,
+  LayoutChangeEvent,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 ```
 
 ---
 
-## 📚 Learning Path
+## Project Structure (Bare RN CLI)
 
-### Phase 1: Foundation (4-6 hours)
-1. Read this module ✓
-2. Follow **[02-quickstart-setup.md](02-quickstart-setup.md)**
-3. Learn **[03-core-components.md](03-core-components.md)**
-4. Build simple UI with components
-
-### Phase 2: App Structure (3-4 hours)
-1. Study **[06-navigation.md](06-navigation.md)**
-2. Add **[05-data-persistence.md](05-data-persistence.md)**
-3. Learn **[07-best-practices.md](07-best-practices.md)**
-
-### Phase 3: Advanced (4-5 hours)
-1. Explore **[04-native-modules.md](04-native-modules.md)**
-2. Optimize with **[08-hermes-optimization.md](08-hermes-optimization.md)**
-3. Test with **[09-testing-devtools.md](09-testing-devtools.md)**
+```
+MyProject/
+├── android/           # Android native project (Gradle)
+├── ios/               # iOS native project (Xcode/CocoaPods)
+├── node_modules/
+├── app.json           # App metadata
+├── App.tsx            # Root component
+├── index.js           # Entry point (registers root component)
+├── metro.config.js    # Metro bundler config
+├── package.json
+├── tsconfig.json
+└── babel.config.js
+```
 
 ---
 
-## ✅ Core Checklist
+## System Requirements
 
-Before moving to **[02-quickstart-setup.md](02-quickstart-setup.md)**:
-
-- [ ] You understand components render to native views
-- [ ] You understand Flexbox layout system
-- [ ] You know the three-layer architecture (JS → Bridge → Native)
-- [ ] You're familiar with platform-specific code patterns
-- [ ] You have Node.js 20.19.4+ installed
+| Requirement | Minimum | Recommended |
+|-------------|---------|-------------|
+| Node.js | 20.19.4 | 24+ |
+| Xcode (iOS) | 16.1 | Latest |
+| Android Studio | Hedgehog+ | Latest |
+| JDK | 17 | 17 |
+| macOS (iOS dev) | 13+ | Latest |
+| Windows (Android) | 10+ | 11 |
 
 ---
 
-**Source**: https://reactnative.dev/docs/getting-started
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+## Development Workflow
+
+```bash
+# Create project
+npx @react-native-community/cli@latest init MyProject
+
+# Start Metro
+npm start
+
+# Run on platforms (new terminal)
+npm run android
+npm run ios
+
+# Build production
+cd android && ./gradlew assembleRelease
+cd ios && xcodebuild -workspace MyProject.xcworkspace -scheme MyProject -configuration Release
+```
+
+---
+
+**Version:** React Native 0.81.5 | React 19.1.0 | Hermes (default) | New Architecture (default)
+**Source:** https://reactnative.dev/docs/getting-started | https://reactnative.dev/architecture/landing-page

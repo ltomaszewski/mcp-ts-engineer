@@ -6,13 +6,13 @@ Battle-tested strategies for reducing cost, latency, and token usage in Claude A
 
 ## Cost Model
 
-### Claude 4.5 Series Pricing (per million tokens)
+### Claude 4.6 Series Pricing (per million tokens)
 
 | Model | Input | Output | Cache Write | Cache Read | Batch |
 |-------|-------|--------|-------------|------------|-------|
 | Haiku 4.5 | $1 | $5 | $1.25 | $0.10 | 50% off |
-| Sonnet 4.5 | $3 | $15 | $3.75 | $0.30 | 50% off |
-| Opus 4.5 | $5 | $25 | $6.25 | $0.50 | 50% off |
+| Sonnet 4.6 | $3 | $15 | $3.75 | $0.30 | 50% off |
+| Opus 4.6 | $5 | $25 | $6.25 | $0.50 | 50% off |
 
 **Key insight**: Cache reads are **10x cheaper** than base input. Prompt caching is the single highest-ROI optimization.
 
@@ -141,7 +141,7 @@ Savings: 87%
 
 ### Minimum Cacheable Size
 
-- **1,024 tokens** minimum for Claude 4.5 models
+- **1,024 tokens** minimum for Claude 4.6 models
 - Shorter prompts cannot be cached even with `cache_control`
 - For short prompts, combine multiple instructions to hit the threshold
 
@@ -403,3 +403,7 @@ for await (const msg of query({ prompt, options })) {
 - [ ] `permissionMode: "acceptEdits"` to reduce permission round-trips
 - [ ] Structured output for predictable response format
 - [ ] Batch processing instead of per-item agents
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

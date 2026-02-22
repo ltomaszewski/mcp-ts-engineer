@@ -1,297 +1,338 @@
-# FlashList - API Props Reference
+# FlashList v1.7.x - Complete Props Reference
 
-**Complete props documentation with typed parameters**
+**All props with TypeScript types, defaults, and usage notes.**
+
+**Source:** https://shopify.github.io/flash-list/docs/usage
+**Type source:** https://app.unpkg.com/@shopify/flash-list@1.7.6/files/src/FlashListProps.ts
 
 ---
 
-## Core Props (Required & Essential)
+## Core Props (Required / Essential)
 
 ### data
 
-**Description**: Array of items to be rendered in the list.
-
-```typescript
-interface Props<T> {
-  data: T[];
-}
-
-// Type-safe usage
-const data: Item[] = [
-  { id: '1', title: 'Item 1' },
-  { id: '2', title: 'Item 2' },
-];
-
-<FlashList<Item>
-  data={data}
-  renderItem={({ item }) => <Text>{item.title}</Text>}
-/>
-```
-
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `data` | `T[]` | ✅ Yes | — |
+| `data` | `ReadonlyArray<T> \| null \| undefined` | Yes | -- |
+
+Array of items to render. Supports `null`/`undefined` for loading states.
+
+```typescript
+const data: Item[] = [
+  { id: '1', title: 'First' },
+  { id: '2', title: 'Second' },
+];
+<FlashList<Item> data={data} renderItem={renderItem} estimatedItemSize={80} />
+```
 
 ---
 
 ### renderItem
 
-**Description**: Render function called for each item in the data array.
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `renderItem` | `(info: { item: T; index: number; target: string; extraData?: any }) => ReactElement` | Yes | -- |
+
+Render function for each item. The `target` parameter indicates rendering context:
+- `'Cell'` -- normal visible rendering
+- `'Measurement'` -- size calculation pass (not visible)
+- `'StickyHeader'` -- rendering as a sticky header
 
 ```typescript
-interface RenderItemProps<T> {
-  item: T;
-  index: number;
-  target?: 'Cell' | 'Measurement' | 'StickyHeader';
-  extraData?: any;
-}
-
-type RenderItem<T> = (props: RenderItemProps<T>) => React.ReactElement;
-
-// Usage
-const renderItem: RenderItem<Item> = ({ item, index, target }) => {
-  // target = 'Cell' for normal rendering
-  // target = 'Measurement' for size calculation (not visible)
-  // target = 'StickyHeader' when used as sticky header
-
+const renderItem = useCallback(({ item, index, target }: {
+  item: Item; index: number; target: string;
+}) => {
   if (target === 'Measurement') {
-    // Skip expensive operations during measurement
-    return <SimpleMeasurementPlaceholder />;
+    return <View style={{ height: 80 }} />; // Skip expensive ops
   }
-
   return (
     <View style={{ padding: 16 }}>
       <Text>{item.title}</Text>
-      <Text style={{ color: '#666' }}>#{index + 1}</Text>
     </View>
   );
-};
-
-<FlashList
-  data={data}
-  renderItem={renderItem}
-/>
+}, []);
 ```
-
-| Property | Type | Required | Default |
-|----------|------|----------|---------|
-| `renderItem` | `(props: RenderItemProps<T>) => ReactElement` | ✅ Yes | — |
 
 ---
 
 ### estimatedItemSize
 
-**Description**: Average height (vertical) or width (horizontal) of list items in pixels. Used for initial scroll position and layout estimation.
-
-```typescript
-// For vertical list (most common)
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}  // Average item height in pixels
-/>
-
-// For horizontal list
-<FlashList
-  horizontal={true}
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={120}  // Average item width in pixels
-/>
-```
-
-**Guidelines:**
-- Measure your typical item and set accordingly
-- 80% accuracy is good enough
-- Too large → wasted render buffer
-- Too small → potential blank cells
-- If items are variable height, use average
-
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `estimatedItemSize` | `number` | ⚠️ Recommended | — |
+| `estimatedItemSize` | `number` | Recommended | -- |
 
-**Common Values:**
-- Simple text item: `48-60`
+Average height (vertical) or width (horizontal) of items in pixels. FlashList uses this to calculate render buffer size and initial scroll positions.
+
+**Guidelines:**
+- Simple text row: `48-60`
 - Card with image: `120-150`
-- Complex components: `200-300`
+- Complex multi-line: `200-300`
+- 80% accuracy is sufficient
+- Too large: wasted render buffer
+- Too small: visible blank cells during fast scroll
+
+```typescript
+<FlashList data={data} renderItem={renderItem} estimatedItemSize={100} />
+```
 
 ---
 
-## Layout Configuration Props
+## Layout Props
 
 ### horizontal
 
-**Description**: Render items horizontally in a row instead of vertically.
-
-```typescript
-// Vertical (default)
-<FlashList
-  data={data}
-  horizontal={false}
-  renderItem={renderItem}
-  estimatedItemSize={100}  // Height
-/>
-
-// Horizontal
-<FlashList
-  data={data}
-  horizontal={true}
-  renderItem={renderItem}
-  estimatedItemSize={120}  // Width
-/>
-```
-
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `horizontal` | `boolean` | No | `false` |
+| `horizontal` | `boolean \| null \| undefined` | No | `false` |
+
+Render items in a horizontal row. When `true`, `estimatedItemSize` refers to item width.
 
 ---
 
 ### numColumns
 
-**Description**: Number of columns in grid layout. Only works with `horizontal={false}`.
-
-```typescript
-// Grid with 2 columns
-<FlashList
-  data={data}
-  numColumns={2}
-  renderItem={({ item }) => <GridCell item={item} />}
-  estimatedItemSize={100}
-/>
-
-// Grid with 3 columns
-<FlashList
-  data={data}
-  numColumns={3}
-  renderItem={({ item }) => <GridCell item={item} />}
-  estimatedItemSize={150}
-/>
-```
-
-**Requirements:**
-- Only works with `horizontal={false}`
-- Items must be same height (unless using `masonry`)
-- Use `overrideItemLayout` for variable column spans
-
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
 | `numColumns` | `number` | No | `1` |
 
----
-
-### masonry
-
-**Description**: Enable masonry layout for grid with variable item heights.
+Number of columns for grid layout. Only works with `horizontal={false}`. Items fill in zig-zag order (left-to-right, top-to-bottom).
 
 ```typescript
-import { FlashList } from '@shopify/flash-list';
-
-// Masonry grid (Pinterest-style)
-<FlashList
-  data={imageryData}
-  numColumns={2}
-  masonry={true}
-  optimizeItemArrangement={true}
-  renderItem={({ item }) => (
-    <Image
-      source={{ uri: item.url }}
-      style={{
-        height: item.height,  // Variable heights
-        width: '100%'
-      }}
-    />
-  )}
-  estimatedItemSize={200}
-/>
+<FlashList data={data} numColumns={2} renderItem={renderItem} estimatedItemSize={150} />
 ```
 
-**Features:**
-- Works with `numColumns > 1`
-- Balances column heights
-- Use `optimizeItemArrangement={true}` to reduce height differences
+---
+
+### inverted
 
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `masonry` | `boolean` | No | `false` |
+| `inverted` | `boolean \| null \| undefined` | No | `false` |
 
----
-
-## Performance & Optimization Props
-
-### getItemType
-
-**Description**: Function that returns a unique type identifier for each item. Improves recycling by maintaining separate pools for different item types.
+Reverses scroll direction using scale transforms. Used for chat-style lists where newest content appears at the bottom.
 
 ```typescript
-interface Item {
-  id: string;
-  type: 'header' | 'row' | 'footer';
-  title: string;
-}
-
-<FlashList
-  data={mixedItems}
-  renderItem={({ item }) => {
-    if (item.type === 'header') {
-      return <HeaderItem item={item} />;
-    }
-    return <RowItem item={item} />;
-  }}
-  estimatedItemSize={100}
-  getItemType={(item, index) => item.type}
-/>
-
-// Return value can be:
-// - string identifier ('header', 'row', etc.)
-// - number type code (0, 1, 2, etc.)
-// - undefined to use default type (0)
+<FlashList data={reversedMessages} inverted={true} renderItem={renderItem} estimatedItemSize={80} />
 ```
 
-**Benefits:**
-- Prevents header cells being recycled to row items
-- Maintains type-specific render pools
-- Significant performance improvement with multiple item types
-
-⚠️ **Note**: This method is called frequently - keep it fast!
-
-| Property | Type | Required | Default |
-|----------|------|----------|---------|
-| `getItemType` | `(item: T, index: number, extraData?: any) => string \| number \| undefined` | No | — |
-
 ---
+
+## Performance Props
 
 ### keyExtractor
 
-**Description**: Function to extract unique key for each item.
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `keyExtractor` | `(item: T, index: number) => string` | Recommended | `index.toString()` |
+
+Extracts a unique key for each item. Required for correct recycling behavior and layout animations. Never use array index as key for mutable data.
 
 ```typescript
-interface Item {
-  id: string;
-  name: string;
-}
-
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}
-  keyExtractor={(item, index) => item.id}
-/>
-
-// Default is to use index (not recommended)
-// Always provide a stable key!
+keyExtractor={(item) => item.id}
 ```
 
-**Why Keys Matter:**
-- Layout animations require unique identification
-- Recycling works better with stable keys
-- Prevents glitches when data reorders
+---
 
-⚠️ **Critical**: Never use array index as key unless data is immutable.
+### getItemType
 
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `keyExtractor` | `(item: T, index: number) => string` | ⚠️ Recommended | `index.toString()` |
+| `getItemType` | `(item: T, index: number, extraData?: any) => string \| number \| undefined` | No | -- |
+
+Returns a type identifier per item. FlashList maintains separate recycle pools for each type, preventing expensive re-layouts when a header cell is recycled as a row cell.
+
+**Performance note:** Called frequently during scroll -- keep logic fast.
+
+```typescript
+getItemType={(item) => item.type} // 'header' | 'row' | 'ad'
+```
+
+---
+
+### overrideItemLayout
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `overrideItemLayout` | `(layout: { span?: number; size?: number }, item: T, index: number, maxColumns: number, extraData?: any) => void` | No | -- |
+
+Override estimated size or column span for specific items. Useful for:
+- Grid items that span multiple columns
+- Known-size items (improves `scrollToIndex` precision)
+- Including separator size in estimates
+
+```typescript
+overrideItemLayout={(layout, item, index, maxColumns) => {
+  if (item.type === 'banner') {
+    layout.span = maxColumns; // Full-width banner across all columns
+    layout.size = 200;        // Known height
+  }
+}}
+```
+
+---
+
+### drawDistance
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `drawDistance` | `number` | No | platform default |
+
+Distance in dp/px beyond the visible area where items are pre-rendered. Higher values reduce blank areas during fast scrolling but increase memory usage.
+
+**Tip:** For chat apps with frequent top-insertions, use `500-1000`.
+
+```typescript
+<FlashList drawDistance={500} ... />
+```
+
+---
+
+### extraData
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `extraData` | `any` | No | -- |
+
+Marker property that triggers re-render of all items when changed. Use when renderItem depends on external state.
+
+```typescript
+<FlashList extraData={selectedId} ... />
+```
+
+---
+
+### estimatedFirstItemOffset
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `estimatedFirstItemOffset` | `number` | No | -- |
+
+Distance of the first item from the start of the list. Required for accurate `initialScrollIndex` behavior when using headers.
+
+---
+
+### estimatedListSize
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `estimatedListSize` | `{ height: number; width: number }` | No | -- |
+
+Pre-define the visible area dimensions. Avoids a layout measurement pass, improving first render time.
+
+---
+
+## Header / Footer / Empty / Separator
+
+| Property | Type | Default | Purpose |
+|----------|------|---------|---------|
+| `ListHeaderComponent` | `ComponentType \| ReactElement \| null` | -- | Rendered at the top of all items |
+| `ListHeaderComponentStyle` | `StyleProp<ViewStyle>` | -- | Style wrapper for header |
+| `ListFooterComponent` | `ComponentType \| ReactElement \| null` | -- | Rendered at the bottom of all items |
+| `ListFooterComponentStyle` | `StyleProp<ViewStyle>` | -- | Style wrapper for footer |
+| `ListEmptyComponent` | `ComponentType \| ReactElement \| null` | -- | Displayed when `data` is empty |
+| `ItemSeparatorComponent` | `ComponentType \| null` | -- | Rendered between items (not at edges) |
+
+```typescript
+<FlashList
+  data={data}
+  renderItem={renderItem}
+  estimatedItemSize={80}
+  ListHeaderComponent={<Header />}
+  ListFooterComponent={isLoading ? <Spinner /> : null}
+  ListEmptyComponent={<EmptyState />}
+  ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: '#eee' }} />}
+/>
+```
+
+---
+
+## Scroll & Interaction Props
+
+### initialScrollIndex
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `initialScrollIndex` | `number \| null \| undefined` | No | -- |
+
+Start rendering at this index instead of the top. Works best with `estimatedFirstItemOffset`.
+
+---
+
+### onEndReached / onEndReachedThreshold
+
+| Property | Type | Default |
+|----------|------|---------|
+| `onEndReached` | `() => void \| null` | -- |
+| `onEndReachedThreshold` | `number \| null` | `0.5` |
+
+`onEndReached` fires when scroll position is within `onEndReachedThreshold` visible lengths from the bottom. Use for infinite scroll / pagination.
+
+```typescript
+<FlashList
+  onEndReached={fetchMoreItems}
+  onEndReachedThreshold={0.3} // Trigger at 30% from bottom
+  ...
+/>
+```
+
+---
+
+### onBlankArea
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `onBlankArea` | `BlankAreaEventHandler` | No | -- |
+
+Reports visible blank space during scrolling. Essential for debugging performance issues.
+
+```typescript
+onBlankArea={({ blankArea }) => {
+  if (blankArea > 0) console.warn(`Blank: ${blankArea}px`);
+}}
+```
+
+---
+
+### stickyHeaderIndices
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `stickyHeaderIndices` | `number[]` | No | -- |
+
+Array of item indices that should stick to the top when scrolled past.
+
+```typescript
+stickyHeaderIndices={[0, 5, 12]} // Items at these indices stick
+```
+
+---
+
+## Refresh Props
+
+| Property | Type | Default |
+|----------|------|---------|
+| `refreshing` | `boolean \| null` | -- |
+| `onRefresh` | `() => void \| null` | -- |
+| `refreshControl` | `ReactElement` | -- |
+| `progressViewOffset` | `number` (Android only) | -- |
+
+```typescript
+<FlashList
+  refreshing={isRefreshing}
+  onRefresh={handleRefresh}
+  ...
+/>
+```
+
+---
+
+## Viewability Props
+
+| Property | Type | Default |
+|----------|------|---------|
+| `viewabilityConfig` | `ViewabilityConfig \| null` | -- |
+| `onViewableItemsChanged` | `(info: { viewableItems: ViewToken[]; changed: ViewToken[] }) => void` | -- |
+| `viewabilityConfigCallbackPairs` | `ViewabilityConfigCallbackPairs` | -- |
 
 ---
 
@@ -299,66 +340,56 @@ interface Item {
 
 ### onLoad
 
-**Description**: Called when list has finished rendering items for first time.
-
-```typescript
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}
-  onLoad={({ elapsedTimeInMs }) => {
-    console.log(`List loaded in ${elapsedTimeInMs}ms`);
-    // Good place for analytics
-    logPerformanceMetric('list_load_time', elapsedTimeInMs);
-  }}
-/>
-```
-
-**When Called:**
-- After initial render is painted
-- Not called if `ListEmptyComponent` renders
-- Reports actual elapsed time
-
 | Property | Type | Required | Default |
 |----------|------|----------|---------|
-| `onLoad` | `(info: { elapsedTimeInMs: number }) => void` | No | — |
+| `onLoad` | `(info: { elapsedTimeInMs: number }) => void` | No | -- |
+
+Fires after items are first rendered. Reports actual draw time -- useful for performance monitoring.
+
+```typescript
+onLoad={({ elapsedTimeInMs }) => {
+  analytics.track('list_render_time', { ms: elapsedTimeInMs });
+}}
+```
 
 ---
 
-### onEndReached
+## Styling Props
 
-**Description**: Called when scroll position reaches bottom of list.
+| Property | Type | Default | Purpose |
+|----------|------|---------|---------|
+| `contentContainerStyle` | `ContentStyle` | -- | Padding for entire scrollable content |
+| `CellRendererComponent` | `ComponentType<any>` | -- | Custom wrapper around each cell |
+| `renderScrollComponent` | `ComponentType<ScrollViewProps>` | -- | Custom ScrollView replacement |
 
-```typescript
-const [hasMore, setHasMore] = useState(true);
-const [isLoading, setIsLoading] = useState(false);
-
-const handleEndReached = async () => {
-  if (isLoading || !hasMore) return;
-
-  setIsLoading(true);
-  const newItems = await fetchMoreItems();
-  setData([...data, ...newItems]);
-  setIsLoading(false);
-};
-
-<FlashList
-  data={data}
-  renderItem={renderItem}
-  estimatedItemSize={100}
-  onEndReached={handleEndReached}
-  onEndReachedThreshold={0.5}  // Trigger 50% before bottom
-/>
-```
-
-| Property | Type | Required | Default |
-|----------|------|----------|---------|
-| `onEndReached` | `() => void` | No | — |
-| `onEndReachedThreshold` | `number` | No | `0.5` |
+`contentContainerStyle` supports: `backgroundColor`, `padding`, `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight`, `paddingHorizontal`, `paddingVertical`.
 
 ---
 
-## Next Steps
+## Advanced Props
 
-👉 Read **04-api-methods-hooks.md** for methods and custom hooks
-👉 Read **05-performance-guide.md** for optimization strategies
+| Property | Type | Default | Purpose |
+|----------|------|---------|---------|
+| `disableAutoLayout` | `boolean` | `false` | Disable automatic child layout fixes |
+| `disableHorizontalListHeightMeasurement` | `boolean` | `false` | Skip extra measurement for horizontal lists with deterministic height |
+| `overrideProps` | `object` | -- | Debug: override internal props |
+
+---
+
+## Unsupported FlatList Props
+
+These FlatList props are **not supported** in FlashList:
+
+| Prop | Reason |
+|------|--------|
+| `getItemLayout` | FlashList handles layout internally |
+| `windowSize` | Auto-calculated |
+| `maxToRenderPerBatch` | Auto-optimized |
+| `initialNumToRender` | Auto-calculated |
+| `updateCellsBatchingPeriod` | Auto-optimized |
+| `disableVirtualization` | Contradicts FlashList design |
+| `columnWrapperStyle` | Use `CellRendererComponent` instead |
+
+---
+
+**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/usage

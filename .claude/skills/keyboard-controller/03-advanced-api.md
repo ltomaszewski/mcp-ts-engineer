@@ -1,164 +1,270 @@
 # Keyboard Controller: Advanced API Reference
 
-**useKeyboardHandler, Reanimated integration, lifecycle events**
+**useKeyboardHandler, useFocusedInputHandler, lifecycle events, worklet integration**
 
 ---
 
 ## useKeyboardHandler
 
-Low-level access to keyboard lifecycle events. Requires **worklet directives**.
+Low-level access to keyboard lifecycle events. All callbacks run as Reanimated worklets on the UI thread.
 
-### Syntax
+### Signature
+
 ```typescript
 useKeyboardHandler(
-  {
-    onStart?: (e: KeyboardAnimationEventPayload) => void,
-    onMove?: (e: KeyboardAnimationEventPayload) => void,
-    onInteractive?: (e: KeyboardAnimationEventPayload) => void,
-    onEnd?: (e: KeyboardAnimationEventPayload) => void,
+  handlers: {
+    onStart?: (e: KeyboardHandlerEvent) => void;
+    onMove?: (e: KeyboardHandlerEvent) => void;
+    onInteractive?: (e: KeyboardHandlerEvent) => void;
+    onEnd?: (e: KeyboardHandlerEvent) => void;
   },
-  dependencies?: any[]
+  dependencies: any[]
 );
 ```
 
 ### Event Payload
+
 ```typescript
-interface KeyboardAnimationEventPayload {
+interface KeyboardHandlerEvent {
   height: number;      // Keyboard height in pixels
   progress: number;    // 0 (closed) to 1 (opened)
-  duration?: number;   // Animation duration (ms)
-  target?: number;     // Focused TextInput tag
+  duration: number;    // Animation duration in ms
+  target: number;      // Focused TextInput tag, or -1 if unavailable
 }
 ```
 
 ### Handler Callbacks
 
-| Callback | When | Values |
-|----------|------|--------|
-| `onStart` | Animation begins | Destination |
-| `onMove` | Every frame | Current |
-| `onInteractive` | User dragging | Current |
-| `onEnd` | Animation complete | Final |
+| Callback | When | Receives |
+|----------|------|----------|
+| `onStart` | Animation begins | Destination values (where keyboard is going) |
+| `onMove` | Every animation frame | Current intermediate values |
+| `onInteractive` | User dragging keyboard (swipe dismiss) | Current drag position |
+| `onEnd` | Animation completes | Final resting values |
 
-### Example
+### Critical Rule
+
+All handlers **must** include the `'worklet'` directive:
+
 ```typescript
-import { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
+import { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
-function KeyboardLifecycle() {
+function AnimatedKeyboard() {
   const height = useSharedValue(0);
+  const isOpening = useSharedValue(false);
 
   useKeyboardHandler(
     {
       onStart: (e) => {
         'worklet';
-        console.log('Animation starting');
+        // e contains destination values
+        isOpening.value = e.progress > 0;
       },
       onMove: (e) => {
         'worklet';
         height.value = e.height;
       },
+      onInteractive: (e) => {
+        'worklet';
+        // Fired during user swipe-to-dismiss
+        height.value = e.height;
+      },
       onEnd: (e) => {
         'worklet';
-        console.log('Animation complete');
+        height.value = e.height;
       },
     },
     []
   );
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const style = useAnimatedStyle(() => ({
     transform: [{ translateY: height.value * -1 }],
   }));
 
-  return <Animated.View style={animatedStyle} />;
+  return <Animated.View style={style}>{/* content */}</Animated.View>;
 }
 ```
 
----
-
-## useReanimatedKeyboardAnimation
-
-Keyboard values as Reanimated SharedValues. **Better performance**.
-
-### Return Type
-```typescript
-interface ReanimatedKeyboardAnimation {
-  height: SharedValue<number>;
-  progress: SharedValue<number>;
-}
-```
-
-### Example
-```typescript
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
-
-function ReanimatedView() {
-  const { height } = useReanimatedKeyboardAnimation();
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: height.value * -1 }],
-  }));
-
-  return <Animated.View style={animatedStyle} />;
-}
-```
-
----
-
-## Event Lifecycle Timing
+### Event Lifecycle
 
 ```
 Keyboard Appearance:
 [User taps TextInput]
-    │
-    ▼
-┌─────────────────────────────────────┐
-│ onStart (destination values known)  │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│ onMove (every frame)                │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│ onEnd (animation complete)          │
-└─────────────────────────────────────┘
+    |
+    v
+  onStart (destination values known)
+    |
+    v
+  onMove (called every frame during animation)
+    |
+    v
+  onEnd (animation complete, final values)
 
-Interactive Dismiss (iOS, Android 11+):
-[User swipes keyboard]
-    │
-    ▼
-┌─────────────────────────────────────┐
-│ onInteractive (user dragging)       │
-└─────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────┐
-│ onStart → onEnd (to rest position)  │
-└─────────────────────────────────────┘
+Interactive Dismiss (iOS / Android 11+):
+[User swipes keyboard down]
+    |
+    v
+  onInteractive (called each frame as user drags)
+    |
+    v
+  onStart -> onEnd (snaps to rest position)
 ```
+
+### Requirements
+
+- `react-native-reanimated` must be installed and babel plugin configured
+- `'worklet'` directive required in all callbacks
+- For 120 FPS on iOS ProMotion: add `CADisableMinimumFrameDurationOnPhone` to Info.plist
+- `onInteractive` requires Android 11+ or iOS ScrollView with `keyboardDismissMode="interactive"`
 
 ---
 
-## Performance Comparison
+## useFocusedInputHandler
+
+Intercept events from the currently focused TextInput without needing a direct reference to it. Runs as worklets on the UI thread.
+
+### Signature
 
 ```typescript
-// ❌ Less efficient: Animated.Value
-const { height } = useKeyboardAnimation();
-const animatedStyle = {
-  transform: [{ translateY: Animated.multiply(height, -1) }],
-};
+useFocusedInputHandler(
+  handlers: {
+    onChangeText?: (e: FocusedInputTextChangedEvent) => void;
+    onSelectionChange?: (e: FocusedInputSelectionChangedEvent) => void;
+  },
+  dependencies: any[]
+);
+```
 
-// ✅ More efficient: Reanimated SharedValue
-const { height } = useReanimatedKeyboardAnimation();
-const animatedStyle = useAnimatedStyle(() => ({
-  transform: [{ translateY: height.value * -1 }],
-}));
+### Event Types
+
+```typescript
+interface FocusedInputTextChangedEvent {
+  text: string;
+}
+
+interface FocusedInputSelectionChangedEvent {
+  target: number;
+  selection: {
+    start: { x: number; y: number; position: number };
+    end: { x: number; y: number; position: number };
+  };
+}
+```
+
+### Usage
+
+```typescript
+import { useFocusedInputHandler } from 'react-native-keyboard-controller';
+import { useSharedValue } from 'react-native-reanimated';
+
+function useGlobalInputTracker() {
+  const currentText = useSharedValue('');
+
+  useFocusedInputHandler(
+    {
+      onChangeText: ({ text }) => {
+        'worklet';
+        currentText.value = text;
+      },
+      onSelectionChange: ({ selection }) => {
+        'worklet';
+        // Track caret position globally
+        console.log('Caret at:', selection.start.position);
+      },
+    },
+    []
+  );
+
+  return currentText;
+}
+```
+
+### Use Cases
+
+| Use Case | Handler |
+|----------|---------|
+| Global text tracking without ref | `onChangeText` |
+| Inactivity detection / auto-logout timer | `onChangeText` |
+| Custom caret position UI | `onSelectionChange` |
+| Building custom avoidance components | `onChangeText` + `onSelectionChange` |
+
+---
+
+## Combining Hooks
+
+### Keyboard Height + Input Text Tracking
+
+```typescript
+import { useKeyboardHandler, useFocusedInputHandler } from 'react-native-keyboard-controller';
+import { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import { useState } from 'react';
+
+function useSmartKeyboard() {
+  const keyboardHeight = useSharedValue(0);
+  const [inputText, setInputText] = useState('');
+
+  useKeyboardHandler(
+    {
+      onMove: (e) => {
+        'worklet';
+        keyboardHeight.value = e.height;
+      },
+    },
+    []
+  );
+
+  useFocusedInputHandler(
+    {
+      onChangeText: ({ text }) => {
+        'worklet';
+        runOnJS(setInputText)(text);
+      },
+    },
+    []
+  );
+
+  return { keyboardHeight, inputText };
+}
 ```
 
 ---
 
-**See Also**: [Core API](02-core-api.md) | [Implementation Guides](06-implementation-guides.md)
+## Worklet Best Practices
+
+### Do
+
+```typescript
+// Lightweight operations only
+onMove: (e) => {
+  'worklet';
+  height.value = e.height;
+},
+```
+
+### Do Not
+
+```typescript
+// Heavy computation blocks the UI thread
+onMove: (e) => {
+  'worklet';
+  const result = expensiveCalculation(e.height); // Bad
+  height.value = result;
+},
+```
+
+### Calling JS from Worklets
+
+```typescript
+import { runOnJS } from 'react-native-reanimated';
+
+onEnd: (e) => {
+  'worklet';
+  runOnJS(handleKeyboardClosed)(e.height);
+},
+```
+
+---
+
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/hooks/

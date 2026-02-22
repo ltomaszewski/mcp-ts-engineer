@@ -1,7 +1,7 @@
 # Layout Utilities & Responsive Design - NativeWind v4
 
 **Source:** https://www.nativewind.dev/docs  
-**Last Verified:** October 14, 2025  
+**Last Verified:** February 2026  
 **Version:** NativeWind v4
 
 ---
@@ -474,10 +474,73 @@ export const ProductCard = () => {
 
 ---
 
+## Gap Utilities
+
+Gap controls spacing between flex/grid children without margins.
+
+### Gap Reference
+
+| Class | Property | Value |
+|-------|----------|-------|
+| `gap-0` | gap | 0 |
+| `gap-1` | gap | 4px (0.25rem) |
+| `gap-2` | gap | 8px (0.5rem) |
+| `gap-4` | gap | 16px (1rem) |
+| `gap-6` | gap | 24px (1.5rem) |
+| `gap-8` | gap | 32px (2rem) |
+| `gap-x-4` | columnGap | 16px |
+| `gap-y-4` | rowGap | 16px |
+| `gap-[13px]` | gap | 13px (arbitrary) |
+
+```typescript
+<View className="flex-row flex-wrap gap-4">
+  <View className="w-20 h-20 bg-blue-500 rounded" />
+  <View className="w-20 h-20 bg-blue-500 rounded" />
+  <View className="w-20 h-20 bg-blue-500 rounded" />
+</View>
+```
+
+**Note:** In NativeWind v4, `gap` compiles to native `columnGap` and `rowGap` styles. The previous `space-*` utilities were temporarily removed in v4 -- use `gap-*` instead.
+
+**Source:** https://www.nativewind.dev/docs/tailwind/flexbox/gap
+
+---
+
+## Aspect Ratio
+
+Control the aspect ratio of elements.
+
+### Aspect Ratio Classes
+
+| Class | Value |
+|-------|-------|
+| `aspect-auto` | auto |
+| `aspect-square` | 1 / 1 |
+| `aspect-video` | 16 / 9 |
+| `aspect-[3/2]` | 3 / 2 (arbitrary) |
+
+```typescript
+// Square image container
+<View className="w-full aspect-square bg-gray-300 rounded-lg overflow-hidden">
+  <Image source={{ uri: imageUrl }} className="w-full h-full" />
+</View>
+
+// Video player container
+<View className="w-full aspect-video bg-black rounded-lg" />
+
+// Custom ratio
+<View className="w-full aspect-[4/3] bg-gray-200 rounded-lg" />
+```
+
+**Source:** https://www.nativewind.dev/docs/tailwind/layout/aspect-ratio
+
+---
+
 ## Related Documentation
 
 - **Core Concepts:** `02-core-concepts.md` - Understand architecture
 - **Styling System:** `03-styling-system.md` - className usage
+- **Safe Area:** `10-advanced-features.md` - Safe area utilities
 - **Best Practices:** `11-best-practices.md` - Optimization patterns
 
 **Source:** https://www.nativewind.dev/docs

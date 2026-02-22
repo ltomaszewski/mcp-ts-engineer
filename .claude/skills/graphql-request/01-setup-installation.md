@@ -134,14 +134,14 @@ const result = await client.request(query)
 
 graphql-request officially supports Node.js **LTS versions** and two additional versions:
 
-### Supported Versions (as of Dec 2025)
+### Supported Versions (as of Feb 2026)
 
 | Node Version | Status | Example |
 |--------------|--------|---------|
-| 18.x | ✅ LTS | Supported |
-| 20.x | ✅ LTS (Latest Even) | Supported |
-| 21.x | ✅ Latest Odd | Supported (for now) |
-| 22.x | ✅ LTS (Future) | Will be supported |
+| 20.x | ✅ LTS | Supported |
+| 22.x | ✅ LTS | Supported |
+| 24.x | ✅ Current | Supported |
+| 18.x | ⚠️ Maintenance | End-of-life approaching |
 | 17.x | ❌ Unsupported | Not supported |
 | 19.x | ❌ Unsupported | Not supported |
 
@@ -625,4 +625,4 @@ Once setup is complete:
 
 **Source:** [github.com/jasonkuhrt/graphql-request](https://github.com/jasonkuhrt/graphql-request)
 **Package:** graphql-request 7.4.0
-**Last Updated:** December 2025
+**Last Updated:** February 2026

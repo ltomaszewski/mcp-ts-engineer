@@ -5,36 +5,34 @@ description: React Native Keyboard Controller - keyboard animations, KeyboardToo
 
 # Keyboard Controller
 
-> Universal keyboard handling for React Native with smooth animations and Reanimated support.
-
-**Package:** `react-native-keyboard-controller`
+Universal keyboard handling for React Native with smooth native animations and Reanimated integration.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
+LOAD THIS SKILL when user is:
 - Building forms that need keyboard-aware layouts
-- Implementing smooth keyboard animations
-- Adding keyboard toolbars with prev/next navigation
-- Creating interactive keyboard dismiss gestures
-- Replacing KeyboardAvoidingView with better solution
+- Implementing smooth keyboard show/hide animations
+- Adding keyboard toolbars with prev/next field navigation
+- Creating interactive keyboard dismiss gestures (iOS / Android 11+)
+- Replacing KeyboardAvoidingView with a more reliable solution
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Wrap app root with `KeyboardProvider` — required for all hooks and components to work
-2. Use `KeyboardAwareScrollView` instead of `KeyboardAvoidingView` — smoother animations, fewer bugs
-3. Add `'worklet'` directive in `useKeyboardHandler` callbacks — required for Reanimated worklets
-4. Configure Android `windowSoftInputMode` in AndroidManifest — affects keyboard behavior
+1. Wrap app root with `KeyboardProvider` -- required for all hooks and components to work
+2. Install `react-native-reanimated` as a peer dependency -- mandatory for the library
+3. Add `'worklet'` directive in `useKeyboardHandler` callbacks -- required for Reanimated worklets
+4. Use `KeyboardAwareScrollView` instead of `KeyboardAvoidingView` for scrollable forms -- smoother animations, fewer bugs
 
 **NEVER:**
-1. Mix `KeyboardAvoidingView` with `KeyboardAwareScrollView` — causes layout conflicts
-2. Forget KeyboardProvider at root — hooks will throw or return undefined
-3. Use `useKeyboardAnimation` in scroll containers — use `useReanimatedKeyboardAnimation` instead
-4. Skip platform testing — keyboard behavior differs between iOS and Android
+1. Mix `KeyboardAvoidingView` with `KeyboardAwareScrollView` -- causes layout conflicts
+2. Forget `KeyboardProvider` at root -- hooks will throw or return undefined
+3. Omit the `'worklet'` directive in `useKeyboardHandler` callbacks -- will crash at runtime
+4. Use `KeyboardGestureArea` on Android < 11 -- renders as empty fragment, no-op
 
 ---
 
@@ -43,7 +41,6 @@ description: React Native Keyboard Controller - keyboard animations, KeyboardToo
 ### App Setup with KeyboardProvider
 
 ```typescript
-// App.tsx or _layout.tsx
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export default function App() {
@@ -65,14 +62,10 @@ import { TextInput, View } from 'react-native';
 
 export function FormScreen() {
   return (
-    <KeyboardAwareScrollView
-      bottomOffset={20}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.container}>
+    <KeyboardAwareScrollView bottomOffset={20}>
+      <View style={{ padding: 16 }}>
         <TextInput placeholder="Email" />
         <TextInput placeholder="Password" secureTextEntry />
-        <Button title="Submit" onPress={handleSubmit} />
       </View>
     </KeyboardAwareScrollView>
   );
@@ -88,84 +81,76 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 export function AnimatedInput() {
   const { height, progress } = useReanimatedKeyboardAnimation();
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -height.value }],
-    opacity: 1 - progress.value * 0.5,
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: height.value * -1 }],
+    opacity: 1 - progress.value * 0.3,
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={style}>
       <TextInput placeholder="Type here..." />
     </Animated.View>
   );
 }
 ```
 
-### Keyboard Handler for Custom Logic
+### useKeyboardHandler for Custom Logic
 
 ```typescript
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import { useSharedValue } from 'react-native-reanimated';
 
-export function useCustomKeyboardHandler() {
-  const keyboardHeight = useSharedValue(0);
+export function useCustomKeyboard() {
+  const height = useSharedValue(0);
 
   useKeyboardHandler({
-    onStart: (e) => {
-      'worklet';
-      console.log('Keyboard starting:', e.height);
-    },
     onMove: (e) => {
       'worklet';
-      keyboardHeight.value = e.height;
+      height.value = e.height;
     },
     onEnd: (e) => {
       'worklet';
-      keyboardHeight.value = e.height;
+      height.value = e.height;
     },
-  });
+  }, []);
 
-  return keyboardHeight;
+  return height;
 }
 ```
 
 ### KeyboardToolbar with Navigation
 
 ```typescript
-import { KeyboardToolbar } from 'react-native-keyboard-controller';
+import { KeyboardToolbar, KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 export function FormWithToolbar() {
   return (
     <>
-      <KeyboardAwareScrollView>
+      <KeyboardAwareScrollView bottomOffset={62}>
         <TextInput placeholder="First Name" />
         <TextInput placeholder="Last Name" />
-        <TextInput placeholder="Email" keyboardType="email-address" />
+        <TextInput placeholder="Email" />
       </KeyboardAwareScrollView>
 
-      <KeyboardToolbar
-        content={<Text>Navigate between fields</Text>}
-        showArrows={true}
-        opacity="faded" // or "opaque"
-      />
+      <KeyboardToolbar>
+        <KeyboardToolbar.Prev />
+        <KeyboardToolbar.Next />
+        <KeyboardToolbar.Done text="Submit" />
+      </KeyboardToolbar>
     </>
   );
 }
 ```
 
-### Interactive Dismiss (iOS)
+### Interactive Dismiss (Android 11+)
 
 ```typescript
 import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 
 export function ChatScreen() {
   return (
-    <KeyboardGestureArea interpolator="ios">
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyboardDismissMode="interactive"
-      />
+    <KeyboardGestureArea interpolator="ios" style={{ flex: 1 }}>
+      <FlatList data={messages} renderItem={renderMessage} />
       <TextInput placeholder="Type a message..." />
     </KeyboardGestureArea>
   );
@@ -176,15 +161,14 @@ export function ChatScreen() {
 
 ## Anti-Patterns
 
-**BAD** — Missing KeyboardProvider:
+**BAD** -- Missing KeyboardProvider:
 ```typescript
-// App without KeyboardProvider - hooks won't work!
 export default function App() {
   return <YourApp />;
 }
 ```
 
-**GOOD** — KeyboardProvider at root:
+**GOOD** -- KeyboardProvider at root:
 ```typescript
 export default function App() {
   return (
@@ -195,40 +179,39 @@ export default function App() {
 }
 ```
 
-**BAD** — Mixing KeyboardAvoidingView with KeyboardAwareScrollView:
-```typescript
-<KeyboardAvoidingView>
-  <KeyboardAwareScrollView> {/* Conflict! */}
-    <TextInput />
-  </KeyboardAwareScrollView>
-</KeyboardAvoidingView>
-```
-
-**GOOD** — Use only KeyboardAwareScrollView:
-```typescript
-<KeyboardAwareScrollView>
-  <TextInput />
-</KeyboardAwareScrollView>
-```
-
-**BAD** — Missing worklet directive:
+**BAD** -- Missing worklet directive:
 ```typescript
 useKeyboardHandler({
   onMove: (e) => {
-    // Missing 'worklet' - will crash!
-    keyboardHeight.value = e.height;
+    keyboardHeight.value = e.height; // crashes
   },
-});
+}, []);
 ```
 
-**GOOD** — Include worklet directive:
+**GOOD** -- Include worklet directive:
 ```typescript
 useKeyboardHandler({
   onMove: (e) => {
     'worklet';
     keyboardHeight.value = e.height;
   },
-});
+}, []);
+```
+
+**BAD** -- Mixing avoiding views:
+```typescript
+<KeyboardAvoidingView>
+  <KeyboardAwareScrollView>
+    <TextInput />
+  </KeyboardAwareScrollView>
+</KeyboardAvoidingView>
+```
+
+**GOOD** -- Use only one:
+```typescript
+<KeyboardAwareScrollView bottomOffset={20}>
+  <TextInput />
+</KeyboardAwareScrollView>
 ```
 
 ---
@@ -239,30 +222,34 @@ useKeyboardHandler({
 |------|-----|---------|
 | Wrap app | `KeyboardProvider` | `<KeyboardProvider>...</KeyboardProvider>` |
 | Keyboard-aware scroll | `KeyboardAwareScrollView` | `<KeyboardAwareScrollView bottomOffset={20}>` |
-| Animate with keyboard | `useReanimatedKeyboardAnimation()` | `const { height } = useReanimatedKeyboardAnimation()` |
-| Custom keyboard logic | `useKeyboardHandler()` | `useKeyboardHandler({ onMove: (e) => {...} })` |
-| Field navigation toolbar | `KeyboardToolbar` | `<KeyboardToolbar showArrows />` |
-| Interactive dismiss | `KeyboardGestureArea` | `<KeyboardGestureArea interpolator="ios">` |
-| Dismiss keyboard | `KeyboardController.dismiss()` | `KeyboardController.dismiss()` |
-| Get keyboard state | `useKeyboardController()` | `const { enabled } = useKeyboardController()` |
+| Animate with keyboard (Reanimated) | `useReanimatedKeyboardAnimation()` | `const { height, progress } = useReanimatedKeyboardAnimation()` |
+| Animate with keyboard (Animated) | `useKeyboardAnimation()` | `const { height, progress } = useKeyboardAnimation()` |
+| Custom keyboard logic | `useKeyboardHandler()` | `useKeyboardHandler({ onMove: (e) => { 'worklet'; ... } }, [])` |
+| Focused input events | `useFocusedInputHandler()` | `useFocusedInputHandler({ onChangeText: (e) => { 'worklet'; ... } }, [])` |
+| Field navigation toolbar | `KeyboardToolbar` | `<KeyboardToolbar><KeyboardToolbar.Prev /><KeyboardToolbar.Next /><KeyboardToolbar.Done /></KeyboardToolbar>` |
+| Sticky view above keyboard | `KeyboardStickyView` | `<KeyboardStickyView offset={{ opened: 10 }}>` |
+| Interactive dismiss (Android) | `KeyboardGestureArea` | `<KeyboardGestureArea interpolator="ios">` |
+| Display over keyboard | `OverKeyboardView` | `<OverKeyboardView visible={true}>` |
+| Dismiss keyboard | `KeyboardController.dismiss()` | `await KeyboardController.dismiss()` |
+| Toggle module | `useKeyboardController()` | `const { enabled, setEnabled } = useKeyboardController()` |
+| Listen to events | `KeyboardEvents` | `KeyboardEvents.addListener('keyboardWillShow', cb)` |
+| Set Android input mode | `KeyboardController.setInputMode()` | `KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_RESIZE)` |
 
 ---
 
 ## Deep Dive References
 
-Load additional context when needed:
-
 | When you need | Load |
 |---------------|------|
 | Installation and KeyboardProvider setup | [01-setup.md](01-setup.md) |
-| useKeyboardAnimation, KeyboardController | [02-core-api.md](02-core-api.md) |
-| useKeyboardHandler, worklets | [03-advanced-api.md](03-advanced-api.md) |
-| KeyboardToolbar, KeyboardAwareScrollView | [04-ui-components.md](04-ui-components.md) |
-| KeyboardExtender, BackgroundView | [05-extensions.md](05-extensions.md) |
-| First animation, form patterns | [06-implementation-guides.md](06-implementation-guides.md) |
-| Android manifest configuration | [07-android-config.md](07-android-config.md) |
-| iOS ProMotion, safe area | [08-ios-config.md](08-ios-config.md) |
-| Migration from other libraries | [09-migration.md](09-migration.md) |
+| useKeyboardAnimation, KeyboardController module | [02-core-api.md](02-core-api.md) |
+| useKeyboardHandler, useFocusedInputHandler, worklets | [03-advanced-api.md](03-advanced-api.md) |
+| KeyboardToolbar, KeyboardAwareScrollView, KeyboardStickyView | [04-ui-components.md](04-ui-components.md) |
+| KeyboardExtender, OverKeyboardView, KeyboardGestureArea | [05-extensions.md](05-extensions.md) |
+| Form patterns, animation guides, chat UI | [06-implementation-guides.md](06-implementation-guides.md) |
+| Android manifest, soft input modes | [07-android-config.md](07-android-config.md) |
+| iOS ProMotion, safe area integration | [08-ios-config.md](08-ios-config.md) |
+| Migration from other keyboard libraries | [09-migration.md](09-migration.md) |
 | Debugging and troubleshooting | [10-troubleshooting.md](10-troubleshooting.md) |
 
 ---

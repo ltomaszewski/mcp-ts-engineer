@@ -1,25 +1,6 @@
-# Expo Notifications: Core API Methods
+# Core API Methods -- Expo Notifications SDK 54
 
-> Complete reference for fundamental Expo Notifications API methods including push token retrieval, permission management, badge control, and foreground notification handling.
-
-**Module Purpose**: Token retrieval, permissions, badges, and notification handlers — the essential APIs for any notification implementation.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
-
----
-
-## Overview
-
-The core API provides the foundational methods needed for:
-1. Getting push tokens (Expo or device-specific)
-2. Requesting and checking permissions
-3. Managing app icon badges
-4. Controlling foreground notification behavior
-
-**See also**:
-- Setup: [`02-quickstart-setup.md`](02-quickstart-setup.md)
-- Scheduling: [`04-api-scheduling.md`](04-api-scheduling.md)
-- Listeners: [`05-api-listeners.md`](05-api-listeners.md)
+Token retrieval, permissions, badges, notification handler, and presentation management.
 
 ---
 
@@ -27,103 +8,55 @@ The core API provides the foundational methods needed for:
 
 ### `getExpoPushTokenAsync(options?)`
 
-**Purpose**: Obtain an Expo push token that can be used with Expo Push Service to send notifications.
-
-**Parameters**:
+Get an Expo push token for use with Expo Push Service.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `options` | `ExpoPushTokenOptions` | No | Configuration object |
-| `options.projectId` | `string` | Yes* | Project ID from EAS |
+| `options.projectId` | `string` | Yes | EAS project ID |
+| `options.devicePushToken` | `DevicePushToken` | No | Use specific device token |
+| `options.development` | `boolean` | No | iOS: use sandbox APNs |
+| `options.applicationId` | `string` | No | Override application ID |
+| `options.baseUrl` | `string` | No | Custom Expo push service URL |
 
-**Return Type**: `Promise<ExpoPushToken>`
-
-**Code Example**:
+**Returns:** `Promise<ExpoPushToken>` -- `{ data: string, type: 'expo' }`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
-async function getExpoPushToken() {
-  try {
-    const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
-
-    if (!projectId) {
-      throw new Error('Project ID not configured');
-    }
-
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId,
-    });
-
-    console.log('Expo Push Token:', tokenData.data);
-    return tokenData.data;
-
-  } catch (error) {
-    console.error('Failed to get Expo push token:', error);
+async function getExpoPushToken(): Promise<string | undefined> {
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId) {
+    throw new Error('Project ID not configured');
   }
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+  return tokenData.data; // "ExponentPushToken[xxxxx]"
 }
-
-getExpoPushToken().then(token => {
-  // Send token to your backend
-  fetch('https://your-server.com/register-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ expoPushToken: token }),
-  });
-});
 ```
-
-**Best Practices**:
-- Cache the token locally after obtaining it
-- Only request new token on failure or when token expires
-- Send token to your backend for push notification targeting
-- Listen for token changes with `addPushTokenListener()` (see [`05-api-listeners.md`](05-api-listeners.md))
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
 
 ---
 
 ### `getDevicePushTokenAsync()`
 
-**Purpose**: Get the native device push token (FCM on Android, APNs on iOS). Used when not relying on Expo Push Service.
+Get the native device push token (FCM on Android, APNs on iOS).
 
-**Parameters**: None
+**Parameters:** None
 
-**Return Type**: `Promise<DevicePushToken>`
-
-**Code Example**:
+**Returns:** `Promise<DevicePushToken>` -- `{ data: string, type: 'ios' | 'android' }`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-async function getDeviceToken() {
-  try {
-    const token = await Notifications.getDevicePushTokenAsync();
-
-    console.log('Device Token:', token.data);
-    console.log('Platform:', token.type);  // 'ios' or 'android'
-
-    return token;
-
-  } catch (error) {
-    console.error('Failed to get device push token:', error);
-  }
+async function getDeviceToken(): Promise<DevicePushToken> {
+  const token = await Notifications.getDevicePushTokenAsync();
+  console.log('Platform:', token.type); // 'ios' or 'android'
+  console.log('Token:', token.data);
+  return token;
 }
 ```
 
-**Use Cases**:
-- Using custom push service (not Expo)
-- Using Firebase Cloud Messaging directly
-- Using Apple Push Notification service directly
-- Requirement for native token handling
-
-**Best Practices**:
-- Use `getExpoPushTokenAsync()` unless you have specific reason not to
-- Device tokens are platform-specific and can change
-- Always handle errors gracefully
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Use `getExpoPushTokenAsync()` unless you need direct FCM/APNs access.
 
 ---
 
@@ -131,130 +64,62 @@ async function getDeviceToken() {
 
 ### `getPermissionsAsync()`
 
-**Purpose**: Check the current notification permissions without prompting the user.
+Check current notification permissions without prompting the user.
 
-**Parameters**: None
+**Parameters:** None
 
-**Return Type**: `Promise<NotificationPermissionsStatus>`
-
-**Returns**:
-```typescript
-{
-  granted: boolean;           // Overall permission status
-  ios?: {                     // iOS-specific
-    status: 'granted' | 'denied' | 'undetermined';
-    allowsAlert: boolean;
-    allowsBadge: boolean;
-    allowsSound: boolean;
-    allowsDisplayInNotificationCenter: boolean;
-    allowsDisplayOnLockScreen: boolean;
-    allowsCriticalAlerts: boolean;
-  };
-  android?: {                 // Android-specific
-    isPermitted: boolean;
-  };
-}
-```
-
-**Code Example**:
+**Returns:** `Promise<NotificationPermissionsStatus>`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-async function checkPermissions() {
-  try {
-    const permissions = await Notifications.getPermissionsAsync();
+async function checkPermissions(): Promise<boolean> {
+  const { granted, ios, android } = await Notifications.getPermissionsAsync();
 
-    console.log('Overall granted:', permissions.granted);
-
-    if (permissions.ios) {
-      console.log('iOS Status:', permissions.ios.status);
-      console.log('Alert allowed:', permissions.ios.allowsAlert);
-      console.log('Badge allowed:', permissions.ios.allowsBadge);
-      console.log('Sound allowed:', permissions.ios.allowsSound);
-    }
-
-    if (permissions.android) {
-      console.log('Android permitted:', permissions.android.isPermitted);
-    }
-
-    return permissions;
-  } catch (error) {
-    console.error('Error checking permissions:', error);
+  if (ios) {
+    console.log('iOS status:', ios.status);
+    console.log('Alerts:', ios.allowsAlert);
+    console.log('Badges:', ios.allowsBadge);
+    console.log('Sounds:', ios.allowsSound);
   }
+
+  return granted;
 }
 ```
-
-**Best Practices**:
-- Check permissions before trying to get tokens
-- Don't assume permissions are granted
-- Use for conditional UI (show prompt if needed)
-- Check on app start and after permission changes
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
 
 ---
 
 ### `requestPermissionsAsync(permissions?)`
 
-**Purpose**: Request notification permissions from the user. Shows native permission dialog.
-
-**Parameters**:
+Request notification permissions. Shows native permission dialog.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `permissions` | `NotificationPermissionsRequest` | No | Configuration object for iOS |
+| `permissions.ios.allowAlert` | `boolean` | No | Allow alerts (default: true) |
+| `permissions.ios.allowBadge` | `boolean` | No | Allow badges (default: true) |
+| `permissions.ios.allowSound` | `boolean` | No | Allow sounds (default: true) |
+| `permissions.ios.allowCriticalAlerts` | `boolean` | No | Critical alerts (default: false) |
+| `permissions.ios.allowProvisional` | `boolean` | No | Provisional auth (default: false) |
 
-**Code Example**:
+**Returns:** `Promise<NotificationPermissionsStatus>`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-async function requestNotificationPermissions() {
-  try {
-    const result = await Notifications.requestPermissionsAsync({
-      ios: {
-        allowAlert: true,
-        allowBadge: true,
-        allowSound: true,
-      },
-    });
+async function requestPermissions(): Promise<boolean> {
+  const { status } = await Notifications.requestPermissionsAsync({
+    ios: {
+      allowAlert: true,
+      allowBadge: true,
+      allowSound: true,
+    },
+  });
 
-    if (result.granted) {
-      console.log('Permissions granted!');
-      return true;
-    } else {
-      console.log('Permissions denied');
-      return false;
-    }
-
-  } catch (error) {
-    console.error('Error requesting permissions:', error);
-    return false;
-  }
+  return status === 'granted';
 }
 ```
 
-**iOS Permission Options**:
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `allowAlert` | boolean | true | Allow notification alerts |
-| `allowBadge` | boolean | true | Allow app icon badge |
-| `allowSound` | boolean | true | Allow notification sounds |
-| `allowDisplayInNotificationCenter` | boolean | true | Show in notification center |
-| `allowDisplayOnLockScreen` | boolean | true | Show on lock screen |
-| `allowCriticalAlerts` | boolean | false | Allow critical alerts (don't respect mute) |
-
-**Best Practices**:
-- Request permissions after user takes action (not on app start)
-- Check current status first with `getPermissionsAsync()`
-- Handle permission denial gracefully
-- Educate users on why permissions are needed
-- Only request permissions you actually use
-- On Android 13+, permission is requested automatically on first channel creation
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+On Android 13+, permission is requested automatically when first channel is created.
 
 ---
 
@@ -262,323 +127,204 @@ async function requestNotificationPermissions() {
 
 ### `getBadgeCountAsync()`
 
-**Purpose**: Get the current app icon badge count.
+Get current app icon badge count.
 
-**Parameters**: None
-
-**Return Type**: `Promise<number>`
-
-**Code Example**:
+**Returns:** `Promise<number>`
 
 ```typescript
-import * as Notifications from 'expo-notifications';
-
-async function getCurrentBadge() {
-  try {
-    const count = await Notifications.getBadgeCountAsync();
-    console.log('Current badge count:', count);
-    return count;
-  } catch (error) {
-    console.error('Error getting badge count:', error);
-  }
-}
+const count = await Notifications.getBadgeCountAsync();
 ```
 
-**Platform Notes**:
-- iOS: Returns accurate badge count
-- Android: Always returns 0 (badges not supported natively, must manually manage)
-
-**Best Practices**:
-- Cache badge count locally
-- Update badge on notification arrival
-- Clear badge when user views notifications
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+iOS returns accurate badge count. Android always returns 0 (badges not natively supported).
 
 ---
 
 ### `setBadgeCountAsync(badgeCount, options?)`
 
-**Purpose**: Set the app icon badge count. Pass 0 to clear the badge.
-
-**Parameters**:
+Set app icon badge count. Pass 0 to clear.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `badgeCount` | `number` | Yes | Badge count (0 = clear) |
 | `options` | `SetBadgeCountOptions` | No | Platform options |
 
-**Return Type**: `Promise<boolean>` — true if successful, false if not supported
-
-**Code Example**:
+**Returns:** `Promise<boolean>` -- true if successful
 
 ```typescript
-import * as Notifications from 'expo-notifications';
-
-async function updateBadge(count: number) {
-  try {
-    const success = await Notifications.setBadgeCountAsync(count);
-
-    if (success) {
-      console.log(`Badge set to ${count}`);
-    } else {
-      console.log('Badge setting not supported on this device');
-    }
-
-  } catch (error) {
-    console.error('Error setting badge:', error);
-  }
-}
-
-// Usage examples
-await updateBadge(5);   // Set to 5
-await updateBadge(0);   // Clear badge
+await Notifications.setBadgeCountAsync(5);  // Set to 5
+await Notifications.setBadgeCountAsync(0);  // Clear badge
 ```
-
-**Common Pattern - Increment on Notification**:
-
-```typescript
-Notifications.addNotificationReceivedListener(async (notification) => {
-  const current = await Notifications.getBadgeCountAsync();
-  const newCount = (current || 0) + 1;
-  await Notifications.setBadgeCountAsync(newCount);
-});
-```
-
-**Best Practices**:
-- Update badge on new notifications
-- Clear badge when user opens app
-- Don't set excessive numbers (reduces performance)
-- Test on both iOS and Android
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
 
 ---
 
-## Notification Handler Setup
+## Notification Handler
 
 ### `setNotificationHandler(handler)`
 
-**Purpose**: Define how the app handles incoming notifications when in the foreground. Controls whether alerts, sounds, and badges show.
-
-**Parameters**:
+Define how the app handles incoming notifications when in the foreground.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `handler` | `NotificationHandler \| null` | Handler object with three callbacks |
+| `handler` | `NotificationHandler \| null` | Handler object |
+| `handler.handleNotification` | `(notification) => Promise<NotificationBehavior>` | Return display behavior |
+| `handler.handleSuccess` | `(notificationId: string) => void` | Called after successful display |
+| `handler.handleError` | `(notificationId: string, error: Error) => void` | Called on display failure |
 
-**Handler Methods**:
+### NotificationBehavior
 
-```typescript
-{
-  handleNotification: async (notification) => {
-    // Called when notification arrives
-    // Return an object controlling display
-    return {
-      shouldShowAlert: true;
-      shouldPlaySound: true;
-      shouldSetBadge: false;
-    };
-  };
-
-  handleSuccess: (notificationId) => {
-    // Called after notification displayed successfully
-  };
-
-  handleError: (notificationId, error) => {
-    // Called if notification display fails
-  };
-}
-```
-
-**Code Example**:
+| Property | Type | Description |
+|----------|------|-------------|
+| `shouldShowBanner` | `boolean` | Show as banner notification |
+| `shouldShowList` | `boolean` | Show in notification list/center |
+| `shouldPlaySound` | `boolean` | Play notification sound |
+| `shouldSetBadge` | `boolean` | Update badge count (iOS) |
+| `priority` | `AndroidNotificationPriority` | Android priority override |
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
 Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    console.log('Notification received:', notification);
-
-    return {
-      shouldShowAlert: true,      // Show system alert
-      shouldPlaySound: true,      // Play sound
-      shouldSetBadge: false,      // Don't change badge
-      shouldShowBanner: true,     // Show as banner (iOS 14+)
-      shouldShowList: true,       // Show in notification list
-    };
-  },
-
+  handleNotification: async (notification) => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
   handleSuccess: (notificationId) => {
-    console.log('✅ Notification displayed:', notificationId);
+    console.log('Notification displayed:', notificationId);
   },
-
   handleError: (notificationId, error) => {
-    console.error('❌ Notification failed:', notificationId, error);
+    console.error('Notification failed:', notificationId, error);
   },
 });
 ```
 
-**Platform-Specific Behavior**:
+**Important:** `shouldShowAlert` is deprecated in SDK 54. Use `shouldShowBanner` and `shouldShowList` instead.
 
-**iOS**:
-- Foreground notifications don't show by default
-- Must set `shouldShowAlert: true` in handler
-- Returns object controls banner and alert display
-- Sound plays only if `shouldPlaySound: true`
+---
 
-**Android**:
-- High-priority notifications show as heads-up
-- Low-priority notifications appear silently
-- Behavior depends on channel importance
-- `shouldPlaySound` ignored (use channel settings instead)
+## Notification Presentation
 
-**Platform-Specific Example**:
+### `getPresentedNotificationsAsync()`
+
+Get all currently displayed notifications in the notification center.
+
+**Returns:** `Promise<Notification[]>`
 
 ```typescript
-import { Platform } from 'react-native';
-
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const { title, body } = notification.request.content;
-
-    if (Platform.OS === 'ios') {
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-      };
-    } else {
-      // Android - rely on channel importance
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: false,  // Sound from channel config
-        shouldSetBadge: false,
-        shouldShowList: true,
-      };
-    }
-  },
-});
+const presented = await Notifications.getPresentedNotificationsAsync();
+console.log('Currently displayed:', presented.length);
 ```
 
-**Best Practices**:
-- Set handler early (before getting tokens)
-- Always include error handling
-- Use platform-specific logic
-- Don't perform heavy operations in handler
-- Async operations should complete quickly
+---
 
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+### `dismissNotificationAsync(identifier)`
+
+Dismiss a specific notification from the notification center.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `identifier` | `string` | Notification identifier |
+
+**Returns:** `Promise<void>`
+
+```typescript
+await Notifications.dismissNotificationAsync(notificationId);
+```
+
+---
+
+### `dismissAllNotificationsAsync()`
+
+Dismiss all notifications from the notification center.
+
+**Returns:** `Promise<void>`
+
+```typescript
+await Notifications.dismissAllNotificationsAsync();
+```
+
+---
+
+## NotificationContentInput
+
+Properties for notification content when scheduling:
+
+| Property | Type | Platform | Description |
+|----------|------|----------|-------------|
+| `title` | `string` | Both | Notification title |
+| `subtitle` | `string` | iOS | Subtitle below title |
+| `body` | `string` | Both | Notification body text |
+| `data` | `Record<string, unknown>` | Both | Custom data payload |
+| `badge` | `number` | iOS | Badge count to set |
+| `sound` | `boolean \| string` | Both | Sound to play (`'default'`, filename, or boolean) |
+| `categoryIdentifier` | `string` | Both | Category for interactive actions |
+| `color` | `string` | Android | Notification accent color |
+| `priority` | `AndroidNotificationPriority` | Android | Priority level |
+| `vibrate` | `number[]` | Android | Vibration pattern |
+| `sticky` | `boolean` | Android | Cannot be swiped away |
+| `autoDismiss` | `boolean` | Android | Auto-dismiss on tap |
+| `interruptionLevel` | `string` | iOS | `'passive'`, `'active'`, `'timeSensitive'`, `'critical'` |
+| `attachments` | `NotificationContentAttachmentIos[]` | iOS | Media attachments |
+| `threadIdentifier` | `string` | iOS | Thread ID for grouping |
 
 ---
 
 ## Complete Initialization Example
 
-Complete working example showing all core APIs together:
-
 ```typescript
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import React from 'react';
+import { Platform } from 'react-native';
 
-// 1. Set notification handler early (before app startup)
+// 1. Set handler at module scope (before app renders)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-  handleSuccess: (id) => {
-    console.log('✅ Notification:', id);
-  },
-  handleError: (id, error) => {
-    console.error('❌ Error:', error);
-  },
 });
 
-// 2. Main initialization function
-export async function initializeNotifications() {
-  // Check if device supports notifications
+// 2. Initialization function
+export async function initializeNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
-    console.log('Notifications only work on physical devices');
+    console.log('Push notifications require physical device');
     return null;
   }
 
-  // Check existing permissions
-  const { status: currentStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = currentStatus;
-
-  // Request if not granted
-  if (currentStatus !== 'granted') {
-    const result = await Notifications.requestPermissionsAsync();
-    finalStatus = result.status;
+  // Android: create channel before requesting permissions
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
   }
 
-  // Exit if permission denied
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  let finalStatus = existing;
+
+  if (existing !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
   if (finalStatus !== 'granted') {
-    console.log('Failed to get push notification permission');
     return null;
   }
 
-  // Get project ID
-  const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
-  if (!projectId) {
-    throw new Error('Project ID not found in app configuration');
-  }
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId) throw new Error('Project ID not found');
 
-  // Get Expo push token
-  const expoPushToken = await Notifications.getExpoPushTokenAsync({
-    projectId,
-  });
-
-  // Get device token (optional)
-  const deviceToken = await Notifications.getDevicePushTokenAsync();
-
-  // Set badge count
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
   await Notifications.setBadgeCountAsync(0);
 
-  return {
-    expoPushToken: expoPushToken.data,
-    deviceToken: deviceToken.data,
-  };
-}
-
-// 3. Usage in App component
-export default function App() {
-  React.useEffect(() => {
-    initializeNotifications().then(tokens => {
-      if (tokens) {
-        console.log('Tokens registered:', tokens);
-
-        // Send to your backend
-        fetch('https://your-api.com/register-tokens', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(tokens),
-        });
-      }
-    });
-  }, []);
-
-  return (
-    // Your app content
-  );
+  return data;
 }
 ```
 
 ---
 
-## Next Steps
-
-- **Scheduling Notifications**: See [`04-api-scheduling.md`](04-api-scheduling.md)
-- **Event Listeners**: See [`05-api-listeners.md`](05-api-listeners.md)
-- **Android Channels**: See [`07-api-android-channels.md`](07-api-android-channels.md)
-- **Complete Setup**: See [`09-guide-patterns.md`](09-guide-patterns.md)
-- **Troubleshooting**: See [`10-troubleshooting.md`](10-troubleshooting.md)
-
----
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
-**Last Updated**: December 2025
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

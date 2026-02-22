@@ -1,38 +1,61 @@
 # Dependency Injection
 
-NestJS has a powerful dependency injection system that fosters loose coupling and testability.
+NestJS has a powerful DI system that fosters loose coupling and testability.
+
+## CRITICAL: Explicit @Inject Required
+
+Dev mode uses `tsx` (esbuild) which does **not** emit `emitDecoratorMetadata`. NestJS cannot resolve types implicitly. **Every constructor service parameter must have an explicit `@Inject()` decorator.**
+
+```typescript
+// CORRECT -- explicit @Inject on every service param
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(LoggerService) private readonly logger: LoggerService,
+  ) {}
+}
+
+// WRONG -- breaks with tsx/esbuild (no decorator metadata)
+@Injectable()
+export class UsersService {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
+  ) {}
+}
+```
+
+**Note:** `@InjectModel()`, `@InjectConnection()`, and other Mongoose-specific decorators are already explicit and work correctly.
 
 ## Injection Scopes
 
-Providers can have one of three scopes:
-
 ### 1. Singleton (DEFAULT)
 
-Single instance shared across the entire application. Most performant option.
+Single instance shared across the entire application. Most performant.
 
 ```typescript
-@Injectable()
-export class AppService {
-  // Singleton by default - one instance for entire app
-}
+@Injectable() // Singleton by default
+export class AppService {}
 ```
 
-**Best for:** Stateless services, configuration services, database connections
+**Best for:** Stateless services, configuration, database connections.
 
 ### 2. Request Scope
 
-New instance created for each incoming request. Garbage-collected after request completes.
+New instance per incoming request. Garbage-collected after request completes.
 
 ```typescript
+import { Injectable, Scope } from '@nestjs/common';
+
 @Injectable({ scope: Scope.REQUEST })
-export class RequestScopedService {
-  // New instance per request
-}
+export class RequestScopedService {}
 ```
 
-**Best for:** Per-request caching, request tracking, multi-tenancy, GraphQL applications
+**Important:** Any provider depending on a request-scoped provider automatically adopts request scope (scope bubbling).
 
-**Important:** Any provider relying on a request-scoped provider automatically adopts request scope.
+**Best for:** Per-request caching, request tracking, DataLoaders, multi-tenancy.
 
 ### 3. Transient Scope
 
@@ -40,72 +63,55 @@ New instance for each consumer that injects it.
 
 ```typescript
 @Injectable({ scope: Scope.TRANSIENT })
-export class TransientService {
-  // New instance for each consumer
-}
+export class TransientService {}
 ```
 
-**Best for:** Services that need different configuration per consumer
+**Best for:** Services needing different configuration per consumer.
 
-## Constructor-Based Injection
+### Scope Summary
 
-Favor constructor-based injection to enforce clear contracts.
-
-**CRITICAL:** Always use explicit `@Inject()` on every constructor service parameter. Dev mode uses `tsx` (esbuild) which does **not** support `emitDecoratorMetadata`, so NestJS cannot resolve types implicitly. This rule applies to ALL environments (dev, test, production) for consistency.
-
-```typescript
-// CORRECT — explicit @Inject() on every service param
-@Injectable()
-export class UsersService {
-  constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @Inject(ConfigService) private readonly configService: ConfigService,
-    @Inject(LoggerService) private readonly loggerService: LoggerService,
-  ) {}
-}
-
-// WRONG — breaks with tsx/esbuild (no decorator metadata)
-@Injectable()
-export class UsersService {
-  constructor(
-    private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService,
-    private readonly loggerService: LoggerService
-  ) {}
-}
-```
-
-**Note:** `@InjectModel()`, `@InjectConnection()`, and other Mongoose-specific decorators are already explicit and work correctly.
-```
+| Scope | Lifetime | Shared | Use Case |
+|-------|----------|--------|----------|
+| `DEFAULT` (Singleton) | Application | Yes | Stateless services, configs |
+| `REQUEST` | Per request | No | DataLoaders, request tracking |
+| `TRANSIENT` | Per consumer | No | Consumer-specific config |
 
 ## Exporting Services Between Modules
-
-The `exports` array defines which providers are available to other modules.
 
 ```typescript
 @Module({
   providers: [UsersService, InternalUserService],
-  exports: [UsersService] // Only UsersService is accessible externally
+  exports: [UsersService], // Only UsersService is accessible externally
 })
 export class UsersModule {}
 ```
 
 ## Handling Circular Dependencies
 
-Use `forwardRef` sparingly for circular dependencies.
+Use `forwardRef` sparingly:
 
 ```typescript
+// In module
 @Module({
   imports: [forwardRef(() => CatsModule)],
 })
-export class CommonModule {}
+export class DogsModule {}
+
+// In service
+@Injectable()
+export class DogsService {
+  constructor(
+    @Inject(forwardRef(() => CatsService))
+    private readonly catsService: CatsService,
+  ) {}
+}
 ```
 
 ## Optional Dependencies
 
-Mark dependencies as optional when they might not be available.
-
 ```typescript
+import { Injectable, Optional, Inject } from '@nestjs/common';
+
 @Injectable()
 export class HttpService {
   constructor(
@@ -116,10 +122,34 @@ export class HttpService {
 }
 ```
 
-## Scope Summary
+## Custom Injection Tokens
 
-| Scope | Lifetime | Shared | Use Case |
-|-------|----------|--------|----------|
-| `DEFAULT` (Singleton) | Application | Yes | Stateless services, configs, DB connections |
-| `REQUEST` | Per request | No | Request tracking, caching, multi-tenancy |
-| `TRANSIENT` | Per consumer | No | Consumer-specific configuration |
+```typescript
+// String tokens
+export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
+
+// Symbol tokens (preferred -- avoids collisions)
+export const DATABASE_CONNECTION = Symbol('DATABASE_CONNECTION');
+
+// Usage
+@Injectable()
+export class UsersRepository {
+  constructor(
+    @Inject(DATABASE_CONNECTION) private connection: Connection,
+  ) {}
+}
+```
+
+## Module Re-exporting
+
+```typescript
+@Module({
+  imports: [CommonModule],
+  exports: [CommonModule], // Re-export so importers get CommonModule providers
+})
+export class CoreModule {}
+```
+
+---
+
+**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/fundamentals/injection-scopes

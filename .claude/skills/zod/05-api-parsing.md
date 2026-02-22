@@ -6,32 +6,29 @@
 
 ## Parsing Methods
 
-**Source**: https://zod.dev/docs/api#parse
+**Source**: https://zod.dev/api#parse
 
 ### .parse() - Eager Parsing (Throws)
 
 ```typescript
+import { z } from "zod";
+
 const userSchema = z.object({
   id: z.number(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
 });
 
-// Success
+// Success - returns typed data
 const user = userSchema.parse({
   id: 1,
   name: "John",
   email: "john@example.com",
 });
-// user is fully typed as { id: number; name: string; email: string }
 
 // Failure - throws ZodError
 try {
-  userSchema.parse({
-    id: "not-a-number",
-    name: 123,
-    email: "invalid-email",
-  });
+  userSchema.parse({ id: "not-a-number", name: 123, email: "bad" });
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("Validation failed:", error.issues);
@@ -39,7 +36,7 @@ try {
 }
 ```
 
-### .safeParse() - Safe Parsing (No Throw)
+### .safeParse() - Safe Parsing (No Throw) -- PREFERRED
 
 ```typescript
 const result = userSchema.safeParse({
@@ -49,22 +46,19 @@ const result = userSchema.safeParse({
 });
 
 if (result.success) {
-  // result.data is available and typed
   console.log("Valid:", result.data.id);
 } else {
-  // result.error is available
   console.log("Errors:", result.error.issues);
-}
 
-// Alternative: if-else with falsy check
-if (!result.success) {
-  return { errors: result.error.flatten().fieldErrors };
+  // v4 error utilities
+  const tree = z.treeifyError(result.error);
+  const pretty = z.prettifyError(result.error);
 }
-
-const user = result.data; // Fully typed
 ```
 
 ### .parseAsync() - Async Eager Parsing
+
+Required when schema contains async refinements or transforms:
 
 ```typescript
 const usernameSchema = z.string()
@@ -74,12 +68,11 @@ const usernameSchema = z.string()
       const existing = await db.users.findOne({ username });
       return !existing;
     },
-    { message: "Username already taken" }
+    { error: "Username already taken" },
   );
 
 try {
   const validUsername = await usernameSchema.parseAsync("john_doe");
-  console.log("Valid:", validUsername);
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("Username error:", error.issues[0].message);
@@ -90,25 +83,12 @@ try {
 ### .safeParseAsync() - Async Safe Parsing
 
 ```typescript
-const userSchema = z.object({
-  username: z.string().min(3).refine(
-    async (username) => {
-      const existing = await db.users.findOne({ username });
-      return !existing;
-    },
-    { message: "Username already taken" }
-  ),
-  email: z.string().email(),
-});
-
 async function registerUser(data: unknown) {
   const result = await userSchema.safeParseAsync(data);
 
   if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten().fieldErrors,
-    };
+    const tree = z.treeifyError(result.error);
+    return { success: false, errors: tree };
   }
 
   const user = await db.users.create(result.data);
@@ -124,127 +104,112 @@ async function registerUser(data: unknown) {
 const schema = z.object({
   name: z.string(),
   age: z.number().positive(),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 const result = schema.safeParse({
-  name: 123,           // wrong type
-  age: -5,             // invalid value
-  email: "not-an-email", // invalid format
-  extra: "field",      // unexpected property
+  name: 123,
+  age: -5,
+  email: "not-an-email",
 });
 
 if (!result.success) {
-  // Access all issues
   console.log(result.error.issues);
-  // [
-  //   { code: 'invalid_type', expected: 'string', received: 'number', path: ['name'] },
-  //   { code: 'too_small', minimum: 0, type: 'number', path: ['age'] },
-  //   { code: 'invalid_string', validation: 'email', path: ['email'] },
-  //   { code: 'unrecognized_keys', keys: ['extra'] }
-  // ]
+  // Array of issue objects, each with:
+  // - code: string (issue type identifier)
+  // - message: string (human-readable)
+  // - path: (string | number)[] (field path)
+  // - plus type-specific fields
+}
+```
 
-  // Flatten for forms
-  const fieldErrors = result.error.flatten().fieldErrors;
+### v4 Issue Type Changes
+
+| v3 Type | v4 Type |
+|---------|---------|
+| `ZodInvalidTypeIssue` | `$ZodIssueInvalidType` |
+| `ZodTooSmallIssue` | `$ZodIssueTooSmall` |
+| `ZodTooBigIssue` | `$ZodIssueTooBig` |
+| `ZodInvalidStringIssue` | `$ZodIssueInvalidString` |
+
+---
+
+## v4 Error Utilities
+
+**`.format()` and `.flatten()` are REMOVED in v4.** Use these replacements:
+
+### z.treeifyError()
+
+Returns a structured tree matching your schema shape:
+
+```typescript
+const result = schema.safeParse(badData);
+if (!result.success) {
+  const tree = z.treeifyError(result.error);
   // {
-  //   name: ['Expected string, received number'],
-  //   age: ['Number must be greater than 0'],
-  //   email: ['Invalid email'],
+  //   _errors: [],
+  //   name: { _errors: ["Expected string, received number"] },
+  //   age: { _errors: ["Number must be greater than 0"] },
+  //   email: { _errors: ["Invalid email"] },
   // }
-}
-```
 
----
-
-## Error Handling in React
-
-```typescript
-import React, { useState } from "react";
-import { z } from "zod";
-
-const userSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(8, "At least 8 characters"),
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
+  // Access field errors
+  if (tree.name?._errors.length) {
+    console.log("Name errors:", tree.name._errors);
   }
-);
-
-type UserInput = z.infer<typeof userSchema>;
-
-export function RegistrationForm() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const result = userSchema.safeParse(formData);
-    if (!result.success) {
-      setErrors(result.error.flatten().fieldErrors);
-      return;
-    }
-
-    await api.register(result.data);
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-      />
-      {errors.email && <span className="error">{errors.email[0]}</span>}
-
-      <input
-        type="password"
-        name="password"
-        value={formData.password}
-        onChange={handleChange}
-      />
-      {errors.password && <span className="error">{errors.password[0]}</span>}
-
-      <input
-        type="password"
-        name="confirmPassword"
-        value={formData.confirmPassword}
-        onChange={handleChange}
-      />
-      {errors.confirmPassword && (
-        <span className="error">{errors.confirmPassword[0]}</span>
-      )}
-
-      <button type="submit">Register</button>
-    </form>
-  );
 }
+```
+
+### z.prettifyError()
+
+Returns a human-readable multi-line string:
+
+```typescript
+const result = schema.safeParse(badData);
+if (!result.success) {
+  console.error(z.prettifyError(result.error));
+  // ZodError:
+  //   - name: Expected string, received number
+  //   - age: Number must be greater than 0
+  //   - email: Invalid email
+}
+```
+
+### Custom Error Messages (v4 error param)
+
+```typescript
+// Unified error param (replaces message, invalid_type_error, required_error)
+z.string({ error: "Must be a string" });
+
+// Dynamic error messages via function
+z.string({ error: (issue) => `Expected string, got ${typeof issue.input}` });
+
+// Per-method error messages
+z.string()
+  .min(3, { error: "Too short" })
+  .max(100, { error: "Too long" });
+```
+
+### Custom Error Maps (v4 z.locales)
+
+```typescript
+// Override default error messages globally
+z.locales.en.invalid_type = (issue) =>
+  `Expected ${issue.expected} but got ${typeof issue.input}`;
 ```
 
 ---
 
-## Error Handling in Express
+## Error Handling Patterns
+
+### Express Middleware
 
 ```typescript
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import { z } from "zod";
 
-const validateBody = (schema: z.ZodSchema) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+const validateBody = (schema: z.ZodType) => {
+  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       const validated = await schema.parseAsync(req.body);
       req.body = validated;
@@ -253,7 +218,7 @@ const validateBody = (schema: z.ZodSchema) => {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: "Validation failed",
-          issues: error.flatten().fieldErrors,
+          issues: z.treeifyError(error),
         });
       } else {
         next(error);
@@ -263,56 +228,74 @@ const validateBody = (schema: z.ZodSchema) => {
 };
 
 const createUserSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(8),
 });
 
-app.post(
-  "/users",
-  validateBody(createUserSchema),
-  async (req: Request, res: Response) => {
-    // req.body is validated and typed
-    const user = await db.users.create(req.body);
-    res.json(user);
-  }
-);
+app.post("/users", validateBody(createUserSchema), async (req, res) => {
+  const user = await db.users.create(req.body);
+  res.json(user);
+});
 ```
 
----
-
-## Type Guards
+### Type Guards
 
 ```typescript
 const userSchema = z.object({
   id: z.number(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 type User = z.infer<typeof userSchema>;
 
-// Type guard function
 function isUser(data: unknown): data is User {
   return userSchema.safeParse(data).success;
 }
 
-const data: unknown = await fetch("/api/user").then(r => r.json());
+const data: unknown = await fetch("/api/user").then((r) => r.json());
 
 if (isUser(data)) {
-  // data is User type here
-  console.log(data.email);
-} else {
-  console.error("Invalid user data");
+  console.log(data.email); // data is typed as User
 }
+```
+
+### Extract Field Errors Helper
+
+```typescript
+const extractFieldErrors = (error: z.ZodError): Record<string, string[]> => {
+  const tree = z.treeifyError(error);
+  const fields: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(tree)) {
+    if (key !== "_errors" && value?._errors?.length) {
+      fields[key] = value._errors;
+    }
+  }
+  return fields;
+};
 ```
 
 ---
 
-**See Also**:
-- [Core Concepts](01-core-concepts.md) — Parse vs SafeParse overview
-- [Objects & Collections](03-objects-collections.md) — Schema design
-- [Advanced Features](04-advanced-features.md) — Custom validation patterns
-- [Integration Patterns](06-integration-patterns.md) — Framework-specific error handling
-- [Best Practices](07-best-practices.md) — Error handling patterns
+## v4 Error Migration Cheat Sheet
 
-**Source**: https://zod.dev/docs/api#parse
+| v3 Pattern | v4 Replacement |
+|------------|----------------|
+| `{ message: "..." }` | `{ error: "..." }` |
+| `{ invalid_type_error: "..." }` | `{ error: (issue) => "..." }` |
+| `{ required_error: "..." }` | `{ error: "..." }` |
+| `error.format()` | `z.treeifyError(error)` |
+| `error.flatten()` | `z.treeifyError(error)` |
+| `error.formErrors` | `z.treeifyError(error)._errors` |
+| `ctx.addIssue({...})` | `ctx.issues.push({...})` |
+| Custom `errorMap` param | `error` param (returns string) |
+
+---
+
+**See Also**:
+- [Core Concepts](01-core-concepts.md)
+- [Advanced Features](04-advanced-features.md)
+- [Integration Patterns](06-integration-patterns.md)
+- [Best Practices](07-best-practices.md)
+
+**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/api

@@ -1,50 +1,48 @@
 ---
 name: sentry-react-native
-description: Sentry React Native SDK - error monitoring, crash reporting, performance tracing, session replay. Use when integrating Sentry, capturing errors, or configuring performance monitoring.
+description: "@sentry/react-native v6 - error monitoring, crash reporting, performance tracing, session replay, breadcrumbs, navigation instrumentation. Use when integrating Sentry, capturing errors, configuring performance monitoring, or setting up error boundaries."
 ---
 
 # Sentry React Native
 
-> Error monitoring, crash reporting, and performance tracing for React Native and Expo apps.
-
-**Package:** `@sentry/react-native`
+Error monitoring, crash reporting, and performance tracing for React Native and Expo apps.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
-- Setting up Sentry in React Native or Expo
-- Capturing errors with context and tags
-- Implementing user identification for tracking
-- Configuring performance monitoring
-- Setting up error boundaries
-- Troubleshooting missing events or stack traces
+LOAD THIS SKILL when user is:
+- Setting up Sentry in React Native or Expo projects
+- Capturing errors with context, tags, and breadcrumbs
+- Configuring performance tracing and navigation instrumentation
+- Setting up ErrorBoundary components
+- Implementing session replay
+- Troubleshooting missing events or unreadable stack traces
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Initialize Sentry as early as possible — before any other code runs
-2. Include contextual tags and extra data — makes debugging possible
-3. Clear user context on logout — `Sentry.setUser(null)`
-4. Use `withScope()` for error-specific context — doesn't persist globally
-5. Flush pending events before backgrounding — `Sentry.flush(2000)`
-6. Set `enabled: !__DEV__` — avoid polluting production with dev errors
+1. Initialize Sentry as early as possible (before other code runs) -- ensures all errors are captured
+2. Wrap root component with `Sentry.wrap(App)` -- enables automatic performance instrumentation
+3. Include contextual tags and extra data on captured exceptions -- makes debugging possible
+4. Clear user context on logout with `Sentry.setUser(null)` -- prevents data leaking between sessions
+5. Set `enabled: !__DEV__` -- avoids polluting production data with development errors
+6. Upload source maps for every release -- without them stack traces are unreadable
 
 **NEVER:**
-1. Capture exceptions without context — useless for debugging
-2. Log sensitive data (passwords, tokens, PII) — security risk
-3. Enable Sentry in development without reason — pollutes data
-4. Forget to upload source maps — unreadable stack traces
-5. Set sampling rates to 1.0 in production — expensive and unnecessary
+1. Capture exceptions without context -- useless for debugging
+2. Log sensitive data (passwords, tokens, PII) in tags or extra -- security and compliance risk
+3. Set `tracesSampleRate: 1.0` in production -- generates excessive data and cost
+4. Forget to call `Sentry.flush()` before app backgrounds -- pending events may be lost
+5. Initialize Sentry inside a component render -- causes re-initialization on every render
 
 ---
 
 ## Core Patterns
 
-### Basic Setup
+### Basic Setup (Expo)
 
 ```typescript
 import * as Sentry from '@sentry/react-native';
@@ -54,28 +52,11 @@ Sentry.init({
   environment: __DEV__ ? 'development' : 'production',
   enabled: !__DEV__,
   tracesSampleRate: 0.1,
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+  attachScreenshot: true,
+  attachViewHierarchy: true,
 });
-```
 
-### Expo Plugin Configuration
-
-```json
-// app.json
-{
-  "expo": {
-    "plugins": [
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "your-org-slug",
-          "project": "your-project-slug"
-        }
-      ]
-    ]
-  }
-}
+export default Sentry.wrap(App);
 ```
 
 ### Capture Exception with Context
@@ -85,44 +66,18 @@ try {
   await riskyOperation();
 } catch (error) {
   Sentry.captureException(error, {
-    tags: { section: 'checkout' },
-    extra: { orderId: order.id }
+    tags: { section: 'checkout', feature: 'payment' },
+    extra: { orderId: order.id, amount: total },
   });
 }
 ```
 
-### Set User on Login
+### Set User on Login / Clear on Logout
 
 ```typescript
-Sentry.setUser({
-  id: user.id,
-  email: user.email,
-  username: user.username
-});
-
-// Clear on logout
+Sentry.setUser({ id: user.id, email: user.email });
+// On logout:
 Sentry.setUser(null);
-```
-
-### Add Breadcrumbs
-
-```typescript
-Sentry.addBreadcrumb({
-  category: 'navigation',
-  message: 'User navigated to checkout',
-  level: 'info',
-  data: { from: '/cart', to: '/checkout' }
-});
-```
-
-### Isolated Scope for Critical Errors
-
-```typescript
-Sentry.withScope(scope => {
-  scope.setTag('critical', 'true');
-  scope.setLevel('fatal');
-  Sentry.captureException(error);
-});
 ```
 
 ### Error Boundary with Fallback
@@ -130,101 +85,64 @@ Sentry.withScope(scope => {
 ```typescript
 import { ErrorBoundary } from '@sentry/react-native';
 
-function App() {
-  return (
-    <ErrorBoundary
-      fallback={({ resetError }) => (
-        <ErrorFallbackScreen onRetry={resetError} />
-      )}
-      beforeCapture={(scope) => {
-        scope.setTag('boundary', 'root');
-      }}
-    >
-      <AppNavigator />
-    </ErrorBoundary>
-  );
-}
+<ErrorBoundary
+  fallback={({ resetError }) => <ErrorScreen onRetry={resetError} />}
+  beforeCapture={(scope) => scope.setTag('boundary', 'root')}
+>
+  <AppNavigator />
+</ErrorBoundary>
 ```
 
-### Flush Before Background
+### Custom Performance Span
 
 ```typescript
-import { AppState } from 'react-native';
-
-useEffect(() => {
-  const subscription = AppState.addEventListener('change', (state) => {
-    if (state === 'background') {
-      Sentry.flush(2000);
-    }
-  });
-  return () => subscription.remove();
-}, []);
+const result = await Sentry.startSpan(
+  { name: 'fetchUserData', op: 'http.client' },
+  async () => {
+    return await api.getUser(userId);
+  },
+);
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** — Capture without context:
+**BAD** -- Capture without context:
 ```typescript
-Sentry.captureException(error);  // No useful info!
+Sentry.captureException(error);
 ```
 
-**GOOD** — Include context:
+**GOOD** -- Include context:
 ```typescript
 Sentry.captureException(error, {
   tags: { feature: 'payment' },
-  extra: { userId: user.id, amount: total }
+  extra: { userId: user.id, amount: total },
 });
 ```
 
-**BAD** — Enabled in development:
+**BAD** -- High sampling in production:
 ```typescript
-Sentry.init({
-  dsn: 'YOUR_DSN',
-  enabled: true  // Pollutes Sentry with dev errors
-});
+Sentry.init({ tracesSampleRate: 1.0, replaysSessionSampleRate: 1.0 });
 ```
 
-**GOOD** — Disabled in development:
-```typescript
-Sentry.init({
-  dsn: 'YOUR_DSN',
-  enabled: !__DEV__
-});
-```
-
-**BAD** — Logging sensitive data:
-```typescript
-Sentry.setContext('auth', {
-  token: user.accessToken,  // Exposed!
-  password: form.password   // Exposed!
-});
-```
-
-**GOOD** — Only safe identifiers:
-```typescript
-Sentry.setContext('auth', {
-  userId: user.id,
-  authMethod: 'oauth'
-});
-```
-
-**BAD** — High sampling in production:
-```typescript
-Sentry.init({
-  tracesSampleRate: 1.0,           // Expensive!
-  replaysSessionSampleRate: 1.0    // Very expensive!
-});
-```
-
-**GOOD** — Reasonable sampling:
+**GOOD** -- Reasonable sampling:
 ```typescript
 Sentry.init({
   tracesSampleRate: 0.1,
   replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0  // 100% only for errors
+  replaysOnErrorSampleRate: 1.0,
 });
+```
+
+**BAD** -- Logging sensitive data:
+```typescript
+Sentry.setContext('auth', { token: user.accessToken });
+```
+
+**GOOD** -- Only safe identifiers:
+```typescript
+Sentry.setContext('auth', { userId: user.id, method: 'oauth' });
 ```
 
 ---
@@ -234,35 +152,17 @@ Sentry.init({
 | Method | Purpose | Example |
 |--------|---------|---------|
 | `init()` | Initialize SDK | `Sentry.init({ dsn: '...' })` |
+| `wrap()` | Wrap root component | `Sentry.wrap(App)` |
 | `captureException()` | Capture error | `Sentry.captureException(error, { tags })` |
 | `captureMessage()` | Capture message | `Sentry.captureMessage('msg', 'warning')` |
 | `setUser()` | Set user context | `Sentry.setUser({ id: '123' })` |
 | `setTag()` | Add searchable tag | `Sentry.setTag('feature', 'auth')` |
 | `setContext()` | Add structured data | `Sentry.setContext('order', { id: 1 })` |
+| `setExtra()` | Add extra data | `Sentry.setExtra('payload', data)` |
 | `addBreadcrumb()` | Record event trail | `Sentry.addBreadcrumb({ category, message })` |
 | `withScope()` | Isolated context | `Sentry.withScope(scope => {...})` |
+| `startSpan()` | Performance span | `Sentry.startSpan({ name }, callback)` |
 | `flush()` | Send pending events | `await Sentry.flush(2000)` |
-
-### Init Options
-
-| Option | Recommended | Description |
-|--------|-------------|-------------|
-| `dsn` | Required | Your Sentry DSN |
-| `enabled` | `!__DEV__` | Disable in development |
-| `environment` | `'production'` | Environment name |
-| `tracesSampleRate` | `0.1` | Performance sampling (0-1) |
-| `replaysSessionSampleRate` | `0.1` | Session replay sampling |
-| `replaysOnErrorSampleRate` | `1.0` | Error session recording |
-
-### Severity Levels
-
-| Level | Use Case |
-|-------|----------|
-| `'fatal'` | App crash, unrecoverable error |
-| `'error'` | Error affecting functionality |
-| `'warning'` | Unexpected but handled |
-| `'info'` | Important events (login, purchase) |
-| `'debug'` | Diagnostic information |
 
 ---
 
@@ -270,11 +170,10 @@ Sentry.init({
 
 | When you need | Load |
 |---------------|------|
-| Installation, init options, Expo | [01-setup.md](knowledge-base/01-setup.md) |
-| captureException, setUser, breadcrumbs | [02-core-api.md](knowledge-base/02-core-api.md) |
-| Performance, replay, error boundaries | [03-advanced-features.md](knowledge-base/03-advanced-features.md) |
-| Source maps, testing, troubleshooting | [04-guides.md](knowledge-base/04-guides.md) |
+| Full init options, Expo plugin, source maps | [01-setup.md](01-setup.md) |
+| captureException, setUser, breadcrumbs, scopes | [02-core-api.md](02-core-api.md) |
+| Performance tracing, navigation, session replay | [03-performance.md](03-performance.md) |
+| ErrorBoundary, offline events, testing | [04-advanced.md](04-advanced.md) |
 
 ---
-
 **Version:** 6.x | **Source:** https://docs.sentry.io/platforms/react-native/

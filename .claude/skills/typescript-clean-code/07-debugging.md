@@ -1,4 +1,9 @@
-# Debugging Best Practices
+# 07 - Debugging Best Practices
+
+**Source:** https://www.typescriptlang.org/tsconfig/#sourceMap
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Source Maps Configuration
 
@@ -168,3 +173,9 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 }
 ```
+
+---
+
+**Source:** https://www.typescriptlang.org/tsconfig/#sourceMap
+**TypeScript:** 5.9
+**Last Updated:** February 2026

@@ -1,543 +1,351 @@
-# 02 — Quickstart Setup & Local Development
+# 02 -- Project Setup & Configuration
 
-**Module Summary**: Step-by-step guide to create an Expo project, configure your development environment, run on simulators and real devices, and understand the CLI tools and configuration.
+Step-by-step project creation, app.json/app.config.ts configuration reference, environment variables, CLI commands, and development workflow for Expo SDK 54.
 
 ---
 
 ## Prerequisites
 
-Before starting, ensure you have:
-- **Node.js 18+** — Check with `node --version`
-- **npm or yarn** — Package manager
-- **Git** — Version control (optional but recommended)
-- **For iOS testing**: Mac with Xcode 14+ or use simulator
-- **For Android testing**: Android SDK/emulator or physical device
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Node.js | 20.19.4+ (24 recommended) | `node --version` to check |
+| npm or yarn | Latest | Package manager |
+| Xcode | 16.1+ (Xcode 26 recommended) | iOS builds only, macOS required |
+| Android SDK | Platform 35+ | Via Android Studio SDK Manager |
+| JDK | 17 (Azul Zulu recommended) | Android builds only |
+| Watchman | Latest | Recommended for file watching performance |
 
 ---
 
-## Step 1: Create Your First Project
-
-### Using Expo CLI (Recommended)
+## Create a Project
 
 ```bash
-npx create-expo-app@latest my-awesome-app
-cd my-awesome-app
+# Create with default template (includes Expo Router, TypeScript)
+npx create-expo-app@latest my-app
+cd my-app
+
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start
 ```
 
-This creates a minimal project structure:
+### Project Structure
 
 ```
-my-awesome-app/
-├── app.json              # Configuration
-├── package.json          # Dependencies
-├── App.tsx               # Root component
-├── app.json
-└── babel.config.js
+my-app/
+  app/                         # File-based routing (Expo Router)
+    _layout.tsx                # Root navigation layout
+    index.tsx                  # Home screen (/)
+    +not-found.tsx             # 404 screen
+  assets/                      # Static assets (images, fonts)
+  app.json                     # Expo configuration
+  tsconfig.json                # TypeScript configuration
+  package.json                 # Dependencies and scripts
 ```
-
-### Alternative: With Expo Router (File-Based Routing)
-
-If you want file-based routing from the start:
-
-```bash
-npx create-expo-app --template expo-router-template
-cd my-awesome-app
-```
-
-This scaffolds:
-
-```
-my-awesome-app/
-├── app/
-│   ├── _layout.tsx       # Root navigation
-│   └── index.tsx         # Home screen
-├── app.json
-├── eas.json              # EAS Build config
-└── package.json
-```
-
-**See**: [07-guide-routing-navigation.md](07-guide-routing-navigation.md) for Expo Router details.
-
-**Source**: https://docs.expo.dev/get-started/create-a-project/
 
 ---
 
-## Step 2: Understand app.json Configuration
+## App Configuration Reference
 
-### Minimal Configuration
+### Static Config (app.json)
 
 ```json
 {
   "expo": {
-    "name": "My Awesome App",
-    "slug": "my-awesome-app",
+    "name": "My App",
+    "slug": "my-app",
     "version": "1.0.0",
-    "platforms": ["ios", "android", "web"],
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "myapp",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "supportsTabletWorkspace": true
+      "bundleIdentifier": "com.company.myapp",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {}
     },
     "android": {
-      "softwareKeyboardLayoutMode": "pan"
+      "package": "com.company.myapp",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
-      "bundler": "metro"
-    }
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "extra": {}
   }
 }
 ```
 
-### Key Properties
+### Top-Level Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `name` | string | -- | App display name on home screen and Expo Go |
+| `slug` | string | -- | URL-friendly unique identifier for Expo services |
+| `version` | string | -- | Semantic version (also set `ios.buildNumber` / `android.versionCode`) |
+| `orientation` | enum | `"default"` | `"portrait"`, `"landscape"`, or `"default"` |
+| `icon` | string | -- | 1024x1024 PNG path for app icon |
+| `userInterfaceStyle` | enum | `"light"` | `"light"`, `"dark"`, or `"automatic"` (follows system) |
+| `scheme` | string/array | -- | URL scheme(s) for deep linking (e.g., `"myapp"` for `myapp://`) |
+| `backgroundColor` | string | `"#ffffff"` | Root view background color (hex) |
+| `newArchEnabled` | boolean | `true` | Enable React Native New Architecture (default in SDK 54) |
+| `platforms` | array | `["ios","android"]` | Target platforms |
+| `plugins` | array | -- | Config plugins for native module configuration |
+| `extra` | object | -- | Custom data accessible via `Constants.expoConfig.extra` |
+
+### iOS Properties (`ios`)
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `name` | string | App display name |
-| `slug` | string | URL slug (must be unique on Expo) |
-| `version` | string | App version (semantic versioning) |
-| `platforms` | array | Target platforms: `ios`, `android`, `web` |
-| `icon` | string | Path to app icon (1024x1024 PNG) |
-| `splash` | object | Splash screen config |
-| `plugins` | array | Native modules to include |
-| `scheme` | string | Deep linking scheme (e.g., `myapp://`) |
+| `bundleIdentifier` | string | Unique bundle ID (e.g., `com.company.app`) |
+| `buildNumber` | string | Corresponds to `CFBundleVersion` in Info.plist |
+| `supportsTablet` | boolean | Enable iPad screen size support |
+| `icon` | string/object | App icon or object with `light`/`dark`/`tinted` variants |
+| `infoPlist` | object | Arbitrary Info.plist key-value pairs |
+| `entitlements` | object | App entitlements (push, App Groups, etc.) |
 
-### iOS Configuration
+### Android Properties (`android`)
 
-```json
-{
-  "ios": {
-    "bundleIdentifier": "com.company.myapp",
-    "buildNumber": "1.0.0",
-    "icon": "./assets/icon.png",
-    "supportsTabletWorkspace": true,
-    "infoPlist": {
-      "NSCameraUsageDescription": "Camera access for photos"
-    }
-  }
-}
-```
+| Property | Type | Description |
+|----------|------|-------------|
+| `package` | string | Unique package name for Play Store |
+| `versionCode` | integer | Incremented integer for each Play Store release |
+| `adaptiveIcon` | object | `foregroundImage`, `backgroundImage`, `monochromeImage`, `backgroundColor` |
+| `permissions` | array | Permissions for AndroidManifest.xml (e.g., `["CAMERA"]`) |
+| `googleServicesFile` | string | Path to `google-services.json` for Firebase |
 
-### Android Configuration
+### Web Properties (`web`)
 
-```json
-{
-  "android": {
-    "package": "com.company.myapp",
-    "versionCode": 1,
-    "icon": "./assets/icon.png",
-    "permissions": ["CAMERA", "ACCESS_FINE_LOCATION"]
-  }
-}
-```
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `bundler` | enum | `"metro"` | `"metro"` or `"webpack"` |
+| `output` | enum | `"single"` | `"single"` (SPA), `"static"`, or `"server"` |
+| `favicon` | string | -- | Path to favicon image |
 
-### Adding Plugins (Native Modules)
+### Splash Screen (`splash`)
 
-Plugins configure native iOS/Android settings declaratively:
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `image` | string | -- | Splash screen image path |
+| `resizeMode` | enum | `"contain"` | `"contain"` or `"cover"` |
+| `backgroundColor` | string | `"#ffffff"` | Background color (hex) |
+
+### Updates (`updates`)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable OTA update system |
+| `url` | string | -- | Update manifest URL (auto-set by EAS Update) |
+| `checkAutomatically` | enum | `"ON_LOAD"` | `"ON_LOAD"`, `"ON_ERROR_RECOVERY"`, `"WIFI_ONLY"`, `"NEVER"` |
+| `fallbackToCacheTimeout` | number | `0` | Ms to wait before falling back to cached update (0-300000) |
+
+### Plugin Configuration
+
+Plugins configure native settings declaratively:
 
 ```json
 {
   "plugins": [
     "expo-camera",
-    "expo-file-system",
-    [
-      "expo-location",
-      {
-        "locationAlwaysAndWhenInUsePermissions": true
-      }
-    ]
+    ["expo-location", {
+      "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location"
+    }],
+    ["expo-secure-store", {
+      "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID"
+    }]
   ]
 }
 ```
 
-This configures permissions, manifests, and framework dependencies automatically during build.
-
-**See**: Individual API modules for plugin configuration ([03-api-auth.md](03-api-auth.md), [05-api-device-access.md](05-api-device-access.md), etc.)
-
-**Source**: https://docs.expo.dev/guides/app-config/
-
 ---
 
-## Step 3: Local Development Setup
+## Dynamic Config (app.config.ts)
 
-### Install Dependencies
+Use TypeScript for conditional, environment-aware configuration:
 
-```bash
-# Install npm packages
-npm install
-# or with yarn
-yarn install
+```typescript
+import { ExpoConfig, ConfigContext } from 'expo/config';
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: process.env.APP_ENV === 'production' ? 'MyApp' : 'MyApp (Dev)',
+  slug: 'my-app',
+  version: '1.0.0',
+  ios: {
+    bundleIdentifier:
+      process.env.APP_ENV === 'production'
+        ? 'com.company.myapp'
+        : 'com.company.myapp.dev',
+  },
+  android: {
+    package:
+      process.env.APP_ENV === 'production'
+        ? 'com.company.myapp'
+        : 'com.company.myapp.dev',
+  },
+  extra: {
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000',
+  },
+});
 ```
 
-### Start Development Server
-
-```bash
-npx expo start
-```
-
-Output:
-
-```
-Starting Metro Bundler
-Starting application on Simulator
-Tunneling is required to connect from external networks
-```
-
-### Available Commands at Runtime
-
-Press these in the terminal where `expo start` is running:
-
-| Key | Action |
-|-----|--------|
-| `i` | Open iOS Simulator |
-| `a` | Open Android Emulator |
-| `w` | Open web in browser |
-| `r` | Reload app |
-| `m` | Open Developer Menu |
-| `Shift + m` | Toggle slow animations |
-| `q` | Quit |
-
-**Source**: https://docs.expo.dev/guides/local-app-development/
-
----
-
-## Step 4: Run on iOS Simulator
-
-### Prerequisites
-
-- Mac with Xcode 14+ installed
-- iOS Simulator (included with Xcode)
-
-### Launch Simulator
-
-```bash
-# Automatically open iOS Simulator
-npx expo start -i
-```
-
-Or manually:
-
-```bash
-# Open Simulator.app
-open /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app
-```
-
-Then from `npx expo start`, press `i`.
-
-### Install Build Tools (macOS)
-
-```bash
-# Install command line tools
-xcode-select --install
-
-# Accept Xcode license
-sudo xcode-select --accept-license
-```
-
----
-
-## Step 5: Run on Android Emulator
-
-### Prerequisites
-
-- Android SDK (download via Android Studio)
-- Android Emulator or physical device
-
-### Launch Emulator
-
-```bash
-# List available emulators
-emulator -list-avds
-
-# Start an emulator
-emulator -avd Pixel_4_API_30
-```
-
-Then from `npx expo start`, press `a`.
-
-Or automatically:
-
-```bash
-npx expo start -a
-```
-
-### Install SDK
-
-Open Android Studio:
-1. **SDK Manager** → Install API 30+ (or latest)
-2. **Device Manager** → Create Virtual Device (Pixel 4 recommended)
-
----
-
-## Step 6: Run on Physical Device
-
-### Using Expo Go (Easiest)
-
-1. **On iOS**:
-   - Install "Expo Go" from App Store
-   - Open Expo Go app
-   - Scan QR code from terminal
-
-2. **On Android**:
-   - Install "Expo Go" from Google Play
-   - Open Expo Go app
-   - Scan QR code from terminal
-
-### Using Tunnel (Remote Network)
-
-If device and computer on different networks:
-
-```bash
-# Use tunnel instead of LAN
-npx expo start --tunnel
-```
-
-This creates a cloud relay. Slower but works from anywhere.
-
-### Using Development Build (Custom)
-
-For custom native modules:
-
-```bash
-# Generate native directories
-npx expo prebuild
-
-# Create dev build (EAS Cloud or local)
-eas build --platform ios --profile development
-eas build --platform android --profile development
-
-# Or build locally
-eas build --local --platform ios --profile development
-```
-
-Install `.ipa` (iOS) or `.apk` (Android) on device, then:
-
-```bash
-npx expo start
-```
-
-**See**: [11-guide-eas-services.md](11-guide-eas-services.md) for EAS Build details.
+Key rules:
+- Dynamic configs **cannot use Promises** -- all resolution is synchronous
+- Static `app.json` is auto-updated by CLI tools; dynamic configs require manual changes
+- Import `ExpoConfig` and `ConfigContext` from `'expo/config'` for type safety
 
 ---
 
 ## Environment Variables
 
-### Setting Environment Variables
+### Setup
 
-Create `.env` file in project root (not committed to git):
+Create `.env` in project root (gitignored):
 
 ```bash
-# .env
+# Client-accessible (bundled into app)
 EXPO_PUBLIC_API_URL=https://api.example.com
 EXPO_PUBLIC_APP_ENV=development
+
+# Server-only (API routes, build scripts)
 SECRET_API_KEY=supersecret123
 ```
 
-### Accessing in Code
+### Access in Code
 
 ```typescript
-// Only EXPO_PUBLIC_* are available to client
+// Client code -- only EXPO_PUBLIC_ prefixed vars
 const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-// → https://api.example.com
 
-// Server routes have access to all
-export async function GET(request: Request) {
+// API routes (Expo Router) -- all env vars available
+export async function GET() {
   const secret = process.env.SECRET_API_KEY;
-  // ✅ Works in API routes
-  // ❌ Not available in client components
+  return Response.json({ ok: true });
 }
 ```
 
-### Environment Files by Profile
+### Environment Files
 
-For different environments:
-
-```
-.env                  # Default
-.env.local            # Local overrides (not committed)
-.env.production       # Production-specific
-.env.development      # Development-specific
-```
-
-Load in `app.json`:
-
-```json
-{
-  "expo": {
-    "plugins": [
-      [
-        "@react-native-firebase/app",
-        {
-          "googleServicesFile": "./google-services.json"
-        }
-      ]
-    ]
-  }
-}
-```
-
-**Best Practice**: Never commit `.env.local` or files with secrets. Use CI/CD for secret injection.
-
-**Source**: https://docs.expo.dev/guides/environment-variables/
+| File | Purpose | Committed? |
+|------|---------|------------|
+| `.env` | Default values | No |
+| `.env.local` | Local overrides | No |
+| `.env.production` | Production values | Optional |
+| `.env.development` | Development values | Optional |
 
 ---
 
-## Project Structure Best Practices
+## CLI Commands
 
-### Recommended Organization
+### Development
+
+| Command | Description |
+|---------|-------------|
+| `npx expo start` | Start dev server (Metro bundler) |
+| `npx expo start --ios` | Start and open iOS Simulator |
+| `npx expo start --android` | Start and open Android Emulator |
+| `npx expo start --web` | Start and open web browser |
+| `npx expo start --tunnel` | Use cloud relay (different networks) |
+| `npx expo start --port 8081` | Custom port |
+| `npx expo start --clear` | Clear Metro cache |
+
+### Runtime Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `i` | Open iOS Simulator |
+| `a` | Open Android Emulator |
+| `w` | Open web browser |
+| `r` | Reload app |
+| `m` | Open Developer Menu |
+| `j` | Open React DevTools |
+| `q` | Quit |
+
+### Build & Native
+
+| Command | Description |
+|---------|-------------|
+| `npx expo prebuild` | Generate native iOS/Android directories |
+| `npx expo prebuild --clean` | Regenerate native dirs from scratch |
+| `npx expo install <package>` | Install with SDK-compatible version |
+| `npx expo export` | Export static bundle for deployment |
+
+### EAS CLI
+
+| Command | Description |
+|---------|-------------|
+| `eas build --platform ios` | Cloud build for iOS |
+| `eas build --platform android` | Cloud build for Android |
+| `eas build --local` | Build on local machine |
+| `eas submit --platform ios` | Submit to App Store |
+| `eas submit --platform android` | Submit to Google Play |
+| `eas update` | Push OTA update |
+
+---
+
+## Project Structure Best Practice
 
 ```
 my-app/
-├── app/                         # File-based routing (Expo Router)
-│   ├── _layout.tsx              # Root navigation
-│   ├── (auth)/                  # Auth layout group
-│   │   ├── _layout.tsx          # Auth stack
-│   │   ├── login.tsx
-│   │   └── signup.tsx
-│   ├── (app)/                   # App layout group (requires auth)
-│   │   ├── _layout.tsx          # App tabs
-│   │   ├── home.tsx
-│   │   ├── profile.tsx
-│   │   └── [id].tsx
-│   ├── _layout.tsx              # Root layout
-│   └── index.tsx                # Splash/splash redirect
-│
-├── services/                    # Business logic
-│   ├── auth.ts                  # Auth service
-│   ├── api.ts                   # API client
-│   └── storage.ts               # Async storage wrapper
-│
-├── components/                  # Reusable UI components
-│   ├── Button.tsx
-│   ├── Input.tsx
-│   └── Card.tsx
-│
-├── hooks/                       # Custom React hooks
-│   ├── useAuth.ts
-│   ├── useAppState.ts
-│   └── useLocation.ts
-│
-├── types/                       # TypeScript types
-│   ├── api.ts
-│   ├── domain.ts
-│   └── navigation.ts
-│
-├── constants/                   # App constants
-│   ├── colors.ts
-│   ├── fonts.ts
-│   └── endpoints.ts
-│
-├── assets/                      # Static assets
-│   ├── images/
-│   ├── fonts/
-│   └── icons/
-│
-├── app.json                     # Expo configuration
-├── eas.json                     # EAS Build configuration
-├── tsconfig.json
-├── package.json
-├── babel.config.js
-└── metro.config.js
+  app/                         # Expo Router file-based routes
+    _layout.tsx                # Root layout (navigation container)
+    (auth)/                    # Auth route group
+      _layout.tsx
+      login.tsx
+      signup.tsx
+    (tabs)/                    # Tab route group
+      _layout.tsx
+      home.tsx
+      profile.tsx
+    [id].tsx                   # Dynamic route
+  src/                         # Application source
+    components/                # Reusable UI components
+    hooks/                     # Custom React hooks
+    services/                  # API clients, business logic
+    stores/                    # Zustand/state stores
+    types/                     # TypeScript type definitions
+    constants/                 # App constants, theme tokens
+  assets/                      # Static assets
+    fonts/
+    images/
+  app.json                     # Expo configuration
+  app.config.ts                # Dynamic config (optional)
+  eas.json                     # EAS build profiles
+  tsconfig.json
+  package.json
+  .env                         # Environment variables (gitignored)
 ```
-
----
-
-## Common Development Workflows
-
-### Adding a New Dependency
-
-```bash
-# Install package
-npm install axios
-
-# If native module, configure in app.json:
-# - Add to "plugins" if provided
-# - Might require npx expo prebuild
-```
-
-### Modifying Native Code
-
-If you need to edit native iOS/Android:
-
-```bash
-# Generate native directories
-npx expo prebuild
-
-# For Xcode (iOS)
-cd ios
-open YourApp.xcworkspace
-# Edit, build, run in Xcode
-
-# For Android Studio
-# Open android/ folder and edit in Android Studio
-```
-
-Then:
-
-```bash
-# Use development build
-eas build --local --platform ios --profile development
-```
-
-### Hot Reload Limitations
-
-Fast Refresh reloads most changes instantly but requires full app reload for:
-- Adding/removing imports
-- Changing function/component signatures
-- Modifying top-level constants
-- Module-level side effects
-
-Press `r` in terminal to force reload.
 
 ---
 
 ## Troubleshooting
 
-### "Cannot connect to development server"
-
-1. Check if same network: `npx expo start --tunnel`
-2. Restart Expo CLI: Press `q`, then `npx expo start` again
-3. Clear cache: `rm -rf ~/.expo/cache`
-
-### iOS Simulator not opening
-
-```bash
-# Open manually
-open /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app
-
-# Then press 'i' in expo start terminal
-```
-
-### Android Emulator slow
-
-Use hardware acceleration:
-```bash
-# Edit ~/.android/avd/*/config.ini
-hw.gpu=on
-hw.gpu.mode=auto
-```
-
-### "Metro bundler timeout"
-
-```bash
-# Increase timeout
-npx expo start --max-workers 1
-```
-
-### Port already in use
-
-```bash
-# Change port
-npx expo start --port 8081
-```
+| Issue | Solution |
+|-------|----------|
+| Cannot connect to dev server | Try `npx expo start --tunnel` or ensure same network |
+| Metro bundler timeout | `npx expo start --clear` to clear cache |
+| Port already in use | `npx expo start --port 8081` |
+| iOS Simulator not opening | Run `xcode-select --install` then press `i` |
+| Android Emulator not found | Verify `emulator -list-avds` and start emulator first |
+| Module not found after install | Run `npx expo start --clear` to reset Metro cache |
+| Prebuild fails | `npx expo prebuild --clean` to regenerate native dirs |
 
 ---
 
-## Next Steps
-
-1. **Build UI**: [07-guide-routing-navigation.md](07-guide-routing-navigation.md) — Learn Expo Router
-2. **Add Features**: [03-api-auth.md](03-api-auth.md), [04-api-data-storage.md](04-api-data-storage.md), [05-api-device-access.md](05-api-device-access.md)
-3. **Deploy**: [10-guide-build-publish.md](10-guide-build-publish.md) — Create signed builds
-4. **Performance**: [14-best-practices-performance.md](14-best-practices-performance.md) — Optimize your app
-
----
-
-**Source Attribution**: https://docs.expo.dev/get-started/  
-**Last Updated**: December 2024
+**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/get-started/create-a-project/, https://docs.expo.dev/versions/latest/config/app/, https://docs.expo.dev/workflow/configuration/

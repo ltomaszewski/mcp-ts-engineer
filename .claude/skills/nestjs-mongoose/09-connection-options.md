@@ -1,54 +1,173 @@
-# Connection Options
+# Connection Options & Monitoring
 
-## Full Configuration
+## Full Production Configuration
 
 ```typescript
-MongooseModule.forRootAsync({
-  useFactory: () => ({
-    uri: process.env.MONGODB_URI,
-    maxPoolSize: 100,
-    minPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 10000,
-    retryWrites: true,
-    retryReads: true,
-    family: 4,
-    authSource: 'admin',
-    readPreference: 'primary',
-    w: 'majority',
-    appName: 'MyApp',
-  }),
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+
+@Module({
+  imports: [
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        uri: config.getOrThrow<string>('MONGODB_URI'),
+
+        // Connection pool
+        maxPoolSize: config.get<number>('MONGO_MAX_POOL', 100),
+        minPoolSize: config.get<number>('MONGO_MIN_POOL', 10),
+
+        // Timeouts
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000,
+
+        // Write safety
+        retryWrites: true,
+        retryReads: true,
+        w: 'majority',
+
+        // Networking
+        family: 4,
+
+        // Auth
+        authSource: 'admin',
+
+        // Read preference
+        readPreference: 'primary',
+
+        // App metadata
+        appName: config.get<string>('APP_NAME', 'my-app'),
+
+        // Production: disable auto-index
+        autoIndex: config.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
+  ],
 })
+export class DatabaseModule {}
 ```
 
-## Pool Sizing
+## Connection Pool Sizing
 
-- **Dev:** maxPoolSize: 10, minPoolSize: 2
-- **Prod:** maxPoolSize: 100, minPoolSize: 10
-- **High Traffic:** maxPoolSize: 200, minPoolSize: 50
+| Environment | maxPoolSize | minPoolSize | Rationale |
+|-------------|-------------|-------------|-----------|
+| Development | `10` | `2` | Low traffic |
+| Staging | `50` | `5` | Moderate traffic |
+| Production | `100` | `10` | Standard production |
+| High Traffic | `200` | `50` | High concurrency |
 
-## Connection Events
+**Formula:** `maxPoolSize ~= peak concurrent requests * 1.5`
+
+## Connection Options Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxPoolSize` | `number` | `100` | Max connections |
+| `minPoolSize` | `number` | `0` | Maintained idle connections |
+| `serverSelectionTimeoutMS` | `number` | `30000` | Server selection timeout |
+| `socketTimeoutMS` | `number` | `0` | Socket inactivity timeout |
+| `connectTimeoutMS` | `number` | `30000` | Initial connection timeout |
+| `retryWrites` | `boolean` | `true` | Retry failed writes |
+| `retryReads` | `boolean` | `true` | Retry failed reads |
+| `w` | `string \| number` | `1` | Write concern |
+| `journal` | `boolean` | `false` | Wait for journal |
+| `readPreference` | `string` | `'primary'` | Read preference |
+| `authSource` | `string` | auto | Auth database |
+| `appName` | `string` | none | Connection metadata |
+| `family` | `4 \| 6` | auto | IP version preference |
+| `autoIndex` | `boolean` | `true` | Auto-create indexes |
+| `maxIdleTimeMS` | `number` | `0` | Max idle time per connection |
+| `compressors` | `string[]` | none | Compression (`['zstd', 'snappy']`) |
+
+## Connection Monitoring
 
 ```typescript
-@Injectable()
-export class DbMonitor implements OnModuleInit {
-  constructor(@InjectConnection() private connection: Connection) {}
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
-  onModuleInit() {
-    this.connection.on('connected', () => console.log('Connected'));
-    this.connection.on('disconnected', () => console.log('Disconnected'));
-    this.connection.on('error', (err) => console.error('Error:', err));
+@Injectable()
+export class DatabaseMonitor implements OnModuleInit {
+  private readonly logger = new Logger(DatabaseMonitor.name);
+
+  constructor(
+    @InjectConnection() private readonly connection: Connection,
+  ) {}
+
+  onModuleInit(): void {
+    this.connection.on('connected', () => {
+      this.logger.log('MongoDB connected');
+    });
+
+    this.connection.on('disconnected', () => {
+      this.logger.warn('MongoDB disconnected');
+    });
+
+    this.connection.on('error', (err: Error) => {
+      this.logger.error(`MongoDB error: ${err.message}`);
+    });
+
+    this.connection.on('reconnected', () => {
+      this.logger.log('MongoDB reconnected');
+    });
+  }
+
+  getStatus(): { state: string; host: string | undefined } {
+    const states: Record<number, string> = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting',
+    };
+
+    return {
+      state: states[this.connection.readyState] ?? 'unknown',
+      host: this.connection.host,
+    };
   }
 }
 ```
 
-## Multiple Databases
+## Multiple Database Connections
 
 ```typescript
-MongooseModule.forRoot(uri1, { connectionName: 'db1' }),
-MongooseModule.forRoot(uri2, { connectionName: 'db2' }),
+@Module({
+  imports: [
+    MongooseModule.forRoot(primaryUri, { connectionName: 'primary' }),
+    MongooseModule.forRoot(analyticsUri, { connectionName: 'analytics' }),
+  ],
+})
+export class AppModule {}
 
-// Usage
-@InjectModel(User.name, 'db1') private userModel: Model<User>
+// Register schemas on specific connection
+MongooseModule.forFeature(
+  [{ name: User.name, schema: UserSchema }],
+  'primary',
+)
+
+MongooseModule.forFeature(
+  [{ name: Event.name, schema: EventSchema }],
+  'analytics',
+)
+
+// Inject from specific connection
+@InjectModel(User.name, 'primary') private userModel: Model<UserDocument>
+@InjectConnection('analytics') private analyticsConnection: Connection
 ```
+
+## Read Preference Options
+
+| Preference | Description | Use Case |
+|------------|-------------|----------|
+| `'primary'` | Only read from primary | Strong consistency |
+| `'primaryPreferred'` | Prefer primary, fallback secondary | Default for most apps |
+| `'secondary'` | Only read from secondary | Read-heavy analytics |
+| `'secondaryPreferred'` | Prefer secondary, fallback primary | Reduce primary load |
+| `'nearest'` | Read from nearest node | Low latency priority |
+
+---
+
+**Version:** @nestjs/mongoose 11.x, Mongoose 8.x | **Source:** https://mongoosejs.com/docs/connections.html

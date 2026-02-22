@@ -1,49 +1,33 @@
-# Troubleshooting & Known Issues
+# Troubleshooting -- Expo Notifications SDK 54
 
-**Module Purpose**: Solutions for common errors, debugging tips, platform-specific issues, and known limitations.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Common issues, debugging techniques, platform-specific problems, and known limitations.
 
 ---
 
-## Common Issues & Solutions
+## Common Issues
 
-### Issue: "Must use physical device for Push Notifications"
+### "Must use physical device for Push Notifications"
 
-**Cause**: Trying to use push notifications on an emulator/simulator.
+**Cause:** Push notifications cannot work on simulators/emulators.
 
-**Solution**: Use a physical device
+**Solution:** Use a physical device. Local notifications work on simulators for testing.
 
 ```typescript
 import * as Device from 'expo-device';
 
 if (!Device.isDevice) {
   console.warn('Push notifications require a physical device');
-  return;
+  // Fall back to local notifications for testing
 }
-```
-
-**Workaround for Testing**: Use local notifications instead
-
-```typescript
-await Notifications.scheduleNotificationAsync({
-  content: {
-    title: 'Test',
-    body: 'Local notification works on simulator',
-  },
-  trigger: null,
-});
 ```
 
 ---
 
-### Issue: "Project ID not found" or "Cannot get Expo push token"
+### "Project ID not found"
 
-**Cause**: `projectId` not configured in app.json or environment.
+**Cause:** `projectId` not configured in app.json.
 
-**Solutions**:
-
-**Option 1: Add to app.json**
+**Solution 1:** Add to app.json extra:
 
 ```json
 {
@@ -57,84 +41,77 @@ await Notifications.scheduleNotificationAsync({
 }
 ```
 
-**Option 2: Get from Constants**
+**Solution 2:** Read from Constants:
 
 ```typescript
 import Constants from 'expo-constants';
 
-const projectId = Constants?.expoConfig?.extra?.eas?.projectId || 
-                  Constants?.easConfig?.projectId;
+const projectId = Constants.expoConfig?.extra?.eas?.projectId
+  ?? Constants.easConfig?.projectId;
 
-if (!projectId) {
-  throw new Error('Project ID not configured');
-}
+if (!projectId) throw new Error('Project ID not configured');
 ```
 
 ---
 
-### Issue: Permissions dialog not appearing (Android)
+### Notifications not showing in foreground
 
-**Cause**: Android 13+ requires notification channel before permission prompt.
+**Cause:** Notification handler not configured or returning incorrect behavior.
 
-**Solution**: Create notification channel FIRST
+**Solution:** Configure handler with correct properties (SDK 54):
+
+```typescript
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,  // Required for display
+    shouldShowList: true,    // Required for notification center
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+```
+
+**Note:** `shouldShowAlert` is deprecated. Use `shouldShowBanner` and `shouldShowList`.
+
+---
+
+### Android permissions dialog not appearing
+
+**Cause:** On Android 13+, notification channel must exist before permission prompt.
+
+**Solution:** Create channel BEFORE requesting permissions:
 
 ```typescript
 if (Platform.OS === 'android') {
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'default',
+    name: 'Default',
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
 
-// NOW request permissions
 const { status } = await Notifications.requestPermissionsAsync();
 ```
 
 ---
 
-### Issue: Notifications not showing in foreground
+### Custom sounds not playing
 
-**Cause**: Notification handler not configured or returning incorrect behavior.
+**Cause:** Sound file not declared in app.json or wrong format.
 
-**Solution**: Configure handler properly
+**Solution:**
 
-```typescript
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,      // ← Must be true
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-```
-
----
-
-### Issue: Custom sounds not playing
-
-**Cause**: Sound file not specified in app.json or wrong format.
-
-**Solution**:
-
+1. Declare in app.json:
 ```json
 {
   "expo": {
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "sounds": ["./assets/notification.wav"]
-        }
-      ]
+      ["expo-notifications", { "sounds": ["./assets/notification.wav"] }]
     ]
   }
 }
 ```
 
-Then use filename only:
-
+2. Use filename in notification:
 ```typescript
 await Notifications.scheduleNotificationAsync({
   content: {
@@ -145,186 +122,155 @@ await Notifications.scheduleNotificationAsync({
 });
 ```
 
+3. Sound must be .wav format.
+4. Rebuild after adding sounds (`npx expo prebuild --clean`).
+
 ---
 
-### Issue: Badge not updating
+### Badge not updating
 
-**Cause**: iOS requires `allowBadge` permission granted.
+**Cause:** iOS requires `allowBadge` permission.
 
-**Solution**: Request permission with badge enabled
+**Solution:**
 
 ```typescript
 const { status } = await Notifications.requestPermissionsAsync({
   ios: {
     allowAlert: true,
-    allowBadge: true,  // Required for badge
+    allowBadge: true,
     allowSound: true,
   },
 });
-
-if (status === 'granted') {
-  await Notifications.setBadgeCountAsync(5);
-}
 ```
+
+On Android, badge management is manual via `setBadgeCountAsync()`.
+
+---
+
+### Notifications work in development but not production
+
+**Cause:** Missing or expired credentials.
+
+**Solution:**
+
+```bash
+# Verify and update credentials
+eas credentials
+
+# Rebuild
+eas build --platform ios
+eas build --platform android
+```
+
+Check:
+- APNs certificate not expired (iOS)
+- FCM service account key valid (Android)
+- Correct bundle ID / package name
 
 ---
 
 ## Platform-Specific Issues
 
-### iOS Issues
+### iOS
 
-#### Notification showing but alert/sound not playing
+**Notification shows but no sound:**
+- Check device Settings > Notifications > Your App > Sounds
+- Verify `allowSound` was requested
+- Ensure sound file is valid .wav
 
-**Check**:
-- Device settings: Settings → Notifications → YourApp
-- Verify `allowAlert`, `allowSound` permissions granted
-- Check `UIBackgroundModes` for background notifications
+**Foreground notifications invisible:**
+- Must set `shouldShowBanner: true` in handler
+- Handler must be configured before notifications arrive
 
-#### iOS simulator not receiving push notifications
+### Android
 
-**Limitation**: iOS simulator cannot receive push notifications.
+**Notification icon wrong color:**
+- Icon must be all-white PNG with transparency (96x96)
+- Set `color` in app.json plugin for tint
+- Rebuild after changing icon
 
-**Workaround**: Test with local notifications
+**Notification appears then disappears:**
+- Add `shouldShowList: true` in handler
+- Ensure channel importance is at least DEFAULT
 
----
-
-### Android Issues
-
-#### Large icon not showing properly
-
-**Cause**: Icon not formatted correctly (must be all-white with transparency).
-
-**Solution**:
-- Create 96x96 PNG
-- All white (no colors)
-- Transparent background
-- Use [Android Asset Studio](https://romannurik.github.io/AndroidAssetStudio/)
-
-```json
-{
-  "expo": {
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification_icon.png"
-        }
-      ]
-    ]
-  }
-}
-```
-
-#### Notification appears but immediately disappears
-
-**Solution**: Ensure notification is set to display
-
-```typescript
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowList: true,   // Add this for Android
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-```
-
----
-
-## Development Build Issues
-
-### Issue: Credentials not found after setting up
-
-**Solution**:
-
-```bash
-eas build:cache:clean
-eas credentials
-eas build --platform android
-eas build --platform ios
-```
-
----
-
-### Issue: Notifications work in Expo Go but not in development build
-
-**Solution**: Rebuild with clean cache
-
-```bash
-npx expo run:android --clean
-npx expo run:ios --clean
-```
+**Notification channel cannot be modified:**
+- Channels are immutable after creation
+- Only `name` and `description` can be updated
+- To change importance/sound: delete channel, create new one (user prefs reset)
 
 ---
 
 ## Debugging Techniques
 
-### Log Notification Lifecycle
+### Diagnostic Check
 
 ```typescript
-export function setupNotificationDebugging() {
-  console.log('📲 Setting up notification debugging...');
-  
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+
+export async function diagnosticCheck(): Promise<void> {
+  console.log('--- Notification Diagnostic ---');
+  console.log('Physical device:', Device.isDevice);
+  console.log('Platform:', Platform.OS);
+
+  const perms = await Notifications.getPermissionsAsync();
+  console.log('Permission granted:', perms.granted);
+
+  if (Platform.OS === 'android') {
+    const channels = await Notifications.getNotificationChannelsAsync();
+    console.log('Android channels:', channels.length);
+    channels.forEach((ch) => console.log(' -', ch.id, ch.name, ch.importance));
+  }
+
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  console.log('Scheduled notifications:', scheduled.length);
+
+  const presented = await Notifications.getPresentedNotificationsAsync();
+  console.log('Presented notifications:', presented.length);
+
+  const badge = await Notifications.getBadgeCountAsync();
+  console.log('Badge count:', badge);
+
+  console.log('--- End Diagnostic ---');
+}
+```
+
+### Lifecycle Logging
+
+```typescript
+export function setupNotificationLogging(): () => void {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
-      console.log('🔔 Received notification:', {
-        title: notification.request.content.title,
-        body: notification.request.content.body,
-      });
-      
+      console.log('[HANDLER]', notification.request.content.title);
       return {
-        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
       };
     },
-    handleSuccess: (id) => {
-      console.log('✅ Notification displayed:', id);
-    },
-    handleError: (id, error) => {
-      console.error('❌ Notification failed:', id, error);
-    },
+    handleSuccess: (id) => console.log('[SUCCESS]', id),
+    handleError: (id, error) => console.error('[ERROR]', id, error),
   });
-  
-  const receivedSub = Notifications.addNotificationReceivedListener(notif => {
-    console.log('📬 Notification received (app running)');
+
+  const s1 = Notifications.addNotificationReceivedListener((n) => {
+    console.log('[RECEIVED]', n.request.content.title);
   });
-  
-  const responseSub = Notifications.addNotificationResponseReceivedListener(response => {
-    console.log('👆 User tapped notification');
+
+  const s2 = Notifications.addNotificationResponseReceivedListener((r) => {
+    console.log('[RESPONSE]', r.actionIdentifier);
   });
-  
+
+  const s3 = Notifications.addPushTokenListener((t) => {
+    console.log('[TOKEN]', t.data);
+  });
+
   return () => {
-    receivedSub.remove();
-    responseSub.remove();
+    s1.remove();
+    s2.remove();
+    s3.remove();
   };
-}
-```
-
----
-
-### Diagnostic Check
-
-```typescript
-export async function diagnosticCheck() {
-  console.log('\n🔍 DIAGNOSTIC CHECK\n');
-  
-  const isDevice = Device.isDevice;
-  console.log(`✓ Physical device: ${isDevice}`);
-  
-  const perms = await Notifications.getPermissionsAsync();
-  console.log(`✓ Notifications granted: ${perms.granted}`);
-  
-  if (Platform.OS === 'android') {
-    const channels = await Notifications.getNotificationChannelsAsync();
-    console.log(`✓ Channels created: ${channels?.length || 0}`);
-  }
-  
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log(`✓ Scheduled notifications: ${scheduled.length}`);
-  
-  console.log('\n✅ Diagnostic check complete\n');
 }
 ```
 
@@ -332,44 +278,19 @@ export async function diagnosticCheck() {
 
 ## Testing Checklist
 
-- [ ] Using physical device (not emulator/simulator)
+- [ ] Using physical device (not emulator/simulator for push)
 - [ ] Notification handler configured at app startup
-- [ ] Android notification channel created before requesting permissions
+- [ ] Android: channel created before requesting permissions
 - [ ] Push token successfully obtained
 - [ ] Token sent to backend server
 - [ ] App has notification permissions granted
-- [ ] Notification sound file is valid .wav format
-- [ ] Notification icon is 96x96 all-white PNG
-- [ ] Tested with local notification first
-- [ ] Tested with scheduled notification
-- [ ] Tested in foreground, background, and terminated states
-- [ ] For iOS: checked device Notification settings
-- [ ] For Android: checked app notification channel settings
-
----
-
-## Performance Issues
-
-### Notifications Consuming Memory
-
-**Solutions**:
-
-```typescript
-async function cleanupOldNotifications() {
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  
-  const now = Date.now();
-  for (const notif of scheduled) {
-    const trigger = notif.trigger;
-    
-    if (trigger?.date && new Date(trigger.date).getTime() < now) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-    }
-  }
-}
-
-setInterval(cleanupOldNotifications, 60 * 60 * 1000);
-```
+- [ ] Sound files are valid .wav format
+- [ ] Android icon is 96x96 all-white PNG
+- [ ] Tested local notification first
+- [ ] Tested foreground, background, and terminated states
+- [ ] Listener cleanup in useEffect return functions
+- [ ] iOS: checked device notification settings
+- [ ] Android: checked app channel settings
 
 ---
 
@@ -377,13 +298,14 @@ setInterval(cleanupOldNotifications, 60 * 60 * 1000);
 
 | Limitation | Impact | Workaround |
 |-----------|--------|-----------|
-| No push in Expo Go (Android) | Can't test push in Expo Go on Android | Use development build |
-| Simulator can't receive push | Can't test on iOS/Android simulator | Use physical device |
-| FCM/APNs credentials required | Need backend setup for production | Use Expo Push Service |
-| 3-second handler timeout | Handler must respond quickly | Keep handler lightweight |
-| Android channel immutable | Can't change importance after creation | Delete and recreate channel |
-| Background task limited to 30 seconds | Long-running tasks may timeout | Split into smaller tasks |
+| No push in Expo Go | Cannot test push in Expo Go | Use development build |
+| Simulator no push | Cannot test push on simulator | Use physical device |
+| Handler 3s timeout | handleNotification must return quickly | Keep handler lightweight |
+| Android channel immutable | Cannot change importance after creation | Delete and recreate |
+| Background task 30s limit | Long-running tasks terminated | Split into smaller tasks |
+| Scheduled limit 64-128 | OS limits scheduled notifications | Clean up old schedules |
+| Android badge manual | getBadgeCountAsync returns 0 on Android | Manage badge manually |
 
 ---
 
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

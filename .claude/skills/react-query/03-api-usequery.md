@@ -1,18 +1,6 @@
-# 03 — useQuery: Data Fetching Hook
+# useQuery: Data Fetching Hook
 
-**Module Summary**: Complete `useQuery` hook reference including all parameters (queryKey, queryFn, staleTime, gcTime, etc.), return object properties, status/fetchStatus states, refetch mechanics, selection patterns, and 8+ practical code examples.
-
-**Source:** [https://tanstack.com/query/v5/docs/react/reference/useQuery](https://tanstack.com/query/v5/docs/react/reference/useQuery)
-
----
-
-## Table of Contents
-1. [Function Signature](#function-signature)
-2. [Parameters](#parameters)
-3. [Return Value Properties](#return-value-properties)
-4. [Code Examples](#code-examples)
-5. [TypeScript Best Practices](#typescript-best-practices)
-6. [Next Steps](#next-steps)
+**Module:** `03-api-usequery.md` | **Version:** 5.x (^5.62.11)
 
 ---
 
@@ -25,293 +13,241 @@ function useQuery<
   TData = TQueryFnData,
 >(
   options: UseQueryOptions<TQueryFnData, TError, TData>,
-  queryClient?: QueryClient,
 ): UseQueryResult<TData, TError>
 ```
 
 ---
 
-## Parameters
+## All Options
 
-### Parameter 1: Options Object
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| **queryKey** | `QueryKey` | ✅ Yes | — | Unique identifier for this query (array-based) |
-| **queryFn** | `QueryFn<TQueryFnData>` | ✅ Yes | — | Async function that fetches/returns data |
-| **enabled** | `boolean` | ❌ No | `true` | Enable/disable automatic fetching |
-| **staleTime** | `number` | ❌ No | `0` | Duration (ms) data is fresh before becoming stale |
-| **gcTime** | `number` | ❌ No | `5 * 60 * 1000` | Duration (ms) before unused query is garbage collected |
-| **initialData** | `TQueryFnData \| (() => TQueryFnData)` | ❌ No | — | Initial data before first fetch |
-| **placeholderData** | `TData \| (() => TData)` | ❌ No | — | Placeholder while query is pending |
-| **select** | `(data: TQueryFnData) => TData` | ❌ No | — | Transform/select portion of data |
-| **retry** | `boolean \| number \| RetryFn` | ❌ No | `3` | Retry count or function |
-| **retryDelay** | `number \| RetryDelayFn` | ❌ No | Exponential | Delay between retries (ms) |
-| **refetchInterval** | `number \| false` | ❌ No | `false` | Auto-refetch interval (ms) |
-| **refetchIntervalInBackground** | `boolean` | ❌ No | `false` | Continue refetch interval when page is hidden |
-| **refetchOnMount** | `'stale' \| 'always' \| boolean` | ❌ No | `true` | Refetch when component mounts |
-| **refetchOnWindowFocus** | `'stale' \| 'always' \| boolean` | ❌ No | `true` | Refetch when window regains focus |
-| **refetchOnReconnect** | `'stale' \| 'always' \| boolean` | ❌ No | `true` | Refetch when network reconnects |
-| **networkMode** | `'always' \| 'online' \| 'offlineFirst'` | ❌ No | `'online'` | Network mode behavior |
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `queryKey` | `QueryKey` (readonly array) | Yes | -- | Unique cache identifier |
+| `queryFn` | `(context: QueryFunctionContext) => Promise<TQueryFnData>` | Yes | -- | Async fetch function |
+| `enabled` | `boolean` | No | `true` | Enable/disable auto-fetching |
+| `staleTime` | `number \| Infinity` | No | `0` | Ms before data becomes stale |
+| `gcTime` | `number \| Infinity` | No | `300000` (5 min) | Ms before unused cache is garbage collected |
+| `retry` | `boolean \| number \| (failureCount, error) => boolean` | No | `3` | Retry count or function |
+| `retryDelay` | `number \| (attempt, error) => number` | No | Exponential backoff | Ms delay between retries |
+| `refetchInterval` | `number \| false \| (query) => number \| false` | No | `false` | Auto-refetch interval (ms) |
+| `refetchIntervalInBackground` | `boolean` | No | `false` | Continue interval when tab hidden |
+| `refetchOnMount` | `boolean \| 'always'` | No | `true` | Refetch on mount if stale |
+| `refetchOnWindowFocus` | `boolean \| 'always'` | No | `true` | Refetch on window focus if stale |
+| `refetchOnReconnect` | `boolean \| 'always'` | No | `true` | Refetch on reconnect if stale |
+| `select` | `(data: TQueryFnData) => TData` | No | -- | Transform/select data |
+| `placeholderData` | `TData \| (previousData, previousQuery) => TData` | No | -- | Placeholder while pending |
+| `initialData` | `TQueryFnData \| () => TQueryFnData` | No | -- | Initial data (treated as fresh if `staleTime` not passed) |
+| `initialDataUpdatedAt` | `number \| () => number` | No | -- | Timestamp of initialData |
+| `networkMode` | `'online' \| 'always' \| 'offlineFirst'` | No | `'online'` | Network behavior |
+| `throwOnError` | `boolean \| (error, query) => boolean` | No | `false` | Throw to error boundary |
+| `meta` | `Record<string, unknown>` | No | -- | Metadata accessible in queryFn context |
+| `queryKeyHashFn` | `(queryKey) => string` | No | -- | Custom key hashing |
 
 ---
 
-## Return Value Properties
-
-### Data & Status
+## Return Value
 
 | Property | Type | Description |
 |----------|------|-------------|
-| **data** | `TData \| undefined` | The fetched data (undefined if pending/error) |
-| **error** | `TError \| null` | The error object if query failed |
-| **status** | `'pending' \| 'error' \| 'success'` | Overall query status |
-| **isLoading** | `boolean` | True if pending and no data yet |
-| **isPending** | `boolean` | True if currently in pending state |
-| **isError** | `boolean` | True if query errored |
-| **isSuccess** | `boolean` | True if query succeeded |
-| **fetchStatus** | `'fetching' \| 'idle' \| 'paused'` | Current network state |
-| **isFetching** | `boolean` | True if currently fetching (includes refetches) |
-| **refetch** | `(options?: RefetchOptions) => Promise<QueryObserverResult>` | Manually refetch this query |
+| `data` | `TData \| undefined` | Fetched data (undefined if pending/error) |
+| `error` | `TError \| null` | Error object if failed |
+| `status` | `'pending' \| 'error' \| 'success'` | Query status |
+| `isPending` | `boolean` | First load, no data yet |
+| `isLoading` | `boolean` | Alias: `isPending && isFetching` |
+| `isError` | `boolean` | Query errored |
+| `isSuccess` | `boolean` | Query succeeded |
+| `fetchStatus` | `'fetching' \| 'idle' \| 'paused'` | Network state |
+| `isFetching` | `boolean` | Currently fetching (includes background refetches) |
+| `isRefetching` | `boolean` | Background refetch in progress |
+| `isStale` | `boolean` | Data is stale |
+| `isPlaceholderData` | `boolean` | Using placeholder data |
+| `dataUpdatedAt` | `number` | Timestamp of last successful fetch |
+| `errorUpdatedAt` | `number` | Timestamp of last error |
+| `failureCount` | `number` | Number of consecutive failures |
+| `failureReason` | `TError \| null` | Reason for last failure |
+| `refetch` | `(options?) => Promise<QueryObserverResult>` | Manually refetch |
 
 ---
 
 ## Code Examples
 
-### 1. Basic Query
+### Basic Query
 
 ```typescript
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query'
 
 interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
+  id: number
+  title: string
+  completed: boolean
 }
 
 function TodoList() {
-  const { data: todos, isLoading, error } = useQuery<Todo[]>({
+  const { data: todos, isPending, error } = useQuery<Todo[]>({
     queryKey: ['todos'],
     queryFn: async () => {
-      const res = await fetch('/api/todos');
-      if (!res.ok) throw new Error('Failed to fetch todos');
-      return res.json();
+      const res = await fetch('/api/todos')
+      if (!res.ok) throw new Error('Failed to fetch')
+      return res.json()
     },
-  });
+  })
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (isPending) return <div>Loading...</div>
+  if (error) return <div>Error: {error.message}</div>
 
   return (
     <ul>
-      {todos?.map(todo => (
+      {todos?.map((todo) => (
         <li key={todo.id}>{todo.title}</li>
       ))}
     </ul>
-  );
+  )
 }
 ```
 
-### 2. Query with Variables (Dependent Query)
+### Dependent (Serial) Queries
 
 ```typescript
-interface User {
-  id: number;
-  name: string;
-}
-
-function UserProfile({ userId }: { userId: number }) {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ['users', userId], // Include variable in key
-    queryFn: () =>
-      fetch(`/api/users/${userId}`).then(res => res.json()),
-    enabled: !!userId, // Disable if userId is null
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-  return <div>{user?.name}</div>;
-}
-```
-
-### 3. Conditional/Dependent Queries
-
-```typescript
-function UserPosts({ userId }: { userId: number | null }) {
-  // Only fetch if userId is available
-  const { data: user } = useQuery<User>({
+function UserPosts({ userId }: { userId: string | null }) {
+  const userQuery = useQuery<User>({
     queryKey: ['users', userId],
-    queryFn: () =>
-      fetch(`/api/users/${userId}`).then(res => res.json()),
-    enabled: !!userId, // Pause if userId is null
-  });
+    queryFn: () => fetch(`/api/users/${userId}`).then(r => r.json()),
+    enabled: !!userId,
+  })
 
-  // Dependent query: only fetch after user is loaded
-  const { data: posts } = useQuery<Post[]>({
+  const postsQuery = useQuery<Post[]>({
     queryKey: ['users', userId, 'posts'],
-    queryFn: () =>
-      fetch(`/api/users/${userId}/posts`).then(res => res.json()),
-    enabled: !!user?.id, // Wait for user data first
-  });
+    queryFn: () => fetch(`/api/users/${userId}/posts`).then(r => r.json()),
+    enabled: !!userQuery.data?.id, // Wait for user data
+  })
 
-  return <div>{posts?.length} posts</div>;
+  return <div>{postsQuery.data?.length} posts</div>
 }
 ```
 
-### 4. Query with Data Selection
+### Data Selection
 
 ```typescript
-interface Post {
-  id: number;
-  title: string;
-  body: string;
-  author: { id: number; name: string };
-}
-
 function PostTitle({ postId }: { postId: number }) {
   const { data: title } = useQuery({
     queryKey: ['posts', postId],
-    queryFn: () =>
-      fetch(`/api/posts/${postId}`).then(res => res.json()),
-    select: (data: Post) => data.title, // Only select title
-  });
+    queryFn: (): Promise<Post> =>
+      fetch(`/api/posts/${postId}`).then(r => r.json()),
+    select: (post) => post.title, // Only re-render when title changes
+  })
 
-  return <h1>{title}</h1>;
+  return <h1>{title}</h1>
 }
 ```
 
-### 5. Query with Error Handling & Retries
-
-```typescript
-function TodoList() {
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['todos'],
-    queryFn: async () => {
-      const res = await fetch('/api/todos');
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to fetch');
-      }
-      return res.json();
-    },
-    retry: 3,
-    retryDelay: (attemptIndex) =>
-      Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-  });
-
-  if (isLoading) return <div>Loading...</div>;
-  if (error) {
-    return (
-      <div>
-        Error: {error.message}
-        <button onClick={() => refetch()}>Retry</button>
-      </div>
-    );
-  }
-
-  return <div>{data}</div>;
-}
-```
-
-### 6. Query with Placeholder Data
+### Placeholder Data (Previous Query)
 
 ```typescript
 function SearchPosts({ searchTerm }: { searchTerm: string }) {
-  const { data: posts, isPending } = useQuery({
+  const { data, isPlaceholderData } = useQuery({
     queryKey: ['posts', 'search', searchTerm],
     queryFn: () =>
-      fetch(`/api/posts/search?q=${searchTerm}`).then(res => res.json()),
-    placeholderData: [], // Show empty array while loading
-  });
+      fetch(`/api/posts/search?q=${searchTerm}`).then(r => r.json()),
+    placeholderData: (previousData) => previousData, // Show previous results
+  })
 
   return (
-    <ul>
-      {posts?.map(post => (
-        <li key={post.id}>{post.title}</li>
-      ))}
-    </ul>
-  );
+    <div style={{ opacity: isPlaceholderData ? 0.5 : 1 }}>
+      {data?.map((post: Post) => <div key={post.id}>{post.title}</div>)}
+    </div>
+  )
 }
 ```
 
-### 7. Manual Refetch
+### Polling with refetchInterval
+
+```typescript
+function LiveDashboard() {
+  const { data } = useQuery({
+    queryKey: ['dashboard', 'stats'],
+    queryFn: () => fetch('/api/stats').then(r => r.json()),
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
+  })
+
+  return <div>{JSON.stringify(data)}</div>
+}
+```
+
+### Manual Refetch
 
 ```typescript
 function TodoList() {
   const { data, refetch, isFetching } = useQuery({
     queryKey: ['todos'],
-    queryFn: () =>
-      fetch('/api/todos').then(res => res.json()),
-    refetchOnWindowFocus: false, // Disable auto-refetch
-  });
+    queryFn: fetchTodos,
+    refetchOnWindowFocus: false,
+  })
 
   return (
     <div>
       <button onClick={() => refetch()} disabled={isFetching}>
         {isFetching ? 'Refreshing...' : 'Refresh'}
       </button>
-      {/* Display data */}
     </div>
-  );
+  )
 }
 ```
 
-### 8. Background Refetch Interval
+### Error Handling with Retries
 
 ```typescript
-function LiveDataDashboard() {
-  const { data: stats } = useQuery({
-    queryKey: ['dashboard', 'stats'],
-    queryFn: () =>
-      fetch('/api/stats').then(res => res.json()),
-    refetchInterval: 5000, // Refetch every 5 seconds
-    refetchIntervalInBackground: true, // Continue even if tab is hidden
-  });
-
-  return <div>{stats}</div>;
-}
-```
-
----
-
-## TypeScript Best Practices
-
-```typescript
-interface TodoResponse {
-  id: number;
-  title: string;
-}
-
-interface ErrorResponse {
-  message: string;
-  code: string;
-}
-
-// Explicit type parameters
-const { data } = useQuery<TodoResponse, ErrorResponse>({
+const { data, error, refetch } = useQuery({
   queryKey: ['todos'],
   queryFn: async () => {
-    const res = await fetch('/api/todos');
-    if (!res.ok) {
-      throw new Error('Failed');
-    }
-    return res.json();
+    const res = await fetch('/api/todos')
+    if (!res.ok) throw new Error((await res.json()).message)
+    return res.json()
   },
-});
+  retry: 3,
+  retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000),
+})
 
-// data: TodoResponse | undefined
-// Hover shows exact type information
+if (error) {
+  return (
+    <div>
+      Error: {error.message}
+      <button onClick={() => refetch()}>Retry</button>
+    </div>
+  )
+}
 ```
 
 ---
 
-## Next Steps
+## `useSuspenseQuery`
 
-1. [04-api-usemutation.md](./04-api-usemutation.md) — Mutating data with useMutation
-2. [09-guide-query-keys.md](./09-guide-query-keys.md) — Designing query keys
-3. [09-guide-caching.md](./10-guide-caching.md) — Understanding cache behavior
-4. [11-guide-error-handling.md](./11-guide-error-handling.md) — Error handling strategies
+Same options as `useQuery` except `enabled`, `placeholderData`, and `throwOnError` are not available. Data is guaranteed to be defined.
+
+```typescript
+import { useSuspenseQuery } from '@tanstack/react-query'
+
+function UserProfile({ userId }: { userId: string }) {
+  // data is guaranteed to be defined (never undefined)
+  const { data } = useSuspenseQuery<User>({
+    queryKey: ['users', userId],
+    queryFn: () => fetch(`/api/users/${userId}`).then(r => r.json()),
+  })
+
+  return <div>{data.name}</div> // No need to check undefined
+}
+
+// Must be wrapped in Suspense boundary
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UserProfile userId="1" />
+    </Suspense>
+  )
+}
+```
 
 ---
 
-**Source Documentation:**
-- [useQuery | TanStack Query](https://tanstack.com/query/v5/docs/react/reference/useQuery)
-- [Queries Guide | TanStack Query](https://tanstack.com/query/v5/docs/react/guides/queries)
+**Source:** https://tanstack.com/query/v5/docs/react/reference/useQuery | https://tanstack.com/query/v5/docs/react/reference/useSuspenseQuery
+**Version:** 5.x (^5.62.11)

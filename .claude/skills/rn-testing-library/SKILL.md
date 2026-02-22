@@ -1,11 +1,11 @@
 ---
 name: rn-testing-library
-description: "@testing-library/react-native - render, queries, userEvent, async utilities. Use when working with @testing-library/react-native, writing component tests, or testing user interactions."
+description: "@testing-library/react-native v13 - render, screen, queries (getBy/queryBy/findBy), userEvent (press, longPress, type, clear, paste, scrollTo), built-in Jest matchers (toBeOnTheScreen, toBeVisible, toBeDisabled, toHaveTextContent, toHaveProp, toHaveStyle), waitFor, renderHook. Use when writing component tests, testing user interactions, or testing async behavior."
 ---
 
 # React Native Testing Library
 
-> Testing utilities for React Native components focused on user behavior, not implementation.
+Testing utilities for React Native components focused on user behavior, not implementation.
 
 **Package:** `@testing-library/react-native`
 
@@ -13,28 +13,32 @@ description: "@testing-library/react-native - render, queries, userEvent, async 
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
+LOAD THIS SKILL when user is:
 - Writing component tests for React Native
-- Testing user interactions (press, type, scroll)
-- Querying rendered elements by role or text
-- Testing async behavior and loading states
-- Setting up test environment with Jest
+- Testing user interactions (press, type, scroll, longPress)
+- Querying rendered elements by role, text, or label
+- Testing async behavior, loading states, and error states
+- Setting up test environment with Jest and jest-expo
+- Using built-in Jest matchers (toBeOnTheScreen, toBeVisible, etc.)
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Query by accessibility role or label first — `getByRole`, `getByLabelText` match how users interact
-2. Use `userEvent` over `fireEvent` — more realistic, fires all intermediate events
-3. Use `findBy*` for async elements — auto-waits with timeout
-4. Wrap state updates in `act()` or use async queries — prevents "not wrapped in act" warnings
+1. Query by accessibility role or label first -- `getByRole`, `getByLabelText` match how users interact
+2. Use `userEvent` over `fireEvent` -- more realistic, fires all intermediate events
+3. Use `findBy*` for async elements -- auto-waits with timeout
+4. Wrap state updates in `act()` or use async queries -- prevents "not wrapped in act" warnings
+5. Use `toBeOnTheScreen()` as the standard visibility matcher -- built-in since v12.4
+6. Call `userEvent.setup()` before render -- creates properly configured event instance
 
 **NEVER:**
-1. Query by testID as first choice — use accessibility queries first, testID as last resort
-2. Test implementation details — test behavior, not component internals
-3. Use `getBy*` for elements that may not exist — use `queryBy*` (returns null) instead
-4. Forget `await` with userEvent — all userEvent methods are async
+1. Query by testID as first choice -- use accessibility queries first, testID as last resort
+2. Test implementation details (state, refs) -- test behavior the user can observe
+3. Use `getBy*` for elements that may not exist -- use `queryBy*` (returns null) instead
+4. Forget `await` with userEvent -- all userEvent methods are async
+5. Use deprecated `@testing-library/jest-native` -- use built-in matchers from v12.4+
 
 ---
 
@@ -48,13 +52,10 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 describe('Counter', () => {
   it('increments count when button pressed', async () => {
     const user = userEvent.setup();
-
     render(<Counter />);
 
     expect(screen.getByText('Count: 0')).toBeOnTheScreen();
-
     await user.press(screen.getByRole('button', { name: 'Increment' }));
-
     expect(screen.getByText('Count: 1')).toBeOnTheScreen();
   });
 });
@@ -69,36 +70,16 @@ describe('LoginForm', () => {
   it('submits form with valid data', async () => {
     const onSubmit = jest.fn();
     const user = userEvent.setup();
-
     render(<LoginForm onSubmit={onSubmit} />);
 
-    // Query by accessibility
-    const emailInput = screen.getByLabelText('Email');
-    const passwordInput = screen.getByLabelText('Password');
-    const submitButton = screen.getByRole('button', { name: 'Login' });
-
-    // Type in fields
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
-
-    // Submit
-    await user.press(submitButton);
+    await user.type(screen.getByLabelText('Email'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.press(screen.getByRole('button', { name: 'Login' }));
 
     expect(onSubmit).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
     });
-  });
-
-  it('shows error for invalid email', async () => {
-    const user = userEvent.setup();
-    render(<LoginForm onSubmit={jest.fn()} />);
-
-    await user.type(screen.getByLabelText('Email'), 'invalid');
-    await user.press(screen.getByRole('button', { name: 'Login' }));
-
-    // findByText auto-waits for async validation
-    expect(await screen.findByText('Invalid email')).toBeOnTheScreen();
   });
 });
 ```
@@ -106,31 +87,14 @@ describe('LoginForm', () => {
 ### Testing Async Loading States
 
 ```typescript
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 
-describe('UserProfile', () => {
-  it('shows loading then user data', async () => {
-    render(<UserProfile userId="123" />);
+it('shows loading then user data', async () => {
+  render(<UserProfile userId="123" />);
 
-    // Initially shows loading
-    expect(screen.getByText('Loading...')).toBeOnTheScreen();
-
-    // Wait for data to load
-    expect(await screen.findByText('John Doe')).toBeOnTheScreen();
-
-    // Loading should be gone
-    expect(screen.queryByText('Loading...')).not.toBeOnTheScreen();
-  });
-
-  it('shows error on fetch failure', async () => {
-    server.use(
-      rest.get('/api/users/123', (req, res, ctx) => res(ctx.status(500)))
-    );
-
-    render(<UserProfile userId="123" />);
-
-    expect(await screen.findByText('Failed to load user')).toBeOnTheScreen();
-  });
+  expect(screen.getByText('Loading...')).toBeOnTheScreen();
+  expect(await screen.findByText('John Doe')).toBeOnTheScreen();
+  expect(screen.queryByText('Loading...')).not.toBeOnTheScreen();
 });
 ```
 
@@ -139,7 +103,6 @@ describe('UserProfile', () => {
 ```typescript
 import { render, RenderOptions } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { NavigationContainer } from '@react-navigation/native';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -148,21 +111,18 @@ const queryClient = new QueryClient({
 function AllProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <NavigationContainer>
-        {children}
-      </NavigationContainer>
+      {children}
     </QueryClientProvider>
   );
 }
 
 function customRender(
   ui: React.ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
+  options?: Omit<RenderOptions, 'wrapper'>,
 ) {
   return render(ui, { wrapper: AllProviders, ...options });
 }
 
-// Re-export everything
 export * from '@testing-library/react-native';
 export { customRender as render };
 ```
@@ -172,19 +132,12 @@ export { customRender as render };
 ```typescript
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-describe('ItemList', () => {
-  it('loads more items on scroll to end', async () => {
-    const user = userEvent.setup();
-    render(<ItemList />);
+it('loads more items on scroll', async () => {
+  const user = userEvent.setup();
+  render(<ItemList />);
 
-    const list = screen.getByRole('list');
-
-    // Scroll to trigger onEndReached
-    await user.scrollTo(list, { y: 1000 });
-
-    // Wait for new items
-    expect(await screen.findByText('Item 11')).toBeOnTheScreen();
-  });
+  await user.scrollTo(screen.getByRole('list'), { y: 1000 });
+  expect(await screen.findByText('Item 11')).toBeOnTheScreen();
 });
 ```
 
@@ -192,46 +145,44 @@ describe('ItemList', () => {
 
 ## Anti-Patterns
 
-**BAD** — Query by testID first:
+**BAD** -- Query by testID first:
 ```typescript
-screen.getByTestId('submit-button'); // Implementation detail
+screen.getByTestId('submit-button');
 ```
 
-**GOOD** — Query by accessibility:
+**GOOD** -- Query by accessibility:
 ```typescript
-screen.getByRole('button', { name: 'Submit' }); // How users see it
+screen.getByRole('button', { name: 'Submit' });
 ```
 
-**BAD** — Using fireEvent for user actions:
+**BAD** -- Using fireEvent for new tests:
 ```typescript
-fireEvent.press(button); // Missing intermediate events
-fireEvent.changeText(input, 'text'); // Unrealistic
+fireEvent.press(button);
+fireEvent.changeText(input, 'text');
 ```
 
-**GOOD** — Using userEvent:
+**GOOD** -- Using userEvent:
 ```typescript
-await user.press(button); // Realistic press sequence
-await user.type(input, 'text'); // Types character by character
+await user.press(button);
+await user.type(input, 'text');
 ```
 
-**BAD** — Using getBy for optional elements:
+**BAD** -- Using getBy for optional elements:
 ```typescript
-const error = screen.getByText('Error'); // Throws if not found!
-if (error) { ... }
+const error = screen.getByText('Error');
 ```
 
-**GOOD** — Using queryBy for optional elements:
+**GOOD** -- Using queryBy for optional elements:
 ```typescript
-const error = screen.queryByText('Error'); // Returns null if not found
-expect(error).toBeNull(); // Safe to assert
+expect(screen.queryByText('Error')).not.toBeOnTheScreen();
 ```
 
-**BAD** — Missing await with async queries:
+**BAD** -- Missing await with async queries:
 ```typescript
-expect(screen.findByText('Loaded')).toBeOnTheScreen(); // Promise, not element!
+expect(screen.findByText('Loaded')).toBeOnTheScreen();
 ```
 
-**GOOD** — Await async queries:
+**GOOD** -- Await async queries:
 ```typescript
 expect(await screen.findByText('Loaded')).toBeOnTheScreen();
 ```
@@ -247,11 +198,19 @@ expect(await screen.findByText('Loaded')).toBeOnTheScreen();
 | Query element (null) | `queryBy*` | `screen.queryByText('Error')` |
 | Find element (async) | `findBy*` | `await screen.findByText('Loaded')` |
 | Setup user events | `userEvent.setup()` | `const user = userEvent.setup()` |
-| Press button | `user.press()` | `await user.press(button)` |
-| Type in input | `user.type()` | `await user.type(input, 'text')` |
+| Press | `user.press()` | `await user.press(button)` |
+| Long press | `user.longPress()` | `await user.longPress(el, { duration: 1000 })` |
+| Type text | `user.type()` | `await user.type(input, 'text')` |
+| Clear input | `user.clear()` | `await user.clear(input)` |
+| Paste text | `user.paste()` | `await user.paste(input, 'text')` |
 | Scroll | `user.scrollTo()` | `await user.scrollTo(list, { y: 500 })` |
 | Wait for condition | `waitFor()` | `await waitFor(() => expect(...))` |
-| Assert visible | `toBeOnTheScreen()` | `expect(el).toBeOnTheScreen()` |
+| Assert on screen | `toBeOnTheScreen()` | `expect(el).toBeOnTheScreen()` |
+| Assert visible | `toBeVisible()` | `expect(el).toBeVisible()` |
+| Assert disabled | `toBeDisabled()` | `expect(el).toBeDisabled()` |
+| Assert text content | `toHaveTextContent()` | `expect(el).toHaveTextContent('Hello')` |
+| Assert prop | `toHaveProp()` | `expect(el).toHaveProp('disabled', true)` |
+| Assert style | `toHaveStyle()` | `expect(el).toHaveStyle({ color: 'red' })` |
 
 ---
 
@@ -260,11 +219,17 @@ expect(await screen.findByText('Loaded')).toBeOnTheScreen();
 | When you need | Load |
 |---------------|------|
 | Installation and Jest setup | [01-setup.md](01-setup.md) |
+| render(), screen, cleanup, act() | [02-core-api.md](02-core-api.md) |
 | Query methods (getBy, findBy, queryBy) | [03-query-methods.md](03-query-methods.md) |
-| userEvent (press, type, scroll) | [04-user-interactions.md](04-user-interactions.md) |
-| Provider wrappers and mocking | [08-advanced-patterns.md](08-advanced-patterns.md) |
-| TypeScript types and matchers | [09-typescript.md](09-typescript.md) |
+| userEvent (press, type, scroll, clear, paste) | [04-user-interactions.md](04-user-interactions.md) |
+| Async testing (waitFor, findBy) | [05-async-testing.md](05-async-testing.md) |
+| Hook testing (renderHook) | [06-hook-testing.md](06-hook-testing.md) |
+| Accessibility and within() | [07-accessibility.md](07-accessibility.md) |
+| Provider wrappers and advanced patterns | [08-advanced-patterns.md](08-advanced-patterns.md) |
+| TypeScript types and integration | [09-typescript.md](09-typescript.md) |
+| Troubleshooting and FAQ | [10-troubleshooting.md](10-troubleshooting.md) |
+| Built-in Jest matchers reference | [11-jest-matchers.md](11-jest-matchers.md) |
 
 ---
 
-**Version:** 12.x | **Source:** https://callstack.github.io/react-native-testing-library/
+**Version:** 13.x | **Source:** https://oss.callstack.com/react-native-testing-library/

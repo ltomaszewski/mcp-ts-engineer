@@ -1,11 +1,13 @@
 ---
 name: typescript-clean-code
-description: TypeScript clean code patterns - SOLID principles, file/function size limits, TSDoc, error handling, debugging. Use when writing TypeScript code, refactoring, or reviewing code quality.
+version: "5.9"
+description: TypeScript clean code patterns - SOLID principles, file/function size limits, TSDoc, error handling, debugging, type safety. Use when writing TypeScript code, refactoring, or reviewing code quality.
+globs: ["**/*.ts", "**/*.tsx"]
 ---
 
-# TypeScript Clean Code
+# TypeScript Clean Code (TS 5.9)
 
-> Framework-agnostic guidelines for writing clean, maintainable, and debuggable TypeScript.
+> Framework-agnostic guidelines for writing clean, maintainable, and debuggable TypeScript targeting ES2022+ and TypeScript 5.9.
 
 ---
 
@@ -16,145 +18,78 @@ description: TypeScript clean code patterns - SOLID principles, file/function si
 - Refactoring for maintainability
 - Reviewing code quality
 - Designing functions, classes, or modules
-- Setting up code standards
+- Setting up TypeScript strict mode configuration
+- Debugging type errors or runtime issues
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Keep files under 300 lines — split by responsibility when larger
-2. Keep functions under 50 lines, prefer 20-30 — extract helpers for complex logic
-3. Use explicit return types on all functions — prevents accidental API changes
-4. Document public APIs with TSDoc — enables IDE hints and documentation generation
-5. Preserve stack traces with `{ cause }` — chain errors for debugging
+1. Keep files under 300 lines -- split by responsibility when larger
+2. Keep functions under 50 lines, prefer 20-30 -- extract helpers for complex logic
+3. Use explicit return types on all exported functions -- prevents accidental API changes
+4. Document public APIs with TSDoc -- enables IDE hints and documentation generation
+5. Preserve stack traces with `{ cause }` -- chain errors for full debugging context
 
 **NEVER:**
-1. Use `any` type — use `unknown` with type guards or proper interfaces
-2. Leave `unknown` unnarrowed — always validate and narrow before use
-3. Nest more than 3 levels deep — extract to functions or early return
-4. Use magic numbers — extract to named constants
-5. Ignore errors silently — always handle or rethrow with context
+1. Use `any` type -- use `unknown` with type guards or proper interfaces
+2. Leave `unknown` unnarrowed -- always validate and narrow before use
+3. Nest more than 3 levels deep -- extract to functions or use early returns
+4. Use magic numbers -- extract to named constants
+5. Ignore errors silently -- always handle or rethrow with context
 
 ---
 
 ## Core Patterns
 
-### Size Limits Reference
-
-```
-Max lines per file:       300 (500-600 permissive)
-Preferred function lines: 20-30
-Max function lines:       50
-Max parameters:           4 (use options object for more)
-Max nesting depth:        3
-Max cyclomatic complexity: 10
-```
-
-### Explicit Types and Return Types
+### Size Limits
 
 ```typescript
-// BAD - inferred return, any param
-function process(data) {
-  return data.map(x => x.value);
+// Enforced limits
+const MAX_FILE_LINES = 300;
+const MAX_FUNCTION_LINES = 50;
+const MAX_PARAMETERS = 4;
+const MAX_NESTING = 3;
+const MAX_COMPLEXITY = 10;
+```
+
+### Explicit Return Types
+
+```typescript
+// BAD - inferred return type
+function process(data: Item[]) {
+  return data.map((x) => x.value);
 }
 
-// GOOD - explicit types
-interface Item {
-  id: string;
-  value: number;
-}
-
+// GOOD - explicit return type
 function processItems(items: Item[]): number[] {
   return items.map((item) => item.value);
-}
-```
-
-### TSDoc for Public APIs
-
-```typescript
-/**
- * Calculates the total price including tax.
- *
- * @param items - Array of items with prices
- * @param taxRate - Tax rate as decimal (e.g., 0.1 for 10%)
- * @returns Total price with tax applied
- * @throws {@link InvalidTaxRateError} When taxRate is negative
- *
- * @example
- * ```ts
- * const total = calculateTotal([{ price: 100 }], 0.1);
- * // Returns 110
- * ```
- */
-function calculateTotal(items: CartItem[], taxRate: number): number {
-  if (taxRate < 0) {
-    throw new InvalidTaxRateError('Tax rate cannot be negative');
-  }
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  return subtotal * (1 + taxRate);
 }
 ```
 
 ### Error Handling with Cause Chain
 
 ```typescript
-// Preserve original error for debugging
-class DatabaseError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
-    this.name = 'DatabaseError';
-  }
-}
-
 async function fetchUser(id: string): Promise<User> {
   try {
     return await db.users.findById(id);
   } catch (error) {
-    throw new DatabaseError(`Failed to fetch user ${id}`, { cause: error });
+    throw new DatabaseError(
+      `Failed to fetch user ${id}`,
+      { cause: error },
+    );
   }
 }
-
-// Error chain preserved in stack trace:
-// DatabaseError: Failed to fetch user 123
-//   at fetchUser (...)
-// Caused by: MongoError: Connection refused
-//   at ...
 ```
 
-### Reducing Nesting with Early Returns
+### Early Returns
 
 ```typescript
-// BAD - deeply nested
 function processOrder(order: Order | null): Result {
-  if (order) {
-    if (order.items.length > 0) {
-      if (order.status === 'pending') {
-        return processValidOrder(order);
-      } else {
-        return { error: 'Order not pending' };
-      }
-    } else {
-      return { error: 'No items' };
-    }
-  } else {
-    return { error: 'No order' };
-  }
-}
-
-// GOOD - early returns, flat
-function processOrder(order: Order | null): Result {
-  if (!order) {
-    return { error: 'No order' };
-  }
-
-  if (order.items.length === 0) {
-    return { error: 'No items' };
-  }
-
-  if (order.status !== 'pending') {
-    return { error: 'Order not pending' };
-  }
+  if (!order) return { error: 'No order' };
+  if (order.items.length === 0) return { error: 'No items' };
+  if (order.status !== 'pending') return { error: 'Not pending' };
 
   return processValidOrder(order);
 }
@@ -163,17 +98,6 @@ function processOrder(order: Order | null): Result {
 ### Type Guards for Unknown
 
 ```typescript
-// BAD - unnarrowed unknown
-function handleResponse(data: unknown) {
-  console.log(data.message); // Error: unknown has no properties
-}
-
-// GOOD - type guard to narrow
-interface ApiResponse {
-  message: string;
-  status: number;
-}
-
 function isApiResponse(value: unknown): value is ApiResponse {
   return (
     typeof value === 'object' &&
@@ -182,64 +106,37 @@ function isApiResponse(value: unknown): value is ApiResponse {
     typeof (value as ApiResponse).message === 'string'
   );
 }
-
-function handleResponse(data: unknown): void {
-  if (!isApiResponse(data)) {
-    throw new Error('Invalid response format');
-  }
-  console.log(data.message); // TypeScript knows it's string
-}
 ```
 
-### Options Object for Many Parameters
+### Options Object Pattern
 
 ```typescript
-// BAD - too many positional params
-function createUser(
-  name: string,
-  email: string,
-  age: number,
-  role: string,
-  department: string,
-  isActive: boolean
-) { ... }
-
-// GOOD - options object
 interface CreateUserOptions {
   name: string;
   email: string;
-  age?: number;
   role?: 'admin' | 'user';
-  department?: string;
   isActive?: boolean;
 }
 
 function createUser(options: CreateUserOptions): User {
-  const { name, email, age, role = 'user', department, isActive = true } = options;
+  const { name, email, role = 'user', isActive = true } = options;
   // ...
 }
-
-// Clear at call site
-createUser({ name: 'John', email: 'john@example.com', role: 'admin' });
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** — Using `any`:
+**BAD** -- Using `any`:
 ```typescript
 function parse(input: any) {
-  return input.data.value; // No type safety!
+  return input.data.value;
 }
 ```
 
-**GOOD** — Define interface or use unknown with guard:
+**GOOD** -- Define interface or use unknown with guard:
 ```typescript
-interface ParsedInput {
-  data: { value: string };
-}
-
 function parse(input: unknown): string {
   if (!isValidInput(input)) {
     throw new Error('Invalid input');
@@ -248,38 +145,18 @@ function parse(input: unknown): string {
 }
 ```
 
-**BAD** — Swallowing errors:
+**BAD** -- Swallowing errors:
 ```typescript
-try {
-  await riskyOperation();
-} catch (e) {
-  // Silently ignored
-}
+try { await riskyOperation(); } catch (e) { }
 ```
 
-**GOOD** — Handle or rethrow with context:
+**GOOD** -- Handle or rethrow with context:
 ```typescript
 try {
   await riskyOperation();
 } catch (error) {
-  logger.error('Operation failed', { error });
-  throw new OperationError('Risky operation failed', { cause: error });
+  throw new OperationError('Failed', { cause: error });
 }
-```
-
-**BAD** — Magic numbers:
-```typescript
-if (password.length < 8) { ... }
-setTimeout(callback, 86400000);
-```
-
-**GOOD** — Named constants:
-```typescript
-const MIN_PASSWORD_LENGTH = 8;
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-if (password.length < MIN_PASSWORD_LENGTH) { ... }
-setTimeout(callback, ONE_DAY_MS);
 ```
 
 ---
@@ -299,24 +176,29 @@ setTimeout(callback, ONE_DAY_MS);
 | Document function | `/** @param x - desc @returns desc */` |
 | Chain errors | `throw new Error('msg', { cause: err })` |
 | Narrow unknown | `if (isType(x)) { x.prop }` |
-| Many params | Use options object |
+| Many params | Use options object interface |
 | Deep nesting | Early returns |
+| Deferred import | `import defer * as mod from './mod'` |
 
 ---
 
-## Code Quality Checklist
+## Deep Dive References
 
-- [ ] Functions under 50 lines
-- [ ] Files under 300 lines
-- [ ] All public methods have TSDoc
-- [ ] No `any` types
-- [ ] No unnarrowed `unknown`
-- [ ] Explicit return types
-- [ ] Errors preserve stack traces
-- [ ] Descriptive variable names
-- [ ] No magic numbers
-- [ ] Max 3 nesting levels
+| File | Topic |
+|------|-------|
+| [01-file-organization.md](./01-file-organization.md) | Directory structure, file naming, barrel files, when to split |
+| [02-function-design.md](./02-function-design.md) | SRP, pure functions, early returns, parameters, abstraction levels |
+| [03-solid-principles.md](./03-solid-principles.md) | SRP, OCP, LSP, ISP, DIP with TypeScript examples |
+| [04-naming-conventions.md](./04-naming-conventions.md) | Variables, functions, classes, interfaces, files, generics |
+| [05-tsdoc-documentation.md](./05-tsdoc-documentation.md) | TSDoc tags, class/function/interface docs, when to document |
+| [06-error-handling.md](./06-error-handling.md) | Custom errors, cause chains, Result type, error narrowing |
+| [07-debugging.md](./07-debugging.md) | Source maps, breakpoints, stack traces, async debugging |
+| [08-logging.md](./08-logging.md) | Structured logging, log levels, correlation IDs, what to log |
+| [09-type-safety.md](./09-type-safety.md) | Strict config, type guards, satisfies, discriminated unions, TS 5.9 |
+| [10-code-review-checklist.md](./10-code-review-checklist.md) | Pre-commit checklist, review criteria, templates |
 
 ---
 
-**Source:** Internal standards based on Clean Code principles
+**Source:** https://www.typescriptlang.org/docs/handbook/ | https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-9.html
+**TypeScript:** 5.9 | **Target:** ES2022+
+**Last Updated:** February 2026

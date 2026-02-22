@@ -465,3 +465,7 @@ q.interrupt();
 
 // The loop will exit with result.subtype === "interrupted"
 ```
+
+---
+
+**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

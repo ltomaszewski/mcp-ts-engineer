@@ -1,12 +1,13 @@
 # Keyboard Controller: Android Configuration
 
-**Android manifest, soft input modes, and gestures**
+**Android manifest, soft input modes, runtime mode switching, and gestures.**
 
 ---
 
 ## AndroidManifest.xml Setup
 
-### Default Configuration
+### Recommended Configuration
+
 ```xml
 <!-- android/app/src/main/AndroidManifest.xml -->
 <activity
@@ -17,24 +18,24 @@
 />
 ```
 
-**Explanation:**
-- `adjustResize` - Resize content when keyboard appears
-- `stateHidden` - Start with keyboard hidden
+- `adjustResize` -- resize content area when keyboard appears
+- `stateHidden` -- start with keyboard hidden
 
 ---
 
 ## Soft Input Modes
 
 ### AndroidSoftInputModes Enum
-```typescript
-type AndroidSoftInputModes =
-  | 'adjustResize'      // Resize content area
-  | 'adjustPan'         // Pan view upward
-  | 'adjustNothing'     // No automatic adjustment
-  | 'adjustUnspecified' // System default
-```
 
-### Setting Modes Dynamically
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `SOFT_INPUT_ADJUST_RESIZE` | -- | Resize content area to make room for keyboard |
+| `SOFT_INPUT_ADJUST_PAN` | -- | Pan the view upward |
+| `SOFT_INPUT_ADJUST_NOTHING` | -- | No automatic adjustment |
+| `SOFT_INPUT_ADJUST_UNSPECIFIED` | -- | System default behavior |
+
+### Setting Modes at Runtime
+
 ```typescript
 import {
   KeyboardController,
@@ -44,12 +45,9 @@ import { useEffect } from 'react';
 
 function FormScreen() {
   useEffect(() => {
-    // Set mode for this screen
     KeyboardController.setInputMode(
       AndroidSoftInputModes.SOFT_INPUT_ADJUST_RESIZE
     );
-
-    // Restore default when leaving
     return () => {
       KeyboardController.setDefaultMode();
     };
@@ -63,50 +61,71 @@ function FormScreen() {
 
 | Mode | Content Resizes | View Pans | Best For |
 |------|-----------------|-----------|----------|
-| adjustResize | Yes | No | Forms, scrollable content |
-| adjustPan | No | Yes | Fixed layouts |
-| adjustNothing | No | No | Custom handling |
+| `SOFT_INPUT_ADJUST_RESIZE` | Yes | No | Forms, scrollable content |
+| `SOFT_INPUT_ADJUST_PAN` | No | Yes | Fixed layouts |
+| `SOFT_INPUT_ADJUST_NOTHING` | No | No | Custom handling with hooks |
 
 ---
 
 ## Android 11+ Interactive Gestures
 
-Enable swipe-to-dismiss on Android 11+:
+Swipe-to-dismiss keyboard is only available on Android 11 (API 30) and higher.
 
 ```typescript
 import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 
-function InteractiveScreen() {
+function ChatScreen() {
   return (
-    <KeyboardGestureArea style={{ flex: 1 }}>
+    <KeyboardGestureArea
+      interpolator="ios"
+      style={{ flex: 1 }}
+    >
       {/* Swipe down to dismiss keyboard */}
+      <FlatList data={messages} renderItem={renderMessage} inverted />
     </KeyboardGestureArea>
   );
 }
 ```
 
-**Requirements:** Android 11 (API 30) or higher.
+### Platform Check
+
+On Android < 11, `KeyboardGestureArea` renders as a fragment (no-op). No need for platform checks in your code.
+
+---
+
+## Edge-to-Edge Mode
+
+`KeyboardProvider` enables edge-to-edge mode by default on Android with:
+- `statusBarTranslucent={true}`
+- `navigationBarTranslucent={true}`
+
+If using `react-native-edge-to-edge`, set `preserveEdgeToEdge={true}` on the provider:
+
+```typescript
+<KeyboardProvider preserveEdgeToEdge={true}>
+  <YourApp />
+</KeyboardProvider>
+```
 
 ---
 
 ## Troubleshooting
 
 ### Keyboard Doesn't Appear
-1. Ensure `KeyboardProvider` wraps app
-2. Check manifest has soft input mode
+1. Ensure `KeyboardProvider` wraps the app
+2. Check manifest has correct `windowSoftInputMode`
 3. Try `KeyboardController.setInputMode()` explicitly
 
 ### Layout Jumping
-1. Use `KeyboardAwareScrollView`
-2. Set consistent `bottomOffset`
-3. Avoid layout changes during animation
+1. Use `KeyboardAwareScrollView` with consistent `bottomOffset`
+2. Avoid layout changes during animation
 
 ### Wrong Input Mode
 ```typescript
 // Reset to manifest default
-await KeyboardController.setDefaultMode();
+KeyboardController.setDefaultMode();
 ```
 
 ---
 
-**See Also**: [Setup](01-setup.md) | [iOS Config](08-ios-config.md)
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation

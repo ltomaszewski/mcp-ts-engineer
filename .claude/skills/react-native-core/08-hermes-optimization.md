@@ -1,333 +1,265 @@
-# React Native 0.83 - Hermes Engine & Build Optimization
+# React Native 0.81.5 -- Hermes Engine & Build Optimization
 
-**Performance benefits, setup, and bundle size analysis**
-
----
-
-## 🎯 Hermes Overview
-
-Hermes is an optimized JavaScript engine for React Native, developed by Meta.
-
-### Benefits
-
-| Aspect | V8 | Hermes | Improvement |
-|--------|-----|--------|------------|
-| **APK Size** | ~5MB | ~2.5MB | 50% smaller |
-| **Startup Time** | ~1000ms | ~600ms | 40% faster |
-| **Memory Usage** | 100MB | 70MB | 30% less |
-| **JS Execution** | Standard | Optimized | 5-15% faster |
-
-### When to Use
-
-✅ **Use Hermes for:**
-- Production apps (significant size/performance benefit)
-- Android apps (most benefit on Android)
-- Apps with limited device specs
-- Apps sensitive to startup time
-
-⚠️ **Consider V8 for:**
-- Development with Chrome DevTools
-- Complex debugging scenarios
-- Specific library requirements
+Hermes engine details, bytecode precompilation, ProGuard/R8, bundle analysis, and size reduction.
 
 ---
 
-## 🔧 Enable Hermes on Android
+## Hermes Overview
 
-### Step 1: Edit build.gradle
+Hermes is Meta's JavaScript engine optimized for React Native. It is the **default engine** in RN 0.81.5 -- no configuration needed.
 
-```gradle
-// android/app/build.gradle
+### Performance Comparison
 
-project.ext.react = [
-    enableHermes: true,  // Add this line
-    enableFlipper: true,
-    // ... other config
-]
-```
+| Metric | Without Hermes | With Hermes | Improvement |
+|--------|---------------|-------------|-------------|
+| APK size (JS engine) | ~5 MB | ~2.5 MB | ~50% smaller |
+| Startup time (TTI) | ~1000 ms | ~600 ms | ~40% faster |
+| Memory usage | ~100 MB | ~70 MB | ~30% less |
 
-### Step 2: Clean and Rebuild
+### How Hermes Optimizes
 
-```bash
-# Clean previous build
-cd android
-./gradlew clean
-cd ..
+- **Ahead-of-time bytecode compilation** -- JS compiled to bytecode at build time, not at runtime
+- **No JIT compiler** -- smaller binary, predictable performance, no warmup
+- **Optimized garbage collector** -- lower memory pressure, fewer pauses
+- **Compact bytecode format** -- smaller bundle size on device
 
-# Reset Metro cache
-npm start -- --reset-cache
+---
 
-# Rebuild
-npm run android
-```
-
-### Step 3: Verify Hermes
-
-Check if Hermes is running:
+## Verify Hermes is Active
 
 ```typescript
 import { View, Text } from 'react-native';
 
-const HermesDetector = () => {
-  const isHermes = () => !!global.HermesInternal;
+function HermesCheck(): React.ReactElement {
+  const isHermes = (): boolean => !!global.HermesInternal;
 
   return (
-    <View>
-      <Text>Using Hermes: {isHermes() ? 'Yes' : 'No'}</Text>
+    <View style={{ padding: 16 }}>
+      <Text>Engine: {isHermes() ? 'Hermes' : 'JSC/V8'}</Text>
     </View>
   );
-};
+}
 ```
 
 ---
 
-## 🍎 Enable Hermes on iOS
+## JavaScriptCore Removal (RN 0.81)
 
-### Step 1: Edit Podfile
-
-```ruby
-# ios/Podfile
-
-target 'MyApp' do
-  config = use_native_modules!
-
-  use_react_native!(
-    :path => config[:reactNativePath],
-    :hermes_enabled => true  # Add this line
-  )
-end
-```
-
-### Step 2: Install Pods
+In React Native 0.81, the built-in JavaScriptCore (JSC) has been removed. If you need JSC:
 
 ```bash
-cd ios
-rm -rf Pods Podfile.lock
-pod install
-cd ..
+npm install @react-native-community/javascriptcore
 ```
 
-### Step 3: Rebuild
-
-```bash
-npm start -- --reset-cache
-npm run ios
-```
+Most apps should stay on Hermes. JSC is only needed for specific debugging scenarios or library compatibility issues.
 
 ---
 
-## 📦 ProGuard/R8 Configuration (Android)
+## Precompiled iOS Builds (Experimental)
 
-Minify and shrink Android build size.
+RN 0.81 introduces precompiled builds that can reduce iOS compile times by up to 10x.
 
-### Step 1: Enable Minification
+Enable during pod install:
+
+```bash
+RCT_USE_RN_DEP=1 RCT_USE_PREBUILT_RNCORE=1 cd ios && pod install && cd ..
+```
+
+This feature was developed collaboratively by Expo and Meta.
+
+---
+
+## ProGuard/R8 (Android Release Builds)
+
+Minify and shrink Android builds for production.
+
+### Enable in build.gradle
 
 ```gradle
 // android/app/build.gradle
-
-buildTypes {
-    release {
-        minifyEnabled true        // Enable minification
-        shrinkResources true      // Remove unused resources
-        proguardFiles getDefaultProguardFile(
-            'proguard-android-optimize.txt'
-        ), 'proguard-rules.pro'
+android {
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
     }
 }
 ```
 
-### Step 2: Configure Proguard Rules
-
-Create `android/app/proguard-rules.pro`:
+### ProGuard Rules
 
 ```proguard
-# Keep React Native classes
+# android/app/proguard-rules.pro
+
+# React Native
 -keep class com.facebook.react.** { *; }
 -keep class com.facebook.hermes.** { *; }
-
-# Keep your app classes
--keep class com.myapp.** { *; }
+-keep class com.facebook.jni.** { *; }
 
 # Keep native methods
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 
-# Remove logging
+# Remove debug logging
 -assumenosideeffects class android.util.Log {
-    public static *** d(...);
-    public static *** v(...);
-    public static *** i(...);
+    public static int d(...);
+    public static int v(...);
+    public static int i(...);
 }
+
+# Keep your app classes
+-keep class com.myapp.** { *; }
 ```
 
 ---
 
-## 📊 Bundle Size Analysis
+## Bundle Size Analysis
 
-### Analyze Android APK
-
-```bash
-# Build release APK
-cd android
-./gradlew bundleRelease
-cd ..
-
-# Check APK size
-ls -lh android/app/build/outputs/apk/release/
-
-# Extract and analyze
-unzip android/app/build/outputs/apk/release/app-release.apk -d apk-analysis
-du -sh apk-analysis/*
-```
-
-### Analyze JavaScript Bundle
+### Generate Bundle
 
 ```bash
-# Generate bundle analysis
-react-native bundle \
+npx react-native bundle \
   --entry-file index.js \
   --platform android \
   --dev false \
   --bundle-output dist/main.bundle.js \
   --sourcemap-output dist/main.bundle.map
+```
 
-# Check bundle size
-ls -lh dist/main.bundle.js
+### Analyze with source-map-explorer
 
-# Use source-map-explorer for detailed analysis
+```bash
 npm install --save-dev source-map-explorer
-source-map-explorer 'dist/main.bundle.js' 'dist/main.bundle.map'
+npx source-map-explorer dist/main.bundle.js dist/main.bundle.map
+```
+
+### Check APK Size
+
+```bash
+cd android && ./gradlew assembleRelease && cd ..
+ls -lh android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ---
 
-## 🎯 Size Reduction Strategies
+## Size Reduction Strategies
 
-### 1. Code Splitting
+### 1: Tree Shaking Imports
 
 ```typescript
-// Split large screens into separate bundles
+// BAD -- imports entire library
+import _ from 'lodash';
+const result = _.debounce(fn, 300);
+
+// GOOD -- imports only what's needed
+import debounce from 'lodash/debounce';
+const result = debounce(fn, 300);
+```
+
+### 2: Remove Unused Dependencies
+
+```bash
+npx depcheck  # Find unused dependencies
+```
+
+### 3: Optimize Images
+
+- Use WebP format (30% smaller than PNG)
+- Serve appropriate resolution per device density
+- Use `Image.getSize()` to verify dimensions match display size
+- Consider on-demand loading for image-heavy screens
+
+### 4: Analyze and Reduce node_modules
+
+```bash
+npm ls --depth=0          # List direct dependencies
+du -sh node_modules/*/ | sort -hr | head -20   # Largest packages
+```
+
+### 5: Enable Hermes Bytecode (Default)
+
+Hermes compiles JS to bytecode at build time. The `.hbc` (Hermes bytecode) files in the bundle are smaller and parse faster than raw JS.
+
+---
+
+## Startup Time Optimization
+
+### Reduce JS Bundle Parse Time
+
+- Hermes bytecode eliminates parse time (already compiled)
+- Use `require()` lazy loading for rarely-used screens
+- Defer non-critical initialization with `InteractionManager`
+
+### Lazy Screen Loading
+
+```typescript
 import { lazy, Suspense } from 'react';
+import { ActivityIndicator } from 'react-native';
 
-const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 
-<Suspense fallback={<Loading />}>
-  <ProfileScreen />
-</Suspense>
+function SettingsRoute(): React.ReactElement {
+  return (
+    <Suspense fallback={<ActivityIndicator size="large" />}>
+      <SettingsScreen />
+    </Suspense>
+  );
+}
 ```
 
-### 2. Remove Unused Dependencies
+### Startup Profiling
 
 ```bash
-# Find unused packages
-npm audit --production
+# Android: measure startup
+adb shell am start -W com.myapp/.MainActivity
 
-# Analyze bundle
-npm install --save-dev webpack-bundle-analyzer
-
-# List dependencies
-npm ls --depth=0
+# Output includes:
+# TotalTime: total time to display first frame
+# WaitTime: time waiting for activity to launch
 ```
 
-### 3. Optimize Images
+---
 
-```bash
-# Use appropriate formats and sizes
-# Before: 1MB PNG
-# After: 200KB WebP at correct resolution
+## Memory Monitoring
 
-# Use Image.resolveAssetSource() for dimension detection
-import { Image } from 'react-native';
+### Runtime Checks
 
-Image.getSize(
-  uri,
-  (width, height) => {
-    // Adjust to device resolution
+```typescript
+if (__DEV__) {
+  // Log memory in development
+  const memInfo = (global as any).HermesInternal?.getRuntimeProperties?.();
+  if (memInfo) {
+    console.log('Hermes Memory:', memInfo);
   }
-);
+}
 ```
 
-### 4. Tree Shaking
+### Common Memory Issues
 
-Ensure your dependencies support tree shaking:
-
-```typescript
-// ❌ WRONG - Imports entire library
-import * as lodash from 'lodash';
-
-// ✅ CORRECT - Imports specific function (tree-shakeable)
-import { debounce } from 'lodash-es';
-```
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Growing memory | Event listeners not cleaned up | Return cleanup from useEffect |
+| Image memory spikes | Large images loaded simultaneously | Use `Image.prefetch`, lazy load |
+| List memory | FlatList without `removeClippedSubviews` | Enable on Android |
+| Closure leaks | Captured variables in long-lived closures | Use refs or WeakRef |
 
 ---
 
-## 📈 Performance Metrics
+## Production Build Checklist
 
-### Measure Startup Time
-
-```typescript
-import { PerformanceObserver, performance } from 'react-native';
-
-const logPerformance = () => {
-  // TTI: Time to Interactive
-  const navigationStart = performance.now();
-  console.log('TTI:', navigationStart);
-
-  // React render time
-  const observer = new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) {
-      console.log(`${entry.name}: ${entry.duration}ms`);
-    }
-  });
-
-  observer.observe({ entryTypes: ['measure'] });
-};
-```
-
-### Monitor Memory
-
-```typescript
-import { DeviceEventEmitter } from 'react-native';
-
-const logMemory = () => {
-  DeviceEventEmitter.addListener('memoryWarning', () => {
-    console.warn('Memory warning received');
-  });
-};
-```
+- [ ] Hermes enabled (default -- just verify)
+- [ ] ProGuard/R8 enabled for Android release
+- [ ] `__DEV__` checks guard debug-only code
+- [ ] No `console.log` in production
+- [ ] Source maps generated for crash reporting
+- [ ] Bundle size analyzed and optimized
+- [ ] Startup time measured on real devices
+- [ ] Release build tested on low-end Android device
 
 ---
 
-## 🔍 Comparison: Hermes vs V8 vs JavaScriptCore
-
-| Feature | JavaScriptCore (iOS) | V8 (Android) | Hermes (Both) |
-|---------|-----|-----|-----|
-| **Bundle Size** | N/A | Large | Small |
-| **Startup** | Slow | Medium | Fast |
-| **Memory** | High | Medium | Low |
-| **Debugging** | Limited | Chrome DevTools | Limited |
-| **JIT Compilation** | No | Yes | No |
-
----
-
-## ✅ Optimization Checklist
-
-Before production release:
-
-- [ ] Hermes enabled on Android
-- [ ] ProGuard/R8 minification enabled
-- [ ] Unused code removed
-- [ ] Large images optimized
-- [ ] Code splitting configured (if needed)
-- [ ] Tree shaking verified
-- [ ] Bundle size < 5MB (with Hermes)
-- [ ] Startup time < 2 seconds
-- [ ] Memory usage monitored
-- [ ] Release builds tested on real device
-
----
-
-**Source**: https://hermesengine.dev/
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+**Version:** React Native 0.81.5 | Hermes (default engine)
+**Source:** https://reactnative.dev/docs/hermes | https://hermesengine.dev

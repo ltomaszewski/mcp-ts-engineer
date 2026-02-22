@@ -1,5 +1,6 @@
 ---
 name: claude-agent-sdk
+version: "^0.2.45"
 description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks, multi-turn conversations. Use when building agents, integrating Claude API, or implementing AI features programmatically.
 ---
 
@@ -509,4 +510,12 @@ ANTHROPIC_API_KEY=your-api-key
 
 ---
 
-**Version:** 0.1.x | **Node.js:** 18+ | **Peer Dependency:** Zod ^3.24.1
+**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+
+### v0.2 Changes
+
+- **`@anthropic-ai/claude-agent-sdk`**: Package at ^0.2.45
+- **Model names**: Updated to `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5` (4.x series)
+- **Zod 4 support**: Peer dependency now accepts both Zod 3 and Zod 4 (^4.0.0)
+- **Tool definitions**: `tool()` helper accepts Zod 4 schemas
+- **V2 interface**: `unstable_v2_createSession` stabilized (still prefixed)

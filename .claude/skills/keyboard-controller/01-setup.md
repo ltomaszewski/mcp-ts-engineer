@@ -1,64 +1,82 @@
 # Keyboard Controller: Setup & Installation
 
-**Installation and initialization**
+**Installation, KeyboardProvider configuration, and platform requirements.**
 
 ---
 
 ## Installation
 
-### npm
-```bash
-npm install react-native-keyboard-controller
-cd ios && pod install && cd ..
-```
+### npm / yarn
 
-### yarn
 ```bash
-yarn add react-native-keyboard-controller
+npm install react-native-keyboard-controller react-native-reanimated
+cd ios && pod install && cd ..
+
+# or
+yarn add react-native-keyboard-controller react-native-reanimated
 cd ios && pod install && cd ..
 ```
 
 ### Expo
+
 ```bash
-npx expo install react-native-keyboard-controller
+npx expo install react-native-keyboard-controller react-native-reanimated
+```
+
+**Note:** react-native-keyboard-controller is NOT compatible with Expo Go. You must use a custom dev client (`npx expo run:ios` / `npx expo run:android`).
+
+## Peer Dependency
+
+`react-native-reanimated` is a **mandatory** peer dependency. Install it first and ensure the Reanimated babel plugin is configured:
+
+```javascript
+// babel.config.js
+module.exports = {
+  presets: ['babel-preset-expo'],
+  plugins: ['react-native-reanimated/plugin'],
+};
 ```
 
 ## TypeScript
 
-Types included. No additional packages needed.
+Types are included. No additional `@types` packages needed.
 
 ```typescript
 import {
   KeyboardProvider,
+  KeyboardAwareScrollView,
+  KeyboardToolbar,
   useKeyboardAnimation,
+  useReanimatedKeyboardAnimation,
+  useKeyboardHandler,
   useKeyboardController,
+  useFocusedInputHandler,
+  KeyboardController,
+  KeyboardEvents,
 } from 'react-native-keyboard-controller';
 ```
 
-## Basic Setup (Required)
+---
+
+## KeyboardProvider Setup (Required)
+
+Wrap your entire app with `KeyboardProvider`. Place it near the root, above navigation.
+
+### Basic Setup
 
 ```typescript
-// App.tsx
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native';
 
 export default function App() {
   return (
     <KeyboardProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <YourAppContent />
-      </SafeAreaView>
+      <YourAppContent />
     </KeyboardProvider>
   );
 }
 ```
 
-**Key Points:**
-- Wrap entire app with `KeyboardProvider`
-- Place near root, above navigation
-- Only one `KeyboardProvider` per app
-
-## With Navigation
+### With Navigation
 
 ```typescript
 import { NavigationContainer } from '@react-navigation/native';
@@ -75,38 +93,92 @@ export default function App() {
 }
 ```
 
+### With Expo Router
+
+```typescript
+// app/_layout.tsx
+import { Slot } from 'expo-router';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+
+export default function RootLayout() {
+  return (
+    <KeyboardProvider>
+      <Slot />
+    </KeyboardProvider>
+  );
+}
+```
+
+---
+
+## KeyboardProvider Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `statusBarTranslucent` | `boolean` | `true` | Whether StatusBar is translucent on Android. Library enables edge-to-edge by default. |
+| `navigationBarTranslucent` | `boolean` | `true` | Whether NavigationBar is translucent on Android. |
+| `preserveEdgeToEdge` | `boolean` | `false` | Keep edge-to-edge mode always enabled even when module is disabled. Useful with `react-native-edge-to-edge`. |
+| `preload` | `boolean` | `true` | Preload keyboard to eliminate initial focus lag. Calls `KeyboardController.preload()` internally. |
+| `enabled` | `boolean` | `true` | Whether the module is enabled. Controls initial state; use `useKeyboardController` hook to change at runtime. |
+
+### Prevent Keyboard Flash on Launch
+
+If the keyboard briefly appears on app launch, disable preloading:
+
+```typescript
+<KeyboardProvider preload={false}>
+  <YourApp />
+</KeyboardProvider>
+```
+
+Then manually preload later:
+
+```typescript
+KeyboardController.preload();
+```
+
+---
+
 ## Platform Requirements
 
+### React Native Compatibility
+
+| RN Version | Keyboard Controller | Notes |
+|------------|-------------------|-------|
+| 0.81+ | 1.19+ | Recommended, Fabric default |
+| 0.73+ | 1.19+ | Supported |
+| 0.72 | 1.18.x | Legacy |
+
 ### iOS
+
 - Minimum: iOS 12.4+
-- Pod install required
+- Pod install required after adding dependency
+- Fabric support: Yes (default in RN 0.81+)
 
 ### Android
+
 - Minimum: API 21 (Android 5.0)
-- AndroidManifest.xml configuration required
+- Interactive dismiss requires API 30 (Android 11+)
+- AndroidManifest.xml configuration recommended (see [07-android-config.md](07-android-config.md))
 
-### React Native
-| RN Version | Keyboard Controller |
-|------------|-------------------|
-| 0.73+ | 1.19+ (Recommended) |
-| 0.72 | 1.18 |
-| 0.71 | 1.17 |
-
-**Fabric Support**: Yes (RN 0.73+)
+---
 
 ## Verification
 
 ```bash
 npm list react-native-keyboard-controller
+npm list react-native-reanimated
 ```
 
-Checklist:
-- [ ] Package installed
-- [ ] iOS: pod install succeeded
-- [ ] App wrapped with KeyboardProvider
-- [ ] No TypeScript errors
-- [ ] Platform config applied
+### Checklist
+
+- [ ] `react-native-keyboard-controller` installed
+- [ ] `react-native-reanimated` installed and babel plugin configured
+- [ ] iOS: `pod install` succeeded
+- [ ] App wrapped with `KeyboardProvider`
+- [ ] No TypeScript errors on import
+- [ ] Keyboard animates when focusing a TextInput
 
 ---
 
-**See Also**: [Core API](02-core-api.md) | [Android Config](07-android-config.md) | [iOS Config](08-ios-config.md)
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation

@@ -489,4 +489,4 @@ const getCurrentValues = () => {
 
 ---
 
-**Source:** https://react-hook-form.com/faqs
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/faqs

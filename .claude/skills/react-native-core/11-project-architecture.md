@@ -1,27 +1,25 @@
-# React Native Project Architecture
+# React Native 0.81.5 -- Project Architecture
 
-**Monorepo Mobile App Standards**
-
-> **Source**: `/.claude/knowledge-base/react-native-mobile-architecture.md`
+Monorepo mobile app architecture patterns: feature modules, state management, styling, and file organization.
 
 ---
 
-## Quick Reference
+## Stack Reference
 
 | Category | Technology | Version |
 |----------|------------|---------|
 | Framework | Expo | ~54.x |
-| Language | TypeScript | ~5.9.x |
+| Language | TypeScript | ^5.9.x |
 | State | Zustand | ^5.x |
 | Server State | TanStack Query | ^5.x |
 | API Client | graphql-request | ^7.x |
-| Styling | NativeWind + Tailwind CSS v3 | ^4.2.x / ^3.4.x |
-| Forms | React Hook Form + Zod | ^7.x / ^3.x |
+| Styling | NativeWind + Tailwind CSS v3 | ^4.1.x / ^3.4.x |
+| Forms | React Hook Form + Zod | ^7.x / ^4.x |
 | Storage | MMKV | ^4.x |
-| Animations | Reanimated | ~4.1.x |
+| Animations | Reanimated | ^4.2.x |
 | Navigation | Expo Router | ^6.x |
-| Testing | Jest + Testing Library + Maestro | - |
-| Linting | Biome | - |
+| Testing | Jest + Testing Library + Maestro | -- |
+| Linting | Biome | -- |
 
 ---
 
@@ -98,17 +96,20 @@ apps/<app-name>/
 
 ---
 
-## Core Patterns
+## Route Files
 
-### 1. Route Files (app/)
+Route files in `app/` are thin wrappers. No business logic belongs here.
 
-**Route files are thin wrappers - no business logic.**
+### Screen Re-export
 
 ```typescript
 // app/(main)/home.tsx
 import { HomeScreen } from '@/features/home';
+
 export default HomeScreen;
 ```
+
+### Root Layout with Providers
 
 ```typescript
 // app/_layout.tsx
@@ -116,6 +117,7 @@ import '../global.css';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/api/query-client';
 import { useAuthStore } from '@/stores/auth.store';
@@ -123,19 +125,25 @@ import { useAuthStore } from '@/stores/auth.store';
 export default function RootLayout(): React.ReactElement {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthGuard>
-          <Slot />
-        </AuthGuard>
-      </QueryClientProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthGuard>
+            <Slot />
+          </AuthGuard>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 ```
 
-### 2. Feature Modules
+---
 
-**Self-contained, co-located code per domain.**
+## Feature Modules
+
+Each feature is a self-contained module with its own screens, components, hooks, API calls, schemas, and types.
+
+### Feature Public Exports
 
 ```typescript
 // src/features/auth/index.ts
@@ -151,14 +159,79 @@ export { loginSchema, signupSchema } from './schemas/auth.schemas';
 export type { LoginFormData, SignupFormData } from './schemas/auth.schemas';
 ```
 
-### 3. Zustand Store
+### One Hook Per Screen Pattern
 
-**Global client state with persistence.**
+Every screen delegates all logic to a dedicated hook. The screen component only renders UI.
+
+```typescript
+// src/features/auth/hooks/useLoginScreen.ts
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useLogin } from '../api/hooks';
+import type { LoginFormData } from '../schemas/auth.schemas';
+
+interface UseLoginScreenReturn {
+  isLoading: boolean;
+  error: string | null;
+  handleSubmit: (data: LoginFormData) => Promise<void>;
+}
+
+export function useLoginScreen(): UseLoginScreenReturn {
+  const router = useRouter();
+  const loginMutation = useLogin();
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(data: LoginFormData): Promise<void> {
+    setError(null);
+    try {
+      await loginMutation.mutateAsync(data);
+      router.replace('/(main)/home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    }
+  }
+
+  return {
+    isLoading: loginMutation.isPending,
+    error,
+    handleSubmit,
+  };
+}
+```
+
+```typescript
+// src/features/auth/screens/LoginScreen.tsx
+import { View, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLoginScreen } from '../hooks/useLoginScreen';
+import { LoginForm } from '../components/LoginForm';
+
+export function LoginScreen(): React.ReactElement {
+  const { isLoading, error, handleSubmit } = useLoginScreen();
+
+  return (
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-6 pt-12">
+        <Text className="text-3xl font-bold text-gray-900">Sign In</Text>
+        {error && <Text className="mt-2 text-red-500">{error}</Text>}
+        <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
+      </View>
+    </SafeAreaView>
+  );
+}
+```
+
+---
+
+## State Management
+
+### Zustand Store with MMKV Persistence
 
 ```typescript
 // src/stores/auth.store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { zustandMMKVStorage } from '@/shared/utils/storage';
 
 interface AuthState {
   accessToken: string | null;
@@ -168,14 +241,14 @@ interface AuthState {
 }
 
 interface AuthActions {
-  setAuth: (params: AuthParams) => Promise<void>;
+  setAuth: (params: { accessToken: string; user: User }) => Promise<void>;
   clearAuth: () => Promise<void>;
   initialize: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       accessToken: null,
       user: null,
       isAuthenticated: false,
@@ -203,18 +276,31 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );
 ```
 
-### 4. API Hooks with TanStack Query
+### State Categories
+
+| Type | Solution | Location |
+|------|----------|----------|
+| Server state (cached API data) | TanStack Query | Feature `api/hooks.ts` |
+| Client state (global) | Zustand | `src/stores/` |
+| Form state | React Hook Form | Feature `components/` |
+| UI state (local) | useState/useReducer | Component-level |
+| Persisted state | Zustand + MMKV | `src/stores/` |
+
+---
+
+## API Layer
+
+### TanStack Query Hooks
 
 ```typescript
 // src/features/auth/api/hooks.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LoginDocument } from '@app/server-client';
-
 import { executeGraphQL } from '@/api/graphql-client';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -229,16 +315,29 @@ export function useLogin() {
     onSuccess: async (data) => {
       await setAuth({
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresIn: data.expiresIn,
         user: data.user,
       });
     },
   });
 }
+
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const result = await executeGraphQL(CurrentUserDocument);
+      return result.currentUser;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
 ```
 
-### 5. Form with Validation
+---
+
+## Form Validation
+
+### Zod Schemas
 
 ```typescript
 // src/features/auth/schemas/auth.schemas.ts
@@ -256,9 +355,23 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
+
+export const signupSchema = loginSchema.extend({
+  name: z.string().min(1, 'Name is required').max(100),
+  confirmPassword: z.string().min(1, 'Confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+export type SignupFormData = z.infer<typeof signupSchema>;
 ```
 
-### 6. UI Components with NativeWind
+---
+
+## UI Components with NativeWind
+
+### Button Component
 
 ```typescript
 // src/shared/components/ui/Button.tsx
@@ -266,11 +379,14 @@ import { Pressable, ActivityIndicator } from 'react-native';
 import { cn } from '@/shared/utils/cn';
 import { Text } from './Text';
 
-export interface ButtonProps extends Omit<PressableProps, 'children'> {
+export interface ButtonProps {
   title: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  disabled?: boolean;
+  className?: string;
+  onPress?: () => void;
 }
 
 export function Button({
@@ -280,7 +396,7 @@ export function Button({
   isLoading = false,
   disabled,
   className,
-  ...props
+  onPress,
 }: ButtonProps): React.ReactElement {
   return (
     <Pressable
@@ -288,14 +404,15 @@ export function Button({
         'items-center justify-center rounded-lg',
         variant === 'primary' && 'bg-primary-500 active:bg-primary-600',
         variant === 'secondary' && 'bg-gray-200 active:bg-gray-300',
+        variant === 'outline' && 'border border-gray-300 active:bg-gray-50',
         size === 'sm' && 'px-3 py-2',
         size === 'md' && 'px-4 py-3',
         size === 'lg' && 'px-6 py-4',
         (disabled || isLoading) && 'opacity-50',
-        className
+        className,
       )}
       disabled={disabled || isLoading}
-      {...props}
+      onPress={onPress}
     >
       {isLoading ? <ActivityIndicator /> : <Text>{title}</Text>}
     </Pressable>
@@ -303,7 +420,7 @@ export function Button({
 }
 ```
 
-### 7. Utility: className Merger
+### className Merger Utility
 
 ```typescript
 // src/shared/utils/cn.ts
@@ -321,7 +438,7 @@ export function cn(...inputs: ClassValue[]): string {
 
 ### tailwind.config.js
 
-```javascript
+```typescript
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -344,18 +461,9 @@ module.exports = {
 };
 ```
 
-### global.css
-
-```css
-/* IMPORTANT: Use Tailwind v3 syntax, NOT v4 */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
 ### babel.config.js
 
-```javascript
+```typescript
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -371,6 +479,15 @@ module.exports = function (api) {
 };
 ```
 
+### global.css
+
+```typescript
+/* IMPORTANT: Use Tailwind v3 syntax, NOT v4 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
 ---
 
 ## File Placement Decision Tree
@@ -379,28 +496,28 @@ module.exports = function (api) {
 Need to add new code?
 │
 ├─ Is it a route/screen?
-│   └─ YES → Create in app/, import screen from src/features/
+│   └─ YES -> Create in app/, import screen from src/features/
 │
 ├─ Is it feature-specific?
-│   └─ YES → Place in src/features/<feature>/
-│       ├─ Component → components/
-│       ├─ Hook → hooks/
-│       ├─ API hook → api/hooks.ts
-│       ├─ Schema → schemas/
-│       └─ Type → types/
+│   └─ YES -> Place in src/features/<feature>/
+│       ├─ Component -> components/
+│       ├─ Hook -> hooks/
+│       ├─ API hook -> api/hooks.ts
+│       ├─ Schema -> schemas/
+│       └─ Type -> types/
 │
 ├─ Is it used by 3+ features?
-│   └─ YES → Place in src/shared/
-│       ├─ UI primitive → components/ui/
-│       ├─ Layout → components/layout/
-│       ├─ Hook → hooks/
-│       └─ Utility → utils/
+│   └─ YES -> Place in src/shared/
+│       ├─ UI primitive -> components/ui/
+│       ├─ Layout -> components/layout/
+│       ├─ Hook -> hooks/
+│       └─ Utility -> utils/
 │
 ├─ Is it global client state?
-│   └─ YES → Place in src/stores/
+│   └─ YES -> Place in src/stores/
 │
 └─ Is it API configuration?
-    └─ YES → Place in src/api/
+    └─ YES -> Place in src/api/
 ```
 
 ---
@@ -412,6 +529,7 @@ Need to add new code?
 | Component | PascalCase | `LoginForm.tsx` |
 | Screen | PascalCase + Screen | `LoginScreen.tsx` |
 | Hook | camelCase + use | `useLogin.ts` |
+| Screen Hook | camelCase + useScreen | `useLoginScreen.ts` |
 | Store | camelCase + .store | `auth.store.ts` |
 | Schema | camelCase + .schemas | `auth.schemas.ts` |
 | Test | same name + .test | `LoginForm.test.tsx` |
@@ -420,41 +538,33 @@ Need to add new code?
 
 ---
 
-## Anti-Patterns & Hard Rules
+## Rules
 
-### FORBIDDEN (Build Fails)
+### ALWAYS
 
-- **ANY business logic in screen files** - This is CRITICAL, enforced by audit
-  - NO `useState()` in screens
-  - NO event handlers in screens
-  - NO `useMutation()` / `useQuery()` in screens
-  - NO validation logic in screens
-  - **ALL logic MUST be in `use*Screen` hook**
-  - **Violation = Audit fails and blocks merge**
+- Keep route files thin -- re-export screens from features
+- Use the One Hook Per Screen pattern for all screens
+- Co-locate related code inside feature modules
+- Use NativeWind for all styling (never `StyleSheet.create`)
+- Use Zustand for global client state, TanStack Query for server state
+- Use MMKV for persistent storage (never AsyncStorage)
+- Use `react-native-safe-area-context` (never `SafeAreaView` from `react-native`)
+- Write tests alongside components in `__tests__/` directories
+- Use Zod schemas for all form validation
 
-### DON'T
+### NEVER
 
-- Put business logic in route files (`app/`) - use features instead
-- Create god components (>150 lines)
-- Use `any` type
-- Skip tests for new features
+- Put business logic in route files (`app/`)
+- Put `useState`, `useMutation`, `useQuery`, or event handlers directly in screen components
+- Create components over 150 lines
 - Put feature-specific code in `shared/`
-- Use StyleSheet.create (use NativeWind)
-- Use Redux (use Zustand + TanStack Query)
-- Use AsyncStorage (use MMKV)
-
-### DO
-
-- Keep routes thin (re-export from features)
-- Write tests alongside components
-- Use TypeScript strictly
-- Co-locate related code in features
-- Extract to shared only after proven reuse
-- Use NativeWind for all styling
+- Use Redux for state management
+- Use AsyncStorage for persistence
+- Skip tests for new features
 
 ---
 
-## Peer Dependencies (CRITICAL)
+## Peer Dependencies
 
 ```bash
 # react-native-reanimated v4.x requires:
@@ -466,5 +576,5 @@ npm install react-native-nitro-modules
 
 ---
 
-**Source**: `/.claude/knowledge-base/react-native-mobile-architecture.md`
-**Last Updated**: December 2025
+**Version:** React Native 0.81.5 | Expo ~54.x | NativeWind ^4.1.x | Zustand ^5.x | TanStack Query ^5.x
+**Source:** Project monorepo architecture standards

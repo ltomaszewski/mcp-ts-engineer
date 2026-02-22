@@ -1,149 +1,104 @@
-# React Native 0.83 - Testing & DevTools
+# React Native 0.81.5 -- Testing & DevTools
 
-**Debugging tools, unit tests, and integration testing**
-
----
-
-## 🛠️ React Native DevTools
-
-### Open DevTools
-
-**iOS (Simulator):**
-```bash
-Cmd + D
-```
-
-**Android (Emulator/Device):**
-```bash
-Cmd + M (emulator) or Ctrl + M (Windows)
-```
-
-Or shake device and tap "Open Debugger"
-
-### DevTools Features
-
-- **Component tree inspection** — View component hierarchy
-- **Props & state viewing** — Debug component data
-- **Element highlighting** — Tap to identify components
-- **Performance profiling** — Monitor FPS and rendering
-- **Network requests** — Inspect API calls
-- **Redux DevTools** — State management inspection (if used)
+React Native DevTools, Jest, React Native Testing Library, Detox E2E, and debugging.
 
 ---
 
-## 🐛 Console Logging
+## React Native DevTools
 
-### Setup Logger
+### Opening DevTools
 
-```typescript
-// utils/Logger.ts
-const isProduction = !__DEV__;
+| Platform | Action |
+|----------|--------|
+| iOS Simulator | Cmd+D or shake device |
+| Android Emulator | Cmd+M (macOS) / Ctrl+M (Windows) |
+| Physical device | Shake device |
+| Metro terminal | Press `d` |
 
-export const logger = {
-  debug: (message: string, data?: any) => {
-    if (!isProduction) {
-      console.log(`[DEBUG] ${message}`, data);
-    }
-  },
+### DevTools Features (RN 0.81)
 
-  info: (message: string, data?: any) => {
-    console.log(`[INFO] ${message}`, data);
-  },
+- **Component Inspector** -- view component tree, props, state
+- **Performance Profiler** -- measure render times, identify bottlenecks
+- **Network Inspector** -- inspect API requests/responses
+- **Console** -- view logs from JS runtime
+- **Error display** -- original message, stack trace, Owner Stack, and error cause
 
-  warn: (message: string, data?: any) => {
-    console.warn(`[WARN] ${message}`, data);
-  },
+### Improved Error Reporting (0.81)
 
-  error: (message: string, error?: any) => {
-    console.error(`[ERROR] ${message}`, error);
-  },
-};
-```
-
-### Usage
-
-```typescript
-import { logger } from './utils/Logger';
-
-logger.debug('Component mounted', { userId: '123' });
-logger.info('User logged in');
-logger.warn('API request slow', { duration: 5000 });
-logger.error('Network failure', error);
-```
-
-### Disable Logs in Production
-
-```typescript
-if (!__DEV__) {
-  console.log = () => {};
-  console.debug = () => {};
-  console.info = () => {};
-  console.warn = () => {};
-}
-```
+RN 0.81 DevTools now shows:
+- Original error message and stack trace
+- Error's `cause` property if present
+- Owner Stack for component errors (traces which component rendered the error)
 
 ---
 
-## 🧪 Jest Unit Tests
+## Jest + React Native Testing Library
 
 ### Setup
 
-Jest is included by default. Create test file:
+React Native projects come with Jest preconfigured. Add RNTL:
 
 ```bash
-touch App.test.tsx
+npm install --save-dev @testing-library/react-native @testing-library/jest-native
 ```
 
-### Basic Test
+### Testing a Component
 
 ```typescript
-// App.test.tsx
-import renderer from 'react-test-renderer';
-import App from './App';
-
-describe('App', () => {
-  test('renders correctly', () => {
-    const instance = renderer.create(<App />).root;
-    expect(instance.findByType(Text)).toBeDefined();
-  });
-});
-```
-
-### Testing Components
-
-```typescript
+// Button.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import MyButton from './MyButton';
+import { Button } from './Button';
 
-describe('MyButton', () => {
-  test('renders with title', () => {
-    render(<MyButton title="Click me" onPress={() => {}} />);
-    expect(screen.getByText('Click me')).toBeTruthy();
+describe('Button', () => {
+  it('renders with title', () => {
+    render(<Button title="Submit" onPress={() => {}} />);
+    expect(screen.getByText('Submit')).toBeTruthy();
   });
 
-  test('calls onPress when pressed', () => {
-    const mockOnPress = jest.fn();
-    render(<MyButton title="Click" onPress={mockOnPress} />);
+  it('calls onPress when pressed', () => {
+    const onPress = jest.fn();
+    render(<Button title="Submit" onPress={onPress} />);
 
-    const button = screen.getByRole('button');
-    fireEvent.press(button);
+    fireEvent.press(screen.getByText('Submit'));
 
-    expect(mockOnPress).toHaveBeenCalled();
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows disabled state', () => {
+    render(<Button title="Submit" onPress={() => {}} disabled />);
+    expect(screen.getByText('Submit')).toBeDisabled();
   });
 });
 ```
+
+### Query Methods
+
+| Query | Returns | Throws if missing |
+|-------|---------|-------------------|
+| `getByText(text)` | Element | Yes |
+| `queryByText(text)` | Element or null | No |
+| `findByText(text)` | Promise<Element> | Yes (async) |
+| `getAllByText(text)` | Element[] | Yes if empty |
+| `getByTestId(id)` | Element | Yes |
+| `getByRole(role)` | Element | Yes |
+| `getByPlaceholderText(text)` | Element | Yes |
+| `getByDisplayValue(value)` | Element | Yes |
 
 ### Testing Hooks
 
 ```typescript
+// useCounter.test.ts
 import { renderHook, act } from '@testing-library/react-native';
 import { useCounter } from './useCounter';
 
 describe('useCounter', () => {
-  test('increments counter', () => {
+  it('starts at 0', () => {
     const { result } = renderHook(() => useCounter());
-
     expect(result.current.count).toBe(0);
+  });
+
+  it('increments', () => {
+    const { result } = renderHook(() => useCounter());
 
     act(() => {
       result.current.increment();
@@ -154,244 +109,266 @@ describe('useCounter', () => {
 });
 ```
 
-### Testing Async Code
+### Testing Async Behavior
 
 ```typescript
-import { renderHook, waitFor } from '@testing-library/react-native';
-import { useFetchUser } from './useFetchUser';
+import { render, screen, waitFor } from '@testing-library/react-native';
+import { UserProfile } from './UserProfile';
 
-describe('useFetchUser', () => {
-  test('fetches user data', async () => {
-    const { result } = renderHook(() => useFetchUser('123'));
+// Mock API
+jest.mock('../api', () => ({
+  fetchUser: jest.fn().mockResolvedValue({ name: 'John', email: 'john@test.com' }),
+}));
 
-    expect(result.current.loading).toBe(true);
+describe('UserProfile', () => {
+  it('loads and displays user data', async () => {
+    render(<UserProfile userId="123" />);
 
+    // Wait for async data
     await waitFor(() => {
-      expect(result.current.loading).toBe(false);
+      expect(screen.getByText('John')).toBeTruthy();
     });
 
-    expect(result.current.user).toEqual({ id: '123', name: 'John' });
+    expect(screen.getByText('john@test.com')).toBeTruthy();
   });
 });
 ```
 
-### Run Tests
+### User Events (Recommended over fireEvent)
 
-```bash
-# Run all tests
-npm test
+```typescript
+import { render, screen } from '@testing-library/react-native';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from './LoginForm';
 
-# Run in watch mode
-npm test -- --watch
+describe('LoginForm', () => {
+  it('submits with entered values', async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn();
+    render(<LoginForm onSubmit={onSubmit} />);
 
-# Run with coverage
-npm test -- --coverage
+    await user.type(screen.getByPlaceholderText('Email'), 'test@example.com');
+    await user.type(screen.getByPlaceholderText('Password'), 'password123');
+    await user.press(screen.getByText('Sign In'));
 
-# Run specific test file
-npm test App.test.tsx
+    expect(onSubmit).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+  });
+});
 ```
 
 ---
 
-## 🎯 Integration Testing with Detox
+## Mocking Patterns
+
+### Mock Native Modules
+
+```typescript
+// jest.setup.ts or __mocks__
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+```
+
+### Mock Navigation
+
+```typescript
+const mockNavigate = jest.fn();
+const mockGoBack = jest.fn();
+
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({
+    navigate: mockNavigate,
+    goBack: mockGoBack,
+  }),
+  useRoute: () => ({
+    params: { id: '123' },
+  }),
+}));
+```
+
+---
+
+## Detox E2E Testing
 
 ### Installation
 
 ```bash
-npm install detox-cli --global
-npm install detox @react-native/detox-utils --save-dev
+npm install --save-dev detox @types/detox
 ```
 
-### Configuration
-
-Create `e2e/config.json`:
-
-```json
-{
-  "testRunner": "jest",
-  "apps": {
-    "ios": {
-      "type": "ios.app",
-      "binaryPath": "ios/build/Build/Products/Release-iphonesimulator/MyApp.app",
-      "build": "xcodebuild -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build"
-    }
-  },
-  "devices": {
-    "simulator": {
-      "type": "iOS.simulator",
-      "device": { "type": "iPhone 14" }
-    }
-  },
-  "configurations": {
-    "ios": {
-      "device": "simulator",
-      "app": "ios"
-    }
-  }
-}
-```
-
-### Test Example
+### Configuration (.detoxrc.js)
 
 ```typescript
-// e2e/firstTest.e2e.ts
+module.exports = {
+  testRunner: {
+    args: { config: 'e2e/jest.config.js' },
+    jest: { setupTimeout: 120000 },
+  },
+  apps: {
+    'ios.release': {
+      type: 'ios.app',
+      binaryPath: 'ios/build/Build/Products/Release-iphonesimulator/MyApp.app',
+      build: 'xcodebuild -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build',
+    },
+    'android.release': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/release/app-release.apk',
+      build: 'cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release && cd ..',
+    },
+  },
+  devices: {
+    simulator: { type: 'ios.simulator', device: { type: 'iPhone 16' } },
+    emulator: { type: 'android.emulator', device: { avdName: 'Pixel_7' } },
+  },
+  configurations: {
+    'ios.release': { device: 'simulator', app: 'ios.release' },
+    'android.release': { device: 'emulator', app: 'android.release' },
+  },
+};
+```
+
+### E2E Test Example
+
+```typescript
+// e2e/login.test.ts
 describe('Login Flow', () => {
   beforeAll(async () => {
-    await device.launchApp();
+    await device.launchApp({ newInstance: true });
   });
 
   beforeEach(async () => {
     await device.reloadReactNative();
   });
 
-  test('should login successfully', async () => {
-    // Enter email
-    await element(by.id('email-input')).typeText('test@example.com');
-
-    // Enter password
+  it('should login successfully', async () => {
+    await element(by.id('email-input')).typeText('user@test.com');
     await element(by.id('password-input')).typeText('password123');
+    await element(by.id('login-button')).tap();
 
-    // Tap login button
-    await element(by.text('Sign In')).multiTap();
-
-    // Wait for dashboard
-    await waitFor(element(by.text('Dashboard')))
+    await waitFor(element(by.text('Welcome')))
       .toBeVisible()
       .withTimeout(5000);
-
-    // Verify logged in
-    expect(element(by.text('Welcome'))).toBeVisible();
   });
 
-  test('should show error for invalid email', async () => {
-    await element(by.id('email-input')).typeText('invalid');
-    await element(by.text('Sign In')).multiTap();
+  it('shows error for invalid credentials', async () => {
+    await element(by.id('email-input')).typeText('wrong@test.com');
+    await element(by.id('password-input')).typeText('wrong');
+    await element(by.id('login-button')).tap();
 
-    await expect(element(by.text('Invalid email'))).toBeVisible();
+    await expect(element(by.text('Invalid credentials'))).toBeVisible();
   });
 });
 ```
 
-### Run Integration Tests
+### Run E2E Tests
 
 ```bash
-# Build app for testing
-detox build-framework-cache
-detox build-app -c ios
+# Build
+npx detox build --configuration ios.release
 
-# Run tests
-detox test -c ios
-
-# Run specific test
-detox test e2e/firstTest.e2e.ts -c ios
+# Test
+npx detox test --configuration ios.release
 ```
 
 ---
 
-## 🔍 Debugging Strategies
+## Debugging Strategies
 
-### Add Logging Points
+### Console Logging (Development Only)
 
 ```typescript
-const MyComponent = () => {
-  useEffect(() => {
-    logger.debug('Component mounted');
-    return () => logger.debug('Component unmounted');
-  }, []);
+if (__DEV__) {
+  console.log('Debug info:', data);
+}
+```
 
-  const handlePress = () => {
-    logger.debug('Button pressed', { timestamp: Date.now() });
-    // ...
+### Breakpoints
+
+1. Open DevTools (Cmd+D / Cmd+M)
+2. Open debugger (press `j` in Metro)
+3. Set breakpoints in Chrome/VS Code
+4. Step through code
+
+### Network Debugging
+
+```typescript
+// Inspect all fetch calls in development
+if (__DEV__) {
+  const originalFetch = global.fetch;
+  global.fetch = async (...args) => {
+    console.log('Fetch:', args[0]);
+    const response = await originalFetch(...args);
+    console.log('Response:', response.status);
+    return response;
   };
-
-  return <Pressable onPress={handlePress}><Text>Press</Text></Pressable>;
-};
+}
 ```
 
-### Use Breakpoints
+### React Profiler
 
-1. Open DevTools (`Cmd+D` or `Cmd+M`)
-2. Tap "Debugger"
-3. Set breakpoint by clicking line number
-4. Reload app (`r` key)
-5. Step through code
+```typescript
+import { Profiler } from 'react';
 
-### Inspect Network Requests
+function onRender(
+  id: string,
+  phase: 'mount' | 'update',
+  actualDuration: number,
+): void {
+  if (__DEV__) {
+    console.log(`${id} ${phase}: ${actualDuration.toFixed(1)}ms`);
+  }
+}
 
-1. Open DevTools
-2. Go to Network tab
-3. See all HTTP requests
-4. Inspect headers, payload, response
-5. Check response time and size
+<Profiler id="FeedList" onRender={onRender}>
+  <FeedList />
+</Profiler>
+```
 
-### React DevTools
+---
+
+## Test Commands
 
 ```bash
-npm install --save-dev @react-native-community/hooks
-```
+# Run all tests
+npm test
 
-Inspector mode:
-- Open DevTools
-- Toggle inspector (magnifying glass icon)
-- Tap component to inspect
-- View props and state
+# Watch mode
+npm test -- --watch
 
----
+# Coverage report
+npm test -- --coverage
 
-## 📊 Performance Monitoring
+# Single file
+npm test -- --testPathPattern="Button.test"
 
-### Measure Component Render
-
-```typescript
-import { PerformanceObserver, performance } from 'react-native';
-
-const MyComponent = () => {
-  const startMark = performance.now();
-
-  useEffect(() => {
-    const endMark = performance.now();
-    console.log(`Render time: ${endMark - startMark}ms`);
-  });
-
-  return <View><Text>Content</Text></View>;
-};
-```
-
-### Monitor Frame Rate
-
-```typescript
-import { PerformanceObserver } from 'react-native';
-
-const observer = new PerformanceObserver((list) => {
-  for (const entry of list.getEntries()) {
-    if (entry.name === 'RNRenderingComplete') {
-      console.log(`Frame took ${entry.duration}ms`);
-    }
-  }
-});
-
-observer.observe({ entryTypes: ['measure'] });
+# Update snapshots
+npm test -- -u
 ```
 
 ---
 
-## ✅ Testing Checklist
+## Test File Conventions
 
-Before production:
-
-- [ ] Unit tests for business logic (80%+ coverage)
-- [ ] Integration tests for critical flows
-- [ ] Manual testing on iOS and Android
-- [ ] Manual testing on various device sizes
-- [ ] Performance profiling completed
-- [ ] Memory leaks checked
-- [ ] Network error handling tested
-- [ ] Offline mode tested
-- [ ] Accessibility testing completed
-- [ ] Error scenarios tested
+| Type | Naming | Location |
+|------|--------|----------|
+| Unit test | `*.test.ts` or `*.test.tsx` | `__tests__/` next to source |
+| Integration test | `*.integration.test.ts` | `__tests__/` next to source |
+| E2E test | `*.e2e.ts` | `e2e/` directory |
+| Mock | `__mocks__/module-name.ts` | `__mocks__/` at project root |
 
 ---
 
-**Source**: https://reactnative.dev/docs/testing-overview
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+**Version:** React Native 0.81.5 | Jest | @testing-library/react-native | Detox
+**Source:** https://reactnative.dev/docs/testing-overview

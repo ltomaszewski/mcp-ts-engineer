@@ -1,561 +1,471 @@
-# 04 — API Reference: Data Storage & Persistence
+# 04 -- API Reference: Data & Assets (FileSystem, SecureStore, Asset, Font)
 
-**Module Summary**: Complete reference for data persistence options: AsyncStorage for simple key-value, Firebase JS SDK for Firestore/Realtime Database, and React Native Firebase for native performance. Includes comparison, setup, and production patterns.
-
----
-
-## Overview
-
-Expo supports three data persistence approaches:
-
-1. **AsyncStorage** — Simple key-value store, recommended for < 10MB data
-2. **Firebase JS SDK** — Firestore, Realtime Database, Storage (web-compatible)
-3. **React Native Firebase** — Native bindings for maximum performance and features
-
-Choose based on your needs:
-
-| Feature | AsyncStorage | Firebase JS SDK | React Native Firebase |
-|---------|--------------|-----------------|----------------------|
-| **Data Type** | Key-value strings | Firestore / Realtime DB / Storage | Any Firebase service |
-| **Use Case** | Settings, tokens, simple data | Cross-platform, web compatibility | Performance-critical, all features |
-| **Expo Go** | ✅ Yes | ✅ Yes | ⚠️ Prebuild required |
-| **Offline Support** | ✅ Local only | ✅ Offline persistence | ✅ Offline persistence |
-| **Realtime Sync** | ❌ No | ✅ Yes | ✅ Yes |
-| **File Storage** | ❌ No | ✅ Cloud Storage | ✅ Cloud Storage |
-| **When to Use** | Settings, tokens, cache | Universal apps, startups | Production apps, native features |
-
-**Source**: https://docs.expo.dev/guides/using-firebase/
+File I/O with the new OOP API, encrypted key-value storage, asset management, and font loading for Expo SDK 54.
 
 ---
 
-## AsyncStorage
+## FileSystem (New OOP API)
+
+SDK 54 promotes the formerly `/next` object-oriented API to the default import. The legacy string-based API is available at `expo-file-system/legacy`.
 
 ### Installation
 
 ```bash
-npx expo install @react-native-async-storage/async-storage
+npx expo install expo-file-system
 ```
 
-### Core API
-
-#### Method: `getItem(key: string, callback?: ErrorCallback)`
-
-**Description**: Retrieve a stored value by key.
-
-**Parameters**:
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `key` | string | ✅ | Storage key |
-| `callback` | (error?: Error, result?: string) => void | ❌ | Legacy callback (use Promise) |
-
-**Return Type**: `Promise<string | null>` — Stored value or null if not found
-
-**Code Example**:
+### Import
 
 ```typescript
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const authToken = await AsyncStorage.getItem('authToken');
-if (authToken) {
-  console.log('Token:', authToken);
-} else {
-  console.log('No token stored');
-}
-
-// Parse JSON
-const userJson = await AsyncStorage.getItem('user');
-const user = userJson ? JSON.parse(userJson) : null;
+import { File, Directory, Paths } from 'expo-file-system';
 ```
 
----
+### Paths Utility
 
-#### Method: `setItem(key: string, value: string, callback?: ErrorCallback)`
+| Property | Type | Description |
+|----------|------|-------------|
+| `Paths.cache` | `Directory` | Temp storage; system may delete when device runs low |
+| `Paths.document` | `Directory` | Persistent storage; safe from system deletion |
+| `Paths.bundle` | `Directory` | Assets bundled into the native app binary (read-only) |
+| `Paths.availableDiskSpace` | `number` | Free storage in bytes |
+| `Paths.totalDiskSpace` | `number` | Total storage in bytes |
+| `Paths.appleSharedContainers` | `object` | iOS App Group shared containers |
 
-**Description**: Store or update a value.
+**Path manipulation methods:**
 
-**Parameters**:
+| Method | Description |
+|--------|-------------|
+| `Paths.join(...paths)` | Combine path segments |
+| `Paths.basename(path, ext?)` | Filename from path |
+| `Paths.dirname(path)` | Directory from path |
+| `Paths.extname(path)` | File extension |
+| `Paths.parse(path)` | Object with `root`, `dir`, `name`, `ext`, `base` |
+| `Paths.relative(from, to)` | Relative path between two paths |
+| `Paths.isAbsolute(path)` | Check if path is absolute |
+| `Paths.normalize(path)` | Standardize path format |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `key` | string | ✅ | Storage key |
-| `value` | string | ✅ | Value to store (must be string; JSON.stringify objects) |
-| `callback` | (error?: Error) => void | ❌ | Legacy callback (use Promise) |
+### File Class
 
-**Return Type**: `Promise<void>`
+**Constructor:** `new File(directory: Directory | string, name: string)`
 
-**Code Example**:
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `uri` | `string` (readonly) | File URI path |
+| `name` | `string` | Filename with extension |
+| `extension` | `string` | File extension |
+| `type` | `string` | MIME type |
+| `exists` | `boolean` | Whether file exists on disk |
+| `size` | `number` | File size in bytes |
+| `md5` | `string \| null` | MD5 hash of file contents |
+| `creationTime` | `number \| null` | Creation timestamp (ms) |
+| `modificationTime` | `number \| null` | Modification timestamp (ms) |
+
+**Methods:**
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `create(options?)` | `void` | Create file; `{ overwrite: true }` to replace |
+| `write(content)` | `void` | Write `string` or `Uint8Array` |
+| `text()` | `Promise<string>` | Read as string (async) |
+| `textSync()` | `string` | Read as string (sync) |
+| `bytes()` | `Promise<Uint8Array>` | Read as bytes (async) |
+| `bytesSync()` | `Uint8Array` | Read as bytes (sync) |
+| `base64()` | `Promise<string>` | Read as base64 (async) |
+| `base64Sync()` | `string` | Read as base64 (sync) |
+| `copy(destination)` | `void` | Copy file to destination |
+| `move(destination)` | `void` | Move file (updates URI) |
+| `delete()` | `void` | Remove file from disk |
+| `open()` | `FileHandle` | Open for stream operations |
+| `readableStream()` | `ReadableStream` | Web Streams API readable |
+| `writableStream()` | `WritableStream` | Web Streams API writable |
+
+**Static Methods:**
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `File.downloadFileAsync(url, destination, options?)` | `Promise<File>` | Download from network |
+| `File.pickFileAsync(initialUri?, mimeType?)` | `Promise<File \| null>` | Open system file picker |
+
+### Directory Class
+
+**Constructor:** `new Directory(parent: Directory | string, name: string)`
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `uri` | `string` (readonly) | Directory URI path |
+| `name` | `string` | Directory name |
+| `exists` | `boolean` | Whether directory exists |
+| `size` | `number \| null` | Total size in bytes (recursive) |
+| `parentDirectory` | `Directory` | Parent directory instance |
+
+**Methods:**
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `create(options?)` | `void` | Create directory; `{ intermediates: true }` for nested |
+| `createFile(name, mimeType?)` | `File` | Create child file |
+| `createDirectory(name)` | `Directory` | Create child directory |
+| `list()` | `(File \| Directory)[]` | List contents |
+| `copy(destination)` | `void` | Copy directory recursively |
+| `move(destination)` | `void` | Move directory |
+| `rename(newName)` | `void` | Rename directory |
+| `delete()` | `void` | Remove directory and all contents |
+
+**Static Methods:**
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Directory.pickDirectoryAsync(initialUri?)` | `Promise<Directory \| null>` | Open system directory picker |
+
+### FileHandle Class
+
+Returned by `file.open()` for stream-based operations.
+
+| Property/Method | Type/Return | Description |
+|----------------|-------------|-------------|
+| `offset` | `number \| null` | Current byte position |
+| `size` | `number \| null` | File size |
+| `readBytes(length)` | `Uint8Array` | Read specified byte count |
+| `writeBytes(bytes)` | `void` | Write byte array |
+| `close()` | `void` | Close handle (required before other file ops) |
+
+### Usage Examples
 
 ```typescript
-// Store string
-await AsyncStorage.setItem('theme', 'dark');
-
-// Store JSON object
-const user = { id: 1, name: 'John', email: 'john@example.com' };
-await AsyncStorage.setItem('user', JSON.stringify(user));
-
-// Store array
-const favorites = ['item1', 'item2', 'item3'];
-await AsyncStorage.setItem('favorites', JSON.stringify(favorites));
-```
-
----
-
-#### Method: `removeItem(key: string, callback?: ErrorCallback)`
-
-**Description**: Delete a stored key-value pair.
-
-**Parameters**:
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `key` | string | ✅ | Key to delete |
-| `callback` | (error?: Error) => void | ❌ | Legacy callback |
-
-**Return Type**: `Promise<void>`
-
-**Code Example**:
-
-```typescript
-await AsyncStorage.removeItem('authToken');
-```
-
----
-
-#### Method: `getAllKeys(callback?: ErrorCallback)`
-
-**Description**: Get all stored keys.
-
-**Return Type**: `Promise<string[]>`
-
-**Code Example**:
-
-```typescript
-const keys = await AsyncStorage.getAllKeys();
-console.log('Stored keys:', keys);
-// → ['authToken', 'user', 'theme', 'favorites']
-```
-
----
-
-#### Method: `multiGet(keys: string[], callback?: ErrorCallback)`
-
-**Description**: Retrieve multiple values in one call (more efficient).
-
-**Parameters**:
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `keys` | string[] | ✅ | Keys to retrieve |
-| `callback` | (errors?: Error[], result?: [string, string][]) => void | ❌ | Legacy callback |
-
-**Return Type**: `Promise<[string, string][]>` — Array of [key, value] tuples
-
-**Code Example**:
-
-```typescript
-const [authToken, theme, user] = await AsyncStorage.multiGet([
-  'authToken',
-  'theme',
-  'user',
-]);
-
-// Returns: [
-//   ['authToken', 'token123'],
-//   ['theme', 'dark'],
-//   ['user', '{"id":1,"name":"John"}'],
-// ]
-```
-
----
-
-#### Method: `multiSet(keyValuePairs: [string, string][], callback?: ErrorCallback)`
-
-**Description**: Store multiple values in one call.
-
-**Parameters**:
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `keyValuePairs` | [string, string][] | ✅ | Array of [key, value] tuples |
-| `callback` | (errors?: Error[]) => void | ❌ | Legacy callback |
-
-**Return Type**: `Promise<void>`
-
-**Code Example**:
-
-```typescript
-await AsyncStorage.multiSet([
-  ['authToken', 'token123'],
-  ['theme', 'dark'],
-  ['user', JSON.stringify({ id: 1, name: 'John' })],
-]);
-```
-
----
-
-#### Method: `clear(callback?: ErrorCallback)`
-
-**Description**: Delete all stored data (use with caution).
-
-**Return Type**: `Promise<void>`
-
-**Code Example**:
-
-```typescript
-// Clear all storage (e.g., on logout)
-await AsyncStorage.clear();
-```
-
----
-
-### AsyncStorage Best Practices
-
-### ✅ Do's
-
-- **Stringify objects** — AsyncStorage only stores strings
-- **Use `multiGet`/`multiSet`** — More efficient than individual calls
-- **Store non-sensitive data** — Not cryptographically secure
-- **Cache frequently accessed data** — Reduce reads from disk
-- **Use try-catch** — Handle storage errors gracefully
-- **Version your storage schema** — For migrations when changing structure
-
-### ❌ Don'ts
-
-- **Don't store sensitive tokens** — Use `expo-secure-store` instead
-- **Don't store large files** — AsyncStorage is for small data (< 10MB)
-- **Don't block UI during storage** — Run off main thread with `useAsyncStorage`
-- **Don't assume keys exist** — Always check for `null`
-
-### Custom Hook: `useAsyncStorage`
-
-```typescript
-import { useAsyncStorage } from '@react-native-async-storage/async-storage';
-
-function UserProfile() {
-  const { getItem, setItem, removeItem } = useAsyncStorage('user');
-
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    getItem().then((data) => {
-      if (data) setUser(JSON.parse(data));
-    });
-  }, []);
-
-  const updateUser = async (newUser: User) => {
-    await setItem(JSON.stringify(newUser));
-    setUser(newUser);
-  };
-
-  const clearUser = async () => {
-    await removeItem();
-    setUser(null);
-  };
-
-  return { user, updateUser, clearUser };
-}
-```
-
----
-
-## Firebase JS SDK
-
-### Installation
-
-```bash
-npx expo install firebase
-```
-
-### Setup
-
-**Create `firebaseConfig.ts`**:
-
-```typescript
-// firebaseConfig.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
-
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
-// Optional: Enable emulator for local development
-if (__DEV__) {
-  try {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
-      disableWarnings: true,
-    });
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    connectStorageEmulator(storage, '127.0.0.1', 9199);
-  } catch (error) {
-    // Emulator already initialized
+import { File, Directory, Paths } from 'expo-file-system';
+
+// Write and read a text file
+const file = new File(Paths.document, 'notes.txt');
+file.create();
+file.write('Hello, Expo SDK 54!');
+console.log(file.textSync()); // "Hello, Expo SDK 54!"
+console.log(file.size);       // 19
+
+// Write JSON data
+const config = new File(Paths.document, 'config.json');
+config.create();
+config.write(JSON.stringify({ theme: 'dark', lang: 'en' }));
+const data = JSON.parse(config.textSync());
+
+// Download a file from the network
+const downloads = new Directory(Paths.cache, 'downloads');
+downloads.create();
+const pdf = await File.downloadFileAsync(
+  'https://example.com/doc.pdf',
+  downloads
+);
+console.log(`Downloaded: ${pdf.name}, ${pdf.size} bytes`);
+
+// List directory contents
+const items = new Directory(Paths.document).list();
+for (const item of items) {
+  if (item instanceof Directory) {
+    console.log(`Dir: ${item.name}`);
+  } else {
+    console.log(`File: ${item.name} (${item.size} bytes)`);
   }
 }
+
+// Upload a file with fetch
+const uploadFile = new File(Paths.cache, 'upload.txt');
+uploadFile.create();
+uploadFile.write('upload content');
+await fetch('https://api.example.com/upload', {
+  method: 'POST',
+  body: uploadFile,
+});
+
+// Check available disk space
+const freeGB = Paths.availableDiskSpace / (1024 ** 3);
+console.log(`Free space: ${freeGB.toFixed(1)} GB`);
 ```
 
-### Firestore CRUD Operations
+**Source:** https://docs.expo.dev/versions/latest/sdk/filesystem/
 
-#### Create Document
+---
 
-```typescript
-import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+## SecureStore
 
-// Auto-generate document ID
-const newPost = await addDoc(collection(db, 'posts'), {
-  title: 'My Post',
-  content: 'Post content',
-  userId: 'user123',
-  createdAt: new Date(),
-});
-console.log('Document ID:', newPost.id);
+Encrypted key-value storage backed by iOS Keychain and Android Keystore. Each Expo project has a separate storage system.
 
-// Set document with custom ID
-await setDoc(doc(db, 'users', 'user123'), {
-  name: 'John Doe',
-  email: 'john@example.com',
-  createdAt: new Date(),
-});
+### Installation
+
+```bash
+npx expo install expo-secure-store
 ```
 
-#### Read Document
+### Methods
+
+| Method | Parameters | Return | Description |
+|--------|-----------|--------|-------------|
+| `setItemAsync(key, value, options?)` | `string, string, SecureStoreOptions?` | `Promise<void>` | Store encrypted key-value pair |
+| `setItem(key, value, options?)` | `string, string, SecureStoreOptions?` | `void` | Synchronous store (blocks JS thread) |
+| `getItemAsync(key, options?)` | `string, SecureStoreOptions?` | `Promise<string \| null>` | Retrieve value; `null` if not found or invalidated |
+| `getItem(key, options?)` | `string, SecureStoreOptions?` | `string \| null` | Synchronous retrieve (blocks JS thread) |
+| `deleteItemAsync(key, options?)` | `string, SecureStoreOptions?` | `Promise<void>` | Remove stored value |
+| `isAvailableAsync()` | -- | `Promise<boolean>` | Check platform support (`true` on iOS/Android/tvOS) |
+| `canUseBiometricAuthentication()` | -- | `boolean` | Check if biometric auth is available |
+
+### SecureStoreOptions
+
+| Option | Type | Platform | Description |
+|--------|------|----------|-------------|
+| `requireAuthentication` | `boolean` | iOS, Android | Require biometric/passcode before access |
+| `authenticationPrompt` | `string` | All | Custom prompt message for authentication dialog |
+| `keychainAccessible` | `KeychainAccessibilityConstant` | iOS | When data is accessible (default: `WHEN_UNLOCKED`) |
+| `keychainService` | `string` | iOS, Android | Service identifier; must match for retrieval if set |
+| `accessGroup` | `string` | iOS | Keychain access group for app-to-app sharing |
+
+### Keychain Accessibility Constants
+
+| Constant | Description |
+|----------|-------------|
+| `SecureStore.WHEN_UNLOCKED` | Available only while device is unlocked (default) |
+| `SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY` | Same, but not included in backups |
+| `SecureStore.AFTER_FIRST_UNLOCK` | Available after first unlock until restart |
+| `SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` | Same, but not included in backups |
+| `SecureStore.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY` | Only when passcode is set; invalidated if removed |
+
+### Key Constraints
+
+- Keys: alphanumeric, `.`, `-`, `_` characters only
+- Values: must be strings (use `JSON.stringify` for objects)
+- Keys are invalidated when biometrics change (new fingerprint, face profile)
+
+### Usage Example
 
 ```typescript
-import { getDoc, getDocs, collection, query, where } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import * as SecureStore from 'expo-secure-store';
 
-// Get single document
-const userRef = doc(db, 'users', 'user123');
-const userSnap = await getDoc(userRef);
-if (userSnap.exists()) {
-  console.log('User:', userSnap.data());
+// Basic CRUD
+await SecureStore.setItemAsync('authToken', 'eyJhbGci...');
+const token = await SecureStore.getItemAsync('authToken');
+await SecureStore.deleteItemAsync('authToken');
+
+// Synchronous variants (use sparingly)
+SecureStore.setItem('sessionId', 'abc123');
+const sessionId = SecureStore.getItem('sessionId');
+
+// Biometric-protected storage
+await SecureStore.setItemAsync('bankPin', '1234', {
+  requireAuthentication: true,
+  authenticationPrompt: 'Authenticate to access your PIN',
+  keychainAccessible: SecureStore.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY,
+});
+
+// Store complex objects as JSON
+const credentials = { email: 'user@example.com', refreshToken: 'rt_...' };
+await SecureStore.setItemAsync('credentials', JSON.stringify(credentials));
+const stored = await SecureStore.getItemAsync('credentials');
+const parsed = stored ? JSON.parse(stored) : null;
+
+// Check platform support
+const isAvailable = await SecureStore.isAvailableAsync();
+const hasBiometrics = SecureStore.canUseBiometricAuthentication();
+```
+
+**Source:** https://docs.expo.dev/versions/latest/sdk/securestore/
+
+---
+
+## Asset
+
+Download and cache bundled or remote assets for use at runtime.
+
+### Installation
+
+```bash
+npx expo install expo-asset
+```
+
+### Hook: useAssets
+
+```typescript
+import { useAssets } from 'expo-asset';
+
+const [assets, error] = useAssets([
+  require('./assets/logo.png'),
+  require('./assets/splash.png'),
+]);
+// assets: Asset[] | undefined
+// error: Error | undefined
+```
+
+### Asset Class
+
+**Static Methods:**
+
+| Method | Parameters | Return | Description |
+|--------|-----------|--------|-------------|
+| `Asset.fromModule(moduleId)` | `number \| string` | `Asset` | Create from `require()` or URL |
+| `Asset.fromURI(uri)` | `string` | `Asset` | Create from URI string |
+| `Asset.loadAsync(moduleId)` | `number \| number[]` | `Promise<Asset[]>` | Load and download to cache |
+
+**Instance Methods:**
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `downloadAsync()` | `Promise<Asset>` | Download to device cache |
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `localUri` | `string \| null` | Local file URI (set after `downloadAsync()`) |
+| `uri` | `string` | Remote or bundled URI |
+| `name` | `string` | Filename without extension |
+| `type` | `string` | File extension |
+| `hash` | `string \| null` | MD5 hash of asset data |
+| `width` | `number \| null` | Image width (divided by scale factor) |
+| `height` | `number \| null` | Image height (divided by scale factor) |
+| `downloaded` | `boolean` | Whether download is complete |
+
+### Usage Example
+
+```typescript
+import { Asset } from 'expo-asset';
+
+// Preload assets during splash screen
+async function loadAssets(): Promise<void> {
+  await Asset.loadAsync([
+    require('./assets/images/logo.png'),
+    require('./assets/images/background.png'),
+  ]);
 }
 
-// Get all documents
-const postsSnap = await getDocs(collection(db, 'posts'));
-const posts = postsSnap.docs.map((doc) => ({
-  id: doc.id,
-  ...doc.data(),
-}));
+// Get local URI for a bundled asset
+const asset = Asset.fromModule(require('./assets/data.json'));
+await asset.downloadAsync();
+console.log(asset.localUri); // file:///...data.json
 
-// Query with filter
-const q = query(
-  collection(db, 'posts'),
-  where('userId', '==', 'user123')
-);
-const querySnap = await getDocs(q);
-const userPosts = querySnap.docs.map((doc) => ({
-  id: doc.id,
-  ...doc.data(),
-}));
+// Use in components with useAssets hook
+import { useAssets } from 'expo-asset';
+import { Image } from 'react-native';
+
+function Logo() {
+  const [assets] = useAssets([require('./assets/logo.png')]);
+  if (!assets) return null;
+  return <Image source={{ uri: assets[0].localUri! }} style={{ width: 100, height: 100 }} />;
+}
 ```
 
-#### Update Document
+**Source:** https://docs.expo.dev/versions/latest/sdk/asset/
+
+---
+
+## Font
+
+Load custom fonts at runtime or via config plugin for build-time embedding.
+
+### Installation
+
+```bash
+npx expo install expo-font
+```
+
+### Hook: useFonts
 
 ```typescript
-import { updateDoc, doc, increment } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import { useFonts } from 'expo-font';
 
-// Partial update
-await updateDoc(doc(db, 'users', 'user123'), {
-  name: 'Jane Doe',
-  updatedAt: new Date(),
+const [loaded, error] = useFonts({
+  'Inter-Regular': require('./assets/fonts/Inter-Regular.otf'),
+  'Inter-Bold': require('./assets/fonts/Inter-Bold.otf'),
 });
-
-// Increment counter
-await updateDoc(doc(db, 'posts', 'post123'), {
-  likes: increment(1),
-});
+// loaded: boolean -- true when all fonts are loaded
+// error: Error | null -- loading error if any
 ```
 
-#### Delete Document
+### Methods
+
+| Method | Parameters | Return | Description |
+|--------|-----------|--------|-------------|
+| `Font.loadAsync(fontMap)` | `Record<string, FontSource>` | `Promise<void>` | Load fonts imperatively |
+| `Font.loadAsync(name, source)` | `string, FontSource` | `Promise<void>` | Load single font |
+| `Font.isLoaded(fontFamily)` | `string` | `boolean` | Check if font is loaded (sync) |
+| `Font.isLoading(fontFamily)` | `string` | `boolean` | Check if font is loading (sync) |
+| `Font.getLoadedFonts()` | -- | `string[]` | List all loaded font families |
+
+### FontSource Type
 
 ```typescript
-import { deleteDoc, doc } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+type FontSource = string | number | Asset | FontResource;
 
-await deleteDoc(doc(db, 'users', 'user123'));
+interface FontResource {
+  uri?: string | number;
+  display?: FontDisplay; // Web only
+  default?: string;
+}
 ```
 
-### Real-time Listening
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| `ERR_FONT_API` | Font API not available on platform |
+| `ERR_FONT_SOURCE` | Invalid font source |
+| `ERR_DOWNLOAD` | Font download failed |
+| `ERR_FONT_FAMILY` | Invalid font family name |
+| `ERR_UNLOAD` | Font unload failed |
+
+### Usage Example
 
 ```typescript
-import { onSnapshot, collection, query, where } from 'firebase/firestore';
-import { db } from './firebaseConfig';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 
-function UserPostsScreen() {
-  const [posts, setPosts] = useState([]);
+SplashScreen.preventAutoHideAsync();
 
-  useEffect(() => {
-    // Subscribe to real-time updates
-    const q = query(
-      collection(db, 'posts'),
-      where('userId', '==', 'user123')
-    );
+export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    'Inter-Regular': require('./assets/fonts/Inter-Regular.otf'),
+    'Inter-Bold': require('./assets/fonts/Inter-Bold.otf'),
+    'Mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
+  });
 
-    const unsubscribe = onSnapshot(q, (querySnap) => {
-      const updatedPosts = querySnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setPosts(updatedPosts);
-    });
+  const onLayoutRootView = useCallback(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hide();
+    }
+  }, [fontsLoaded, fontError]);
 
-    return unsubscribe; // Cleanup
-  }, []);
+  if (!fontsLoaded && !fontError) return null;
 
   return (
-    // Render posts (re-renders as data updates)
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <Text style={{ fontFamily: 'Inter-Bold', fontSize: 24 }}>
+        Custom Font Heading
+      </Text>
+      <Text style={{ fontFamily: 'Inter-Regular', fontSize: 16 }}>
+        Body text with Inter Regular
+      </Text>
+    </View>
   );
 }
 ```
 
----
+### Config Plugin (Build-Time Embedding)
 
-## React Native Firebase
+Fonts can be embedded at build time via the config plugin in app.json, eliminating runtime download latency:
 
-### Installation (Requires Prebuild)
-
-```bash
-npx expo install @react-native-firebase/app @react-native-firebase/auth @react-native-firebase/firestore
-
-# Generate native code
-npx expo prebuild --clean
-
-# Build for development
-eas build --platform ios --profile development
-eas build --platform android --profile development
-```
-
-### Setup with Firebase Config
-
-```typescript
-// firebaseConfig.ts
-import firebase from '@react-native-firebase/app';
-import '@react-native-firebase/auth';
-import '@react-native-firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+```json
+{
+  "plugins": [
+    ["expo-font", {
+      "fonts": ["./assets/fonts/Inter-Regular.otf", "./assets/fonts/Inter-Bold.otf"]
+    }]
+  ]
 }
-
-export default firebase;
 ```
 
-### Authentication
-
-```typescript
-import auth from '@react-native-firebase/auth';
-
-// Sign up
-const newUser = await auth().createUserWithEmailAndPassword(
-  'user@example.com',
-  'password123'
-);
-
-// Sign in
-const user = await auth().signInWithEmailAndPassword(
-  'user@example.com',
-  'password123'
-);
-
-// Real-time auth state
-auth().onAuthStateChanged((user) => {
-  if (user) {
-    console.log('Logged in:', user.uid);
-  } else {
-    console.log('Logged out');
-  }
-});
-
-// Sign out
-await auth().signOut();
-```
-
-### Firestore (Native API)
-
-```typescript
-import firestore from '@react-native-firebase/firestore';
-
-// Create
-await firestore().collection('users').add({
-  name: 'John',
-  email: 'john@example.com',
-});
-
-// Read (real-time)
-firestore()
-  .collection('posts')
-  .where('userId', '==', 'user123')
-  .onSnapshot((querySnap) => {
-    const posts = querySnap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    console.log('Posts updated:', posts);
-  });
-
-// Update
-await firestore().collection('users').doc('user123').update({
-  name: 'Jane',
-});
-
-// Delete
-await firestore().collection('users').doc('user123').delete();
-```
+**Source:** https://docs.expo.dev/versions/latest/sdk/font/
 
 ---
 
-## Firebase vs. React Native Firebase Comparison
-
-| Aspect | Firebase JS SDK | React Native Firebase |
-|--------|-----------------|----------------------|
-| **Installation** | `npm install firebase` | Requires prebuild |
-| **Expo Go Support** | ✅ Yes | ❌ No (native required) |
-| **Performance** | Good | Excellent (native) |
-| **Firestore** | ✅ Yes | ✅ Yes |
-| **Real-time Sync** | ✅ Yes | ✅ Yes |
-| **Offline Persistence** | ✅ Yes | ✅ Yes |
-| **Analytics** | ❌ Not on mobile | ✅ Yes |
-| **Crash Reporting** | ❌ Not on mobile | ✅ Yes |
-| **Dynamic Links** | ❌ Not on mobile | ✅ Yes |
-| **Use Case** | MVP, learning, web compatibility | Production apps |
-
-**Decision**: Start with Firebase JS SDK. Migrate to React Native Firebase if you need Analytics, Crash Reporting, or max performance.
-
----
-
-## Cross-References
-
-- **Authentication**: [03-api-auth.md](03-api-auth.md) — Token storage in SecureStore
-- **Firebase Complete**: [09-guide-firebase-integration.md](09-guide-firebase-integration.md) — Full integration guide
-- **Security**: [13-best-practices-security.md](13-best-practices-security.md) — Data security practices
-
----
-
-**Source Attribution**: https://docs.expo.dev/guides/using-firebase/  
-**Last Updated**: December 2024
+**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/filesystem/, https://docs.expo.dev/versions/latest/sdk/securestore/, https://docs.expo.dev/versions/latest/sdk/asset/, https://docs.expo.dev/versions/latest/sdk/font/

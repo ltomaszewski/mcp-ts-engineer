@@ -1,105 +1,47 @@
-# Query Complexity and Depth Limiting
+# Query Protection
 
-GraphQL's flexibility makes it vulnerable to malicious queries. Implement protection for production APIs.
+Protecting GraphQL APIs against malicious queries with depth limiting, complexity analysis, and GraphQL Armor.
 
 ## GraphQL Armor (Recommended)
+
+Provides Envelop plugins that work natively with GraphQL Yoga.
 
 ```bash
 npm install @escape.tech/graphql-armor
 ```
 
 ```typescript
-import { ApolloArmor } from '@escape.tech/graphql-armor';
-
-const armor = new ApolloArmor({
-  maxDepth: {
-    enabled: true,
-    n: 10, // Maximum query depth
-  },
-  maxAliases: {
-    enabled: true,
-    n: 15,
-  },
-  maxDirectives: {
-    enabled: true,
-    n: 50,
-  },
-});
+import { EnvelopArmorPlugin } from '@escape.tech/graphql-armor';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
+    GraphQLModule.forRoot<YogaDriverConfig>({
+      driver: YogaDriver,
       autoSchemaFile: true,
-      ...armor.protect(),
+      plugins: [
+        EnvelopArmorPlugin({
+          maxDepth: { enabled: true, n: 10 },
+          maxAliases: { enabled: true, n: 15 },
+          maxDirectives: { enabled: true, n: 50 },
+          costLimit: { enabled: true, maxCost: 1000 },
+          maxTokens: { enabled: true, n: 1000 },
+        }),
+      ],
     }),
   ],
 })
 export class AppModule {}
 ```
 
-## Complexity Plugin
+### Armor Plugin Options
 
-```typescript
-import { Plugin } from '@nestjs/apollo';
-import { GraphQLSchemaHost } from '@nestjs/graphql';
-import { ApolloServerPlugin, GraphQLRequestListener } from '@apollo/server';
-import { GraphQLError } from 'graphql';
-import {
-  fieldExtensionsEstimator,
-  getComplexity,
-  simpleEstimator,
-} from 'graphql-query-complexity';
-
-@Plugin()
-export class ComplexityPlugin implements ApolloServerPlugin {
-  constructor(private gqlSchemaHost: GraphQLSchemaHost) {}
-
-  async requestDidStart(): Promise<GraphQLRequestListener<any>> {
-    const maxComplexity = 1000;
-    const { schema } = this.gqlSchemaHost;
-
-    return {
-      async didResolveOperation({ request, document }) {
-        const complexity = getComplexity({
-          schema,
-          operationName: request.operationName,
-          query: document,
-          variables: request.variables,
-          estimators: [
-            fieldExtensionsEstimator(),
-            simpleEstimator({ defaultComplexity: 1 }),
-          ],
-        });
-
-        if (complexity > maxComplexity) {
-          throw new GraphQLError(
-            `Query is too complex: ${complexity}. Maximum allowed: ${maxComplexity}`,
-            {
-              extensions: { code: 'GRAPHQL_VALIDATION_FAILED' },
-            },
-          );
-        }
-      },
-    };
-  }
-}
-```
-
-Register the plugin:
-
-```typescript
-@Module({
-  imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: true,
-    }),
-  ],
-  providers: [ComplexityPlugin],
-})
-export class AppModule {}
-```
+| Plugin | Option | Default | Description |
+|--------|--------|---------|-------------|
+| `maxDepth` | `n` | `6` | Maximum query nesting depth |
+| `maxAliases` | `n` | `15` | Maximum aliases per query |
+| `maxDirectives` | `n` | `50` | Maximum directives per query |
+| `costLimit` | `maxCost` | `5000` | Maximum query cost |
+| `maxTokens` | `n` | `1000` | Maximum tokens in query |
 
 ## Depth Limiting
 
@@ -110,8 +52,8 @@ npm install graphql-depth-limit
 ```typescript
 import depthLimit from 'graphql-depth-limit';
 
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
   autoSchemaFile: true,
   validationRules: [depthLimit(10)],
 })
@@ -119,45 +61,94 @@ GraphQLModule.forRoot<ApolloDriverConfig>({
 
 ## Field-Level Complexity
 
-Assign complexity to specific fields:
+Assign complexity costs to expensive fields:
 
 ```typescript
 @ObjectType()
 export class User {
   @Field(() => [Post], { complexity: 10 })
-  posts: Post[];
+  posts!: Post[];
 }
 
-// Or with resolver
-@ResolveField(() => [Post], { complexity: (options) => options.args.first * 2 })
-async posts(@Parent() user: User, @Args('first') first: number) {
+// Dynamic complexity based on arguments
+@ResolveField(() => [Post], {
+  complexity: (options: ComplexityEstimatorArgs) => {
+    return (options.args.first ?? 10) * 2;
+  },
+})
+async posts(@Parent() user: User, @Args('first', { type: () => Int, nullable: true }) first?: number) {
   return this.postsService.findByUser(user.id, first);
 }
 ```
 
-## Best Practices
+## Query Complexity Analysis
 
-1. **Set maxListDepth Low** - Start with 2-4; users rarely need deeper
-2. **Track Queries** - Log complexity to find optimal limits
-3. **Start Low, Increase as Needed** - Begin restrictive, loosen based on usage
-4. **Monitor Query Patterns** - Log for identifying attacks or inefficiency
-5. **Combine Multiple Protections** - Use both depth and complexity limiting
-
-## Example Protection Configuration
+```bash
+npm install graphql-query-complexity
+```
 
 ```typescript
-const armor = new ApolloArmor({
-  maxDepth: { enabled: true, n: 10 },
-  maxAliases: { enabled: true, n: 15 },
-  maxDirectives: { enabled: true, n: 50 },
-  costLimit: { enabled: true, maxCost: 1000 },
-  maxTokens: { enabled: true, n: 1000 },
-});
+import { GraphQLSchemaHost } from '@nestjs/graphql';
+import {
+  fieldExtensionsEstimator,
+  getComplexity,
+  simpleEstimator,
+} from 'graphql-query-complexity';
 
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
-  autoSchemaFile: true,
-  validationRules: [depthLimit(10)],
-  ...armor.protect(),
+@Injectable()
+export class ComplexityPlugin {
+  constructor(@Inject(GraphQLSchemaHost) private gqlSchemaHost: GraphQLSchemaHost) {}
+
+  analyze(document: any, variables: any): number {
+    const { schema } = this.gqlSchemaHost;
+    return getComplexity({
+      schema,
+      query: document,
+      variables,
+      estimators: [
+        fieldExtensionsEstimator(),
+        simpleEstimator({ defaultComplexity: 1 }),
+      ],
+    });
+  }
+}
+```
+
+## Production Configuration
+
+```typescript
+GraphQLModule.forRootAsync<YogaDriverConfig>({
+  driver: YogaDriver,
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (configService: ConfigService) => ({
+    autoSchemaFile: true,
+    introspection: configService.get('NODE_ENV') !== 'production',
+    graphiql: configService.get('NODE_ENV') !== 'production',
+    validationRules: [depthLimit(10)],
+    plugins: [
+      EnvelopArmorPlugin({
+        maxDepth: { enabled: true, n: 10 },
+        maxAliases: { enabled: true, n: 15 },
+        costLimit: { enabled: true, maxCost: 1000 },
+        maxTokens: { enabled: true, n: 1000 },
+      }),
+    ],
+  }),
 })
 ```
+
+## Best Practices
+
+| Practice | Rationale |
+|----------|-----------|
+| Set maxDepth to 6-10 | Users rarely need deeper nesting |
+| Start restrictive | Loosen based on real usage patterns |
+| Combine protections | Use both depth and complexity limiting |
+| Disable introspection in prod | Reduce attack surface |
+| Monitor query patterns | Log complexity to identify abuse |
+| Rate limit per IP | Prevent query flooding |
+
+---
+
+**Version:** @escape.tech/graphql-armor + @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/complexity

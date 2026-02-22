@@ -1,7 +1,7 @@
 # Dark Mode & Theme Management - NativeWind v4
 
 **Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode  
-**Last Verified:** October 14, 2025  
+**Last Verified:** February 2026  
 **Version:** NativeWind v4
 
 ---

@@ -1,371 +1,272 @@
-# Troubleshooting & FAQ
+# Troubleshooting and FAQ
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/  
-**Version:** 4.2.1  
-**Category:** Debugging | Common Issues
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting/
 
 ---
 
-## 📋 Overview
+## Overview
 
-Quick solutions to common Reanimated errors, performance issues, and platform-specific problems.
+Quick solutions to common Reanimated 4.x errors, build issues, and platform-specific problems.
 
 ---
 
-## 🔧 Installation & Build Issues
+## Installation and Build Issues
 
-### Issue: Metro Bundler Cache Errors
+### Metro Bundler Cache Errors
 
-**Symptoms:**
+**Symptom:**
 ```
 Cannot find module 'react-native-reanimated'
 Invariant Violation: Native module could not be found
 ```
 
-**Solutions:**
+**Fix:**
 ```bash
-# Clear cache completely
+# Clear Metro cache
 npm start -- --reset-cache
-yarn start --reset-cache
 
-# Also try clearing node_modules
+# Nuclear option: clear everything
 rm -rf node_modules && npm install
 npm start -- --reset-cache
 ```
 
 ---
 
-### Issue: iOS Pod Installation Fails
+### iOS Pod Installation Fails
 
-**Symptoms:**
-```
-ld: library not found for -lreanimated
-Pod install fails
-```
+**Symptom:** `Pod not found`, linking errors, `ld: library not found for -lreanimated`
 
-**Solutions:**
+**Fix:**
 ```bash
-# Clean and reinstall pods
-cd ios
-pod deintegrate
-pod install
-cd ..
+cd ios && pod deintegrate && pod install && cd ..
 
-# For Expo projects:
+# For Expo:
 rm -rf ios
 npx expo prebuild --clean
-
-# Rebuild Xcode build folder:
-cd ios && xcodebuild clean -workspace . -scheme YourApp && cd ..
 ```
 
 ---
 
-### Issue: Android Build Gradle Sync Error
+### Android Gradle Build Fails
 
-**Symptoms:**
-```
-Could not find com.swmansion.reanimated:react-native-reanimated
-Gradle sync failed
-```
+**Symptom:** `Could not find com.swmansion.reanimated`, Gradle sync errors
 
-**Solutions:**
+**Fix:**
 ```bash
-# Clean gradle cache
-cd android
-./gradlew clean
-cd ..
-
-# Rebuild
+cd android && ./gradlew clean && cd ..
 npx react-native run-android
-
-# If still failing, check gradle.properties:
-# - Ensure proper React Native version
-# - Update gradle wrapper if needed
 ```
 
 ---
 
-### Issue: Babel Plugin Not Applied
+### Babel Plugin Not Applied
 
-**Symptoms:**
-```
-Worklet functions not being transformed
-Animation code seems to execute on JS thread
-```
+**Symptom:** Worklets not transformed, animations run on JS thread, sluggish performance
 
-**Check:**
-```javascript
+**Check:** The plugin must be LAST in the array.
+
+```typescript
 // babel.config.js
-module.exports = {
-  plugins: [
-    // ❌ WRONG: Plugin listed first
-    ['react-native-worklets/plugin', {}],
-    '@babel/plugin-transform-react-jsx',
-    
-    // ✅ CORRECT: Plugin listed last
-    '@babel/plugin-transform-react-jsx',
-    ['react-native-worklets/plugin', {}],
-  ],
-};
-```
-
-**Solution:**
-```javascript
-// Ensure react-native-worklets/plugin is LAST
-const workletsOptions = {};
-
 module.exports = {
   presets: ['babel-preset-expo'],
   plugins: [
-    ['@babel/plugin-proposal-decorators', { legacy: true }],
-    // ... other plugins ...
-    ['react-native-worklets/plugin', workletsOptions], // Must be last!
+    // other plugins...
+    'react-native-worklets/plugin', // MUST be last
   ],
 };
 ```
 
+**Common mistake:** Still using old `react-native-reanimated/plugin` from v3. Change to `react-native-worklets/plugin`.
+
 ---
 
-## 🎬 Animation Issues
+### Missing react-native-worklets
 
-### Issue: Animations Not Starting
+**Symptom:** `Cannot find module 'react-native-worklets'`
 
-**Symptoms:**
-```javascript
-opacity.value = withTiming(0); // Nothing happens
+**Fix:**
+```bash
+npm install react-native-worklets
+# Then rebuild native
+npx expo prebuild --clean  # Expo
+cd ios && pod install       # CLI
 ```
 
-**Possible Causes & Solutions:**
+---
 
-1. **Shared value not connected to component:**
-```javascript
-// ❌ WRONG: Created but not used
+## Animation Issues
+
+### Animations Not Starting
+
+**Cause 1:** Shared value not connected to a component via `useAnimatedStyle`.
+
+```typescript
+// BAD: Shared value exists but not used in animated style
 const opacity = useSharedValue(1);
-return <View style={{ opacity: 0.5 }} />; // Static value
+return <View style={{ opacity: 0.5 }} />;
 
-// ✅ CORRECT: Use in useAnimatedStyle
+// GOOD: Connected via useAnimatedStyle
 const animatedStyle = useAnimatedStyle(() => ({
   opacity: opacity.value,
 }));
 return <Animated.View style={animatedStyle} />;
 ```
 
-2. **Animated component not wrapped:**
-```javascript
-// ❌ WRONG: Regular View won't animate
+**Cause 2:** Animated style passed to regular component.
+
+```typescript
+// BAD: Regular View ignores animated styles
 <View style={animatedStyle} />
 
-// ✅ CORRECT: Use Animated.View
+// GOOD: Use Animated.View
 <Animated.View style={animatedStyle} />
 ```
 
-3. **Animation value already at target:**
-```javascript
-// ❌ WRONG: Animating to current value
-const opacity = useSharedValue(0);
-opacity.value = withTiming(0); // Already 0, no animation
+**Cause 3:** Animating to current value.
 
-// ✅ CORRECT: Animate to different value
+```typescript
+const opacity = useSharedValue(0);
+opacity.value = withTiming(0); // Already 0, no visible animation
 opacity.value = withTiming(1); // Animates from 0 to 1
 ```
 
 ---
 
-### Issue: Animation Freezes or Jitters
+### Animation Infinite Loop / Freeze
 
-**Symptoms:**
-```
-Animation stutters, FPS drops below 60
-```
+**Symptom:** App freezes, shared value keeps changing, UI unresponsive.
 
-**Possible Causes & Solutions:**
+**Cause:** Mutating shared value inside `useAnimatedStyle`.
 
-1. **Heavy computation in worklet:**
-```javascript
-// ❌ BAD: Complex calculation every frame
-const animatedStyle = useAnimatedStyle(() => {
-  const expensive = JSON.parse(JSON.stringify(data)); // Slow!
+```typescript
+// BAD: Causes infinite loop
+const style = useAnimatedStyle(() => {
+  opacity.value = withTiming(0); // Mutation triggers re-evaluation!
   return { opacity: opacity.value };
 });
 
-// ✅ GOOD: Precompute outside
-const processed = useMemo(() => process(data), [data]);
-const animatedStyle = useAnimatedStyle(() => ({
+// GOOD: Read only in style, mutate in handlers
+const style = useAnimatedStyle(() => ({
   opacity: opacity.value,
 }));
+const hide = () => { opacity.value = withTiming(0); };
 ```
 
-2. **Too many animations:**
-```javascript
-// ❌ AVOID: 100+ concurrent animations
-for (let i = 0; i < 100; i++) {
-  items[i].value = withTiming(1);
-}
+---
 
-// ✅ BETTER: Stagger or limit count
-items.slice(0, 10).forEach(item => {
-  item.value = withTiming(1);
+### Animation Jitters / FPS Drops
+
+**Cause 1:** Heavy computation in worklet.
+
+```typescript
+// BAD: Complex operation every frame
+const style = useAnimatedStyle(() => {
+  const parsed = JSON.parse(someString); // Expensive!
+  return { opacity: opacity.value };
 });
+
+// GOOD: Precompute
+const parsed = useMemo(() => JSON.parse(someString), [someString]);
 ```
 
-3. **Gesture handler event flooding:**
-```javascript
-// ✅ GOOD: Debounce high-frequency updates
-const pan = Gesture.Pan()
-  .onUpdate((e) => {
+**Cause 2:** Too many concurrent animations (especially on web).
+
+**Cause 3:** Gesture event flooding. Throttle high-frequency updates if needed.
+
+---
+
+## Thread and Runtime Issues
+
+### "Function is not a worklet"
+
+**Symptom:** `Error: Function is not a worklet`, `scheduleOnUI callback not a worklet`
+
+**Fix:** Add `'worklet'` directive.
+
+```typescript
+// BAD
+function myFunction() {
+  console.log('Hello');
+}
+scheduleOnUI(myFunction); // Error!
+
+// GOOD
+function myFunction() {
+  'worklet';
+  console.log('Hello');
+}
+scheduleOnUI(myFunction);
+```
+
+---
+
+### "Cannot find function in schedule scope"
+
+**Symptom:** `scheduleOnRN` crash, function undefined on JS thread.
+
+**Fix:** Define the callback in component scope (JS thread), not inside a worklet.
+
+```typescript
+// BAD: Function defined inside worklet
+const pan = Gesture.Pan().onEnd(() => {
+  'worklet';
+  const localFn = () => console.log('bad');
+  scheduleOnRN(localFn); // CRASH
+
+});
+
+// GOOD: Function defined in component scope
+function Component() {
+  const handleDone = () => console.log('done');
+
+  const pan = Gesture.Pan().onEnd(() => {
     'worklet';
-    if (e.translationX % 10 === 0) { // Sample every 10px
-      position.value = e.translationX;
-    }
+    scheduleOnRN(handleDone); // OK
   });
-```
-
----
-
-### Issue: Animation Loops Infinitely
-
-**Symptoms:**
-```
-Shared value mutation in useAnimatedStyle causing infinite updates
-```
-
-**Solution:**
-```javascript
-// ❌ WRONG: Mutating inside useAnimatedStyle
-const animatedStyle = useAnimatedStyle(() => {
-  opacity.value = withTiming(0); // ⚠️ Causes infinite loop!
-  return { opacity: opacity.value };
-});
-
-// ✅ CORRECT: Mutate in event handlers only
-const animatedStyle = useAnimatedStyle(() => ({
-  opacity: opacity.value,
-}));
-
-const handlePress = () => {
-  opacity.value = withTiming(0); // Mutate here
-};
-```
-
----
-
-## 🧵 Thread & Runtime Issues
-
-### Issue: "Cannot access shared value on JS thread"
-
-**Symptoms:**
-```
-TypeError: Cannot read property 'value' of undefined
-Error: Shared value is not accessible
-```
-
-**Solution:**
-```javascript
-// ❌ WRONG: Reading during render
-function Component() {
-  const sv = useSharedValue(0);
-  console.log(sv.value); // ⚠️ Reading during render
-
-  return null;
 }
+```
 
-// ✅ CORRECT: Read in useEffect or useAnimatedStyle
+---
+
+### Reading Shared Value During Render
+
+**Symptom:** Stale value, console.log shows outdated number.
+
+```typescript
+// BAD: Reading during render
 function Component() {
   const sv = useSharedValue(0);
+  console.log(sv.value); // Stale, not reactive
 
+  // GOOD: Read in useEffect
   useEffect(() => {
-    console.log(sv.value); // ✅ OK in effect
+    console.log(sv.value);
   }, []);
 
-  const style = useAnimatedStyle(() => {
-    console.log(sv.value); // ✅ OK in worklet
-    return { opacity: sv.value };
-  });
-
-  return <Animated.View style={style} />;
+  // GOOD: Read in useAnimatedStyle
+  const style = useAnimatedStyle(() => ({
+    opacity: sv.value,
+  }));
 }
 ```
 
 ---
 
-### Issue: "Function is not a worklet"
+## Gesture Issues
 
-**Symptoms:**
-```
-Error: Function is not a worklet
-scheduleOnUI callback not a worklet
-```
+### Gestures Not Working on Android
 
-**Solution:**
-```javascript
-// ❌ WRONG: Missing 'worklet' directive
-function myFunction() {
-  console.log('Hello');
-}
-scheduleOnUI(myFunction);
+**Symptom:** Tap/Pan gestures not responding on Android. Works on iOS.
 
-// ✅ CORRECT: Add 'worklet' directive
-function myFunction() {
-  'worklet';
-  console.log('Hello');
-}
-scheduleOnUI(myFunction);
-```
+**Fix:** Wrap app with `GestureHandlerRootView`.
 
----
-
-### Issue: "Cannot find function in schedule scope"
-
-**Symptoms:**
-```
-scheduleOnRN trying to call undefined function
-Function not found in RN Runtime
-```
-
-**Solution:**
-```javascript
-// ❌ WRONG: Function defined inside worklet
-const handler = () => {
-  'worklet';
-  const myFunc = () => { /* ... */ };
-  scheduleOnRN(myFunc); // ❌ myFunc not in RN scope
-};
-
-// ✅ CORRECT: Function defined in component scope (JS thread)
-function Component() {
-  const myFunc = () => { /* ... */ }; // ✅ JS thread scope
-
-  const handler = () => {
-    'worklet';
-    scheduleOnRN(myFunc); // ✅ Can call JS thread function
-  };
-
-  return null;
-}
-```
-
----
-
-## 👆 Gesture Handler Issues
-
-### Issue: Gestures Not Triggered (Android)
-
-**Symptoms:**
-```
-Tap/Pan gestures not working on Android
-Events not firing
-```
-
-**Solution:**
-```javascript
-// ✅ REQUIRED on Android: Wrap with GestureHandlerRootView
+```typescript
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* Your app */}
+      {/* App */}
     </GestureHandlerRootView>
   );
 }
@@ -373,196 +274,138 @@ export default function App() {
 
 ---
 
-### Issue: Context Object Undefined
+### Using Removed API: useAnimatedGestureHandler
 
-**Symptoms:**
-```
-context.startX is undefined in onActive
-```
+**Symptom:** Import error or deprecation warning.
 
-**Solution:**
-```javascript
-// ✅ CORRECT: Initialize context in onStart
+**Fix:** Migrate to Gesture Handler v2 API.
+
+```typescript
+// OLD (removed in v4)
 const handler = useAnimatedGestureHandler({
-  onStart: (event, context) => {
-    'worklet';
-    context.startX = position.value; // Initialize
-  },
-  onActive: (event, context) => {
-    'worklet';
-    // Now context.startX is available
-    position.value = context.startX + event.translationX;
-  },
+  onStart: (e, ctx) => { ctx.startX = translateX.value; },
+  onActive: (e, ctx) => { translateX.value = ctx.startX + e.translationX; },
 });
+
+// NEW (v4)
+const contextX = useSharedValue(0);
+const pan = Gesture.Pan()
+  .onStart(() => { contextX.value = translateX.value; })
+  .onUpdate((e) => { translateX.value = contextX.value + e.translationX; });
 ```
 
 ---
 
-## ♿ Accessibility Issues
+## Layout Animation Issues
 
-### Issue: Animations Don't Respect Reduce Motion
+### Entering/Exiting Animations Not Playing
 
-**Symptoms:**
+**Check 1:** Component must be conditionally rendered (mount/unmount).
+
+```typescript
+// This triggers entering/exiting
+{visible && <Animated.View entering={FadeIn} exiting={FadeOut} />}
+
+// This does NOT (component always mounted)
+<Animated.View
+  entering={FadeIn}
+  style={{ display: visible ? 'flex' : 'none' }}
+/>
 ```
-Animations still play when device has reduce motion enabled
-```
 
-**Solution:**
-```javascript
-import { useReducedMotion } from 'react-native-reanimated';
+**Check 2:** Custom entering/exiting animations not supported on web.
 
-function MyComponent() {
-  const reduceMotion = useReducedMotion();
+---
 
-  const duration = reduceMotion ? 0 : 300;
+### LayoutAnimationConfig Not Working
 
-  const opacity = useSharedValue(1);
-  opacity.value = withTiming(0, { duration });
+**Check:** `LayoutAnimationConfig` with `skipEntering`/`skipExiting` is NOT supported on web. Only Android and iOS.
 
-  return null;
-}
+---
 
-// Or use reduceMotion parameter:
+## Accessibility Issues
+
+### Animations Ignore Reduce Motion Setting
+
+**Fix:** Use `ReduceMotion.System` (default) or check with `useReducedMotion()`.
+
+```typescript
+import { useReducedMotion, ReduceMotion, withTiming } from 'react-native-reanimated';
+
+// Option 1: Check hook
+const reduced = useReducedMotion();
+const duration = reduced ? 0 : 300;
+
+// Option 2: Use reduceMotion parameter (automatic)
 opacity.value = withTiming(0, {
   duration: 300,
-  reduceMotion: ReduceMotion.System, // Respects device setting
+  reduceMotion: ReduceMotion.System, // Already default
 });
 ```
 
 ---
 
-## 🌐 Web-Specific Issues
+## Web-Specific Issues
 
-### Issue: "localStorage is not available"
+### Performance Poor on Web
 
-**Symptoms:**
-```
-SecurityError: access is denied for this document
-localStorage/sessionStorage not working
-```
+Web has no separate UI thread. Limit concurrent animations.
 
-**Solution:**
-```javascript
-// ❌ WRONG: Using browser storage
-localStorage.setItem('key', 'value'); // ❌ SecurityError in sandbox
+```typescript
+import { Platform } from 'react-native';
 
-// ✅ CORRECT: Use shared values
-const persistedValue = useSharedValue('default');
-// Or use AsyncStorage (React Native)
-```
-
----
-
-### Issue: Web Animation Performance Poor
-
-**Symptoms:**
-```
-FPS drops on web, animations stutter
-```
-
-**Solution:**
-```javascript
-// ✅ GOOD: Reduce number of concurrent animations
-const opacity = useSharedValue(1);
-opacity.value = withTiming(0); // Single animation
-
-// ❌ BAD: Too many animations
-for (let i = 0; i < 50; i++) {
-  values[i].value = withTiming(1); // Too many on web
-}
-
-// ✅ GOOD: Limit concurrent animations on web
-if (Platform.OS === 'web') {
-  for (let i = 0; i < 5; i++) {
-    values[i].value = withTiming(1); // Fewer on web
-  }
-} else {
-  for (let i = 0; i < 20; i++) {
-    values[i].value = withTiming(1); // More on native
-  }
-}
-```
-
----
-
-## 🔍 Debugging Techniques
-
-### 1. Use React DevTools
-
-```javascript
-// Install: npm install --save-dev @react-native/devtools
-import { devtools } from '@react-native/devtools';
-
-// Monitor shared values
-console.log('Opacity:', opacity.value);
-```
-
-### 2. Add Logging to Worklets
-
-```javascript
-const animatedStyle = useAnimatedStyle(() => {
-  console.log('Rendering with opacity:', opacity.value);
-  return { opacity: opacity.value };
+const maxAnimations = Platform.OS === 'web' ? 5 : 20;
+items.slice(0, maxAnimations).forEach((item) => {
+  item.value = withTiming(1);
 });
 ```
 
-### 3. Use Animated Value Listeners
+### Scroll Handler Events Missing on Web
 
-```javascript
-useEffect(() => {
-  const listenerID = 0;
-  opacity.addListener(listenerID, (newValue) => {
-    console.log('Opacity changed to:', newValue);
-  });
-
-  return () => opacity.removeListener(listenerID);
-}, []);
-```
+Only `onScroll` is supported on web. `onBeginDrag`, `onEndDrag`, `onMomentumBegin`, `onMomentumEnd` are native-only.
 
 ---
 
-## 📋 Debug Checklist
+## Debug Checklist
 
-Before posting issues, verify:
+Before filing an issue, verify:
 
-- [ ] Animations targeting shared values (not static values)
-- [ ] Using Animated.* components (not regular View/Text)
-- [ ] GestureHandlerRootView wraps app (Android)
-- [ ] Babel plugin configured correctly and listed last
-- [ ] useAnimatedStyle callback marked as worklet (optional but recommended)
-- [ ] scheduleOnRN functions defined in JS thread scope
-- [ ] No mutations of shared values in useAnimatedStyle
-- [ ] Cache cleared (Metro/Expo)
-- [ ] Correct shared value type (number, string, object)
-- [ ] No React state updates in worklets
+- [ ] Using `Animated.View` (not regular `View`)
+- [ ] Shared values connected via `useAnimatedStyle`
+- [ ] Not mutating shared values in `useAnimatedStyle`
+- [ ] `GestureHandlerRootView` wraps app (Android)
+- [ ] Babel plugin is `react-native-worklets/plugin` and listed LAST
+- [ ] `react-native-worklets` installed
+- [ ] Metro cache cleared
+- [ ] No `runOnJS`/`runOnUI` (use `scheduleOnRN`/`scheduleOnUI`)
+- [ ] No `useAnimatedGestureHandler` (use Gesture v2 API)
+- [ ] `scheduleOnRN` callbacks defined in JS scope
+- [ ] Components conditionally rendered for entering/exiting animations
+- [ ] Using New Architecture (Fabric)
 
 ---
 
-## 📚 Getting Help
+## Getting Help
 
-**Official Resources:**
-- **Documentation:** https://docs.swmansion.com/react-native-reanimated/
-- **GitHub Issues:** https://github.com/software-mansion/react-native-reanimated/issues
-- **Discord Community:** https://discord.gg/reanimated
+- **Official docs:** https://docs.swmansion.com/react-native-reanimated/
+- **GitHub issues:** https://github.com/software-mansion/react-native-reanimated/issues
+- **Troubleshooting guide:** https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting/
 
-**When Filing Issues:**
-1. Minimal reproducible example (Expo Snack/GitHub repo)
+When filing issues, include:
+1. Minimal reproducible example
 2. Exact error message and stack trace
 3. Platform (iOS/Android/Web)
-4. Reanimated version: `npm list react-native-reanimated`
-5. React Native version: `npm list react-native`
-6. Steps to reproduce
+4. `npm list react-native-reanimated react-native-worklets react-native`
+5. Steps to reproduce
 
 ---
 
-## 🔗 Cross-References
+## Cross-References
 
-- **Best Practices:** See [09-best-practices.md](./09-best-practices.md) for prevention
-- **API Reference:** See [08-api-reference-core.md](./08-api-reference-core.md) for exact signatures
-- **Worklets:** See [06-worklets-guide.md](./06-worklets-guide.md) for thread execution details
-- **Gestures:** See [07-gestures-events.md](./07-gestures-events.md) for gesture patterns
+- **Setup and migration:** [01-setup-installation.md](01-setup-installation.md)
+- **Best practices:** [09-best-practices.md](09-best-practices.md)
+- **Worklets:** [06-worklets-guide.md](06-worklets-guide.md)
+- **Gestures:** [07-gestures-events.md](07-gestures-events.md)
 
 ---
-
-**Last Updated:** December 2024  
-**Verified For:** Reanimated 4.2.1
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/guides/troubleshooting/ | https://docs.swmansion.com/react-native-reanimated/docs/guides/migration-from-3.x/

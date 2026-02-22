@@ -1,158 +1,76 @@
 # Formatter Configuration
 
-**Source:** [https://biomejs.dev/formatter/](https://biomejs.dev/formatter/)
+**Source:** https://biomejs.dev/formatter/
 
 ---
 
-## Core Formatter Settings
+## Global Formatter Options
 
-### Overview
-The Biome formatter handles **all formatting decisions** for your code. Unlike other linters, Biome does not provide rules for code formatting—only the formatter manages style choices.
+All options under the `formatter` key apply to all languages.
 
-**Key Principle:** Formatter outputs are deterministic and conflict-free with linting rules.
-
----
-
-## Formatter Configuration Options
-
-### formatter.enabled
-**Type:** `boolean`  
-**Default:** `true`
-
-Enable or disable the Biome formatter.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable formatter |
+| `indentStyle` | `"tab"` \| `"space"` | `"tab"` | Indentation character |
+| `indentWidth` | number (1-10) | `2` | Spaces per indent level |
+| `lineWidth` | number (1-320) | `80` | Max line length before wrapping |
+| `lineEnding` | `"lf"` \| `"crlf"` \| `"cr"` | `"lf"` | Line ending style |
+| `bracketSpacing` | boolean | `true` | Spaces inside `{ }` |
+| `attributePosition` | `"auto"` \| `"multiline"` | `"auto"` | HTML/JSX attribute position |
+| `expand` | `"auto"` \| `"always"` \| `"never"` | `"auto"` | When to expand object/array on multiple lines |
+| `formatWithErrors` | boolean | `false` | Format files with syntax errors |
+| `trailingNewline` | boolean | `true` | Ensure trailing newline |
+| `useEditorconfig` | boolean | `false` | Read settings from .editorconfig |
+| `includes` | string[] | - | Glob patterns to format |
 
 ```json
 {
   "formatter": {
-    "enabled": false
-  }
-}
-```
-
-**Return:** When disabled, `biome format` and `biome check` skip formatting
-
----
-
-### formatter.indentStyle
-**Type:** `"tab"` | `"space"`  
-**Default:** `"tab"`
-
-Choose between tab or space indentation.
-
-```json
-{
-  "formatter": {
-    "indentStyle": "space"
-  }
-}
-```
-
-**Code Example:**
-```javascript
-// indentStyle: "tab"
-function hello() {
-→	console.log("indented with tab");
-}
-
-// indentStyle: "space"
-function hello() {
-  console.log("indented with 2 spaces");
-}
-```
-
----
-
-### formatter.indentWidth
-**Type:** `number`  
-**Default:** `2`
-
-Number of spaces/characters per indentation level.
-
-```json
-{
-  "formatter": {
+    "enabled": true,
     "indentStyle": "space",
-    "indentWidth": 4
-  }
-}
-```
-
-**Valid Range:** 1-10
-
----
-
-### formatter.lineWidth
-**Type:** `number`  
-**Default:** `80`
-
-The maximum line length before Biome wraps code.
-
-```json
-{
-  "formatter": {
-    "lineWidth": 100
-  }
-}
-```
-
-**Valid Range:** 1-320
-
----
-
-### formatter.lineEnding
-**Type:** `"lf"` | `"crlf"` | `"cr"` | `"auto"`  
-**Default:** `"auto"`
-
-Control line ending style.
-
-```json
-{
-  "formatter": {
-    "lineEnding": "lf"
-  }
-}
-```
-
----
-
-### formatter.bracketSpacing
-**Type:** `boolean`  
-**Default:** `true`
-
-Whether to insert spaces inside object literal brackets.
-
-```json
-{
-  "formatter": {
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf",
     "bracketSpacing": true
   }
 }
-```
-
-**Code Example:**
-```javascript
-// bracketSpacing: true
-const obj = { a: 1, b: 2 };
-
-// bracketSpacing: false
-const obj = {a: 1, b: 2};
 ```
 
 ---
 
 ## JavaScript/TypeScript Formatter Options
 
-### javascript.formatter.quoteStyle
-**Type:** `"double"` | `"single"`  
-**Default:** `"double"`
+All options under `javascript.formatter`:
 
-Quote style for string literals.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable JS/TS formatter |
+| `quoteStyle` | `"double"` \| `"single"` | `"double"` | String quote style |
+| `jsxQuoteStyle` | `"double"` \| `"single"` | `"double"` | JSX attribute quote style |
+| `quoteProperties` | `"asNeeded"` \| `"preserve"` | `"asNeeded"` | Object property quotes |
+| `trailingCommas` | `"all"` \| `"es5"` \| `"none"` | `"all"` | Trailing comma behavior |
+| `semicolons` | `"always"` \| `"asNeeded"` | `"always"` | Semicolon insertion |
+| `arrowParentheses` | `"always"` \| `"asNeeded"` | `"always"` | Arrow function parens |
+| `bracketSameLine` | boolean | `false` | Closing bracket on same line |
+| `bracketSpacing` | boolean | `true` | Spaces inside `{ }` |
+| `operatorLinebreak` | `"after"` \| `"before"` | `"after"` | Operator line break position |
+| `attributePosition` | `"auto"` \| `"multiline"` | `"auto"` | JSX attribute position |
+| `expand` | `"auto"` \| `"always"` \| `"never"` | `"auto"` | Object/array expansion |
+| `indentStyle` | `"tab"` \| `"space"` | (inherits global) | Override indent style |
+| `indentWidth` | number | (inherits global) | Override indent width |
+| `lineWidth` | number | (inherits global) | Override line width |
+| `lineEnding` | string | (inherits global) | Override line ending |
 
 ```json
 {
   "javascript": {
     "formatter": {
-      "quoteStyle": "single"
+      "quoteStyle": "single",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSameLine": false,
+      "bracketSpacing": true
     }
   }
 }
@@ -160,17 +78,25 @@ Quote style for string literals.
 
 ---
 
-### javascript.formatter.trailingCommas
-**Type:** `"all"` | `"es5"` | `"none"`  
-**Default:** `"all"`
+## JSON Formatter Options
 
-When to add trailing commas.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable JSON formatter |
+| `trailingCommas` | `"none"` \| `"all"` | `"none"` | Trailing commas in JSON |
+| `bracketSpacing` | boolean | `true` | Spaces inside `{ }` |
+| `expand` | `"auto"` \| `"always"` \| `"never"` | `"auto"` | Expansion mode |
 
 ```json
 {
-  "javascript": {
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    },
     "formatter": {
-      "trailingCommas": "es5"
+      "enabled": true,
+      "trailingCommas": "none"
     }
   }
 }
@@ -178,17 +104,19 @@ When to add trailing commas.
 
 ---
 
-### javascript.formatter.semicolons
-**Type:** `"always"` | `"asNeeded"`  
-**Default:** `"always"`
+## CSS Formatter Options
 
-When to add semicolons.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable CSS formatter |
+| `quoteStyle` | `"double"` \| `"single"` | `"double"` | CSS string quote style |
 
 ```json
 {
-  "javascript": {
+  "css": {
     "formatter": {
-      "semicolons": "asNeeded"
+      "enabled": true,
+      "quoteStyle": "double"
     }
   }
 }
@@ -196,17 +124,19 @@ When to add semicolons.
 
 ---
 
-### javascript.formatter.arrowParentheses
-**Type:** `"always"` | `"asNeeded"`  
-**Default:** `"always"`
+## GraphQL Formatter Options
 
-Whether to add parentheses around single arrow function parameters.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable GraphQL formatter |
+| `quoteStyle` | `"double"` \| `"single"` | `"double"` | String quote style |
 
 ```json
 {
-  "javascript": {
+  "graphql": {
     "formatter": {
-      "arrowParentheses": "asNeeded"
+      "enabled": true,
+      "quoteStyle": "double"
     }
   }
 }
@@ -214,17 +144,23 @@ Whether to add parentheses around single arrow function parameters.
 
 ---
 
-### javascript.formatter.bracketSameLine
-**Type:** `boolean`  
-**Default:** `false`
+## HTML Formatter Options
 
-Put closing bracket on same line for multiline JSX/HTML.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable HTML formatter |
+| `attributePosition` | `"auto"` \| `"multiline"` | `"auto"` | Attribute position |
+| `bracketSameLine` | boolean | `false` | Closing bracket on same line |
+| `whitespaceSensitivity` | `"css"` \| `"strict"` \| `"ignore"` | `"css"` | Whitespace handling |
+| `indentScriptAndStyle` | boolean | `false` | Indent script/style tags |
+| `selfCloseVoidElements` | `"never"` \| `"always"` | `"never"` | Self-close void elements |
 
 ```json
 {
-  "javascript": {
+  "html": {
     "formatter": {
-      "bracketSameLine": false
+      "enabled": true,
+      "attributePosition": "auto"
     }
   }
 }
@@ -234,7 +170,9 @@ Put closing bracket on same line for multiline JSX/HTML.
 
 ## Overrides Strategy
 
-Apply different formatting settings to specific file patterns:
+Apply different formatting settings to specific file patterns.
+
+**v2 Change:** Globs are relative to the config file location.
 
 ```json
 {
@@ -244,9 +182,17 @@ Apply different formatting settings to specific file patterns:
   },
   "overrides": [
     {
-      "include": ["generated/**/*.ts"],
+      "includes": ["generated/**/*.ts"],
       "formatter": {
         "indentWidth": 4
+      }
+    },
+    {
+      "includes": ["**/*.json"],
+      "json": {
+        "formatter": {
+          "expand": "always"
+        }
       }
     }
   ]
@@ -255,11 +201,11 @@ Apply different formatting settings to specific file patterns:
 
 ---
 
-## Complete Example Configuration
+## Complete Example
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -276,11 +222,16 @@ Apply different formatting settings to specific file patterns:
       "arrowParentheses": "always",
       "bracketSameLine": false
     }
+  },
+  "json": {
+    "formatter": { "enabled": true }
+  },
+  "css": {
+    "formatter": { "enabled": true }
   }
 }
 ```
 
 ---
 
-**Document Version:** 2.3.10  
-**Last Updated:** December 2024
+**Version:** 2.x (^2.4.4) | **Source:** https://biomejs.dev/formatter/

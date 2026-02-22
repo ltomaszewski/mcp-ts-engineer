@@ -1,156 +1,64 @@
-# Gesture Handler Integration & Events
+# Gesture Handler Integration
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/2.x/fundamentals/events/  
-**Version:** 4.2.1  
-**Category:** User Interaction | Gestures
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/scroll/useAnimatedScrollHandler/
 
 ---
 
-## 📋 Overview
+## Overview
 
-Reanimated integrates tightly with **react-native-gesture-handler** for performant gesture-based interactions. Gesture events are handled as worklets, enabling **60 fps animations without blocking UI thread**.
-
-**Key Concepts:**
-- `useAnimatedGestureHandler` — Hook for handling gesture events
-- **Worklet-based callbacks** — onStart, onActive, onEnd, onFail, onCancel
-- **Context object** — Share state between gesture lifecycle events
-- **Shared values** — Store gesture state for animations
+Reanimated integrates with `react-native-gesture-handler` v2 for performant gesture-driven animations. In Reanimated 4, `useAnimatedGestureHandler` is removed. Use the Gesture Handler v2 API (`Gesture.Pan()`, `Gesture.Tap()`, etc.) instead.
 
 ---
 
-## 🔧 Type Definitions
+## Setup: GestureHandlerRootView
+
+Required on Android. Harmless on iOS.
 
 ```typescript
-interface AnimatedGestureHandlerEventPayload {
-  x: number;
-  y: number;
-  absoluteX: number;
-  absoluteY: number;
-  translationX?: number;
-  translationY?: number;
-  velocityX?: number;
-  velocityY?: number;
-  // ... other gesture-specific properties
-}
-
-function useAnimatedGestureHandler<
-  T extends Record<string, any>,
-  Context extends Record<string, any>
->(
-  handlers: {
-    onStart?: (event: T, context: Context) => void;
-    onActive?: (event: T, context: Context) => void;
-    onEnd?: (event: T, context: Context) => void;
-    onFail?: (event: T, context: Context) => void;
-    onCancel?: (event: T, context: Context) => void;
-  },
-  dependencies?: DependencyList
-): AnimatedGestureHandler<T>;
-```
-
----
-
-## 🎯 Setup: GestureHandlerRootView
-
-On Android, wrap your app with `GestureHandlerRootView` to capture gesture events:
-
-```javascript
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* Your app content */}
+      {/* App content */}
     </GestureHandlerRootView>
   );
 }
 ```
 
-**iOS:** Not required, but doesn't hurt.  
-**Android:** Required for proper gesture event capture.
-
 ---
 
-## 📖 Full API Reference
+## Pan Gesture (Draggable)
 
-### `useAnimatedGestureHandler(handlers, dependencies?)`
+```typescript
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
-**Description:** Creates gesture event handlers that execute on the UI thread as worklets.
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `handlers` | `Object<Worklet>` | ✅ Yes | Object with callback worklets (onStart, onActive, etc.) |
-| `dependencies` | `Dependency[]` | ❌ No | External dependencies (rarely needed) |
-
-**Returns:** `AnimatedGestureHandler<T>` — Pass to gesture handler's `onGestureEvent` prop
-
----
-
-## 🔳 Gesture Handler Lifecycle
-
-### Tap Gesture Handler
-
-```javascript
-import { Gesture } from 'react-native-gesture-handler';
-import { useAnimatedGestureHandler, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import Animated from 'react-native-reanimated';
-
-function TapExample() {
-  const isPressed = useSharedValue(false);
-
-  const eventHandler = useAnimatedGestureHandler({
-    onStart: (event, context) => {
-      'worklet';
-      isPressed.value = true;
-    },
-    onEnd: (event, context) => {
-      'worklet';
-      isPressed.value = false;
-    },
-  });
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: isPressed.value ? 0.9 : 1 }],
-  }));
-
-  return (
-    <TapGestureHandler onGestureEvent={eventHandler}>
-      <Animated.View style={[styles.button, animatedStyle]} />
-    </TapGestureHandler>
-  );
-}
-```
-
-### Pan Gesture Handler
-
-```javascript
-import { PanGestureHandler } from 'react-native-gesture-handler';
-import { useAnimatedGestureHandler, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
-
-function PanExample() {
+function DraggableBox() {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const contextX = useSharedValue(0);
+  const contextY = useSharedValue(0);
 
-  const eventHandler = useAnimatedGestureHandler({
-    onStart: (event, context) => {
-      'worklet';
+  const pan = Gesture.Pan()
+    .onStart(() => {
       // Save starting position
-      context.startX = translateX.value;
-      context.startY = translateY.value;
-    },
-    onActive: (event, context) => {
-      'worklet';
-      // Update position based on translation
-      translateX.value = context.startX + event.translationX;
-      translateY.value = context.startY + event.translationY;
-    },
-    onEnd: (event, context) => {
-      'worklet';
-      // Handle gesture end (e.g., snap to position)
-    },
-  });
+      contextX.value = translateX.value;
+      contextY.value = translateY.value;
+    })
+    .onUpdate((event) => {
+      translateX.value = contextX.value + event.translationX;
+      translateY.value = contextY.value + event.translationY;
+    })
+    .onEnd(() => {
+      // Snap back to origin
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+    });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -160,303 +68,327 @@ function PanExample() {
   }));
 
   return (
-    <PanGestureHandler onGestureEvent={eventHandler}>
+    <GestureDetector gesture={pan}>
       <Animated.View style={[styles.box, animatedStyle]} />
-    </PanGestureHandler>
+    </GestureDetector>
   );
 }
 ```
 
 ---
 
-## 📋 Event Handlers Explained
+## Tap Gesture
 
-### onStart
+```typescript
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
-Fired when gesture begins. Used to initialize state.
+function TapButton() {
+  const scale = useSharedValue(1);
 
-```javascript
-onStart: (event, context) => {
-  'worklet';
-  // event: Current gesture event data
-  // context: Shared object for this gesture instance
-  
-  context.startValue = sharedValue.value;
-  isAnimating.value = true;
-}
-```
+  const tap = Gesture.Tap()
+    .onBegin(() => {
+      scale.value = withTiming(0.9, { duration: 100 });
+    })
+    .onFinalize(() => {
+      scale.value = withSpring(1);
+    });
 
-### onActive
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
-Fired continuously during gesture. Used for position tracking.
-
-```javascript
-onActive: (event, context) => {
-  'worklet';
-  // Called multiple times per second
-  
-  position.value = context.startValue + event.translationX;
-}
-```
-
-### onEnd
-
-Fired when gesture completes successfully.
-
-```javascript
-onEnd: (event, context) => {
-  'worklet';
-  // Use velocity for momentum animation
-  
-  const finalPosition = context.startValue + event.translationX;
-  position.value = withSpring(finalPosition, { damping: event.velocityX });
-}
-```
-
-### onFail & onCancel
-
-Fired on gesture failure or cancellation.
-
-```javascript
-onFail: (event, context) => {
-  'worklet';
-  // Reset to previous state
-  position.value = context.startValue;
-}
-
-onCancel: (event, context) => {
-  'worklet';
-  // Similar to onFail
-  position.value = context.startValue;
+  return (
+    <GestureDetector gesture={tap}>
+      <Animated.View style={[styles.button, animatedStyle]} />
+    </GestureDetector>
+  );
 }
 ```
 
 ---
 
-## 🧩 Context Object
+## Pinch to Zoom
 
-Share state between handler callbacks:
+```typescript
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-```javascript
-const eventHandler = useAnimatedGestureHandler({
-  onStart: (event, context) => {
-    'worklet';
-    // context is fresh object for each gesture
-    context.startX = translateX.value;
-    context.startOpacity = opacity.value;
-    context.gestureStartTime = Date.now();
-  },
-  onActive: (event, context) => {
-    'worklet';
-    // Access previously stored context
-    const elapsed = Date.now() - context.gestureStartTime;
-    translateX.value = context.startX + event.translationX;
-  },
-  onEnd: (event, context) => {
-    'worklet';
-    // Context still available here
-    console.log(`Gesture lasted ${Date.now() - context.gestureStartTime}ms`);
-  },
+function PinchToZoom() {
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+
+  const pinch = Gesture.Pinch()
+    .onUpdate((event) => {
+      scale.value = savedScale.value * event.scale;
+    })
+    .onEnd(() => {
+      // Clamp between 1x and 4x
+      savedScale.value = Math.min(Math.max(scale.value, 1), 4);
+      scale.value = withTiming(savedScale.value);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <GestureDetector gesture={pinch}>
+      <Animated.View style={[styles.image, animatedStyle]} />
+    </GestureDetector>
+  );
+}
+```
+
+---
+
+## Combined Gestures
+
+Use `.simultaneous()`, `.exclusive()`, or `.race()` to combine gestures.
+
+```typescript
+const pan = Gesture.Pan().onUpdate((e) => {
+  translateX.value = e.translationX;
+  translateY.value = e.translationY;
 });
+
+const pinch = Gesture.Pinch().onUpdate((e) => {
+  scale.value = e.scale;
+});
+
+// Both gestures active simultaneously
+const combined = Gesture.Simultaneous(pan, pinch);
+
+return (
+  <GestureDetector gesture={combined}>
+    <Animated.View style={animatedStyle} />
+  </GestureDetector>
+);
 ```
 
 ---
 
-## 📊 Common Gesture Patterns
+## Swipe to Dismiss
 
-### Swipe to Dismiss
+```typescript
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  scheduleOnRN,
+} from 'react-native-reanimated';
 
-```javascript
-import { Gesture } from 'react-native-gesture-handler';
-import { withTiming, useAnimatedReaction } from 'react-native-reanimated';
-
-function SwipeToDismiss() {
+function SwipeToDismiss({ onDismiss }: { onDismiss: () => void }) {
   const translateX = useSharedValue(0);
-  const isDismissed = useSharedValue(false);
+  const opacity = useSharedValue(1);
 
   const pan = Gesture.Pan()
     .onUpdate((event) => {
-      'worklet';
       translateX.value = event.translationX;
+      opacity.value = 1 - Math.abs(event.translationX) / 300;
     })
     .onEnd((event) => {
-      'worklet';
-      // Dismiss if swiped more than 100 units
-      if (Math.abs(event.translationX) > 100) {
-        translateX.value = withTiming(
-          event.translationX > 0 ? 500 : -500,
-          { duration: 300 }
-        );
-        isDismissed.value = true;
+      if (Math.abs(event.translationX) > 150) {
+        const direction = event.translationX > 0 ? 500 : -500;
+        translateX.value = withTiming(direction, { duration: 200 });
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+          scheduleOnRN(onDismiss);
+        });
       } else {
-        // Snap back
-        translateX.value = withTiming(0);
+        translateX.value = withSpring(0);
+        opacity.value = withTiming(1);
       }
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
-    opacity: isDismissed.value ? 0 : 1,
+    opacity: opacity.value,
   }));
 
   return (
-    <Gesture.Detector gesture={pan}>
+    <GestureDetector gesture={pan}>
       <Animated.View style={[styles.card, animatedStyle]} />
-    </Gesture.Detector>
+    </GestureDetector>
   );
 }
 ```
 
-### Pinch to Zoom
+---
 
-```javascript
-function PinchToZoom() {
-  const scale = useSharedValue(1);
-  const focalX = useSharedValue(0);
-  const focalY = useSharedValue(0);
+## Pan with Decay (Momentum)
 
-  const eventHandler = useAnimatedGestureHandler({
-    onStart: (event, context) => {
-      'worklet';
-      context.startScale = scale.value;
-    },
-    onActive: (event, context) => {
-      'worklet';
-      scale.value = context.startScale * event.scale;
-      focalX.value = event.focalX;
-      focalY.value = event.focalY;
-    },
-    onEnd: (event) => {
-      'worklet';
-      // Clamp scale between 1 and 4
-      scale.value = withTiming(
-        Math.min(Math.max(scale.value, 1), 4)
-      );
-    },
+```typescript
+import { withDecay } from 'react-native-reanimated';
+
+const pan = Gesture.Pan()
+  .onStart(() => {
+    contextX.value = translateX.value;
+  })
+  .onUpdate((event) => {
+    translateX.value = contextX.value + event.translationX;
+  })
+  .onEnd((event) => {
+    // Apply momentum from gesture velocity
+    translateX.value = withDecay({
+      velocity: event.velocityX,
+      clamp: [-200, 200],
+    });
+  });
+```
+
+---
+
+## useAnimatedScrollHandler
+
+Handle scroll events on the UI thread.
+
+```typescript
+function useAnimatedScrollHandler<Context extends Record<string, unknown>>(
+  handlers: ScrollHandler<Context> | ScrollHandlers<Context>,
+  dependencies?: DependencyList
+): ScrollHandlerProcessed<Context>;
+```
+
+### Event Types
+
+| Event | When Fired |
+|---|---|
+| `onScroll` | During scrolling |
+| `onBeginDrag` | User starts dragging |
+| `onEndDrag` | User stops dragging |
+| `onMomentumBegin` | Momentum scrolling begins |
+| `onMomentumEnd` | Momentum scrolling ends |
+
+**Web limitation:** Only `onScroll` is supported on web.
+
+### Simple Scroll Handler
+
+```typescript
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+
+function ScrollHeader() {
+  const scrollY = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
   });
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 100], [1, 0], Extrapolation.CLAMP),
     transform: [
-      { translateX: focalX.value },
-      { translateY: focalY.value },
-      { scale: scale.value },
-      { translateX: -focalX.value },
-      { translateY: -focalY.value },
+      { translateY: interpolate(scrollY.value, [0, 100], [0, -50], Extrapolation.CLAMP) },
     ],
   }));
 
   return (
-    <PinchGestureHandler onGestureEvent={eventHandler}>
-      <Animated.View style={[styles.image, animatedStyle]} />
-    </PinchGestureHandler>
+    <>
+      <Animated.View style={headerStyle}>{/* Header */}</Animated.View>
+      <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16}>
+        {/* Content */}
+      </Animated.ScrollView>
+    </>
   );
+}
+```
+
+### Advanced Scroll Handler with Context
+
+```typescript
+const scrollHandler = useAnimatedScrollHandler({
+  onScroll: (event, context) => {
+    scrollY.value = event.contentOffset.y;
+  },
+  onBeginDrag: (event, context) => {
+    context.startY = event.contentOffset.y;
+    isScrolling.value = true;
+  },
+  onEndDrag: (event, context) => {
+    isScrolling.value = false;
+  },
+  onMomentumEnd: (event, context) => {
+    // Scroll fully stopped
+  },
+});
+```
+
+---
+
+## useScrollOffset
+
+Track scroll position with a shared value (simplified alternative to `useAnimatedScrollHandler`).
+
+```typescript
+import { useAnimatedRef, useScrollOffset } from 'react-native-reanimated';
+
+function ScrollTracker() {
+  const animatedRef = useAnimatedRef();
+  const scrollOffset = useScrollOffset(animatedRef);
+
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollOffset.value, [0, 100], [1, 0]),
+  }));
+
+  return <Animated.ScrollView ref={animatedRef}>{/* content */}</Animated.ScrollView>;
 }
 ```
 
 ---
 
-## 🔗 Integration with Reanimated Animations
+## v4 Migration: useAnimatedGestureHandler Removal
 
-### Using Velocity for Momentum
+`useAnimatedGestureHandler` was removed in Reanimated 4. Migrate to Gesture Handler v2:
 
-```javascript
-const pan = Gesture.Pan()
-  .onEnd((event) => {
-    'worklet';
-    // Use gesture velocity in animation
-    position.value = withSpring(0, {
-      damping: 10 + Math.abs(event.velocityX) * 0.01,
-      stiffness: 100,
-    });
-  });
-```
-
-### Callback on Gesture End
-
-```javascript
-const pan = Gesture.Pan()
-  .onEnd((event, success) => {
-    'worklet';
-    
-    opacity.value = withTiming(1, { duration: 300 }, (finished) => {
-      if (finished) {
-        scheduleOnRN(() => {
-          // Update React state or call navigation
-        });
-      }
-    });
-  });
-```
-
----
-
-## ⚠️ Important Rules
-
-### Rule 1: Worklet Context in Gesture Handlers
-
-All gesture handler callbacks are automatically worklets:
-
-```javascript
-onGestureEvent={(event) => {
-  'worklet'; // Optional to mark (already a worklet context)
-  // This code runs on UI thread
-}}
-```
-
-### Rule 2: Use Context for State Sharing
-
-```javascript
-// ❌ WRONG: Using external variables
-let startX = 0;
-const handler = useAnimatedGestureHandler({
-  onStart: () => { startX = 10; }, // Unpredictable
-  onActive: () => { console.log(startX); },
-});
-
-// ✅ CORRECT: Use context object
+```typescript
+// OLD (v3) - REMOVED
 const handler = useAnimatedGestureHandler({
   onStart: (event, context) => {
-    'worklet';
-    context.startX = 10; // Reliable per gesture
+    context.startX = translateX.value;
   },
   onActive: (event, context) => {
-    'worklet';
-    console.log(context.startX);
+    translateX.value = context.startX + event.translationX;
   },
 });
+return (
+  <PanGestureHandler onGestureEvent={handler}>
+    <Animated.View />
+  </PanGestureHandler>
+);
+
+// NEW (v4) - Gesture Handler v2 API
+const contextX = useSharedValue(0);
+const pan = Gesture.Pan()
+  .onStart(() => {
+    contextX.value = translateX.value;
+  })
+  .onUpdate((event) => {
+    translateX.value = contextX.value + event.translationX;
+  });
+return (
+  <GestureDetector gesture={pan}>
+    <Animated.View />
+  </GestureDetector>
+);
 ```
 
-### Rule 3: Update Shared Values in Callbacks
-
-```javascript
-// ✅ CORRECT: Modify shared values
-const position = useSharedValue(0);
-const handler = useAnimatedGestureHandler({
-  onActive: (event, context) => {
-    'worklet';
-    position.value = event.translationX; // Updates shared value
-  },
-});
-```
+Key differences:
+- Use `Gesture.Pan()` instead of `PanGestureHandler` component
+- Use `GestureDetector` wrapper instead of gesture handler components
+- Store context in shared values instead of context object parameter
+- Callbacks are chained methods, not object properties
 
 ---
 
-## 🔗 Cross-References
+## Cross-References
 
-- **Shared Values:** See [02-core-shared-values.md](./02-core-shared-values.md) for storing gesture state
-- **useAnimatedStyle:** See [03-core-animated-style.md](./03-core-animated-style.md) to bind gesture data to styles
-- **Animations:** See [04-animations-timing-spring.md](./04-animations-timing-spring.md) for momentum/decay
-- **Worklets:** See [06-worklets-guide.md](./06-worklets-guide.md) for UI thread execution details
-
----
-
-## 📚 Official Documentation
-
-- **Events Guide:** https://docs.swmansion.com/react-native-reanimated/docs/2.x/fundamentals/events/
-- **Gesture Handler Docs:** https://docs.react-native-gesture-handler.com/
-- **useAnimatedGestureHandler Reference:** https://docs.swmansion.com/react-native-reanimated/docs/advanced/useAnimatedGestureHandler/
+- **Shared values:** [02-core-shared-values.md](02-core-shared-values.md)
+- **Animations:** [04-animations-timing-spring.md](04-animations-timing-spring.md)
+- **Worklets:** [06-worklets-guide.md](06-worklets-guide.md)
+- **withDecay:** [05-animations-modifiers.md](05-animations-modifiers.md)
 
 ---
-
-**Last Updated:** December 2024  
-**Verified For:** Reanimated 4.2.1
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/scroll/useAnimatedScrollHandler/ | https://docs.swmansion.com/react-native-reanimated/docs/scroll/scrollTo/ | https://docs.swmansion.com/react-native-reanimated/docs/scroll/useScrollOffset/

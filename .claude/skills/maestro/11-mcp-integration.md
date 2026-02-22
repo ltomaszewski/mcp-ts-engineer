@@ -78,7 +78,7 @@ maestro mcp --help
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| **Node.js** | 16.0.0+ | Runtime for MCP server |
+| **Node.js** | 18.0.0+ | Runtime for MCP server |
 | **Maestro CLI** | 1.30.0+ | MCP server bundled |
 | **MCP Client** | Latest | Claude, Cursor, Windsurf, etc. |
 | **macOS/Linux/Windows** | Current | Client application |
@@ -878,7 +878,7 @@ jobs:
 ---
 
 **Module Status:** ✅ COMPLETE  
-**Last Updated:** December 27, 2025  
+**Last Updated:** February 2026  
 **MCP Tools Documented:** 47+  
 **Supported Clients:** Claude, Cursor, Windsurf, VS Code, Custom
 

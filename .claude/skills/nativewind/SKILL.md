@@ -1,38 +1,40 @@
 ---
 name: nativewind
-description: NativeWind Tailwind CSS styling - className, responsive design, dark mode, custom values. Use when styling React Native components with Tailwind utilities.
+description: NativeWind v4 Tailwind CSS styling - className prop, responsive breakpoints, dark mode, platform selectors, cssInterop, safe area utilities. Use when styling React Native components with Tailwind utilities, configuring themes, or integrating third-party components.
 ---
 
 # NativeWind
 
-> Tailwind CSS for React Native. Use `className` prop with Tailwind utilities, compiled to StyleSheet at build time.
+Use Tailwind CSS utility classes to style React Native components across iOS, Android, and Web via a single `className` prop.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
-- Styling React Native components with `className`
-- Implementing responsive layouts with breakpoints
-- Setting up dark mode theming
-- Using platform-specific styles (ios:, android:)
-- Configuring Tailwind theme or custom values
+LOAD THIS SKILL when user is:
+- Styling React Native components with `className` prop
+- Implementing responsive layouts with breakpoints (`sm:`, `md:`, `lg:`)
+- Setting up dark mode with `dark:` prefix or `useColorScheme`
+- Using platform-specific styles (`ios:`, `android:`, `web:`, `native:`)
+- Integrating third-party components via `cssInterop`
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Use `className` prop — works on any RN component via JSX transform
-2. Use `dark:` prefix for dark mode — automatically responds to system theme
-3. Use breakpoints for responsive — `sm:`, `md:`, `lg:` work on RN
-4. Use platform selectors — `ios:`, `android:`, `native:`, `web:`
+1. Use `className` prop directly on RN components -- JSX transform handles it, no wrapper needed
+2. Use `dark:` prefix for dark mode -- automatically responds to system or manual theme
+3. Use `active:` for touch feedback on native -- `hover:` only works on web
+4. Wrap Metro config with `withNativeWind` -- required for style compilation
+5. Import `global.css` once at app root -- before any other imports
 
 **NEVER:**
-1. Mix `style` and `className` carelessly — `className` wins for same properties
-2. Use web-only utilities — some Tailwind classes don't work on native
-3. Forget to wrap app in `<ThemeProvider>` — required for dark mode
-4. Use `hover:` on native — use `active:` for touch feedback instead
+1. Use `hover:` on native without web fallback -- no pointer events on touch devices
+2. Construct class names dynamically with string interpolation -- Tailwind scanner cannot detect `bg-${color}-500`; use lookup objects instead
+3. Omit `content` paths in `tailwind.config.js` -- styles will silently be missing
+4. Mix `style` and `className` for the same property -- `style` wins, causing confusion
+5. Use NativeWind `text-*` classes on `TextInput` for fontSize -- sets lineHeight too, causing iOS descender clipping; use `style={{ fontSize: N }}` instead
 
 ---
 
@@ -43,14 +45,11 @@ description: NativeWind Tailwind CSS styling - className, responsive design, dar
 ```typescript
 import { View, Text } from 'react-native';
 
-export function Card() {
+export function Card({ title }: { title: string }) {
   return (
     <View className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
       <Text className="text-lg font-bold text-gray-900 dark:text-white">
-        Title
-      </Text>
-      <Text className="mt-2 text-gray-600 dark:text-gray-300">
-        Description text
+        {title}
       </Text>
     </View>
   );
@@ -60,26 +59,17 @@ export function Card() {
 ### Responsive Layout
 
 ```typescript
-// Stack on mobile, row on tablet+
-<View className="flex-col md:flex-row gap-4">
-  <View className="flex-1 p-4 bg-blue-500" />
-  <View className="flex-1 p-4 bg-green-500" />
+<View className="flex-col md:flex-row gap-4 p-4">
+  <View className="flex-1 bg-blue-500 p-4 rounded-lg" />
+  <View className="flex-1 bg-green-500 p-4 rounded-lg" />
 </View>
-
-// Different sizes per breakpoint
-<Text className="text-sm md:text-base lg:text-lg">
-  Responsive text
-</Text>
 ```
 
 ### Platform-Specific Styles
 
 ```typescript
-// Different padding per platform
-<View className="p-2 ios:p-4 android:p-3">
-  <Text className="text-base ios:text-lg android:text-sm">
-    Platform-aware text
-  </Text>
+<View className="p-2 ios:p-4 android:p-3 web:cursor-pointer">
+  <Text className="text-base ios:text-lg">Platform-aware</Text>
 </View>
 ```
 
@@ -87,58 +77,63 @@ export function Card() {
 
 ```typescript
 import { useColorScheme } from 'nativewind';
-import { Pressable, Text, View } from 'react-native';
 
 export function ThemeToggle() {
   const { colorScheme, setColorScheme } = useColorScheme();
-
   return (
-    <View className="flex-row gap-2">
-      <Pressable
-        onPress={() => setColorScheme('light')}
-        className="p-2 bg-gray-200 dark:bg-gray-700 rounded"
-      >
-        <Text>Light</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => setColorScheme('dark')}
-        className="p-2 bg-gray-200 dark:bg-gray-700 rounded"
-      >
-        <Text>Dark</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => setColorScheme('system')}
-        className="p-2 bg-gray-200 dark:bg-gray-700 rounded"
-      >
-        <Text>System</Text>
-      </Pressable>
-    </View>
+    <Pressable onPress={() => setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')}>
+      <Text className="text-black dark:text-white">
+        {colorScheme === 'dark' ? 'Light' : 'Dark'}
+      </Text>
+    </Pressable>
   );
 }
+```
+
+### Third-Party Component Integration
+
+```typescript
+import { cssInterop } from 'nativewind';
+import { FlashList } from '@shopify/flash-list';
+
+cssInterop(FlashList, {
+  className: 'style',
+  contentContainerClassName: 'contentContainerStyle',
+});
+```
+
+### Safe Area Utilities
+
+```typescript
+<View className="pt-safe pb-safe px-4 bg-white dark:bg-slate-900">
+  <Text className="text-lg">Content respects notch and home indicator</Text>
+</View>
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** — Using hover on native:
+**BAD** -- Dynamic class construction (invisible to Tailwind scanner):
 ```typescript
-<Pressable className="hover:bg-blue-500"> // Won't work on native
+const color = 'blue';
+<View className={`bg-${color}-500`} /> // Never found by purge
 ```
 
-**GOOD** — Using active for touch:
+**GOOD** -- Lookup object with complete class strings:
 ```typescript
-<Pressable className="active:bg-blue-500"> // Works on native touch
+const colorMap = { blue: 'bg-blue-500', red: 'bg-red-500' };
+<View className={colorMap[color]} />
 ```
 
-**BAD** — Forgetting dark mode prefix:
+**BAD** -- Using `text-lg` on TextInput (clips descenders on iOS):
 ```typescript
-<View className="bg-white text-black"> // No dark mode support
+<TextInput className="text-lg text-white" />
 ```
 
-**GOOD** — Including dark variants:
+**GOOD** -- Use style prop for fontSize on TextInput:
 ```typescript
-<View className="bg-white dark:bg-gray-900 text-black dark:text-white">
+<TextInput className="text-white" style={{ fontSize: 18 }} />
 ```
 
 ---
@@ -147,39 +142,40 @@ export function ThemeToggle() {
 
 | Task | Pattern | Example |
 |------|---------|---------|
-| Dark mode | `dark:` | `dark:bg-gray-900` |
-| Responsive | `sm:` `md:` `lg:` | `md:flex-row` |
-| iOS only | `ios:` | `ios:p-4` |
-| Android only | `android:` | `android:p-3` |
+| Dark mode | `dark:` prefix | `dark:bg-gray-900` |
+| Responsive | `sm:` `md:` `lg:` `xl:` `2xl:` | `md:flex-row` |
+| iOS only | `ios:` | `ios:pt-12` |
+| Android only | `android:` | `android:pt-4` |
+| Web only | `web:` | `web:cursor-pointer` |
+| Native (iOS+Android) | `native:` | `native:p-4` |
 | Touch feedback | `active:` | `active:opacity-70` |
-| Focus | `focus:` | `focus:border-blue-500` |
-| Spacing | `p-` `m-` `gap-` | `p-4 gap-2` |
-| Flexbox | `flex-` | `flex-row flex-1` |
-| Text | `text-` `font-` | `text-lg font-bold` |
-| Colors | `bg-` `text-` | `bg-blue-500 text-white` |
-| Border | `border-` `rounded-` | `border border-gray-300 rounded-lg` |
-| Shadow | `shadow-` | `shadow-md` |
+| Focus (TextInput) | `focus:` | `focus:border-blue-500` |
+| Safe area padding | `p*-safe` | `pt-safe pb-safe` |
+| Safe area with offset | `p*-safe-offset-[n]` | `pt-safe-offset-4` |
+| Container query | `@container` + `@md:` | `@md:flex-row` |
+| Arbitrary value | `[value]` | `w-[250px]` `bg-[#3498db]` |
+| Color opacity | `/` suffix | `bg-blue-500/50` |
+| Aspect ratio | `aspect-` | `aspect-square` `aspect-[3/2]` |
+| Gap | `gap-` | `gap-4` `gap-x-2` |
 
 ---
 
 ## Deep Dive References
 
-Load additional context when needed:
-
 | When you need | Load |
 |---------------|------|
-| Installation and config | [01-setup-guide.md](01-setup-guide.md) |
-| How className compiles | [02-core-concepts.md](02-core-concepts.md) |
-| Dynamic and conditional styles | [03-styling-system.md](03-styling-system.md) |
-| Flexbox and spacing | [04-layout-utilities.md](04-layout-utilities.md) |
-| Breakpoints and platform selectors | [05-responsive-design.md](05-responsive-design.md) |
-| Color and typography tokens | [06-color-typography.md](06-color-typography.md) |
-| Pseudo-classes (active, focus) | [07-pseudo-classes.md](07-pseudo-classes.md) |
-| Dark mode setup | [08-dark-mode.md](08-dark-mode.md) |
-| CSS variables and custom values | [09-custom-values.md](09-custom-values.md) |
-| Arbitrary values and plugins | [10-advanced-features.md](10-advanced-features.md) |
-| Performance and debugging | [11-best-practices.md](11-best-practices.md) |
+| Installation and Expo/RN CLI setup | [01-setup-guide.md](01-setup-guide.md) |
+| How className compiles, architecture | [02-core-concepts.md](02-core-concepts.md) |
+| Dynamic styles, clsx, conditional classes | [03-styling-system.md](03-styling-system.md) |
+| Flexbox, grid, spacing utilities | [04-layout-utilities.md](04-layout-utilities.md) |
+| Breakpoints, platform selectors | [05-responsive-design.md](05-responsive-design.md) |
+| Colors, typography, font management | [06-color-typography.md](06-color-typography.md) |
+| active, focus, hover, parent state | [07-pseudo-classes.md](07-pseudo-classes.md) |
+| Dark mode setup and useColorScheme | [08-dark-mode.md](08-dark-mode.md) |
+| CSS variables, var(), arbitrary values | [09-custom-values.md](09-custom-values.md) |
+| cssInterop, plugins, advanced config | [10-advanced-features.md](10-advanced-features.md) |
+| Performance, debugging, best practices | [11-best-practices.md](11-best-practices.md) |
 
 ---
 
-**Version:** 4.x | **Source:** https://www.nativewind.dev/
+**Version:** 4.x (^4.1.23) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/

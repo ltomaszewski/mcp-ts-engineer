@@ -1,25 +1,16 @@
 # Setup & Installation
 
-**Source:** [https://biomejs.dev/guides/getting-started/](https://biomejs.dev/guides/getting-started/)
+**Source:** https://biomejs.dev/guides/getting-started/
 
 ---
 
 ## Installation Methods
 
-### 1. NPM (Recommended for Projects)
-
-Install Biome as a development dependency:
+### NPM (Recommended)
 
 ```bash
 npm install --save-dev @biomejs/biome
-```
 
-**Parameters:**
-- `--save-dev` (or `-D`): Adds package to `devDependencies`
-
-**Equivalent for other package managers:**
-
-```bash
 # Yarn
 yarn add --dev @biomejs/biome
 
@@ -30,37 +21,25 @@ pnpm add -D @biomejs/biome
 bun add -D @biomejs/biome
 ```
 
-**Source URL:** [https://www.npmjs.com/package/@biomejs/biome](https://www.npmjs.com/package/@biomejs/biome)
+### Standalone Executable (No Node.js Required)
 
----
-
-### 2. Standalone Executable (No Node.js Required)
-
-Download pre-built binaries for your platform:
+Pre-built binaries available from GitHub releases:
 
 ```bash
 # macOS (Apple Silicon)
-curl -L https://github.com/biomejs/biome/releases/download/cli%2Fv2.3.10/biome-aarch64-apple-darwin -o biome
+curl -L https://github.com/biomejs/biome/releases/latest/download/biome-aarch64-apple-darwin -o biome
 chmod +x biome
-./biome --version
 
 # macOS (Intel)
-curl -L https://github.com/biomejs/biome/releases/download/cli%2Fv2.3.10/biome-x86_64-apple-darwin -o biome
+curl -L https://github.com/biomejs/biome/releases/latest/download/biome-x86_64-apple-darwin -o biome
 
 # Linux (x86_64)
-curl -L https://github.com/biomejs/biome/releases/download/cli%2Fv2.3.10/biome-x86_64-unknown-linux-gnu -o biome
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/biomejs/biome/releases/download/cli%2Fv2.3.10/biome-x86_64-pc-windows-msvc.exe" -OutFile "biome.exe"
+curl -L https://github.com/biomejs/biome/releases/latest/download/biome-x86_64-unknown-linux-gnu -o biome
 ```
 
-**Return:** Executable file that runs without Node.js runtime
+**Source:** https://github.com/biomejs/biome/releases
 
-**Source URL:** [https://github.com/biomejs/biome/releases](https://github.com/biomejs/biome/releases)
-
----
-
-### 3. Global Installation (via npm)
+### Global Installation
 
 ```bash
 npm install --global @biomejs/biome
@@ -71,123 +50,104 @@ biome --version
 
 ## Project Initialization
 
-### Initialize with Zero Configuration
+### Create Config with Defaults
 
 ```bash
-npx biome init
+npx biome init          # Creates biome.json
+npx biome init --jsonc  # Creates biome.jsonc (supports comments)
 ```
 
-**Return:** Creates `biome.json` with recommended settings
+### Verify Installation
 
----
-
-### Initialize with JSONC Format
-
-```bash
-npx biome init --jsonc
-```
-
-**Return:** Creates `biome.jsonc` instead of `biome.json`
-
----
-
-## Zero-Configuration Usage
-
-Biome works out-of-the-box without a configuration file using intelligent defaults:
-
-### Default Formatter Settings
-```
-- Indentation: tab
-- Indent Width: 2
-- Line Width: 80
-- Line Ending: lf (auto on Windows)
-- Quote Style: double
-- Trailing Commas: all
-- Semicolons: always
-- Bracket Spacing: true
-```
-
-### Default Linter Settings
-```
-- Recommended rules enabled by default
-- Rules vary by detected language/dependencies
-- Severity levels: error/warn/info based on rule group
-```
-
----
-
-## First-Time Setup Checklist
-
-### 1. Install Package
-```bash
-npm install --save-dev @biomejs/biome
-```
-
-### 2. Generate Configuration (Optional)
-```bash
-npx biome init
-```
-
-### 3. Verify Installation
 ```bash
 npx biome --version
-# Output: CLI v2.3.10
+# Output: CLI v2.x.x
 ```
 
-### 4. Run First Check
+### First Check
+
 ```bash
 npx biome check .
 ```
 
-### 5. (Optional) Set Up Editor Integration
-See Integration Guides for VS Code, WebStorm, VIM setup.
+---
+
+## Zero-Configuration Defaults
+
+Biome works out-of-the-box without a configuration file:
+
+### Default Formatter Settings
+
+| Option | Default |
+|--------|---------|
+| `indentStyle` | `"tab"` |
+| `indentWidth` | `2` |
+| `lineWidth` | `80` |
+| `lineEnding` | `"lf"` |
+| `bracketSpacing` | `true` |
+| `trailingNewline` | `true` |
+
+### Default JavaScript Formatter Settings
+
+| Option | Default |
+|--------|---------|
+| `quoteStyle` | `"double"` |
+| `trailingCommas` | `"all"` |
+| `semicolons` | `"always"` |
+| `arrowParentheses` | `"always"` |
+| `bracketSameLine` | `false` |
+
+### Default Linter Settings
+
+| Setting | Default |
+|---------|---------|
+| `recommended` | `true` |
+| Style rules severity | `warn` (v2 change) |
+| Domain auto-detection | From `package.json` dependencies |
 
 ---
 
-## Configuration File Location
+## Configuration File Resolution
 
 ### Auto-Discovery Strategy
 
-Biome searches for configuration files in this order:
+1. **Working directory** -- `biome.json` or `biome.jsonc`
+2. **Parent directories** -- Walks up until `"root": true` found
+3. **Default configuration** -- Built-in defaults if no file found
 
-1. **Current working directory** - `biome.json` or `biome.jsonc`
-2. **Parent directories** - Walks up until a config file is found
-3. **Default configuration** - Uses built-in defaults if no file found
+### v2 Monorepo Pattern
 
----
-
-## Next Steps
-
-- **Configure formatting rules:** See Formatter Configuration
-- **Configure linting rules:** See Linter Configuration
-- **Use CLI commands:** See CLI Reference
-- **Integrate with editor:** See Integration Guides
-- **Migrate from ESLint/Prettier:** See Migration & Recipes
+```
+monorepo/
+  biome.json          <- root: true (shared rules)
+  apps/
+    web/
+      biome.json      <- root: false (inherits parent, adds overrides)
+    api/
+      biome.json      <- root: false
+```
 
 ---
 
 ## Troubleshooting
 
-### Issue: Command not found
+### Command not found
+
 ```bash
-# Solution: Use full path via npx
+# Use npx prefix
 npx biome --version
 
 # Or install globally
 npm install --global @biomejs/biome
-biome --version
 ```
 
-### Issue: Configuration file not found
-```bash
-# Solution: Check file location
-cat biome.json  # Verify file exists
+### Configuration not found
 
-# Or specify explicitly
+```bash
+# Specify explicitly
 npx biome check --config-path=./biome.json .
 ```
 
 ---
 
-**Document Version:** 2.3.10  
-**Last Updated:** December 2024
+**Version:** 2.x (^2.4.4) | **Source:** https://biomejs.dev/guides/getting-started/

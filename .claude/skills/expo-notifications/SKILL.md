@@ -17,23 +17,27 @@ description: Expo push notifications - tokens, scheduling, handlers, permissions
 - Scheduling local notifications
 - Handling notification tap responses
 - Configuring Android notification channels
+- Implementing interactive notification actions
+- Processing notifications in background
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Request permissions before registering for push — required on iOS, good practice on Android
-2. Configure notification handler before any notifications — ensures foreground display works
-3. Use Android channels for Android 8+ — required for notifications to appear
-4. Store push tokens on backend — needed for server-initiated push delivery
-5. Handle both foreground and background notification states — different code paths required
+1. Request permissions before registering for push -- required on iOS, good practice on Android
+2. Configure notification handler before any notifications -- ensures foreground display works
+3. Use Android channels for Android 8+ -- required for notifications to appear
+4. Store push tokens on backend -- needed for server-initiated push delivery
+5. Handle both foreground and background notification states -- different code paths required
+6. Clean up event listeners in useEffect return -- prevents memory leaks
 
 **NEVER:**
-1. Assume permissions are granted — always check status first
-2. Skip notification handler configuration — foreground notifications won't display
-3. Use hardcoded project IDs — use Constants.expoConfig.extra.eas.projectId
-4. Forget to clean up listeners — causes memory leaks in useEffect
+1. Assume permissions are granted -- always check status first
+2. Skip notification handler configuration -- foreground notifications will not display
+3. Use hardcoded project IDs -- use `Constants.expoConfig.extra.eas.projectId`
+4. Forget to clean up listeners -- causes memory leaks in useEffect
+5. Use `shouldShowAlert` -- use `shouldShowBanner` and `shouldShowList` instead (SDK 54)
 
 ---
 
@@ -44,10 +48,11 @@ description: Expo push notifications - tokens, scheduling, handlers, permissions
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-// Configure BEFORE any notifications (typically in App.tsx or _layout.tsx)
+// Configure BEFORE any notifications (typically in _layout.tsx)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -93,18 +98,16 @@ import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 
 export function useNotificationListeners() {
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.EventSubscription>();
+  const responseListener = useRef<Notifications.EventSubscription>();
 
   useEffect(() => {
-    // Received while app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log('Received:', notification.request.content);
       }
     );
 
-    // User tapped notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
@@ -134,7 +137,7 @@ await Notifications.scheduleNotificationAsync({
   },
   trigger: {
     type: Notifications.SchedulableTriggerInputTypes.DATE,
-    date: new Date(Date.now() + 60 * 1000), // 1 minute from now
+    date: new Date(Date.now() + 60 * 1000),
   },
 });
 
@@ -150,9 +153,6 @@ await Notifications.scheduleNotificationAsync({
     minute: 0,
   },
 });
-
-// Cancel all scheduled
-await Notifications.cancelAllScheduledNotificationsAsync();
 ```
 
 ### Android Channel Setup
@@ -161,7 +161,7 @@ await Notifications.cancelAllScheduledNotificationsAsync();
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-async function setupAndroidChannels() {
+async function setupAndroidChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
   await Notifications.setNotificationChannelAsync('reminders', {
@@ -177,12 +177,12 @@ async function setupAndroidChannels() {
 
 ## Anti-Patterns
 
-**BAD** — Registering without permission check:
+**BAD** -- Registering without permission check:
 ```typescript
 const token = await Notifications.getExpoPushTokenAsync(); // May fail!
 ```
 
-**GOOD** — Always check permissions first:
+**GOOD** -- Always check permissions first:
 ```typescript
 const { status } = await Notifications.requestPermissionsAsync();
 if (status === 'granted') {
@@ -190,7 +190,28 @@ if (status === 'granted') {
 }
 ```
 
-**BAD** — Not cleaning up listeners:
+**BAD** -- Using deprecated shouldShowAlert:
+```typescript
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, // DEPRECATED in SDK 54
+  }),
+});
+```
+
+**GOOD** -- Use shouldShowBanner and shouldShowList:
+```typescript
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+```
+
+**BAD** -- Not cleaning up listeners:
 ```typescript
 useEffect(() => {
   Notifications.addNotificationReceivedListener(handler);
@@ -198,28 +219,12 @@ useEffect(() => {
 }, []);
 ```
 
-**GOOD** — Proper cleanup:
+**GOOD** -- Proper cleanup:
 ```typescript
 useEffect(() => {
   const subscription = Notifications.addNotificationReceivedListener(handler);
   return () => subscription.remove();
 }, []);
-```
-
-**BAD** — Missing notification handler:
-```typescript
-// App shows notifications in background but NOT in foreground
-```
-
-**GOOD** — Configure handler at app start:
-```typescript
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
 ```
 
 ---
@@ -229,13 +234,18 @@ Notifications.setNotificationHandler({
 | Task | API | Example |
 |------|-----|---------|
 | Get push token | `getExpoPushTokenAsync()` | `const { data } = await Notifications.getExpoPushTokenAsync({ projectId })` |
+| Get device token | `getDevicePushTokenAsync()` | `const { data, type } = await Notifications.getDevicePushTokenAsync()` |
 | Request permission | `requestPermissionsAsync()` | `const { status } = await Notifications.requestPermissionsAsync()` |
 | Schedule notification | `scheduleNotificationAsync()` | `await Notifications.scheduleNotificationAsync({ content, trigger })` |
+| Cancel one scheduled | `cancelScheduledNotificationAsync()` | `await Notifications.cancelScheduledNotificationAsync(id)` |
 | Cancel all scheduled | `cancelAllScheduledNotificationsAsync()` | `await Notifications.cancelAllScheduledNotificationsAsync()` |
 | Listen to received | `addNotificationReceivedListener()` | `const sub = Notifications.addNotificationReceivedListener(cb)` |
 | Listen to response | `addNotificationResponseReceivedListener()` | `const sub = Notifications.addNotificationResponseReceivedListener(cb)` |
+| Dismiss notification | `dismissNotificationAsync()` | `await Notifications.dismissNotificationAsync(id)` |
 | Set badge count | `setBadgeCountAsync()` | `await Notifications.setBadgeCountAsync(5)` |
 | Create Android channel | `setNotificationChannelAsync()` | `await Notifications.setNotificationChannelAsync('id', config)` |
+| Set category | `setNotificationCategoryAsync()` | `await Notifications.setNotificationCategoryAsync('id', actions)` |
+| Last response hook | `useLastNotificationResponse()` | `const response = Notifications.useLastNotificationResponse()` |
 
 ---
 
@@ -245,8 +255,9 @@ Load additional context when needed:
 
 | When you need | Load |
 |---------------|------|
+| Architecture and concepts | [01-framework-overview.md](01-framework-overview.md) |
 | Installation and permissions setup | [02-quickstart-setup.md](02-quickstart-setup.md) |
-| Push token registration details | [03-api-core.md](03-api-core.md) |
+| Push token and handler details | [03-api-core.md](03-api-core.md) |
 | Local notification scheduling | [04-api-scheduling.md](04-api-scheduling.md) |
 | Notification event listeners | [05-api-listeners.md](05-api-listeners.md) |
 | Interactive notifications (actions) | [06-api-interactive.md](06-api-interactive.md) |
@@ -257,4 +268,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** SDK 52 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

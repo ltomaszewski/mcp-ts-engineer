@@ -3,7 +3,7 @@
 > **Purpose**: Understand the foundational structure of design systems and how the 3-layer model enables consistent, maintainable design across applications.
 
 **Version**: 1.0.0
-**Last Updated**: December 2025
+**Last Updated**: February 2026
 
 ---
 
@@ -238,6 +238,4 @@ Does this value need to change across themes/modes?
 
 ---
 
-**Module**: 01-architecture
-**Last Updated**: December 2025
-**Status**: Complete
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

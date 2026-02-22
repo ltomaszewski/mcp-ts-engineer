@@ -1,36 +1,68 @@
 # Custom Decorators
 
-Decorators provide a declarative approach to adding functionality to classes, methods, or properties.
+Decorators provide a declarative approach to adding functionality to classes, methods, or parameters.
 
-## Creating Custom Decorators with SetMetadata
+## Types of Decorators
+
+| Type | Target | Examples |
+|------|--------|----------|
+| Class | Class definition | `@Module`, `@Controller`, `@Injectable` |
+| Method | Method definition | `@Get`, `@Post`, `@UseGuards` |
+| Property | Class property | `@Inject`, `@InjectModel` |
+| Parameter | Method parameter | `@Body`, `@Param`, `@Query`, `@CurrentUser` |
+
+## Metadata Decorators with SetMetadata
 
 ```typescript
 import { SetMetadata } from '@nestjs/common';
 
-export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 ```
 
 **Usage:**
 ```typescript
-@Controller('users')
-export class UsersController {
-  @Get()
-  @Roles('admin', 'moderator')
-  findAll() {
-    return 'This route is protected by roles';
+@Get()
+@Roles('admin', 'moderator')
+findAll() { return 'Protected by roles'; }
+```
+
+## Reading Metadata with Reflector
+
+```typescript
+import { Reflector } from '@nestjs/core';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(@Inject(Reflector) private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!roles?.length) return true;
+    const { user } = context.switchToHttp().getRequest();
+    return roles.some(role => user.roles?.includes(role));
   }
 }
 ```
 
-## Custom Parameter Decorators
+### Reflector Methods
 
-Create decorators to extract specific data from the request.
+| Method | Behavior | Use When |
+|--------|----------|----------|
+| `get(key, target)` | Get metadata from single target | Single target lookup |
+| `getAllAndOverride(key, targets)` | First non-undefined wins | Method overrides class |
+| `getAllAndMerge(key, targets)` | Merge all values into array | Combine method + class |
+
+## Custom Parameter Decorators
 
 ```typescript
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const User = createParamDecorator(
-  (data: string, ctx: ExecutionContext) => {
+  (data: string | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     const user = request.user;
     return data ? user?.[data] : user;
@@ -41,48 +73,57 @@ export const User = createParamDecorator(
 **Usage:**
 ```typescript
 @Get()
-findOne(@User('id') userId: string) {
-  return `User ID: ${userId}`;
-}
+findOne(
+  @User() user: UserPayload,       // Full user
+  @User('id') userId: string,      // Single property
+) {}
 ```
 
 ## Decorator Composition
 
-Combine multiple decorators into a single decorator for cleaner code.
+Combine multiple decorators into one with `applyDecorators`:
 
 ```typescript
-import { applyDecorators, UseGuards } from '@nestjs/common';
+import { applyDecorators, UseGuards, SetMetadata } from '@nestjs/common';
 
 export function Auth(...roles: Role[]) {
   return applyDecorators(
-    Roles(...roles),
+    SetMetadata(ROLES_KEY, roles),
     UseGuards(AuthGuard, RolesGuard),
-    ApiBearerAuth(),
-    ApiUnauthorizedResponse({ description: 'Unauthorized' }),
   );
 }
-```
 
-**Usage:**
-```typescript
+// Usage
 @Get('admin')
 @Auth('admin')
-getAdminData() {
-  return 'Admin data';
-}
+getAdminData() { return 'Admin data'; }
 ```
 
-## Types of Decorators
+## Custom Class Decorator
 
-- **Class decorators**: Modify entire classes (`@Module`, `@Controller`)
-- **Method decorators**: Modify individual methods (`@Get`, `@Post`)
-- **Property decorators**: Modify class properties (`@Inject`)
-- **Parameter decorators**: Extract data from requests (`@Body`, `@Param`)
+```typescript
+export function Cacheable(ttl: number) {
+  return applyDecorators(
+    SetMetadata('cache:ttl', ttl),
+    UseInterceptors(CacheInterceptor),
+  );
+}
+
+@Get()
+@Cacheable(300) // 5 minutes
+findAll() {}
+```
 
 ## Best Practices
 
-1. Use meaningful names that describe the decorator's purpose
-2. Keep decorators focused on a single responsibility
-3. Use `applyDecorators` to combine related decorators
-4. Document custom decorators clearly for team use
-5. Retrieve metadata using `Reflector` in guards/interceptors
+| Practice | Rationale |
+|----------|-----------|
+| Meaningful names | Describe the decorator's purpose |
+| Single responsibility | One behavior per decorator |
+| Use `applyDecorators` | Combine related decorators cleanly |
+| Document decorators | They are the public API |
+| Use Reflector in guards | Standard metadata access pattern |
+
+---
+
+**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/custom-decorators

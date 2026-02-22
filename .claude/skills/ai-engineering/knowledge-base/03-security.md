@@ -521,3 +521,7 @@ If a security issue is detected:
 3. **Rotate** all credentials the agent had access to
 4. **Update** security hooks to prevent recurrence
 5. **Report** to security team and Anthropic if applicable
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/secure-deployment

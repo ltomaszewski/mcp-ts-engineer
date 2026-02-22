@@ -202,7 +202,7 @@ Maestro automatically waits for UI elements to appear, animations to complete, a
 
 ## Version & Compatibility
 
-- **Maestro Version:** 1.35.0+ (documentation current as of December 2025)
+- **Maestro Version:** 1.35.0+ (documentation current as of February 2026)
 - **Android:** API Level 16+
 - **iOS:** 11.0+
 - **React Native:** Full support with testID integration

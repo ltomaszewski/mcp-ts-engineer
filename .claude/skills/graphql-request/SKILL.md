@@ -1,5 +1,6 @@
 ---
 name: graphql-request
+version: "7.4.0"
 description: GraphQL Request client - queries, mutations, variables, headers. Use when making GraphQL API calls, handling authentication, or integrating with React Query.
 ---
 
@@ -300,4 +301,4 @@ try {
 
 ---
 
-**Version:** 7.x | **Source:** https://github.com/graffle-js/graffle
+**Version:** 7.4.0 | **Source:** https://github.com/graffle-js/graffle

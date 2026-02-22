@@ -1,19 +1,6 @@
-# 04 — useMutation: Data Mutation Hook
+# useMutation: Data Mutation Hook
 
-**Module Summary**: Complete `useMutation` hook reference including mutationFn patterns, lifecycle callbacks (onMutate, onSuccess, onError, onSettled), return value properties, mutation states, variables tracking, and 5+ real-world examples (basic, optimistic update, rollback, error handling).
-
-**Source:** [https://tanstack.com/query/v5/docs/react/reference/useMutation](https://tanstack.com/query/v5/docs/react/reference/useMutation)
-
----
-
-## Table of Contents
-1. [Function Signature](#function-signature)
-2. [Parameters](#parameters)
-3. [Return Value](#return-value)
-4. [Code Examples](#code-examples)
-5. [Mutation vs Query](#mutation-vs-query)
-6. [TypeScript Best Practices](#typescript-best-practices)
-7. [Next Steps](#next-steps)
+**Module:** `04-api-usemutation.md` | **Version:** 5.x (^5.62.11)
 
 ---
 
@@ -27,24 +14,27 @@ function useMutation<
   TContext = unknown,
 >(
   options: UseMutationOptions<TData, TError, TVariables, TContext>,
-  queryClient?: QueryClient,
 ): UseMutationResult<TData, TError, TVariables, TContext>
 ```
 
 ---
 
-## Parameters
+## All Options
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| **mutationFn** | `(variables: TVariables) => Promise<TData>` | ✅ Yes | — | Async function that performs the mutation |
-| **onMutate** | `(variables: TVariables) => TContext \| void` | ❌ No | — | Called before mutation (for optimistic updates) |
-| **onSuccess** | `(data: TData, variables: TVariables, context: TContext) => void` | ❌ No | — | Called when mutation succeeds |
-| **onError** | `(error: TError, variables: TVariables, context: TContext) => void` | ❌ No | — | Called when mutation fails |
-| **onSettled** | `(data: TData \| undefined, error: TError \| null, variables: TVariables, context: TContext) => void` | ❌ No | — | Called regardless of success/failure |
-| **retry** | `boolean \| number \| RetryFn` | ❌ No | `0` | Retry count or function (default: no retry) |
-| **retryDelay** | `number \| RetryDelayFn` | ❌ No | Exponential | Delay between retries (ms) |
-| **networkMode** | `'always' \| 'online' \| 'offlineFirst'` | ❌ No | `'online'` | Network mode behavior |
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `mutationFn` | `(variables: TVariables) => Promise<TData>` | Yes | -- | Async function that performs the mutation |
+| `mutationKey` | `MutationKey` | No | -- | Optional key for mutation deduplication |
+| `onMutate` | `(variables: TVariables) => Promise<TContext> \| TContext` | No | -- | Called before mutation (optimistic updates) |
+| `onSuccess` | `(data: TData, variables: TVariables, context: TContext) => void` | No | -- | Called on success |
+| `onError` | `(error: TError, variables: TVariables, context: TContext) => void` | No | -- | Called on error |
+| `onSettled` | `(data: TData \| undefined, error: TError \| null, variables: TVariables, context: TContext) => void` | No | -- | Called after success or error |
+| `retry` | `boolean \| number \| RetryFn` | No | `0` | Retry count (default: no retry) |
+| `retryDelay` | `number \| RetryDelayFn` | No | Exponential | Delay between retries |
+| `networkMode` | `'online' \| 'always' \| 'offlineFirst'` | No | `'online'` | Network behavior |
+| `gcTime` | `number` | No | `300000` (5 min) | GC time for mutation result |
+| `throwOnError` | `boolean \| (error) => boolean` | No | `false` | Throw to error boundary |
+| `meta` | `Record<string, unknown>` | No | -- | Metadata |
 
 ---
 
@@ -52,248 +42,172 @@ function useMutation<
 
 | Property | Type | Description |
 |----------|------|-------------|
-| **data** | `TData \| undefined` | The data returned from mutationFn |
-| **error** | `TError \| null` | The error object if mutation failed |
-| **variables** | `TVariables \| undefined` | The variables passed to mutate() |
-| **status** | `'idle' \| 'pending' \| 'error' \| 'success'` | Current mutation status |
-| **isPending** | `boolean` | True if mutation is currently executing |
-| **isError** | `boolean` | True if mutation errored |
-| **isSuccess** | `boolean` | True if mutation succeeded |
-| **isIdle** | `boolean` | True if mutation has not been called yet |
-| **mutate** | `(variables: TVariables, options?: MutateOptions) => void` | Call mutation (no return value) |
-| **mutateAsync** | `(variables: TVariables, options?: MutateOptions) => Promise<TData>` | Call mutation and get Promise |
-| **reset** | `() => void` | Reset mutation state to idle |
+| `data` | `TData \| undefined` | Data from mutationFn |
+| `error` | `TError \| null` | Error if mutation failed |
+| `variables` | `TVariables \| undefined` | Variables passed to mutate() |
+| `status` | `'idle' \| 'pending' \| 'error' \| 'success'` | Mutation status |
+| `isPending` | `boolean` | Currently executing |
+| `isError` | `boolean` | Mutation errored |
+| `isSuccess` | `boolean` | Mutation succeeded |
+| `isIdle` | `boolean` | Not yet called |
+| `mutate` | `(variables, options?) => void` | Fire mutation (void return) |
+| `mutateAsync` | `(variables, options?) => Promise<TData>` | Fire mutation (Promise return) |
+| `reset` | `() => void` | Reset state to idle |
+| `submittedAt` | `number` | Timestamp of last mutate call |
+| `failureCount` | `number` | Consecutive failure count |
+| `failureReason` | `TError \| null` | Reason for last failure |
 
 ---
 
 ## Code Examples
 
-### 1. Basic Mutation
+### Basic Mutation
 
 ```typescript
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
+  id: number
+  title: string
+  completed: boolean
 }
 
 function CreateTodo() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-  const createTodoMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: async (newTodo: Omit<Todo, 'id'>) => {
       const res = await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTodo),
-      });
-      if (!res.ok) throw new Error('Failed to create');
-      return res.json();
+      })
+      if (!res.ok) throw new Error('Failed to create')
+      return res.json() as Promise<Todo>
     },
     onSuccess: () => {
-      // Refetch todos list after creating
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+      queryClient.invalidateQueries({ queryKey: ['todos'] })
     },
-  });
+  })
 
   return (
     <button
-      onClick={() =>
-        createTodoMutation.mutate({
-          title: 'New Todo',
-          completed: false,
-        })
-      }
-      disabled={createTodoMutation.isPending}
+      onClick={() => mutation.mutate({ title: 'New Todo', completed: false })}
+      disabled={mutation.isPending}
     >
-      {createTodoMutation.isPending ? 'Creating...' : 'Create Todo'}
+      {mutation.isPending ? 'Creating...' : 'Create Todo'}
     </button>
-  );
+  )
 }
 ```
 
-### 2. Optimistic Update
+### Optimistic Update with Rollback
 
 ```typescript
-function UpdateTodo({ todoId }: { todoId: number }) {
-  const queryClient = useQueryClient();
+function useUpdateTodo(todoId: number) {
+  const queryClient = useQueryClient()
 
-  const updateMutation = useMutation({
+  return useMutation({
     mutationFn: (updatedTitle: string) =>
       fetch(`/api/todos/${todoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: updatedTitle }),
-      }).then(res => res.json()),
+      }).then(r => r.json()),
 
-    onMutate: (newTitle) => {
-      // Cancel outgoing refetches
-      queryClient.cancelQueries({ queryKey: ['todos', todoId] });
+    onMutate: async (newTitle) => {
+      // 1. Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['todos', todoId] })
 
-      // Snapshot old data
-      const previousTodo = queryClient.getQueryData(['todos', todoId]);
+      // 2. Snapshot previous value
+      const previousTodo = queryClient.getQueryData<Todo>(['todos', todoId])
 
-      // Optimistically update cache
-      queryClient.setQueryData(['todos', todoId], (old: Todo) => ({
-        ...old,
-        title: newTitle,
-      }));
+      // 3. Optimistically update
+      queryClient.setQueryData<Todo>(['todos', todoId], (old) =>
+        old ? { ...old, title: newTitle } : old
+      )
 
-      return { previousTodo };
+      // 4. Return context for rollback
+      return { previousTodo }
     },
 
-    onError: (err, newTitle, context) => {
+    onError: (_err, _newTitle, context) => {
       // Rollback on failure
       if (context?.previousTodo) {
-        queryClient.setQueryData(['todos', todoId], context.previousTodo);
+        queryClient.setQueryData(['todos', todoId], context.previousTodo)
       }
     },
 
-    onSuccess: () => {
+    onSettled: () => {
       // Refetch to confirm server state
-      queryClient.invalidateQueries({ queryKey: ['todos', todoId] });
+      queryClient.invalidateQueries({ queryKey: ['todos', todoId] })
     },
-  });
-
-  return (
-    <button
-      onClick={() => updateMutation.mutate('Updated Title')}
-      disabled={updateMutation.isPending}
-    >
-      Update
-    </button>
-  );
+  })
 }
 ```
 
-### 3. Delete with Rollback
+### Delete with List Rollback
 
 ```typescript
-function DeleteTodo({ todoId }: { todoId: number }) {
-  const queryClient = useQueryClient();
+function useDeleteTodo(todoId: number) {
+  const queryClient = useQueryClient()
 
-  const deleteMutation = useMutation({
+  return useMutation({
     mutationFn: () =>
       fetch(`/api/todos/${todoId}`, { method: 'DELETE' }),
 
-    onMutate: () => {
-      // Snapshot current todos list
-      const previousTodos = queryClient.getQueryData(['todos']);
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['todos'] })
+      const previousTodos = queryClient.getQueryData<Todo[]>(['todos'])
 
-      // Optimistically remove from list
-      queryClient.setQueryData(['todos'], (old: Todo[]) =>
-        old.filter(t => t.id !== todoId)
-      );
+      queryClient.setQueryData<Todo[]>(['todos'], (old) =>
+        old?.filter((t) => t.id !== todoId)
+      )
 
-      return { previousTodos };
+      return { previousTodos }
     },
 
-    onError: (err, variables, context) => {
-      // Restore on failure
+    onError: (_err, _vars, context) => {
       if (context?.previousTodos) {
-        queryClient.setQueryData(['todos'], context.previousTodos);
+        queryClient.setQueryData(['todos'], context.previousTodos)
       }
     },
 
-    onSuccess: () => {
-      // Confirm deletion
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] })
     },
-  });
-
-  return (
-    <button
-      onClick={() => deleteMutation.mutate()}
-      disabled={deleteMutation.isPending}
-    >
-      {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-    </button>
-  );
+  })
 }
 ```
 
-### 4. Mutation with Error Handling
+### Using mutateAsync for Promise Flow
 
 ```typescript
-function SignUp() {
-  const signUpMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Signup failed');
-      }
-
-      return res.json();
-    },
-
-    onError: (error: Error) => {
-      // Show error to user
-      alert('Signup failed: ' + error.message);
-    },
-
-    onSuccess: (data) => {
-      // Store token, redirect, etc.
-      localStorage.setItem('token', data.token);
-    },
-  });
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        signUpMutation.mutate({
-          email: 'user@example.com',
-          password: 'pass123',
-        });
-      }}
-    >
-      {signUpMutation.isError && (
-        <div>Error: {signUpMutation.error?.message}</div>
-      )}
-      <button type="submit" disabled={signUpMutation.isPending}>
-        {signUpMutation.isPending ? 'Signing up...' : 'Sign Up'}
-      </button>
-    </form>
-  );
+async function handleSubmit(data: FormData) {
+  try {
+    const result = await mutation.mutateAsync(data)
+    console.log('Created:', result)
+    navigation.navigate('Success')
+  } catch (error) {
+    console.error('Failed:', error)
+  }
 }
 ```
 
-### 5. Using mutateAsync for Promise-based Flow
+### Per-Mutation Callbacks
 
 ```typescript
-function FormWithValidation() {
-  const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      fetch('/api/submit', { method: 'POST', body: JSON.stringify(data) })
-        .then(res => res.json()),
-  });
+const mutation = useMutation({ mutationFn: createTodo })
 
-  const handleSubmit = async (formData: FormData) => {
-    try {
-      const result = await mutation.mutateAsync(formData);
-      console.log('Success:', result);
-    } catch (error) {
-      console.error('Failed:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      handleSubmit(new FormData(e.currentTarget));
-    }}>
-      {/* form fields */}
-    </form>
-  );
-}
+// Callbacks can be passed to mutate() too (run AFTER hook-level callbacks)
+mutation.mutate(newTodo, {
+  onSuccess: (data) => {
+    console.log('This specific call succeeded:', data)
+  },
+  onError: (error) => {
+    console.log('This specific call failed:', error)
+  },
+})
 ```
 
 ---
@@ -302,56 +216,33 @@ function FormWithValidation() {
 
 | Aspect | Query | Mutation |
 |--------|-------|----------|
-| **Purpose** | Fetch/read data | Modify/write data |
-| **Trigger** | Automatic (on mount, stale, etc.) | Manual (`mutate()`) |
-| **Caching** | Cached automatically | Not cached (by default) |
-| **Retries** | Yes (default: 3) | No (default: 0) |
-| **Lifecycle** | Continuous | One-time event |
-| **Use For** | GET requests | POST, PUT, PATCH, DELETE |
+| Purpose | Fetch/read data | Modify/write data |
+| Trigger | Automatic (mount, stale) | Manual (`mutate()`) |
+| Caching | Cached by queryKey | Not cached by default |
+| Retries | Default: 3 | Default: 0 |
+| Lifecycle | Continuous | One-time event |
+| Use for | GET requests | POST, PUT, PATCH, DELETE |
 
 ---
 
-## TypeScript Best Practices
+## TypeScript: Explicit Type Parameters
 
 ```typescript
-interface CreateTodoInput {
-  title: string;
-  completed: boolean;
-}
-
-interface TodoResponse {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 const mutation = useMutation<
-  TodoResponse,           // TData
-  Error,                  // TError
-  CreateTodoInput,        // TVariables
-  undefined               // TContext
+  TodoResponse,      // TData - return type
+  Error,             // TError
+  CreateTodoInput,   // TVariables - input type
+  { previousTodos: Todo[] } // TContext - optimistic update context
 >({
-  mutationFn: (input) => {
-    // input is typed as CreateTodoInput
-    return fetch('/api/todos', { method: 'POST', body: JSON.stringify(input) })
-      .then(res => res.json());
+  mutationFn: (input) => createTodo(input),
+  onMutate: async (input) => {
+    const previousTodos = queryClient.getQueryData<Todo[]>(['todos']) ?? []
+    return { previousTodos }
   },
-});
-
-// mutation.mutate expects CreateTodoInput
-mutation.mutate({ title: 'Test', completed: false });
+})
 ```
 
 ---
 
-## Next Steps
-
-1. [13-guide-mutations-workflows.md](./13-guide-mutations-workflows.md) — Advanced mutation patterns
-2. [10-guide-caching.md](./10-guide-caching.md) — Cache invalidation strategies
-3. [11-guide-error-handling.md](./11-guide-error-handling.md) — Error recovery patterns
-
----
-
-**Source Documentation:**
-- [useMutation | TanStack Query](https://tanstack.com/query/v5/docs/react/reference/useMutation)
-- [Mutations Guide | TanStack Query](https://tanstack.com/query/v5/docs/react/guides/mutations)
+**Source:** https://tanstack.com/query/v5/docs/react/reference/useMutation | https://tanstack.com/query/v5/docs/react/guides/mutations
+**Version:** 5.x (^5.62.11)

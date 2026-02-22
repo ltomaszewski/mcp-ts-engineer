@@ -229,4 +229,10 @@ await app.listen(port);
 
 ---
 
-**Source:** [Azure App Service Deploy](https://learn.microsoft.com/en-us/azure/app-service/deploy-zip)
+## Deep Dive References
+
+This is a single-file skill — all deployment patterns are documented above.
+
+---
+
+**Version:** Azure CLI 2.x | **Source:** https://learn.microsoft.com/en-us/azure/app-service/deploy-zip

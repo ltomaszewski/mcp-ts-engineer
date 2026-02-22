@@ -4,26 +4,37 @@ NestJS has a built-in exceptions layer that handles all unhandled exceptions acr
 
 ## Built-in HTTP Exceptions
 
-NestJS offers ready-to-use exception classes:
+All extend `HttpException` from `@nestjs/common`:
+
+| Exception | Status | When |
+|-----------|--------|------|
+| `BadRequestException` | 400 | Invalid input |
+| `UnauthorizedException` | 401 | Missing/invalid auth |
+| `ForbiddenException` | 403 | Insufficient permissions |
+| `NotFoundException` | 404 | Resource not found |
+| `NotAcceptableException` | 406 | Unacceptable content type |
+| `RequestTimeoutException` | 408 | Request timed out |
+| `ConflictException` | 409 | Resource conflict |
+| `GoneException` | 410 | Resource no longer available |
+| `PayloadTooLargeException` | 413 | Body too large |
+| `UnsupportedMediaTypeException` | 415 | Wrong content type |
+| `UnprocessableEntityException` | 422 | Validation failure |
+| `InternalServerErrorException` | 500 | Unexpected server error |
+| `NotImplementedException` | 501 | Not implemented |
+| `BadGatewayException` | 502 | Bad gateway |
+| `ServiceUnavailableException` | 503 | Service unavailable |
+| `GatewayTimeoutException` | 504 | Gateway timeout |
+| `HttpVersionNotSupportedException` | 505 | HTTP version unsupported |
 
 ```typescript
-import {
-  BadRequestException,
-  UnauthorizedException,
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
-// Usage
 throw new NotFoundException('User not found');
 throw new BadRequestException('Invalid email format');
+throw new BadRequestException({ message: 'Validation failed', errors: ['email is invalid'] });
 ```
 
 ## Custom Exception Classes
-
-Define domain-specific exceptions for business logic clarity:
 
 ```typescript
 import { BadRequestException } from '@nestjs/common';
@@ -34,23 +45,22 @@ export class DuplicatedEmailException extends BadRequestException {
   }
 }
 
+export class InsufficientCreditsException extends BadRequestException {
+  constructor(required: number, available: number) {
+    super(`Need ${required} credits, only ${available} available`);
+  }
+}
+
 // Usage
-throw new DuplicatedEmailException(user.email);
+throw new DuplicatedEmailException(dto.email);
 ```
 
 ## Exception Filters
 
-Exception filters intercept thrown exceptions and take appropriate actions.
-
-### Basic Exception Filter
+### Catch Specific Exception
 
 ```typescript
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch(HttpException)
@@ -66,15 +76,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: exceptionResponse['message'] || exception.message,
+      message: typeof exceptionResponse === 'string'
+        ? exceptionResponse
+        : (exceptionResponse as any).message,
     });
   }
 }
 ```
 
-### Global Exception Filter
+### Catch All Exceptions
 
 ```typescript
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
@@ -106,7 +120,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 // Method Level
 @Post()
 @UseFilters(new HttpExceptionFilter())
-create(@Body() createDto: CreateDto) {}
+create(@Body() dto: CreateDto) {}
 
 // Controller Level
 @Controller('users')
@@ -115,30 +129,52 @@ export class UsersController {}
 
 // Global Level (main.ts)
 app.useGlobalFilters(new AllExceptionsFilter());
+
+// Global Level (module -- preferred, supports DI)
+@Module({
+  providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+})
+export class AppModule {}
 ```
 
-## Best Practices (2025)
+## Filter Execution Order
 
-1. **Centralize error handling** - Use global exception filters for consistency
-2. **Log errors to external services** - Integrate with Sentry, Loggly, etc.
-3. **Use custom exception classes** - Encapsulate error information
-4. **Return meaningful error responses** - Include correlation IDs, timestamps, context
-5. **Validation with Pipes** - Let ValidationPipe handle DTO validation errors
+Filters resolve from lowest level first (opposite of guards/interceptors):
+```
+Route Filter -> Controller Filter -> Global Filter
+```
 
-### Advanced Error Response Structure
+## GraphQL Exception Filter
+
+For GraphQL, use `GqlExceptionFilter`:
 
 ```typescript
-{
-  "statusCode": 400,
-  "timestamp": "2025-01-15T10:30:00.000Z",
-  "path": "/api/users",
-  "correlationId": "uuid-v4",
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "email",
-      "message": "Invalid email format"
-    }
-  ]
+import { Catch, ArgumentsHost } from '@nestjs/common';
+import { GqlExceptionFilter } from '@nestjs/graphql';
+import { GraphQLError } from 'graphql';
+
+@Catch()
+export class GraphQLErrorFilter implements GqlExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    if (exception instanceof GraphQLError) return exception;
+    return new GraphQLError(exception.message ?? 'Internal error', {
+      extensions: { code: 'INTERNAL_SERVER_ERROR' },
+    });
+  }
 }
 ```
+
+## Best Practices
+
+| Practice | Rationale |
+|----------|-----------|
+| Use custom exception classes | Encapsulate domain-specific errors |
+| Global catch-all filter | Consistent error responses |
+| Log errors in filters | Centralized error logging |
+| Include correlation IDs | Trace errors across services |
+| Hide internals in production | Don't expose stack traces |
+| Use APP_FILTER provider | Supports dependency injection |
+
+---
+
+**Version:** NestJS 11.x | **Source:** https://docs.nestjs.com/exception-filters

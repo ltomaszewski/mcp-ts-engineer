@@ -3,7 +3,7 @@
 > **Purpose**: Provide templates and examples for documenting components with proper specifications for variants, states, tokens, and accessibility.
 
 **Version**: 1.0.0
-**Last Updated**: December 2025
+**Last Updated**: February 2026
 **Prerequisite**: [01-architecture.md](01-architecture.md), [02-color-tokens.md](02-color-tokens.md)
 
 ---
@@ -268,6 +268,4 @@ Use this template when creating new component specifications:
 
 ---
 
-**Module**: 05-components
-**Last Updated**: December 2025
-**Status**: Complete
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

@@ -3,8 +3,8 @@
 > Testing framework for React Native components. User-centric, accessible, production-grade reference with modular, LLM-optimized architecture.
 
 **Source:** [https://oss.callstack.com/react-native-testing-library](https://oss.callstack.com/react-native-testing-library)
-**Version:** 13.3.3 (December 2024)
-**Last Updated:** December 2025
+**Version:** 13.3.3
+**Last Updated:** February 2026
 
 ---
 
@@ -107,6 +107,7 @@ This knowledge base is organized into self-contained modules optimized for LLM c
 | Complex testing patterns | `08-advanced-patterns.md` | Custom render, providers, forms |
 | TypeScript integration | `09-typescript.md` | Types, generics, configuration |
 | Solve problems | `10-troubleshooting.md` | Common issues, debug techniques |
+| Jest matchers reference | `11-jest-matchers.md` | toBeOnTheScreen, toBeVisible, etc. |
 
 ---
 
@@ -188,6 +189,7 @@ fireEvent.press(screen.getByRole('button'));
     └→ 09-typescript.md (Type Safety)
 
 10-troubleshooting.md (Reference - no dependencies)
+11-jest-matchers.md (Reference - no dependencies)
 ```
 
 **Independent paths:**
@@ -296,8 +298,9 @@ fireEvent.press(screen.getByRole('button'));
 | `08-advanced-patterns.md` | ✅ Complete | Providers, custom render, patterns | ~711 lines |
 | `09-typescript.md` | ✅ Complete | Types, generics, integration | ~674 lines |
 | `10-troubleshooting.md` | ✅ Complete | 27+ issues, FAQ, debug techniques | ~837 lines |
+| `11-jest-matchers.md` | ✅ Complete | 18 built-in matchers, accessibility state | ~350 lines |
 
-**Total Knowledge Base:** ~6,922 lines, ~55K tokens (all modules)
+**Total Knowledge Base:** ~7,272 lines, ~58K tokens (all modules)
 
 ---
 
@@ -305,7 +308,7 @@ fireEvent.press(screen.getByRole('button'));
 
 - **Knowledge Base Version:** 1.0 (Modular)
 - **Target Library Version:** React Native Testing Library 13.3.3
-- **Last Updated:** December 2025
+- **Last Updated:** February 2026
 - **Next Review:** When RNTL 14.0 releases
 
 ---

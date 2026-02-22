@@ -1,167 +1,218 @@
-# React Native 0.83 - Upgrade Guide
+# React Native 0.81.5 -- Upgrade Guide
 
-**Version upgrades, breaking changes, and compatibility**
-
----
-
-## 🎉 React Native 0.82 → 0.83
-
-### Good News
-
-**Zero user-facing breaking changes!**
-
-React Native 0.83 is the first major release with:
-- Complete backward compatibility
-- Gradual feature adoption
-- No forced refactoring required
+Upgrading from 0.80 to 0.81, breaking changes, and React 19.1 features.
 
 ---
 
-## 📦 Upgrade Process
+## What Changed in 0.81
 
-### Step 1: Update package.json
+### Highlights
+
+| Change | Impact | Action Required |
+|--------|--------|-----------------|
+| Android 16 (API 36) targeting | Apps target API 36 by default | Update compileSdkVersion if needed |
+| SafeAreaView deprecated | Built-in SafeAreaView is deprecated | Use `react-native-safe-area-context` |
+| JSC removed | Built-in JavaScriptCore removed | Install community package if needed |
+| Edge-to-edge display | Android 16 requires edge-to-edge | Use `edgeToEdgeEnabled` gradle property |
+| Predictive back gesture | Enabled by default for Android 16 | Test back navigation |
+| Precompiled iOS builds | Experimental: up to 10x faster builds | Opt-in via env vars |
+| Node.js 20.19.4+ required | Minimum Node.js version raised | Upgrade Node.js if below 20.19.4 |
+| Xcode 16.1+ required | Minimum Xcode version raised | Upgrade Xcode |
+
+### No User-Facing Breaking Changes
+
+RN 0.81 maintains backward compatibility for JavaScript APIs. The breaking changes are tooling/platform requirements, not runtime API changes.
+
+---
+
+## Upgrade Steps
+
+### Step 1: Update Dependencies
 
 ```bash
-npm install react@19.2.0 react-native@0.83.0
-
-# or with Yarn
-yarn upgrade react@19.2.0 react-native@0.83.0
+npm install react-native@0.81.5 react@19.1.0
 ```
 
-Check latest versions:
-```bash
-npm view react-native versions | tail -20
-npm view react versions | tail -10
-```
+### Step 2: Update Native Projects
 
-### Step 2: Clear Cache and Reinstall
+Use the React Native Upgrade Helper to diff changes:
+https://react-native-community.github.io/upgrade-helper/
+
+Key native file changes:
+- `android/build.gradle`: Update compileSdkVersion to 36
+- `android/app/build.gradle`: Update targetSdkVersion to 36
+- `ios/Podfile`: Verify minimum iOS deployment target
+- `android/gradle.properties`: Check for new properties
+
+### Step 3: Clean and Reinstall
 
 ```bash
-# Remove node_modules and lock files
 rm -rf node_modules package-lock.json
-
-# Reinstall fresh dependencies
 npm install
-```
 
-### Step 3: Clean Native Builds
+# Android
+cd android && ./gradlew clean && cd ..
 
-```bash
-# Android clean
-cd android
-./gradlew clean
-cd ..
+# iOS
+cd ios && rm -rf Pods Podfile.lock build && pod install && cd ..
 
-# iOS clean
-cd ios
-rm -rf Pods Podfile.lock
-pod install
-cd ..
-```
-
-### Step 4: Reset Metro Bundler
-
-```bash
+# Metro cache
 npm start -- --reset-cache
 ```
 
-### Step 5: Test on Device
+### Step 4: Address Deprecations
 
-**Android:**
-```bash
-npm run android
+#### Replace SafeAreaView
+
+```typescript
+// BEFORE (deprecated)
+import { SafeAreaView } from 'react-native';
+
+// AFTER
+import { SafeAreaView } from 'react-native-safe-area-context';
+// Or use the hook:
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 ```
 
-**iOS (macOS):**
+Install if not already present:
+
 ```bash
+npm install react-native-safe-area-context
+```
+
+#### Replace JSC (if not using Hermes)
+
+If your app opts out of Hermes (not recommended):
+
+```bash
+npm install @react-native-community/javascriptcore
+```
+
+Most apps use Hermes (default) and are unaffected.
+
+### Step 5: Android 16 Compliance
+
+#### Edge-to-Edge Display
+
+Android 16 requires edge-to-edge display. Enable early for testing:
+
+```properties
+# android/gradle.properties
+edgeToEdgeEnabled=true
+```
+
+Ensure your app handles system bars correctly with `react-native-safe-area-context`.
+
+#### 16 KB Page Size
+
+React Native is already compliant. No action needed.
+
+#### Predictive Back Gesture
+
+Enabled by default. Test that:
+- Back navigation works correctly
+- No critical UI on swipe-back areas
+- Custom back handlers still function
+
+### Step 6: Verify
+
+```bash
+# Type check
+npx tsc --noEmit
+
+# Run tests
+npm test
+
+# Build and run
+npm run android
 npm run ios
 ```
 
 ---
 
-## ✅ Upgrade Verification
+## React 19.1.0 Features (Available, Optional)
 
-After upgrade, verify:
+RN 0.81.5 ships with React 19.1.0. These features are available but adoption is optional -- existing React 18 patterns continue to work.
 
-### 1. App Launches
+### `use` Hook
 
-```bash
-# Should load without errors
-npm start
-npm run android  # or ios
+Reads values from Promises or Contexts. Can be called conditionally.
+
+```typescript
+import { use, Suspense } from 'react';
+
+function UserProfile({ userPromise }: { userPromise: Promise<User> }): React.ReactElement {
+  const user = use(userPromise); // Suspends until resolved
+  return <Text>{user.name}</Text>;
+}
+
+// Usage with Suspense boundary
+<Suspense fallback={<ActivityIndicator />}>
+  <UserProfile userPromise={fetchUser(id)} />
+</Suspense>
 ```
 
-### 2. Console Check
+### `useActionState` Hook
 
-- No deprecation warnings
-- No type errors
-- No runtime errors
+Manages form state with async actions.
 
-### 3. Functionality Test
+```typescript
+import { useActionState } from 'react';
 
-- Navigation works
-- Screens render correctly
-- Network requests succeed
-- Storage reads/writes work
-- Permissions granted
+function LoginForm(): React.ReactElement {
+  const [state, submitAction, isPending] = useActionState(
+    async (prevState: FormState, formData: FormData) => {
+      const result = await loginAPI(formData);
+      if (result.error) return { error: result.error };
+      return { success: true };
+    },
+    { error: null },
+  );
 
-### 4. Type Checking
+  return (
+    <View>
+      {state.error && <Text style={{ color: 'red' }}>{state.error}</Text>}
+      <Pressable onPress={submitAction} disabled={isPending}>
+        <Text>{isPending ? 'Signing in...' : 'Sign In'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+```
 
-```bash
-npx tsc --noEmit
+### `useOptimistic` Hook
+
+Provides optimistic UI updates during async operations.
+
+```typescript
+import { useOptimistic } from 'react';
+
+function TodoList({ todos }: { todos: Todo[] }): React.ReactElement {
+  const [optimisticTodos, addOptimisticTodo] = useOptimistic(
+    todos,
+    (currentTodos, newTodo: Todo) => [...currentTodos, { ...newTodo, pending: true }],
+  );
+
+  async function handleAdd(title: string): Promise<void> {
+    addOptimisticTodo({ id: 'temp', title, pending: true });
+    await createTodoAPI(title); // Server request
+  }
+
+  return (
+    <FlatList
+      data={optimisticTodos}
+      renderItem={({ item }) => (
+        <Text style={{ opacity: item.pending ? 0.5 : 1 }}>{item.title}</Text>
+      )}
+      keyExtractor={(item) => item.id}
+    />
+  );
+}
 ```
 
 ---
 
-## 📋 Common Version Mismatches
-
-### React Version Mismatch
-
-```
-Error: React is not defined
-```
-
-**Solution:** Ensure React is installed:
-```bash
-npm install react@19.2.0
-```
-
-### Native Module Version Mismatch
-
-```
-Error: Native module MyModule not found
-```
-
-**Solution:**
-1. Remove old pods/node_modules
-2. Reinstall
-3. Rebuild native code
-
-```bash
-rm -rf node_modules ios/Pods
-npm install
-npm start -- --reset-cache
-npm run ios  # or android
-```
-
-### Hermes vs V8 Mismatch
-
-```
-Error: Hermes expected but V8 present
-```
-
-**Solution:** Ensure Hermes configuration matches:
-
-```gradle
-// android/app/build.gradle
-project.ext.react = [
-    enableHermes: true,  // Ensure consistent
-]
-```
-
----
-
-## 🔄 Dependency Update Strategy
+## Dependency Compatibility
 
 ### Check for Updates
 
@@ -169,260 +220,50 @@ project.ext.react = [
 npm outdated
 ```
 
-Output shows:
-- Current version
-- Wanted (compatible update)
-- Latest (may have breaking changes)
+### Common Dependencies to Update
 
-### Update Strategy
+| Package | Compatible Version | Notes |
+|---------|-------------------|-------|
+| `react-navigation` | 7.x | Works with RN 0.81 |
+| `react-native-screens` | 4.x | Required for native stack |
+| `react-native-safe-area-context` | 5.x | Required (SafeAreaView deprecated) |
+| `react-native-gesture-handler` | 2.x | For drawer/gesture navigation |
+| `react-native-reanimated` | 4.x | Check peer deps |
 
-**Safety-first (Recommended):**
-```bash
-# Update within compatible versions
-npm update
+---
 
-# Test everything
-npm test
-npm run android && npm run ios
-```
-
-**Latest versions:**
-```bash
-# Update to latest (may have breaking changes)
-npm install react@latest react-native@latest
-
-# Test thoroughly before committing
-npm test
-npm run build
-```
-
-### Update One at a Time
+## Rollback (If Issues)
 
 ```bash
-# Update one package
-npm install react@19.2.0
+# Revert to previous version
+npm install react-native@0.80.0 react@19.1.0
 
-# Test
-npm test
-
-# Then update next package
-npm install @react-navigation/native@latest
-
-# Test again
-```
-
----
-
-## 📚 React 19.2 New Features (Optional)
-
-These are available but not required:
-
-### Enhanced Hooks
-
-```typescript
-// New Hook: useFormStatus (form submissions)
-import { useFormStatus } from 'react';
-
-const SubmitButton = () => {
-  const { pending } = useFormStatus();
-
-  return (
-    <button disabled={pending}>
-      {pending ? 'Submitting...' : 'Submit'}
-    </button>
-  );
-};
-```
-
-### useActionState Hook
-
-```typescript
-import { useActionState } from 'react';
-
-const [state, formAction, pending] = useActionState(async (prevState, formData) => {
-  const result = await submitForm(formData);
-  return result;
-}, initialState);
-```
-
-### Use Hook for Async
-
-```typescript
-import { use } from 'react';
-
-const Component = ({ promiseData }) => {
-  const data = use(promiseData);
-  return <Text>{data}</Text>;
-};
-```
-
----
-
-## 🚀 Gradual Adoption
-
-You don't need to use new features immediately:
-
-### Keep Existing Code
-
-```typescript
-// Still works (React 18 patterns)
-import { useState, useEffect } from 'react';
-
-const MyComponent = () => {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  return <Text>{data}</Text>;
-};
-```
-
-### Adopt Gradually
-
-```typescript
-// Can use new hooks in new components
-import { use } from 'react';
-
-const NewComponent = ({ promise }) => {
-  const data = use(promise);
-  return <Text>{data}</Text>;
-};
-
-// Mix old and new freely
-export const App = () => (
-  <View>
-    <MyComponent />  {/* React 18 style */}
-    <NewComponent promise={fetchData()} />  {/* React 19 style */}
-  </View>
-);
-```
-
----
-
-## 🔍 Compatibility Checklist
-
-Before committing upgrade:
-
-### Code Quality
-- [ ] TypeScript compiles without errors (`npx tsc --noEmit`)
-- [ ] ESLint passes (`npm run lint`)
-- [ ] All tests pass (`npm test`)
-
-### Functionality
-- [ ] App launches without crashes
-- [ ] All screens navigate correctly
-- [ ] Network requests work
-- [ ] Data persistence works
-- [ ] Permissions work correctly
-
-### Testing
-- [ ] Android app runs and functions
-- [ ] iOS app runs and functions (macOS)
-- [ ] No console warnings
-- [ ] Tested on physical devices
-- [ ] Tested on different device sizes
-
-### Dependencies
-- [ ] All node_modules installed
-- [ ] No version conflicts
-- [ ] No peer dependency warnings
-- [ ] Native modules rebuilt
-
----
-
-## 📖 Helpful Resources
-
-**Official Upgrade Guide:**
-- https://reactnative.dev/docs/upgrading
-
-**React 19 Features:**
-- https://react.dev/blog/2024/12/19/react-19
-
-**React Native Changelog:**
-- https://github.com/facebook/react-native/releases
-
-**Community Discord:**
-- https://discord.gg/react-native
-
----
-
-## ⏮️ Rollback (If Issues)
-
-If upgrade causes problems:
-
-### Revert to Previous Version
-
-```bash
-# Revert in package.json
-npm install react@19.1.0 react-native@0.82.0
-
-# Clear cache
+# Full clean
 rm -rf node_modules package-lock.json
 npm install
 
-# Clean native
 cd android && ./gradlew clean && cd ..
-cd ios && rm -rf Pods && pod install && cd ..
+cd ios && rm -rf Pods Podfile.lock && pod install && cd ..
 
-# Reset Metro and test
 npm start -- --reset-cache
-npm run android
-```
-
-### Keep git clean
-
-```bash
-# If upgrade commit already made
-git revert <commit-hash>
-
-# Then apply fixes one by one
-git add .
-git commit -m "fix: resolve upgrade issues"
 ```
 
 ---
 
-## 🎯 Post-Upgrade Optimization
+## Verification Checklist
 
-Once upgraded successfully:
-
-### 1. Enable New Features (Optional)
-
-```typescript
-// Try new React 19 features
-import { use } from 'react';
-
-// Refactor async code
-const MyComponent = ({ dataPromise }) => {
-  const data = use(dataPromise);
-  return <Text>{data}</Text>;
-};
-```
-
-### 2. Update Dependencies
-
-```bash
-# Check for compatible updates
-npm outdated
-
-# Update libraries that support React 19
-npm install @react-navigation/native@latest
-```
-
-### 3. Review Performance
-
-```bash
-# Profile your app
-npm run android -- --profile
-
-# Check bundle size
-npm run build && ls -lh dist/
-```
+- [ ] App launches on Android without errors
+- [ ] App launches on iOS without errors
+- [ ] TypeScript compiles (`npx tsc --noEmit`)
+- [ ] All tests pass (`npm test`)
+- [ ] Navigation works correctly
+- [ ] Back gesture (Android) works
+- [ ] Safe areas rendered correctly (notch, home indicator)
+- [ ] No deprecation warnings in console
+- [ ] Tested on physical device
+- [ ] Release build succeeds
 
 ---
 
-**Source**: https://reactnative.dev/docs/upgrading
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+**Version:** React Native 0.81.5 | React 19.1.0
+**Source:** https://reactnative.dev/blog/2025/08/12/react-native-0.81 | https://reactnative.dev/docs/upgrading

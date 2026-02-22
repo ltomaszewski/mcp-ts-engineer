@@ -2,7 +2,7 @@
 
 **Document URL:** https://oss.callstack.com/react-native-testing-library/docs/api
 
-**Version:** 13.3.3
+**Version:** ^13.0.0
 
 ---
 
@@ -11,6 +11,8 @@
 ### Description
 
 Synchronously renders a React component for testing. Returns the rendered tree with bound query methods and utilities. This is the primary function for component testing.
+
+> **v13 note:** Concurrent rendering is enabled by default. Pass `concurrentRoot: false` in render options as an escape hatch if needed. In v14, `render` will become async.
 
 **Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/render](https://oss.callstack.com/react-native-testing-library/docs/api/render)
 
@@ -37,6 +39,7 @@ function render<Q extends Queries = typeof queries>(
 | `container` | `Element` | `null` | Custom container element |
 | `wrapper` | `React.ComponentType<any>` | `undefined` | Wrapper component (providers) |
 | `initialProps` | `object` | `{}` | Props for wrapper component |
+| `concurrentRoot` | `boolean` | `true` | Enable/disable concurrent rendering (v13 default: `true`) |
 
 ### Code Examples
 
@@ -159,6 +162,8 @@ test('renders login form with screen object', () => {
 
 #### debug() Function
 
+> **v13 note:** `debug.shallow` has been removed. Only `screen.debug()` (full tree) is available.
+
 ```typescript
 test('debug rendered tree', () => {
   render(
@@ -167,7 +172,7 @@ test('debug rendered tree', () => {
       <Text>World</Text>
     </View>
   );
-  
+
   screen.debug();
 });
 ```
@@ -291,6 +296,8 @@ afterEach(() => {
 ### Description
 
 Wraps updates to React state and effects to ensure they complete before making assertions.
+
+> **v13 note:** Uses React's own `act()` instead of React Test Renderer's `act()`. This aligns with React 18+ patterns.
 
 **Source:** [https://oss.callstack.com/react-native-testing-library/docs/api/act](https://oss.callstack.com/react-native-testing-library/docs/api/act)
 

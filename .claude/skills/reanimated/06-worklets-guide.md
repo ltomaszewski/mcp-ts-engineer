@@ -1,289 +1,179 @@
-# Worklets & UI Thread Execution
+# Worklets and Threading Model
 
-**Source:** https://docs.swmansion.com/react-native-reanimated/docs/guides/worklets/  
-**Version:** 4.2.1  
-**Category:** Architecture | Advanced Concepts
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/guides/worklets/
 
 ---
 
-## 📋 Overview
+## Overview
 
-**Worklets** are JavaScript functions that execute on the **UI Runtime** (native thread) instead of the **JS Runtime** (JavaScript thread). This enables **60/120 fps animations without blocking React re-renders**.
-
-**Key Characteristics:**
-- Marked with `'worklet'` directive at function start
-- Converted by Babel plugin into serializable objects
-- Can access shared values directly
-- Cannot access most JS Runtime features (console, setTimeout not available)
-- Enable smooth animations by running on native thread
+Worklets are JavaScript functions that execute on the UI Runtime (native thread) instead of the JS Runtime. This enables 60/120 fps animations without blocking React renders. In Reanimated 4, worklet compilation moved from a Babel plugin to the `react-native-worklets` package.
 
 ---
 
-## 🔧 Type Definition
+## Defining Worklets
+
+Mark any function with the `'worklet'` directive at the very beginning of the function body:
 
 ```typescript
-// Worklet-marked functions have this type:
-type Worklet<Args extends any[], Return> = {
-  (...args: Args): Return;
-  __worklet: true;
-  __location: string;
-};
-```
-
----
-
-## 📖 Defining Worklets
-
-### Basic Syntax
-
-Mark any function with `'worklet'` directive:
-
-```javascript
-function myWorklet() {
-  'worklet';
-  console.log('Hello from worklet');
-}
-```
-
-**Critical:** The directive must be at the **very beginning** of the function body.
-
-### Worklet with Parameters
-
-```javascript
-function addNumbers(a, b) {
+function myWorklet(a: number, b: number): number {
   'worklet';
   return a + b;
 }
-
-function greet(name) {
-  'worklet';
-  console.log(`Hello, ${name}`);
-  return `Greeted ${name}`;
-}
 ```
-
-### Worklet Return Values
-
-Worklets can return data **within the same thread**:
-
-```javascript
-function calculateValue() {
-  'worklet';
-  return 42;
-}
-
-function useWorkletResult() {
-  'worklet';
-  const result = calculateValue(); // Still on UI thread
-  console.log('Result:', result);
-}
-```
-
----
-
-## 🔄 Workletization by Babel Plugin
-
-The `react-native-worklets/plugin` Babel plugin automatically transforms worklet-marked functions:
-
-### Before Transformation
-
-```javascript
-function myWorklet() {
-  'worklet';
-  return opacity.value * 2;
-}
-```
-
-### After Transformation
-
-```javascript
-// Babel converts to serializable object
-const myWorklet = {
-  __worklet: true,
-  __location: 'file.js:10',
-  // ... serialization details
-};
-```
-
-This allows worklets to be **copied and executed on the UI thread**.
-
----
-
-## 🚀 Running Worklets on UI Runtime
 
 ### Automatic Workletization
 
-Most Reanimated hooks automatically workletize their callbacks:
+Most Reanimated hooks auto-workletize their callbacks. The `'worklet'` directive is implicit:
 
-```javascript
-import { useAnimatedStyle } from 'react-native-reanimated';
+```typescript
+// useAnimatedStyle callback runs on UI thread automatically
+const animatedStyle = useAnimatedStyle(() => {
+  return { opacity: 0.5 }; // UI thread, no explicit 'worklet' needed
+});
 
-function App() {
-  const animatedStyle = useAnimatedStyle(() => {
-    // This entire callback runs on UI thread automatically
-    return { opacity: 0.5 };
+// Gesture Handler v2 callbacks are auto-workletized
+const pan = Gesture.Pan()
+  .onUpdate((e) => {
+    translateX.value = e.translationX; // UI thread automatically
   });
-}
 ```
 
-### Manual Execution: scheduleOnUI
+### Manual Worklets
 
-Use `scheduleOnUI` to explicitly run a worklet on the UI thread:
+Custom functions need the explicit directive:
 
-```javascript
-import { scheduleOnUI } from 'react-native-reanimated';
-
-function myWorklet() {
+```typescript
+function clampValue(value: number, min: number, max: number): number {
   'worklet';
-  console.log('Running on UI thread');
+  return Math.min(Math.max(value, min), max);
 }
 
-function onButtonPress() {
-  // Schedule the worklet to run on UI thread
-  scheduleOnUI(myWorklet);
-}
-```
-
-### Passing Arguments to scheduleOnUI
-
-```javascript
-import { scheduleOnUI } from 'react-native-reanimated';
-
-function greetUser(name, age) {
-  'worklet';
-  console.log(`Hello ${name}, age ${age}`);
-}
-
-function handlePress() {
-  // Pass arguments after the worklet function
-  scheduleOnUI(greetUser, 'John', 30);
-}
+// Can be called from other worklets
+const animatedStyle = useAnimatedStyle(() => {
+  return { opacity: clampValue(progress.value, 0, 1) };
+});
 ```
 
 ---
 
-## 🔄 Running JS Runtime Functions from Worklets
+## scheduleOnUI (was runOnUI in v3)
 
-Use `scheduleOnRN` to call **regular JavaScript functions** from a worklet:
+Execute a worklet on the UI thread from the JS thread.
 
-```javascript
+```typescript
+import { scheduleOnUI } from 'react-native-reanimated';
+
+function myWorklet(name: string) {
+  'worklet';
+  console.log('Running on UI thread:', name);
+}
+
+// v4 syntax: arguments passed directly
+function onButtonPress() {
+  scheduleOnUI(myWorklet, 'John');
+}
+
+// v3 syntax (removed): runOnUI(myWorklet)('John')
+```
+
+---
+
+## scheduleOnRN (was runOnJS in v3)
+
+Execute a regular JS function from a worklet (switch from UI thread to JS thread).
+
+```typescript
 import { scheduleOnRN } from 'react-native-reanimated';
 import { router } from 'expo-router';
 
 function handleNavigation() {
   'worklet';
-  // Can't call router.back() directly (not on JS thread)
-  // Use scheduleOnRN to switch threads
+  // Cannot call router.back() directly on UI thread
   scheduleOnRN(() => {
     router.back();
   });
 }
 ```
 
-### Example: Gesture Handler with Navigation
+### Gesture Handler with Navigation
 
-```javascript
+```typescript
 import { Gesture } from 'react-native-gesture-handler';
 import { scheduleOnRN } from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native';
 
-function useGestureWithNavigation() {
-  const navigation = useNavigation();
+function SwipeToDismiss({ onDismiss }: { onDismiss: () => void }) {
+  const translateX = useSharedValue(0);
 
-  const tap = Gesture.Tap().onEnd(() => {
-    'worklet'; // Gesture handlers are worklets by default
-    
-    // Can't call navigation directly
-    scheduleOnRN(() => {
-      navigation.goBack();
+  const pan = Gesture.Pan()
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      if (Math.abs(e.translationX) > 150) {
+        // Switch to JS thread for navigation/state update
+        scheduleOnRN(onDismiss);
+      } else {
+        translateX.value = withSpring(0);
+      }
     });
-  });
 
-  return tap;
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View style={animatedStyle} />
+    </GestureDetector>
+  );
 }
 ```
 
-### ⚠️ Important Constraint
+### Critical Constraint
 
-Functions passed to `scheduleOnRN` must be **defined in JS thread scope**:
+Functions passed to `scheduleOnRN` must be defined in JS thread scope:
 
-```javascript
-function App() {
-  const onPress = () => {
-    // ✅ Defined in component scope (JS thread)
-    console.log('Pressed');
+```typescript
+function Component() {
+  // GOOD: Function defined in component scope (JS thread)
+  const handleDismiss = () => {
+    router.back();
   };
 
-  const tap = Gesture.Tap().onEnd(() => {
+  const pan = Gesture.Pan().onEnd(() => {
     'worklet';
-    // ✅ CORRECT: onPress is defined in JS thread
-    scheduleOnRN(onPress);
+    scheduleOnRN(handleDismiss); // OK: JS-scope function
   });
 
-  return null;
-}
-
-function BadExample() {
-  const tap = Gesture.Tap().onEnd(() => {
+  // BAD: Function defined inside worklet
+  const badPan = Gesture.Pan().onEnd(() => {
     'worklet';
-
-    // ❌ WRONG: myFunction defined inside worklet
-    const myFunction = () => {
-      console.log('This is a problem');
-    };
-
-    scheduleOnRN(myFunction); // 💥 CRASH
+    const localFn = () => console.log('bad');
+    scheduleOnRN(localFn); // CRASH: not in JS scope
   });
 }
 ```
 
 ---
 
-## 📌 Hoisting Rules
+## Closure Capturing
 
-Functions marked with `'worklet'` are **not hoisted**:
+Worklets capture variables referenced in their body. Only referenced variables are copied to the UI thread.
 
-```javascript
-// ✅ CORRECT: Define before use
-function myWorklet() {
-  'worklet';
-  return 42;
-}
+### Selective Capture
 
-useAnimatedStyle(() => myWorklet()); // Works
-
-// ❌ WRONG: Use before declaration
-useAnimatedStyle(() => undefinedWorklet()); // ReferenceError
-function undefinedWorklet() {
-  'worklet';
-  return 42;
-}
-```
-
----
-
-## 🔐 Closure Capturing
-
-Worklets can access variables from outer scope (closures). Only referenced variables are captured:
-
-### Selective Capturing
-
-```javascript
-const width = 135.5;      // Referenced in worklet
-const height = 200;       // Not referenced
-const theme = { color: 'red' }; // Referenced
+```typescript
+const width = 135.5;        // Captured (referenced)
+const height = 200;         // NOT captured (not referenced)
+const color = 'red';        // Captured (referenced)
 
 function myWorklet() {
   'worklet';
-  console.log('Width is', width);      // ✅ Captured
-  console.log('Theme color:', theme.color); // ✅ Captured (but entire theme object)
+  console.log('Width:', width);
+  console.log('Color:', color);
   // height not accessed, not captured
 }
 ```
 
-### Performance Optimization: Extract Properties
+### Performance: Extract Properties
 
-```javascript
+```typescript
 const theme = {
   color: 'red',
   fontSize: 16,
@@ -291,115 +181,144 @@ const theme = {
   // ... 50 more properties
 };
 
-// ❌ WRONG: Captures entire large theme object
+// BAD: Captures entire theme object
 function badWorklet() {
   'worklet';
-  console.log(theme.color);
+  console.log(theme.color); // All of theme copied to UI thread
 }
 
-// ✅ CORRECT: Extract property first, capture only needed value
+// GOOD: Extract only needed value
 const themeColor = theme.color;
 function goodWorklet() {
   'worklet';
-  console.log(themeColor);
+  console.log(themeColor); // Only string 'red' captured
 }
 ```
 
 ---
 
-## 📊 Thread Comparison
+## useFrameCallback
 
-| Aspect | **JS Runtime** | **UI Runtime (Worklet)** |
-|---|---|---|
-| **Thread** | JavaScript thread | Native/UI thread |
-| **FPS** | Can drop below 60 | Consistent 60/120 fps |
-| **Blocking** | React updates block animations | Animations never blocked |
-| **Access to React** | ✅ Full access | ❌ No React access |
-| **State Updates** | ✅ setState/hooks | ❌ Can't update React state |
-| **Navigation** | ✅ Direct | ⚠️ Via scheduleOnRN |
-| **Access to DOM** | ✅ In Web | ⚠️ Limited in Web |
-| **Performance** | Slower for animation | Optimized for animation |
-| **Use Case** | Event handlers, state | Animation calculations |
+Execute code on every frame (60/120 fps).
+
+```typescript
+function useFrameCallback(
+  callback: (info: FrameInfo) => void,
+  autostart?: boolean
+): FrameCallback;
+
+interface FrameInfo {
+  timestamp: number;               // ms since start
+  timeSincePreviousFrame: number;  // ms since last frame
+}
+
+interface FrameCallback {
+  setActive: (active: boolean) => void;
+}
+```
+
+```typescript
+import { useFrameCallback, useSharedValue } from 'react-native-reanimated';
+
+const position = useSharedValue(0);
+const velocity = useSharedValue(100); // pixels per second
+
+useFrameCallback(({ timeSincePreviousFrame }) => {
+  'worklet';
+  position.value += velocity.value * (timeSincePreviousFrame / 1000);
+}, true); // autostart = true
+```
 
 ---
 
-## 🌐 Web Support
+## Thread Comparison
 
-On web (react-native-web), there's **no separate UI thread**. Worklets resolve to regular JavaScript functions:
+| Aspect | JS Runtime | UI Runtime (Worklet) |
+|---|---|---|
+| Thread | JavaScript thread | Native/UI thread |
+| FPS impact | Can block renders | Never blocks React |
+| React access | Full (state, context, hooks) | None |
+| setState | Yes | No (use scheduleOnRN) |
+| Navigation | Direct | Via scheduleOnRN |
+| Available APIs | All JS APIs | Limited (no setTimeout, fetch, etc.) |
+| Use case | Event handlers, state management | Animation calculations |
 
-```javascript
+---
+
+## Hoisting Rules
+
+Worklet functions are NOT hoisted:
+
+```typescript
+// GOOD: Define before use
 function myWorklet() {
   'worklet';
-  // On web: Executes as regular JS function
-  // On native: Executes on UI thread
+  return 42;
+}
+useAnimatedStyle(() => myWorklet()); // Works
+
+// BAD: Use before definition
+useAnimatedStyle(() => laterWorklet()); // ReferenceError
+function laterWorklet() {
+  'worklet';
   return 42;
 }
 ```
 
-**Important:** The `'worklet'` directive is still required on web because Reanimated uses the **Worklets Babel plugin to capture dependencies**.
-
 ---
 
-## 🔧 Other Worklet Runtimes
+## Custom Worklet Runtimes
 
-Worklets aren't limited to Reanimated's UI Runtime. Other libraries create their own:
+For advanced use cases (e.g., camera frame processing):
 
-```javascript
-// Vision Camera worklets
-import { useFrameProcessor } from 'react-native-vision-camera';
-
-useFrameProcessor((frame) => {
-  'worklet';
-  // Runs in Vision Camera's worklet runtime
-}, []);
-```
-
-### Creating Custom Worklet Runtimes
-
-For advanced use cases:
-
-```javascript
+```typescript
 import { createWorkletRuntime } from 'react-native-worklets';
 
 const customRuntime = createWorkletRuntime('CustomRuntime');
 
-function myCustomWorklet() {
+function processFrame() {
   'worklet';
-  // Runs in custom runtime
+  // Runs in custom runtime, not UI runtime
 }
 ```
 
 ---
 
-## 📋 Worklet Anti-Patterns
+## Web Support
+
+On web, there is no separate UI thread. Worklets execute as regular JavaScript functions. The `'worklet'` directive is still required for dependency tracking by the Worklets plugin.
+
+```typescript
+function myWorklet() {
+  'worklet';
+  // Native: executes on UI thread
+  // Web: executes as regular JS function
+  return 42;
+}
+```
+
+---
+
+## Worklet Anti-Patterns
 
 | Anti-Pattern | Problem | Solution |
 |---|---|---|
-| **Accessing React context** | Context not available on UI thread | Use shared values instead |
-| **Calling setState** | Can't update React state | Use shared values or scheduleOnRN |
-| **Using setTimeout** | Not available on UI Runtime | Use withTiming or frame callbacks |
-| **Large object capture** | Memory overhead | Extract properties before capture |
-| **Mutating shared value inside useAnimatedStyle** | Infinite loop risk | Mutate only in event handlers |
-| **Hoisting before definition** | Hoisting not supported | Define worklets before use |
+| Accessing React context | Not available on UI thread | Use shared values |
+| Calling setState | Cannot update React state | Use scheduleOnRN |
+| Using setTimeout | Not available on UI Runtime | Use withTiming or useFrameCallback |
+| Large object capture | Memory overhead | Extract properties first |
+| Mutating shared value in useAnimatedStyle | Infinite loop risk | Mutate only in event handlers |
+| Using before definition | Worklets not hoisted | Define before use |
+| Defining scheduleOnRN callback inside worklet | Function not in JS scope | Define in component scope |
 
 ---
 
-## 🔗 Cross-References
+## Cross-References
 
-- **useAnimatedStyle:** See [03-core-animated-style.md](./03-core-animated-style.md) for automatic workletization
-- **Gesture Handlers:** See [07-gestures-events.md](./07-gestures-events.md) for worklet event handlers
-- **Shared Values:** See [02-core-shared-values.md](./02-core-shared-values.md) for thread-safe data passing
-- **Best Practices:** See [09-best-practices.md](./09-best-practices.md) for performance tips
-
----
-
-## 📚 Official Documentation
-
-- **Worklets Guide:** https://docs.swmansion.com/react-native-reanimated/docs/guides/worklets/
-- **Worklets Babel Plugin:** https://docs.swmansion.com/react-native-reanimated/docs/guides/worklets-babel-plugin/
-- **Web Support:** https://docs.swmansion.com/react-native-reanimated/docs/guides/web-support/
+- **useAnimatedStyle:** [03-core-animated-style.md](03-core-animated-style.md)
+- **Gesture handlers:** [07-gestures-events.md](07-gestures-events.md)
+- **Shared values:** [02-core-shared-values.md](02-core-shared-values.md)
+- **Best practices:** [09-best-practices.md](09-best-practices.md)
 
 ---
-
-**Last Updated:** December 2024  
-**Verified For:** Reanimated 4.2.1
+**Source:** https://docs.swmansion.com/react-native-reanimated/docs/guides/worklets/ | https://docs.swmansion.com/react-native-reanimated/docs/core/useFrameCallback/

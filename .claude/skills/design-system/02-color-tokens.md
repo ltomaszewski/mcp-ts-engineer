@@ -3,7 +3,7 @@
 > **Purpose**: Define color primitives and semantic tokens that enable consistent, accessible color usage across light and dark modes.
 
 **Version**: 1.0.0
-**Last Updated**: December 2025
+**Last Updated**: February 2026
 **Prerequisite**: [01-architecture.md](01-architecture.md)
 
 ---
@@ -287,6 +287,4 @@ For every token, verify contrast ratios.
 
 ---
 
-**Module**: 02-color-tokens
-**Last Updated**: December 2025
-**Status**: Complete
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

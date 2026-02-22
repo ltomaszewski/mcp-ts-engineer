@@ -1,121 +1,173 @@
-# Android Notification Channels
+# Android Notification Channels -- Expo Notifications SDK 54
 
-**Module Purpose**: Complete guide to Android 8.0+ notification channels including creation, configuration, and management.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Android 8.0+ notification channel creation, configuration, groups, and management.
 
 ---
 
-## Understanding Notification Channels
+## Overview
 
-### What are Notification Channels?
+Notification channels are required on Android 8.0 (API 26) and higher. They let apps organize notifications and give users granular control over notification settings.
 
-Notification channels are a requirement on Android 8.0 (API level 26) and higher. They allow apps to organize notifications and let users control notification settings with granular control.
-
-**Key Points**:
-- Each channel has independent settings
-- Users can mute/customize individual channels
-- Channels cannot be modified after creation
+**Key Facts:**
+- Each channel has independent settings (sound, vibration, importance)
+- Users can mute/customize individual channels in system settings
+- Channels cannot be modified after creation (only name and description can change)
 - Each notification belongs to exactly one channel
 
 ---
 
-## Creating Notification Channels
+## Channel Methods
 
-### `setNotificationChannelAsync(channelId, channel)`
+### setNotificationChannelAsync(channelId, channel)
 
-**Purpose**: Create or update a notification channel (Android 8.0+).
+Create or update a notification channel.
 
-**Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `channelId` | `string` | Yes | Unique channel ID |
+| `channel.name` | `string` | Yes | Display name (shown to users) |
+| `channel.importance` | `AndroidImportance` | Yes | Priority level |
+| `channel.description` | `string` | No | Channel description |
+| `channel.sound` | `string \| null` | No | Sound file name or null for silent |
+| `channel.vibrationPattern` | `number[]` | No | Vibration pattern in ms |
+| `channel.lightColor` | `string` | No | LED light color (hex) |
+| `channel.bypassDnd` | `boolean` | No | Bypass Do Not Disturb |
+| `channel.enableLights` | `boolean` | No | Show notification light |
+| `channel.enableVibrate` | `boolean` | No | Vibrate on notification |
+| `channel.showBadge` | `boolean` | No | Show badge on app icon |
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `channelId` | `string` | Unique channel identifier |
-| `channel` | `NotificationChannelInput` | Channel configuration |
-
-**NotificationChannelInput Properties**:
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | `string` | Yes | Display name (shown to users) |
-| `importance` | `AndroidImportance` | No | Priority level (default: DEFAULT) |
-| `sound` | `string \| null` | No | Sound file name |
-| `vibrationPattern` | `number[]` | No | Vibration pattern in milliseconds |
-| `lightColor` | `string` | No | Notification light color (hex) |
-| `bypassDnd` | `boolean` | No | Bypass Do Not Disturb |
-| `enableLights` | `boolean` | No | Show notification light |
-| `enableVibration` | `boolean` | No | Vibrate on notification |
-
-**Code Example - Basic Channel**:
+**Returns:** `Promise<NotificationChannel | null>`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-async function createBasicChannel() {
+async function createDefaultChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
-  
-  try {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default Notifications',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-    
-    console.log('Default channel created');
-  } catch (error) {
-    console.error('Error creating channel:', error);
-  }
+
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Default Notifications',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#FF231F7C',
+  });
 }
 ```
 
 ---
 
-## Importance Levels
+### getNotificationChannelAsync(channelId)
 
-The `AndroidImportance` enum determines how prominent notifications are:
+Get a specific channel by ID.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `channelId` | `string` | Channel ID to retrieve |
+
+**Returns:** `Promise<NotificationChannel | null>`
+
+```typescript
+const channel = await Notifications.getNotificationChannelAsync('alerts');
+if (channel) {
+  console.log('Name:', channel.name);
+  console.log('Importance:', channel.importance);
+}
+```
+
+---
+
+### getNotificationChannelsAsync()
+
+Get all notification channels.
+
+**Returns:** `Promise<NotificationChannel[]>`
+
+```typescript
+const channels = await Notifications.getNotificationChannelsAsync();
+channels.forEach((ch) => {
+  console.log(ch.id, ch.name, ch.importance);
+});
+```
+
+---
+
+### deleteNotificationChannelAsync(channelId)
+
+Delete a notification channel.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `channelId` | `string` | Channel ID to delete |
+
+**Returns:** `Promise<void>`
+
+```typescript
+await Notifications.deleteNotificationChannelAsync('old-channel');
+```
+
+---
+
+## AndroidImportance Enum
 
 | Level | Value | Behavior |
 |-------|-------|----------|
-| `MIN` | 1 | No sound/vibration, doesn't appear in status bar |
-| `LOW` | 2 | No sound/vibration, appears in status bar |
-| `DEFAULT` | 3 | Shows sound/vibration (default) |
-| `HIGH` | 4 | Shows heads-up notification |
-| `MAX` | 5 | Urgent, full-screen notification |
+| `UNKNOWN` | 0 | Unknown importance |
+| `UNSPECIFIED` | 1 | Not specified |
+| `NONE` | 2 | No notifications shown |
+| `MIN` | 3 | No sound, no status bar icon |
+| `LOW` | 4 | No sound, appears in status bar |
+| `DEFAULT` | 5 | Sound and vibration |
+| `HIGH` | 6 | Heads-up notification (pops up) |
+| `MAX` | 7 | Urgent, full-screen intent possible |
 
-**Code Example - Different Importance Levels**:
+```typescript
+// Most common levels
+Notifications.AndroidImportance.DEFAULT  // Standard notifications
+Notifications.AndroidImportance.HIGH     // Heads-up/popup
+Notifications.AndroidImportance.LOW      // Silent, in shade only
+Notifications.AndroidImportance.MIN      // Background, minimal
+```
+
+---
+
+## Channel Setup Examples
+
+### Multiple Channels by Priority
 
 ```typescript
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
-async function createChannelsWithDifferentImportance() {
+async function setupAllChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
-  
-  // Alerts - High priority
+
+  // Urgent alerts
   await Notifications.setNotificationChannelAsync('alerts', {
-    name: 'Alerts & Warnings',
-    importance: Notifications.AndroidImportance.HIGH,
+    name: 'Urgent Alerts',
+    importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
-    enableVibration: true,
+    enableVibrate: true,
     vibrationPattern: [0, 250, 250, 250, 250, 250],
+    bypassDnd: true,
   });
-  
-  // Messages - High priority
+
+  // Messages
   await Notifications.setNotificationChannelAsync('messages', {
     name: 'Messages',
     importance: Notifications.AndroidImportance.HIGH,
     sound: 'default',
-    enableVibration: true,
+    lightColor: '#0084FF',
+    enableLights: true,
   });
-  
-  // Updates - Low priority
-  await Notifications.setNotificationChannelAsync('updates', {
-    name: 'App Updates',
-    importance: Notifications.AndroidImportance.LOW,
+
+  // Reminders
+  await Notifications.setNotificationChannelAsync('reminders', {
+    name: 'Reminders',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    sound: 'default',
   });
-  
-  // Background Tasks - Minimal
+
+  // Background services
   await Notifications.setNotificationChannelAsync('background', {
     name: 'Background Services',
     importance: Notifications.AndroidImportance.MIN,
@@ -125,25 +177,9 @@ async function createChannelsWithDifferentImportance() {
 
 ---
 
-## Advanced Channel Configuration
+### Custom Sound Channel
 
-### Custom Sounds
-
-```typescript
-async function createChannelWithCustomSound() {
-  if (Platform.OS !== 'android') return;
-  
-  await Notifications.setNotificationChannelAsync('notification', {
-    name: 'Custom Sound Notifications',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: 'notification_sound',  // .wav file in assets without extension
-    enableVibration: true,
-    vibrationPattern: [0, 250, 250, 250],
-  });
-}
-```
-
-**Note**: Add sound to `app.json`:
+Sound files must be declared in `app.json` plugin config:
 
 ```json
 {
@@ -152,7 +188,7 @@ async function createChannelWithCustomSound() {
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/notification_sound.wav"]
+          "sounds": ["./assets/notification-sound.wav"]
         }
       ]
     ]
@@ -160,13 +196,19 @@ async function createChannelWithCustomSound() {
 }
 ```
 
+```typescript
+await Notifications.setNotificationChannelAsync('custom-sound', {
+  name: 'Custom Sound',
+  importance: Notifications.AndroidImportance.HIGH,
+  sound: 'notification-sound', // filename without extension
+});
+```
+
 ---
 
 ### Vibration Patterns
 
-Vibration patterns are arrays of milliseconds: `[delay, vibrate, pause, vibrate, ...]`
-
-**Common Patterns**:
+Pattern format: `[delay, vibrate, pause, vibrate, ...]` in milliseconds.
 
 ```typescript
 // Single short vibration
@@ -180,236 +222,91 @@ vibrationPattern: [0, 250, 250, 250, 250, 250]
 
 // Long buzz
 vibrationPattern: [0, 500]
-
-// SOS pattern
-vibrationPattern: [0, 100, 100, 100, 100, 100, 500, 500, 100]
-```
-
-**Code Example**:
-
-```typescript
-async function createChannelWithVibration() {
-  await Notifications.setNotificationChannelAsync('vibration', {
-    name: 'Vibrating Alerts',
-    importance: Notifications.AndroidImportance.HIGH,
-    enableVibration: true,
-    vibrationPattern: [0, 250, 250, 250, 250, 250],
-  });
-}
 ```
 
 ---
 
-### Light Color
+## Channel Groups
+
+### setNotificationChannelGroupAsync(groupId, group)
+
+Create a channel group for organizing related channels.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `groupId` | `string` | Yes | Unique group ID |
+| `group.name` | `string` | Yes | Display name |
+| `group.description` | `string` | No | Group description |
+
+**Returns:** `Promise<NotificationChannelGroup | null>`
 
 ```typescript
-async function createChannelWithLighting() {
-  await Notifications.setNotificationChannelAsync('lights', {
-    name: 'LED Notifications',
-    importance: Notifications.AndroidImportance.HIGH,
-    enableLights: true,
-    lightColor: '#FF0000',  // Red
-    enableVibration: true,
-  });
-}
+await Notifications.setNotificationChannelGroupAsync('communication', {
+  name: 'Communication',
+  description: 'Messages and calls',
+});
 ```
 
 ---
 
-## Notification Channel Groups
+### getNotificationChannelGroupAsync(groupId)
 
-Group related channels for easier organization (Android 11+).
+Get a specific channel group.
 
-### `setNotificationChannelGroupAsync(groupId, group)`
-
-**Code Example**:
-
-```typescript
-import * as Notifications from 'expo-notifications';
-
-async function setupChannelGroups() {
-  if (Platform.OS !== 'android') return;
-  
-  // Create group
-  await Notifications.setNotificationChannelGroupAsync('communication', {
-    name: 'Communication',
-  });
-  
-  // Add channels to group (set groupId in channel)
-  await Notifications.setNotificationChannelAsync('messages', {
-    name: 'Messages',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
-  });
-}
-```
+**Returns:** `Promise<NotificationChannelGroup | null>`
 
 ---
 
-## Retrieving Channel Information
+### getNotificationChannelGroupsAsync()
 
-### `getNotificationChannelsAsync()`
+Get all channel groups.
 
-**Purpose**: Fetch all notification channels created by the app.
-
-**Code Example**:
-
-```typescript
-import * as Notifications from 'expo-notifications';
-
-async function listAllChannels() {
-  if (Platform.OS !== 'android') return;
-  
-  try {
-    const channels = await Notifications.getNotificationChannelsAsync();
-    
-    console.log(`Total channels: ${channels?.length || 0}`);
-    
-    channels?.forEach((channel, index) => {
-      console.log(`\n[${index + 1}] ${channel.name}`);
-      console.log(`  ID: ${channel.id}`);
-      console.log(`  Importance: ${channel.importance}`);
-    });
-    
-  } catch (error) {
-    console.error('Error fetching channels:', error);
-  }
-}
-```
+**Returns:** `Promise<NotificationChannelGroup[]>`
 
 ---
 
-## Do Not Disturb (DND) Bypass
+### deleteNotificationChannelGroupAsync(groupId)
+
+Delete a channel group and all its channels.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `groupId` | `string` | Group ID to delete |
+
+**Returns:** `Promise<void>`
 
 ```typescript
-async function createUrgentChannel() {
-  await Notifications.setNotificationChannelAsync('emergency', {
-    name: 'Emergency Alerts',
-    importance: Notifications.AndroidImportance.MAX,
-    bypassDnd: true,  // Bypasses Do Not Disturb
-    enableVibration: true,
-    vibrationPattern: [0, 250, 250, 250],
-  });
-}
-```
-
----
-
-## Complete Channel Setup
-
-```typescript
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
-
-export async function setupAndroidChannels() {
-  if (Platform.OS !== 'android') return;
-  
-  // Default channel
-  await Notifications.setNotificationChannelAsync('default', {
-    name: 'Default Notifications',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#FF231F7C',
-  });
-  
-  // Urgent alerts
-  await Notifications.setNotificationChannelAsync('alerts', {
-    name: 'Urgent Alerts',
-    importance: Notifications.AndroidImportance.MAX,
-    sound: 'default',
-    enableVibration: true,
-    vibrationPattern: [0, 250, 250, 250, 250, 250],
-    bypassDnd: true,
-  });
-  
-  // Messages
-  await Notifications.setNotificationChannelAsync('messages', {
-    name: 'Messages & Chat',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
-    lightColor: '#0084FF',
-  });
-  
-  // Reminders
-  await Notifications.setNotificationChannelAsync('reminders', {
-    name: 'Reminders',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    sound: 'default',
-  });
-  
-  // Background
-  await Notifications.setNotificationChannelAsync('background', {
-    name: 'Background Services',
-    importance: Notifications.AndroidImportance.MIN,
-  });
-}
-
-// Call during app initialization
-export function initializeNotificationsAndroid() {
-  setupAndroidChannels();
-}
+await Notifications.deleteNotificationChannelGroupAsync('old-group');
 ```
 
 ---
 
 ## Using Channels in Notifications
 
-### Specifying Channel for Notification
-
-When scheduling a notification, specify which channel it belongs to via `data`:
-
-```typescript
-async function sendNotificationToChannel(
-  channelId: string,
-  content: any
-) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      ...content,
-      data: { channelId },
-    },
-    trigger: null,
-  });
-}
-```
-
-Or set default channel in `app.json`:
+Set the default channel in `app.json`:
 
 ```json
 {
   "expo": {
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "defaultChannel": "default"
-        }
-      ]
+      ["expo-notifications", { "defaultChannel": "default" }]
     ]
   }
 }
 ```
 
----
-
-## Common Issues & Solutions
-
-### Issue: "Cannot modify channel after creation"
-
-**Cause**: Android doesn't allow modifying existing channels.
-
-**Solution**: Delete and recreate
-
-```typescript
-async function updateChannel(channelId: string, config: any) {
-  if (Platform.OS !== 'android') return;
-  
-  // Channels are immutable - users must manually change in settings
-  // Or delete app and reinstall
-  console.warn('To update channel, user must change settings manually');
-}
-```
+For push notifications from server, set `channelId` in the push payload. For local notifications, the channel is determined by the `defaultChannel` config or server-side specification.
 
 ---
 
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+## Important Notes
+
+- Channels are immutable after creation (except name and description)
+- Users can override channel settings in system Settings
+- Deleting and recreating a channel does NOT reset user preferences
+- Create all channels at app startup before scheduling notifications
+- On Android 13+, creating the first channel triggers the permission prompt
+
+---
+
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

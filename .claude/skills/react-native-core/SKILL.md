@@ -1,130 +1,44 @@
 ---
 name: react-native-core
-description: React Native fundamentals - core components, native modules, navigation, best practices. Use when working with RN basics, platform-specific code, or performance optimization.
+description: React Native 0.81.5 fundamentals - core components, native modules, navigation, Fabric, TurboModules, best practices. Use when working with RN basics, platform-specific code, or performance optimization.
 ---
 
 # React Native Core
 
-> Cross-platform mobile development with native performance using core components, Hermes, and platform-specific optimizations.
+Cross-platform mobile development with native performance using React Native 0.81.5, Fabric renderer, TurboModules, and Hermes engine.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
-- Working with core RN components (View, Text, FlatList, Pressable, TextInput, Image)
-- Implementing platform-specific code (iOS/Android differences)
-- Optimizing list performance or component rendering
-- Creating native modules or TurboModules
-- Debugging React Native apps or using Flipper
-
----
-
-## Project-Specific Architecture (PRIORITY)
-
-**For this monorepo, these standards OVERRIDE generic RN patterns:**
-
-| Category | Technology | Rule |
-|----------|------------|------|
-| Styling | NativeWind | Use `className`, NOT `StyleSheet.create` |
-| State | Zustand | Client state in `src/stores/` |
-| Server State | TanStack Query | `useQuery`/`useMutation` in feature hooks |
-| Storage | MMKV | NOT AsyncStorage |
-| Navigation | Expo Router | File-based in `app/` |
-| Screen Pattern | One Hook Per Screen | ALL logic in `use*Screen` hook (MANDATORY) |
+LOAD THIS SKILL when user is:
+- Building or modifying UI with core RN components (View, Text, FlatList, Pressable, TextInput, Image)
+- Implementing platform-specific code (iOS/Android differences, `.ios.ts`/`.android.ts` files)
+- Optimizing list rendering, component performance, or app startup time
+- Creating Turbo Native Modules or working with Fabric components
+- Debugging React Native apps using DevTools or profiling tools
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Use `FlatList` for lists > 50 items — ScrollView renders all children immediately
-2. Provide `keyExtractor` returning stable unique IDs — never use array index
-3. Memoize `renderItem` with `React.memo` — prevents unnecessary re-renders
-4. Set FlatList performance props (`initialNumToRender`, `maxToRenderPerBatch`, `windowSize`)
-5. Specify `width` and `height` for `Image` components — required for remote images
-6. Use `Pressable` over TouchableOpacity — modern API with better state handling
+1. Use `FlatList` for lists > 50 items -- `ScrollView` renders all children immediately, causing memory issues
+2. Provide `keyExtractor` returning stable unique IDs -- never use array index as key
+3. Memoize `renderItem` callbacks with `useCallback` and item components with `React.memo` -- prevents re-renders on every frame
+4. Specify `width` and `height` for `Image` components -- required for remote images to render
+5. Use `Pressable` over `TouchableOpacity` -- modern API with `pressed`/`hovered` state callbacks
+6. Target New Architecture (Fabric + TurboModules) -- legacy architecture is frozen since RN 0.80
 
 **NEVER:**
-1. Put business logic in screen components — use `use*Screen` hook pattern
-2. Use `StyleSheet.create` in this project — use NativeWind `className`
-3. Create inline functions in `renderItem` — causes re-renders every frame
-4. Skip `removeClippedSubviews={true}` on Android FlatLists — memory leak
-5. Use `accessible={true}` on containers with testID children — breaks Maestro E2E testing
+1. Create inline functions in `renderItem` -- causes item re-creation every render cycle
+2. Skip `removeClippedSubviews={true}` on Android FlatLists -- leads to memory leaks with large lists
+3. Block the JS thread with synchronous heavy computation -- use `InteractionManager.runAfterInteractions` or offload to native
+4. Use deprecated `SafeAreaView` from react-native -- use `react-native-safe-area-context` instead (deprecated in 0.81)
 
 ---
 
 ## Core Patterns
-
-### One Hook Per Screen (MANDATORY)
-
-```typescript
-// src/features/auth/screens/LoginScreen.tsx
-import { View, Text, Pressable } from 'react-native';
-import { Input } from '@/shared/components/ui';
-import { useLoginScreen } from '../hooks/useLoginScreen';
-
-export function LoginScreen(): React.ReactElement {
-  const {
-    email, setEmail,
-    password, setPassword,
-    handleLogin,
-    isLoading,
-    error,
-  } = useLoginScreen();
-
-  return (
-    <View className="flex-1 p-4">
-      <Input value={email} onChangeText={setEmail} placeholder="Email" />
-      <Input value={password} onChangeText={setPassword} secureTextEntry />
-      {error && <Text className="text-red-500">{error}</Text>}
-      <Pressable onPress={handleLogin} disabled={isLoading} className="bg-primary-500 p-4 rounded-lg">
-        <Text className="text-white text-center">{isLoading ? 'Loading...' : 'Login'}</Text>
-      </Pressable>
-    </View>
-  );
-}
-```
-
-### NativeWind Component
-
-```typescript
-import { Pressable, Text } from 'react-native';
-import { cn } from '@/shared/utils/cn';
-
-interface ButtonProps {
-  title: string;
-  variant?: 'primary' | 'secondary';
-  onPress: () => void;
-  disabled?: boolean;
-  className?: string;
-}
-
-export function Button({
-  title, variant = 'primary', onPress, disabled, className,
-}: ButtonProps): React.ReactElement {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      className={cn(
-        'items-center justify-center rounded-lg px-4 py-3',
-        variant === 'primary' && 'bg-primary-500 active:bg-primary-600',
-        variant === 'secondary' && 'bg-gray-200 active:bg-gray-300',
-        disabled && 'opacity-50',
-        className
-      )}
-    >
-      <Text className={cn(
-        'font-semibold',
-        variant === 'primary' ? 'text-white' : 'text-gray-900'
-      )}>
-        {title}
-      </Text>
-    </Pressable>
-  );
-}
-```
 
 ### Optimized FlatList
 
@@ -135,17 +49,16 @@ import { memo, useCallback } from 'react';
 interface Item { id: string; title: string }
 
 const ListItem = memo(({ item }: { item: Item }) => (
-  <View className="p-4 border-b border-gray-200">
-    <Text className="text-lg">{item.title}</Text>
+  <View style={{ padding: 16, borderBottomWidth: 1, borderColor: '#eee' }}>
+    <Text style={{ fontSize: 16 }}>{item.title}</Text>
   </View>
 ));
 
-export function ItemList({ data }: { data: Item[] }) {
+export function ItemList({ data }: { data: Item[] }): React.ReactElement {
   const renderItem = useCallback(
     ({ item }: { item: Item }) => <ListItem item={item} />,
-    []
+    [],
   );
-
   return (
     <FlatList
       data={data}
@@ -155,115 +68,133 @@ export function ItemList({ data }: { data: Item[] }) {
       maxToRenderPerBatch={10}
       windowSize={5}
       removeClippedSubviews={true}
-      scrollEventThrottle={16}
     />
   );
 }
 ```
 
-### E2E-Safe Pressable Container
+### Platform-Specific Code
 
 ```typescript
-// When wrapping inputs with Pressable for keyboard dismiss
-<Pressable onPress={Keyboard.dismiss} accessible={false}>
-  <TextInput testID="email_input" accessible={true} />
-  <TextInput testID="password_input" accessible={true} />
-</Pressable>
+import { Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  shadow: Platform.select({
+    ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+    android: { elevation: 4 },
+    default: {},
+  }),
+});
+
+// File-based: MyComponent.ios.tsx / MyComponent.android.tsx
+```
+
+### Turbo Native Module Spec
+
+```typescript
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  getDeviceName(): Promise<string>;
+  multiply(a: number, b: number): number;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('MyModule');
+```
+
+### Pressable with State Feedback
+
+```typescript
+import { Pressable, Text } from 'react-native';
+
+export function Button({ title, onPress }: { title: string; onPress: () => void }): React.ReactElement {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: pressed ? '#005bb5' : '#007AFF',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+      })}
+    >
+      <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>{title}</Text>
+    </Pressable>
+  );
+}
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** — Business logic in screen:
-```typescript
-export function LoginScreen() {
-  const [email, setEmail] = useState(''); // NO - put in hook
-  const handleLogin = async () => { }; // NO - put in hook
-  return <View>...</View>;
-}
-```
-
-**GOOD** — One Hook Per Screen:
-```typescript
-export function LoginScreen() {
-  const { email, setEmail, handleLogin } = useLoginScreen();
-  return <View>...</View>; // Pure JSX only
-}
-```
-
-**BAD** — StyleSheet.create (project uses NativeWind):
-```typescript
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-});
-<View style={styles.container} />
-```
-
-**GOOD** — NativeWind className:
-```typescript
-<View className="flex-1 p-4" />
-```
-
-**BAD** — Inline renderItem function:
+**BAD** -- Inline renderItem function (re-created every render):
 ```typescript
 <FlatList
-  renderItem={({ item }) => <ListItem item={item} />} // Re-created every render
+  data={data}
+  renderItem={({ item }) => <ListItem item={item} />}
 />
 ```
 
-**GOOD** — Memoized renderItem:
+**GOOD** -- Memoized renderItem:
 ```typescript
 const renderItem = useCallback(({ item }) => <ListItem item={item} />, []);
-<FlatList renderItem={renderItem} />
+<FlatList data={data} renderItem={renderItem} />
+```
+
+**BAD** -- Deprecated SafeAreaView from react-native:
+```typescript
+import { SafeAreaView } from 'react-native';
+```
+
+**GOOD** -- Community safe area context:
+```typescript
+import { SafeAreaView } from 'react-native-safe-area-context';
 ```
 
 ---
 
 ## Quick Reference
 
-| Task | Component | Key Props |
-|------|-----------|-----------|
-| Container | `View` | `className`, `onLayout` |
-| Text display | `Text` | `numberOfLines`, `ellipsizeMode` |
-| Touch handler | `Pressable` | `onPress`, `disabled`, `android_ripple` |
-| Text input | `TextInput` | `value`, `onChangeText`, `keyboardType`, `secureTextEntry` |
-| Image | `Image` | `source`, `resizeMode` (MUST set width/height) |
-| Small list | `ScrollView` | `showsVerticalScrollIndicator`, `keyboardShouldPersistTaps` |
-| Large list | `FlatList` | `data`, `renderItem`, `keyExtractor`, performance props |
-| Sectioned list | `SectionList` | `sections`, `renderSectionHeader` |
-
-### FlatList Performance Props
-
-| Prop | Default | Recommended | Purpose |
-|------|---------|-------------|---------|
-| `initialNumToRender` | 10 | 10 | First render items |
-| `maxToRenderPerBatch` | 10 | 10 | Items per batch |
-| `windowSize` | 21 | 5 | Viewport multiplier |
-| `removeClippedSubviews` | false | true (Android) | Remove off-screen |
-| `scrollEventThrottle` | 50 | 16 | 60fps scroll events |
+| Task | API | Key Detail |
+|------|-----|------------|
+| Container layout | `View` | Flexbox, `column` default direction |
+| Display text | `Text` | Must wrap all strings |
+| Touch handler | `Pressable` | `style` accepts `({ pressed }) => style` |
+| Text input | `TextInput` | `onChangeText` (not `onChange`) |
+| Remote image | `Image` | Must set explicit `width`/`height` |
+| Large list | `FlatList` | Virtualized, set performance props |
+| Sectioned list | `SectionList` | `sections` array with `renderSectionHeader` |
+| Scrollable content | `ScrollView` | Only for small/bounded content |
+| Loading spinner | `ActivityIndicator` | `size="large"` or `"small"` |
+| Toggle switch | `Switch` | `value` + `onValueChange` |
+| Keyboard avoidance | `KeyboardAvoidingView` | `behavior="padding"` (iOS) |
+| Status bar control | `StatusBar` | `barStyle`, `backgroundColor` (Android) |
+| Platform detection | `Platform.OS` | Returns `'ios'` or `'android'` |
+| Screen dimensions | `useWindowDimensions()` | Preferred over `Dimensions.get()` |
+| Deferred work | `InteractionManager` | `runAfterInteractions()` |
 
 ---
 
 ## Deep Dive References
 
-Load additional context when needed:
-
 | When you need | Load |
 |---------------|------|
-| Framework architecture overview | [01-framework-overview.md](01-framework-overview.md) |
-| Project setup and CLI | [02-quickstart-setup.md](02-quickstart-setup.md) |
-| Core component APIs | [03-core-components.md](03-core-components.md) |
-| Native modules and TurboModules | [04-native-modules.md](04-native-modules.md) |
-| Data persistence (MMKV, SQLite) | [05-data-persistence.md](05-data-persistence.md) |
-| Navigation patterns | [06-navigation.md](06-navigation.md) |
-| Best practices and patterns | [07-best-practices.md](07-best-practices.md) |
-| Hermes engine optimization | [08-hermes-optimization.md](08-hermes-optimization.md) |
-| Testing and debugging | [09-testing-devtools.md](09-testing-devtools.md) |
-| Version upgrade guide | [10-upgrade-guide.md](10-upgrade-guide.md) |
-| **Project architecture (PRIORITY)** | [11-project-architecture.md](11-project-architecture.md) |
-| iOS text clipping issues | [12-ios-text-clipping.md](12-ios-text-clipping.md) |
+| Architecture overview, New Architecture, Fabric, JSI | [01-framework-overview.md](01-framework-overview.md) |
+| Environment setup, project creation, CLI | [02-quickstart-setup.md](02-quickstart-setup.md) |
+| Core component APIs with full prop tables | [03-core-components.md](03-core-components.md) |
+| Turbo Native Modules (Android/iOS/C++) | [04-native-modules.md](04-native-modules.md) |
+| Data persistence (AsyncStorage, SecureStore, SQLite) | [05-data-persistence.md](05-data-persistence.md) |
+| React Navigation (Stack, Tab, Deep Linking) | [06-navigation.md](06-navigation.md) |
+| Performance, security, accessibility patterns | [07-best-practices.md](07-best-practices.md) |
+| Hermes engine, bundle optimization, ProGuard | [08-hermes-optimization.md](08-hermes-optimization.md) |
+| Testing (Jest, RNTL, Detox), DevTools, debugging | [09-testing-devtools.md](09-testing-devtools.md) |
+| Version upgrade guide (0.80 to 0.81) | [10-upgrade-guide.md](10-upgrade-guide.md) |
+| Project architecture patterns for monorepo apps | [11-project-architecture.md](11-project-architecture.md) |
+| iOS TextInput text clipping fix | [12-ios-text-clipping.md](12-ios-text-clipping.md) |
 
 ---
 
-**Version:** React Native 0.83 | **Source:** https://reactnative.dev/docs
+**Version:** React Native 0.81.5 | React 19.1.0 | Hermes (default) | New Architecture (default)
+**Source:** https://reactnative.dev/docs/components-and-apis

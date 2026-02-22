@@ -1,14 +1,14 @@
 # API Reference: useForm Hook
 
-> Complete reference for the useForm hook, its configuration options, and return values.
+> Complete reference for the useForm hook -- all configuration options, return values, and formState properties.
 
-**Source:** [https://react-hook-form.com/api/useform](https://react-hook-form.com/api/useform)
+**Source:** [https://react-hook-form.com/docs/useform](https://react-hook-form.com/docs/useform)
 
 ---
 
 ## Overview
 
-The `useForm` hook is the foundation of React Hook Form. It returns methods and properties to manage form state, validation, and submission.
+The `useForm` hook is the foundation of React Hook Form. It manages form state, validation, and submission with minimal re-renders via a Proxy-based subscription model.
 
 ```typescript
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -19,17 +19,12 @@ interface FormData {
 }
 
 export function MyForm() {
-  const { register, handleSubmit, formState } = useForm<FormData>();
+  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+    defaultValues: { email: '', password: '' },
+  });
+  const onSubmit: SubmitHandler<FormData> = (data) => console.log(data);
 
-  const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log(data);
-  };
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {/* form content */}
-    </form>
-  );
+  return <form onSubmit={handleSubmit(onSubmit)}>{/* fields */}</form>;
 }
 ```
 
@@ -37,130 +32,144 @@ export function MyForm() {
 
 ## useForm Configuration Options
 
+### Complete Options Table
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | `'onSubmit' \| 'onBlur' \| 'onChange' \| 'onTouched' \| 'all'` | `'onSubmit'` | When validation triggers |
+| `reValidateMode` | `'onChange' \| 'onBlur' \| 'onSubmit'` | `'onChange'` | When re-validation triggers after first submit |
+| `defaultValues` | `FieldValues \| () => Promise<FieldValues>` | `undefined` | Initial form values (static or async) |
+| `values` | `FieldValues` | `undefined` | Reactive values that update form when changed |
+| `errors` | `FieldErrors` | `undefined` | Server-side errors to merge into form state |
+| `resetOptions` | `KeepStateOptions` | `undefined` | Options for resetting when `values` or `defaultValues` change |
+| `context` | `object` | `undefined` | Context object passed to resolver |
+| `criteriaMode` | `'firstError' \| 'all'` | `'firstError'` | Display first error or all errors per field |
+| `shouldFocusError` | `boolean` | `true` | Focus first field with error on submit |
+| `shouldUnregister` | `boolean` | `false` | Unregister fields when they unmount |
+| `shouldUseNativeValidation` | `boolean` | `false` | Use browser native validation |
+| `delayError` | `number` | `undefined` | Delay error display in ms |
+| `disabled` | `boolean` | `false` | Disable all form fields |
+| `resolver` | `Resolver` | `undefined` | External validation resolver (Zod, Yup, etc.) |
+
+---
+
 ### mode: Validation Timing
 
-**Description:** Determines when validation runs.
+| Mode | When Validates | Best For |
+|------|---------------|----------|
+| `onSubmit` | On form submission only | Default, simple forms |
+| `onBlur` | When field loses focus | Desktop forms, progressive validation |
+| `onChange` | Every keystroke/change | Real-time feedback |
+| `onTouched` | After first blur, then on change | Balanced UX |
+| `all` | Every change + submission | Strict validation |
 
-| Mode | When Validates | Use Case |
-|------|---|---|
-| `onSubmit` | Form submission only | Default, simple forms, reduce noise |
-| `onBlur` | Field loses focus | Desktop forms, progressive validation |
-| `onChange` | Every keystroke | Real-time feedback, live validation |
-| `onTouched` | After blur, then on change | Balanced UX, show errors after interaction |
-| `all` | Every change + submission | Critical validation, strict forms |
-
-**Example:**
 ```typescript
-// Validate on blur (desktop UX)
-const { register } = useForm({ mode: 'onBlur' });
-
-// Validate in real-time (live feedback)
-const { register } = useForm({ mode: 'onChange' });
+const { control } = useForm<FormData>({ mode: 'onBlur' });
+const { control } = useForm<FormData>({ mode: 'onChange' });
 ```
 
 ---
 
 ### defaultValues: Initial Form State
 
-**Description:** Set initial values for form fields.
-
 ```typescript
-// Static defaults
-useForm({
-  defaultValues: {
-    email: 'john@example.com',
-    password: '',
-    rememberMe: true
-  }
+// Static defaults (recommended)
+useForm<FormData>({
+  defaultValues: { email: '', password: '', rememberMe: false },
 });
 
-// Async defaults (from API)
-useForm({
+// Async defaults (fetched from API)
+useForm<FormData>({
   defaultValues: async () => {
     const response = await fetch('/api/user/me');
     return response.json();
-  }
-});
-
-// Type-safe with interface
-interface UserForm {
-  email: string;
-  firstName: string;
-  lastName: string;
-}
-
-useForm<UserForm>({
-  defaultValues: {
-    email: '',
-    firstName: 'John',
-    lastName: 'Doe'
-  }
+  },
 });
 ```
 
-**Important:** Always provide defaultValues to ensure form behaves predictably.
+**Important:** Always provide `defaultValues` to prevent uncontrolled-to-controlled warnings and enable `isDirty` comparison.
 
 ---
 
-### resolver: External Validation Library
+### values: Reactive External Values
 
-**Description:** Integrate schema validation libraries (Yup, Zod, AJV).
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `resolver` | function | Validation function from @hookform/resolvers |
-| `context` | object | Optional context passed to resolver |
-
-**Yup Example:**
 ```typescript
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
+// Form updates automatically when `values` prop changes
+const { data } = useQuery({ queryKey: ['user'], queryFn: fetchUser });
 
-const schema = yup.object({
-  email: yup.string().email('Invalid email').required('Email required'),
-  password: yup.string().min(8, 'Min 8 characters').required()
-});
-
-const { register } = useForm({
-  resolver: yupResolver(schema)
+const { control } = useForm<FormData>({
+  values: data, // form resets when data changes
+  resetOptions: { keepDirtyValues: true }, // preserve user edits
 });
 ```
 
-**Zod Example:**
+---
+
+### errors: Server-Side Errors
+
+```typescript
+// Merge server errors into form state
+const [serverErrors, setServerErrors] = useState({});
+
+const { control } = useForm<FormData>({
+  errors: serverErrors, // merged into formState.errors
+});
+```
+
+---
+
+### criteriaMode: All Errors Per Field
+
+```typescript
+// Show all validation errors for a field (not just first)
+const { control, formState: { errors } } = useForm<FormData>({
+  criteriaMode: 'all',
+});
+
+// Access all errors via errors.fieldName.types
+// errors.password?.types?.minLength
+// errors.password?.types?.pattern
+```
+
+---
+
+### resolver: Schema Validation
+
 ```typescript
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 const schema = z.object({
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
 });
 
-const { register } = useForm({
-  resolver: zodResolver(schema)
+const { control } = useForm<z.infer<typeof schema>>({
+  resolver: zodResolver(schema),
 });
 ```
 
-**Source:** https://github.com/react-hook-form/resolvers
+---
+
+### delayError: Delayed Error Display
+
+```typescript
+// Wait 500ms before showing errors (reduces flicker)
+const { control } = useForm<FormData>({
+  mode: 'onChange',
+  delayError: 500,
+});
+```
 
 ---
 
-### disabled: Disable All Inputs
-
-**Description:** Disable all form fields at once.
+### shouldUseNativeValidation: Browser Validation
 
 ```typescript
-// Disable while submitting
-const { disabled, formState: { isSubmitting } } = useForm();
-
-return (
-  <input disabled={isSubmitting} {...register('email')} />
-);
-
-// Or use useForm option
-const { register } = useForm({ disabled: true });
+// Use browser's native validation UI (tooltips)
+const { register } = useForm({
+  shouldUseNativeValidation: true,
+});
 ```
 
 ---
@@ -169,386 +178,154 @@ const { register } = useForm({ disabled: true });
 
 ### Methods
 
-#### register(name, rules)
-
-**Description:** Connect HTML input to form state.
-
-```typescript
-<input {...register('email', { required: 'Email required' })} />
-<textarea {...register('message')} />
-<select {...register('category')}>
-  <option>Select...</option>
-</select>
-```
-
-See `03-api-register.md` for complete API.
-
----
-
-#### handleSubmit(onSubmit, onError)
-
-**Description:** Wrap form submission with validation and error handling.
-
-```typescript
-const onSubmit = (data) => console.log('Valid:', data);
-const onError = (errors) => console.log('Invalid:', errors);
-
-<form onSubmit={handleSubmit(onSubmit, onError)}>
-  {/* fields */}
-</form>
-```
-
-**Returns:** Function to pass to form's `onSubmit` prop.
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `register` | `(name, rules?) => { onChange, onBlur, ref, name }` | Connect HTML input to form |
+| `handleSubmit` | `(onValid, onInvalid?) => (e?) => void` | Wrap submission with validation |
+| `watch` | `(name?) => value` | Subscribe to field changes (causes re-renders) |
+| `control` | `Control<T>` | Object for Controller, useFieldArray, useWatch |
+| `getValues` | `(name?) => value` | Read values without re-rendering |
+| `setValue` | `(name, value, opts?) => void` | Set value programmatically |
+| `reset` | `(values?, opts?) => void` | Reset form to defaults or new values |
+| `trigger` | `(name?) => Promise<boolean>` | Manually trigger validation |
+| `setError` | `(name, error, opts?) => void` | Set error manually |
+| `clearErrors` | `(name?) => void` | Clear validation errors |
+| `setFocus` | `(name, opts?) => void` | Focus a registered field |
+| `unregister` | `(name?) => void` | Unregister field(s) |
+| `resetField` | `(name, opts?) => void` | Reset a single field |
 
 ---
 
-#### watch(fieldNames)
-
-**Description:** Subscribe to field changes. Use `useWatch` for better performance.
+### handleSubmit(onValid, onInvalid?)
 
 ```typescript
-// Watch all fields (causes re-render)
-const allValues = watch();
+const onSubmit: SubmitHandler<FormData> = (data) => console.log(data);
+const onError: SubmitErrorHandler<FormData> = (errors) => console.log(errors);
 
-// Watch specific field
-const email = watch('email');
+<form onSubmit={handleSubmit(onSubmit, onError)}>{/* fields */}</form>
 
-// Watch multiple fields
-const [email, password] = watch(['email', 'password']);
-```
-
-**⚠️ Performance Note:** Watching all fields causes full re-renders. Use `useWatch` instead for targeted subscriptions.
-
----
-
-#### control
-
-**Description:** Internal form state object needed for `Controller` and `useFieldArray`.
-
-```typescript
-import { Controller } from 'react-hook-form';
-
-const { control } = useForm();
-
-<Controller
-  name="email"
-  control={control}
-  render={({ field }) => <input {...field} />}
-/>
-```
-
-See `07-custom-hooks-context.md` for detailed patterns.
-
----
-
-### formState Object
-
-**Description:** Read-only form metadata.
-
-```typescript
-const { formState } = useForm();
-
-formState.isDirty        // Form changed from defaults
-formState.isValid        // No validation errors
-formState.isSubmitted    // Form submitted at least once
-formState.isSubmitting   // Currently submitting
-formState.errors         // Validation errors object
-formState.touchedFields  // Fields touched by user
-formState.dirtyFields    // Fields modified by user
-formState.isValidating   // Currently validating (async rules)
-formState.disabled       // Form disabled state
-```
-
-**Common usage:**
-```typescript
-const { formState: { errors, isDirty, isValid, isSubmitting } } = useForm();
-
-{errors.email && <p className="error">{errors.email.message}</p>}
-<button disabled={isSubmitting || !isValid}>Submit</button>
+// React Native: use onPress
+<Pressable onPress={handleSubmit(onSubmit)}><Text>Submit</Text></Pressable>
 ```
 
 ---
 
-#### getValues(fieldName?)
-
-**Description:** Read current form values without subscribing to changes.
-
-```typescript
-const { getValues } = useForm();
-
-// Get all values
-const allValues = getValues();
-
-// Get specific field
-const email = getValues('email');
-
-// Get multiple fields
-const { email, password } = getValues(['email', 'password']);
-
-// Useful in event handlers
-const handleSpecialAction = () => {
-  const currentValues = getValues();
-  console.log(currentValues);
-};
-```
-
-**Note:** Does NOT cause re-renders. Use when you need current values in event handlers.
-
----
-
-#### setValue(name, value, options)
-
-**Description:** Set field values programmatically.
-
-```typescript
-const { setValue } = useForm();
-
-// Set without validation
-setValue('email', 'new@example.com');
-
-// Set with validation
-setValue('email', 'new@example.com', { shouldValidate: true });
-
-// Set with dirty flag
-setValue('email', 'new@example.com', { shouldDirty: true });
-
-// Set with touch flag
-setValue('email', 'new@example.com', { shouldTouch: true });
-
-// Set multiple fields
-setValue('email', 'test@example.com');
-setValue('password', 'newpass');
-```
-
-**Options:**
+### setValue(name, value, options?)
 
 | Option | Type | Description |
-|---|---|---|
-| `shouldValidate` | boolean | Trigger validation after setting |
-| `shouldDirty` | boolean | Mark field as dirty |
-| `shouldTouch` | boolean | Mark field as touched |
+|--------|------|-------------|
+| `shouldValidate` | `boolean` | Trigger validation after setting |
+| `shouldDirty` | `boolean` | Mark field as dirty |
+| `shouldTouch` | `boolean` | Mark field as touched |
+
+```typescript
+setValue('email', 'test@example.com', { shouldValidate: true, shouldDirty: true });
+```
 
 ---
 
-#### reset(values, options)
+### reset(values?, options?)
 
-**Description:** Reset form to default or custom values.
+| Option | Type | Description |
+|--------|------|-------------|
+| `keepValues` | `boolean` | Keep current values |
+| `keepDefaultValues` | `boolean` | Keep default values reference |
+| `keepDirty` | `boolean` | Preserve dirty state |
+| `keepDirtyValues` | `boolean` | Keep only dirty field values |
+| `keepTouched` | `boolean` | Preserve touched state |
+| `keepIsSubmitted` | `boolean` | Keep submitted state |
+| `keepIsValid` | `boolean` | Keep valid state |
+| `keepErrors` | `boolean` | Keep current errors |
+| `keepSubmitCount` | `boolean` | Keep submit count |
 
 ```typescript
-const { reset } = useForm({
-  defaultValues: { email: 'john@example.com', password: '' }
+reset(); // reset to defaultValues
+reset({ email: 'new@test.com' }); // reset with new values
+reset(undefined, { keepDirtyValues: true }); // keep user edits
+```
+
+---
+
+### trigger(name?)
+
+```typescript
+const isValid = await trigger('email');           // one field
+const isValid = await trigger(['email', 'name']); // multiple
+const isValid = await trigger();                  // all fields
+```
+
+---
+
+### setError(name, error, options?)
+
+```typescript
+setError('email', { type: 'manual', message: 'Email already exists' });
+setError('root.serverError', { message: 'Server unavailable' });
+```
+
+---
+
+### setFocus(name, options?)
+
+```typescript
+setFocus('email'); // focus email field
+setFocus('email', { shouldSelect: true }); // focus and select text
+```
+
+---
+
+## formState Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isDirty` | `boolean` | Any field differs from defaultValues |
+| `dirtyFields` | `object` | Object of dirty field names |
+| `touchedFields` | `object` | Object of touched field names |
+| `defaultValues` | `object` | Default values (readonly) |
+| `isSubmitted` | `boolean` | Form has been submitted at least once |
+| `isSubmitSuccessful` | `boolean` | Last submit was successful |
+| `isSubmitting` | `boolean` | Currently submitting |
+| `isLoading` | `boolean` | Async defaultValues still loading |
+| `submitCount` | `number` | Number of times form was submitted |
+| `isValid` | `boolean` | No validation errors (requires mode or resolver) |
+| `isValidating` | `boolean` | Currently running validation |
+| `validatingFields` | `object` | Fields currently being validated |
+| `errors` | `FieldErrors` | Validation errors object |
+| `disabled` | `boolean` | Form disabled state |
+| `isReady` | `boolean` | Form is ready (defaultValues loaded) |
+
+```typescript
+const {
+  formState: {
+    errors, isDirty, isValid, isSubmitting, isLoading, isReady,
+    touchedFields, dirtyFields, submitCount,
+  },
+} = useForm<FormData>({
+  mode: 'onChange', // isValid requires mode or resolver
+  defaultValues: { email: '', password: '' },
 });
 
-// Reset to original defaults
-reset();
+// Disable submit until valid and not submitting
+<button disabled={!isValid || isSubmitting}>Submit</button>
 
-// Reset to custom values
-reset({ email: 'jane@example.com', password: '' });
+// Show loading while async defaults load
+if (isLoading) return <Spinner />;
 
-// Reset without validation
-reset(undefined, { keepValues: true });
-
-// Keep dirty state
-reset(undefined, { keepDirty: true });
-```
-
-**Options:**
-
-| Option | Type | Description |
-|---|---|---|
-| `keepValues` | boolean | Keep form values, reset state only |
-| `keepDefaultValues` | boolean | Update default values |
-| `keepDirty` | boolean | Keep dirty state |
-| `keepTouched` | boolean | Keep touched state |
-| `keepIsSubmitted` | boolean | Keep submitted state |
-| `keepIsValid` | boolean | Keep valid state |
-
----
-
-#### trigger(fieldName?)
-
-**Description:** Manually trigger validation on one or more fields.
-
-```typescript
-const { trigger } = useForm();
-
-// Validate one field
-const isValid = await trigger('email');
-
-// Validate multiple fields
-const isValid = await trigger(['email', 'password']);
-
-// Validate all fields
-const isValid = await trigger();
-
-// Conditional validation
-if (selectedCountry === 'US') {
-  await trigger('zipCode');
-}
-```
-
-**Returns:** Promise<boolean> — true if validation passes.
-
----
-
-#### setError(name, error, options)
-
-**Description:** Manually set field errors.
-
-```typescript
-const { setError } = useForm();
-
-// Set custom error
-setError('email', { type: 'manual', message: 'Email already exists' });
-
-// Server-side error handling
-try {
-  const response = await submitForm(data);
-} catch (error) {
-  setError('email', { type: 'server', message: error.message });
-}
-```
-
----
-
-#### clearErrors(fieldNames)
-
-**Description:** Clear validation errors.
-
-```typescript
-const { clearErrors } = useForm();
-
-// Clear one field
-clearErrors('email');
-
-// Clear multiple fields
-clearErrors(['email', 'password']);
-
-// Clear all errors
-clearErrors();
-```
-
----
-
-## useForm Complete Example
-
-```typescript
-import { useForm, SubmitHandler } from 'react-hook-form';
-
-interface SignupForm {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  agreeToTerms: boolean;
-}
-
-export function SignupForm() {
-  const {
-    register,
-    handleSubmit,
-    watch,
-    getValues,
-    setValue,
-    reset,
-    formState: { errors, isDirty, isSubmitting, isValid }
-  } = useForm<SignupForm>({
-    mode: 'onChange',
-    defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: '',
-      agreeToTerms: false
-    }
-  });
-
-  const password = watch('password');
-
-  const onSubmit: SubmitHandler<SignupForm> = async (data) => {
-    try {
-      const response = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (response.ok) {
-        reset();
-      } else {
-        throw new Error('Signup failed');
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <label>Email</label>
-        <input
-          {...register('email', {
-            required: 'Email required',
-            pattern: {
-              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: 'Invalid email'
-            }
-          })}
-          type="email"
-        />
-        {errors.email && <p className="error">{errors.email.message}</p>}
-      </div>
-
-      <div>
-        <label>Password</label>
-        <input
-          {...register('password', {
-            required: 'Password required',
-            minLength: { value: 8, message: 'Min 8 characters' }
-          })}
-          type="password"
-        />
-        {errors.password && <p className="error">{errors.password.message}</p>}
-      </div>
-
-      <div>
-        <label>Confirm Password</label>
-        <input
-          {...register('confirmPassword', {
-            validate: (value) =>
-              value === password || 'Passwords do not match'
-          })}
-          type="password"
-        />
-        {errors.confirmPassword && <p className="error">{errors.confirmPassword.message}</p>}
-      </div>
-
-      <div>
-        <label>
-          <input {...register('agreeToTerms', { required: true })} type="checkbox" />
-          I agree to terms
-        </label>
-      </div>
-
-      <button type="submit" disabled={isSubmitting || !isValid}>
-        {isSubmitting ? 'Signing up...' : 'Sign Up'}
-      </button>
-
-      {isDirty && <p>You have unsaved changes</p>}
-    </form>
-  );
-}
+// Check if form is ready
+if (!isReady) return null;
 ```
 
 ---
 
 ## Cross-References
 
-- **Field registration:** See `03-api-register.md`
+- **Field registration and Controller:** See `03-api-register.md`
 - **Validation rules:** See `05-validation-rules.md`
-- **Schema-based validation:** See `06-validation-schemas.md`
-- **Advanced methods:** See `04-api-advanced-methods.md`
-- **Performance tips:** See `09-best-practices.md`
+- **Schema validation (Zod):** See `06-validation-schemas.md`
+- **watch, useFieldArray, resetField:** See `04-api-advanced-methods.md`
+- **useFormContext, useController:** See `07-custom-hooks-context.md`
+- **Performance optimization:** See `09-best-practices.md`
 
 ---
 
-**Source:** https://react-hook-form.com/api/useform
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/docs/useform

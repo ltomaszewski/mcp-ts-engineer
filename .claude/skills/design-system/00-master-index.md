@@ -185,7 +185,6 @@ Throughout each module, you'll find references like:
 
 ---
 
-**Last Updated**: December 2025
-**Version**: 1.0.0 (Modular)
-**Maintainer**: Design System Knowledge Base
-**License**: Internal use
+---
+
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

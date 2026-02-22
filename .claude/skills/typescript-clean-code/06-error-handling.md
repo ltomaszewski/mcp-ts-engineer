@@ -1,4 +1,9 @@
-# Error Handling
+# 06 - Error Handling
+
+**Source:** https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-6.html
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Custom Error Classes
 
@@ -252,3 +257,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 }
 ```
+
+---
+
+**Source:** https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-6.html
+**TypeScript:** 5.9
+**Last Updated:** February 2026

@@ -386,3 +386,7 @@ for await (const message of query({ prompt })) {
 3. **Use discriminated unions** - leverage TypeScript's type narrowing
 4. **Handle `partial` for UX** - show streaming output to users
 5. **Log `system` messages** - useful for debugging MCP and permissions
+
+---
+
+**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

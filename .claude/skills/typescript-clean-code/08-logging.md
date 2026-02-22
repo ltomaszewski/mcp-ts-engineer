@@ -1,4 +1,9 @@
-# Logging Best Practices
+# 08 - Logging Best Practices
+
+**Source:** https://www.typescriptlang.org/docs/handbook/
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Structured Logging Interface
 
@@ -232,3 +237,9 @@ const app = await NestFactory.create(AppModule, {
   logger: new CustomLogger(),
 });
 ```
+
+---
+
+**Source:** https://www.typescriptlang.org/docs/handbook/
+**TypeScript:** 5.9
+**Last Updated:** February 2026

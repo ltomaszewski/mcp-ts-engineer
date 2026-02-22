@@ -1,4 +1,9 @@
-# Code Review Checklist
+# 10 - Code Review Checklist
+
+**Source:** https://www.typescriptlang.org/docs/handbook/
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Size Limits
 
@@ -143,3 +148,9 @@ type Result<T, E = Error> =
   | { success: true; data: T }
   | { success: false; error: E };
 ```
+
+---
+
+**Source:** https://www.typescriptlang.org/docs/handbook/
+**TypeScript:** 5.9
+**Last Updated:** February 2026

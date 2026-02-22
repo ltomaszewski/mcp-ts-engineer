@@ -1,12 +1,6 @@
 # Integration Guides
 
-**Source:** [https://biomejs.dev/guides/](https://biomejs.dev/guides/)
-
----
-
-## Editor Integration Overview
-
-Biome provides first-class support for popular editors via LSP (Language Server Protocol).
+**Source:** https://biomejs.dev/guides/
 
 ---
 
@@ -14,24 +8,10 @@ Biome provides first-class support for popular editors via LSP (Language Server 
 
 ### Installation
 
-1. **Install Biome:**
-```bash
-npm install --save-dev @biomejs/biome
-```
+1. Install Biome: `npm install --save-dev @biomejs/biome`
+2. Install the official VS Code extension: search "Biomejs" in Extensions
 
-2. **Install the official extension:**
-   - Open VS Code Extensions
-   - Search "Biomejs"
-   - Install "Biome" by Biomejs
-   - [Marketplace Link](https://marketplace.visualstudio.com/items?itemName=biomejs.biome)
-
----
-
-### Configuration
-
-#### settings.json
-
-Configure in `.vscode/settings.json`:
+### Configuration (.vscode/settings.json)
 
 ```json
 {
@@ -47,46 +27,39 @@ Configure in `.vscode/settings.json`:
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome",
     "editor.codeActionsOnSave": {
-      "source.fixAll.biome": "explicit"
+      "source.fixAll.biome": "explicit",
+      "source.organizeImports.biome": "explicit"
     }
   },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome",
     "editor.formatOnSave": true
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }
 ```
 
----
-
 ### Features
 
-- **Real-time diagnostics** - Linting errors/warnings as you type
-- **Format on save** - Auto-format with `editor.formatOnSave`
-- **Code actions** - Quick fixes via lightbulb menu
-- **Hover information** - Details on diagnostics
+- Real-time diagnostics as you type
+- Format on save
+- Code actions via lightbulb menu
+- Hover information on diagnostics
+- Organize imports on save
 
 ---
 
-## WebStorm / IntelliJ Integration
+## WebStorm / IntelliJ
 
-### Installation
-
-1. **Install Biome:**
-```bash
-npm install --save-dev @biomejs/biome
-```
-
-2. **Configure in WebStorm:**
-   - Go to Settings → Languages & Frameworks → JavaScript → Code Quality Tools → Biome
-   - Enable Biome
-   - Set Biome path to `./node_modules/.bin/biome`
+1. Install Biome: `npm install --save-dev @biomejs/biome`
+2. Settings -> Languages & Frameworks -> JavaScript -> Code Quality Tools -> Biome
+3. Enable Biome, set path to `./node_modules/.bin/biome`
 
 ---
 
-## Vim/Neovim Integration
-
-### Installation via conform.nvim
+## Vim/Neovim (conform.nvim)
 
 ```lua
 require("conform").setup({
@@ -107,37 +80,7 @@ require("conform").setup({
 
 ---
 
-## Sublime Text Integration
-
-Install LSP package:
-
-1. **Install LSP client:**
-   - Package Control → Install Package → LSP
-
-2. **Configure LSP:**
-```json
-{
-  "clients": {
-    "biome": {
-      "enabled": true,
-      "command": ["biome", "lsp-proxy"],
-      "languages": [
-        {
-          "languageId": "javascript",
-          "scopes": ["source.js"],
-          "syntaxes": ["Packages/Babel/JavaScript.sublime-syntax"]
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-## Continuous Integration
-
-### GitHub Actions
+## GitHub Actions
 
 ```yaml
 name: Biome
@@ -154,47 +97,47 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
       - run: npm ci
-      - run: npx biome ci
+      - run: npx biome ci --reporter=github .
 ```
+
+The `--reporter=github` flag enables inline annotations on PR diffs.
 
 ---
 
-### GitLab CI
+## GitLab CI
 
 ```yaml
 biome:
   stage: lint
-  image: node:18
+  image: node:22
   script:
     - npm ci
-    - npx biome ci
+    - npx biome ci --reporter=gitlab .
 ```
 
 ---
 
-### Pre-commit Hook
-
-Create `.git/hooks/pre-commit`:
+## Pre-commit Hook (Manual)
 
 ```bash
 #!/bin/bash
+# .git/hooks/pre-commit
 npx biome check --staged
 if [ $? -ne 0 ]; then
-  echo "❌ Biome checks failed"
+  echo "Biome checks failed"
   exit 1
 fi
 ```
 
-Enable:
 ```bash
 chmod +x .git/hooks/pre-commit
 ```
 
 ---
 
-### Husky Setup
+## Pre-commit Hook (Husky)
 
 ```bash
 npm install --save-dev husky
@@ -204,70 +147,57 @@ npx husky add .husky/pre-commit "npx biome check --staged"
 
 ---
 
-## Watch Mode Setup
-
-### Using nodemon
+## Pre-commit Hook (lint-staged)
 
 ```json
 {
-  "nodemon": {
-    "watch": ["src"],
-    "ext": "js,ts",
-    "exec": "npx biome check --write"
+  "lint-staged": {
+    "*.{js,ts,tsx,json,css}": ["biome check --write --no-errors-on-unmatched"]
   }
 }
 ```
 
 ---
 
-## Docker Integration
-
-### Dockerfile
+## Docker
 
 ```dockerfile
-FROM node:18-alpine
-
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-
 COPY . .
-
 RUN npx biome ci
-
 CMD ["npm", "start"]
 ```
 
 ---
 
-## Performance Optimization
+## Daemon Mode
 
-### Enable Daemon Mode
+For faster repeated operations in development:
 
 ```bash
-# Terminal 1: Start daemon
-npx biome start
-
-# Terminal 2-N: Use daemon
-npx biome check --use-server .
-
-# Cleanup
-npx biome stop
+npx biome start                    # Start daemon
+npx biome check --use-server .     # Use daemon (2-5x faster)
+npx biome stop                     # Stop daemon
 ```
 
-**Performance Gain:** 2-5x faster for repeated operations
+---
+
+## Package.json Scripts
+
+```json
+{
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check:ci": "biome ci ."
+  }
+}
+```
 
 ---
 
-## Best Practices
-
-1. **Use official extension** - For best experience, use first-party VS Code extension
-2. **Commit configuration** - Check `biome.json` in version control
-3. **Document team setup** - Include editor config in README
-4. **Use pre-commit hooks** - Prevent bad code from entering repository
-5. **Enable daemon mode** - For better performance on repeated operations
-
----
-
-**Document Version:** 2.3.10  
-**Last Updated:** December 2024
+**Version:** 2.x (^2.4.4) | **Source:** https://biomejs.dev/guides/

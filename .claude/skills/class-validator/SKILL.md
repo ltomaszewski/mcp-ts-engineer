@@ -1,5 +1,6 @@
 ---
 name: class-validator
+version: "0.14.x"
 description: Data validation and transformation with class-validator and class-transformer - DTOs, ValidationPipe, custom validators, nested validation. Use when creating DTOs, adding input validation, or transforming data.
 ---
 

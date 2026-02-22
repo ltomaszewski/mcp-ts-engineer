@@ -3,7 +3,7 @@
 > **Purpose**: Define WCAG 2.2 Level AA requirements for design systems, ensuring all tokens and components are accessible to all users.
 
 **Version**: 1.0.0
-**Last Updated**: December 2025
+**Last Updated**: February 2026
 
 ---
 
@@ -345,6 +345,4 @@ Exception: Code blocks (no limit)
 
 ---
 
-**Module**: 06-accessibility
-**Last Updated**: December 2025
-**Status**: Complete
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

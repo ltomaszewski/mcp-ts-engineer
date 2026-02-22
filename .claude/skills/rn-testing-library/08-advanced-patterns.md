@@ -354,7 +354,7 @@ test('form validation', async () => {
 
 ---
 
-## 2024 Recommended Practices
+## Recommended Practices
 
 ### 1. Update to Latest Version
 

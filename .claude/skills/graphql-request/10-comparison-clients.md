@@ -464,4 +464,4 @@ export async function handler(event) {
 
 **Source:** [github.com/graffle-js/graffle](https://github.com/graffle-js/graffle)  
 **Package:** graphql-request 7.4.0  
-**Last Updated:** December 27, 2025
+**Last Updated:** February 2026

@@ -502,3 +502,7 @@ tests:
 - [ ] Snapshot comparison for trend analysis
 - [ ] Safety evals run on EVERY change
 - [ ] Cost tracking across eval runs
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

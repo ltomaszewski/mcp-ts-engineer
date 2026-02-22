@@ -1,29 +1,212 @@
-# Middleware: Core Features
-**Module:** `06-middleware-core.md` | **Version:** 4.x | **Status:** Complete
+# Middleware: devtools, immer, combine, subscribeWithSelector
 
-**Source:** [https://zustand.docs.pmnd.rs/middlewares/combine](https://zustand.docs.pmnd.rs/middlewares/combine)
+**Module:** `06-middleware-core.md` | **Version:** 5.x (^5.0.2)
 
 ---
 
-## Table of Contents
-1. [combine() Middleware](#combine-middleware)
-2. [subscribeWithSelector() Middleware](#subscribewithselector-middleware)
-3. [Middleware Composition](#middleware-composition)
-4. [TypeScript Mutators](#typescript-mutators)
-5. [Best Practices](#best-practices)
+## `devtools()` Middleware
+
+### Description
+
+Enables Redux DevTools Extension integration for time-travel debugging, action history, and state inspection.
+
+### Import
+
+```typescript
+import { devtools } from 'zustand/middleware'
+```
+
+### Type Signature
+
+```typescript
+devtools<T>(
+  stateCreator: StateCreator<T, [], []>,
+  devtoolsOptions?: DevtoolsOptions,
+): StateCreator<T, [['zustand/devtools', never]], []>
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `name` | `string` | -- | Custom connection name in DevTools |
+| `enabled` | `boolean` | `true` in dev, `false` in prod | Enable/disable DevTools |
+| `anonymousActionType` | `string` | `'anonymous'` | Label for unnamed actions |
+| `store` | `string` | -- | Store identifier for multi-store setups |
+
+### Code Example
+
+```typescript
+import { create } from 'zustand'
+import { devtools } from 'zustand/middleware'
+
+const useStore = create<CountState>()(
+  devtools(
+    (set) => ({
+      count: 0,
+      increment: () =>
+        set((s) => ({ count: s.count + 1 }), undefined, 'increment'),
+      decrement: () =>
+        set((s) => ({ count: s.count - 1 }), undefined, 'decrement'),
+    }),
+    { name: 'CountStore', enabled: process.env.NODE_ENV === 'development' }
+  )
+)
+```
+
+The third argument to `set` is the action name visible in DevTools:
+
+```typescript
+set(newState, replace?, actionName?)
+```
+
+### Middleware Ordering
+
+**devtools must be the outermost middleware** (except persist):
+
+```typescript
+// CORRECT
+create(persist(devtools(immer((set) => ({...})))))
+
+// CORRECT (devtools outermost when no persist)
+create(devtools(immer(subscribeWithSelector((set) => ({...})))))
+
+// WRONG: devtools inside immer
+create(immer(devtools((set) => ({...}))))
+```
+
+**Recommended order (outermost to innermost):**
+1. `persist` (outermost)
+2. `devtools`
+3. `subscribeWithSelector`
+4. `immer` (innermost)
+5. `combine` (innermost)
+
+---
+
+## `immer()` Middleware
+
+### Description
+
+Enables mutable-style state updates using Immer. Write mutations that look like direct changes; Immer produces immutable updates under the hood.
+
+### Import
+
+```typescript
+import { immer } from 'zustand/middleware/immer'
+```
+
+### Peer Dependency
+
+```bash
+npm install immer
+```
+
+### Type Signature
+
+```typescript
+immer<T>(
+  stateCreator: StateCreator<T, [], []>,
+): StateCreator<T, [['zustand/immer', never]], []>
+```
+
+### Code Example: Basic
+
+```typescript
+import { create } from 'zustand'
+import { immer } from 'zustand/middleware/immer'
+
+interface CountState {
+  count: number
+  increment: (qty: number) => void
+  decrement: (qty: number) => void
+}
+
+const useCountStore = create<CountState>()(
+  immer((set) => ({
+    count: 0,
+    increment: (qty) =>
+      set((state) => {
+        state.count += qty  // Direct mutation -- immer handles immutability
+      }),
+    decrement: (qty) =>
+      set((state) => {
+        state.count -= qty
+      }),
+  }))
+)
+```
+
+### Code Example: Nested State
+
+```typescript
+import { create } from 'zustand'
+import { immer } from 'zustand/middleware/immer'
+
+interface Todo {
+  id: string
+  title: string
+  done: boolean
+}
+
+interface TodoState {
+  todos: Record<string, Todo>
+  toggleTodo: (id: string) => void
+  addTodo: (todo: Todo) => void
+  removeTodo: (id: string) => void
+}
+
+const useTodoStore = create<TodoState>()(
+  immer((set) => ({
+    todos: {},
+    toggleTodo: (id) =>
+      set((state) => {
+        state.todos[id].done = !state.todos[id].done
+      }),
+    addTodo: (todo) =>
+      set((state) => {
+        state.todos[todo.id] = todo
+      }),
+    removeTodo: (id) =>
+      set((state) => {
+        delete state.todos[id]
+      }),
+  }))
+)
+```
+
+### When to Use immer
+
+| Scenario | Without immer | With immer |
+|----------|--------------|------------|
+| Shallow update | `set({ count: 1 })` | Same |
+| Nested object | `set(s => ({ user: { ...s.user, name: 'Jane' } }))` | `set(s => { s.user.name = 'Jane' })` |
+| Array push | `set(s => ({ items: [...s.items, item] }))` | `set(s => { s.items.push(item) })` |
+| Deep nested | Multi-level spread chain | Direct mutation |
+
+**Use immer when:** Deeply nested state, frequent array/object mutations, complex state shapes.
+**Skip immer when:** Simple flat state, few nested updates.
 
 ---
 
 ## `combine()` Middleware
 
 ### Description
-Merges an initial state object with a state creator function. Automatically infers types, eliminating need for explicit type annotations. Simplifies store creation and makes curried versions unnecessary.
+
+Merges initial state with a state creator function. Automatically infers types from the initial state object, eliminating explicit type annotations.
+
+### Import
+
+```typescript
+import { combine } from 'zustand/middleware'
+```
 
 ### Type Signature
+
 ```typescript
 combine<T, U>(
   initialState: T,
-  additionalStateCreatorFn: StateCreator<T, [], [], U>
+  additionalStateCreator: StateCreator<T, [], [], U>,
 ): StateCreator<Omit<T, keyof U> & U, [], []>
 ```
 
@@ -31,41 +214,16 @@ combine<T, U>(
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `initialState` | `T` | Object with initial state values. Cannot be a function. |
-| `additionalStateCreatorFn` | `StateCreator<T, [], [], U>` | Function receiving `(set, get, store)` that returns actions/methods |
+| `initialState` | `T` | Object with initial values (not a function) |
+| `additionalStateCreator` | `(set, get, store) => U` | Returns actions/methods |
 
-### Return Value
-| Type | Description |
-|------|-------------|
-| `StateCreator` | A state creator function ready for `create()` or `createStore()` |
-
-### Code Example: Basic combine()
-
-```typescript
-import { createStore } from 'zustand/vanilla'
-import { combine } from 'zustand/middleware'
-
-// No need for explicit types - they're inferred!
-const positionStore = createStore(
-  combine(
-    { position: { x: 0, y: 0 } }, // Initial state
-    (set) => ({
-      setPosition: (position) => set({ position }),
-    })
-  )
-)
-
-// Types automatically inferred
-const pos = positionStore.getState().position // ✓ Type: { x: number; y: number }
-positionStore.getState().setPosition({ x: 10, y: 20 }) // ✓ Type-safe
-```
-
-### Code Example: With React Hook
+### Code Example
 
 ```typescript
 import { create } from 'zustand'
 import { combine } from 'zustand/middleware'
 
+// No explicit type annotation needed -- types inferred from initial state
 const useStore = create(
   combine(
     {
@@ -74,330 +232,188 @@ const useStore = create(
       todos: [] as string[],
     },
     (set, get) => ({
-      increment: () => set((state) => ({ count: state.count + 1 })),
-      setUser: (user) => set({ user }),
-      addTodo: (todo) => set((state) => ({
-        todos: [...state.todos, todo],
-      })),
-      // Access other values via get()
-      getFullState: () => get(),
+      increment: () => set((s) => ({ count: s.count + 1 })),
+      setUser: (user: { name: string; email: string }) => set({ user }),
+      addTodo: (todo: string) =>
+        set((s) => ({ todos: [...s.todos, todo] })),
     })
   )
 )
 
-// Usage
-function App() {
-  const { count, increment, user } = useStore((state) => ({
-    count: state.count,
-    increment: state.increment,
-    user: state.user,
-  }))
-  
-  return <div>{count} - {user.name}</div>
-}
+// Types are automatically inferred
+const count = useStore.getState().count       // number
+const name = useStore.getState().user.name    // string
 ```
 
-### Code Example: Nested State with combine()
+### When to Use combine
 
-```typescript
-import { create } from 'zustand'
-import { combine } from 'zustand/middleware'
-
-const useAppStore = create(
-  combine(
-    {
-      auth: {
-        isLoggedIn: false,
-        user: null as { id: string; email: string } | null,
-      },
-      ui: {
-        sidebarOpen: true,
-        theme: 'light' as 'light' | 'dark',
-      },
-      data: {
-        items: [] as Array<{ id: string; title: string }>,
-      },
-    },
-    (set, get) => ({
-      login: (user) => set((state) => ({
-        auth: { ...state.auth, isLoggedIn: true, user },
-      })),
-      logout: () => set((state) => ({
-        auth: { ...state.auth, isLoggedIn: false, user: null },
-      })),
-      toggleSidebar: () => set((state) => ({
-        ui: { ...state.ui, sidebarOpen: !state.ui.sidebarOpen },
-      })),
-      addItem: (item) => set((state) => ({
-        data: { ...state.data, items: [...state.data.items, item] },
-      })),
-    })
-  )
-)
-```
+- When you want automatic TypeScript inference without interfaces
+- For simpler stores where explicit types are overhead
+- As the innermost middleware in a composition
 
 ---
 
 ## `subscribeWithSelector()` Middleware
 
 ### Description
-Adds selective subscription capability to stores. Allows subscribing to specific state slices rather than entire state. Enables fine-grained reactivity outside components.
+
+Adds selective subscription capability to stores. Subscribe to specific state slices outside React -- only fires when the selected value changes.
+
+### Import
+
+```typescript
+import { subscribeWithSelector } from 'zustand/middleware'
+```
 
 ### Type Signature
+
 ```typescript
 subscribeWithSelector<T>(
-  stateCreator: StateCreator<T, [], []>
+  stateCreator: StateCreator<T, [], []>,
 ): StateCreator<T, [['zustand/subscribeWithSelector', never]], []>
 ```
 
-### Parameters
+### Enhanced `subscribe` Signature
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `stateCreator` | `StateCreator<T, [], []>` | Your store's state creator function |
+```typescript
+// Full state subscription (same as default)
+subscribe(listener: (state: T, prev: T) => void): () => void
 
-### Return Value
-| Type | Description |
-|------|-------------|\n| `StateCreator` | Enhanced state creator with selective subscription |
+// Selective subscription (added by middleware)
+subscribe<U>(
+  selector: (state: T) => U,
+  listener: (selected: U, previousSelected: U) => void,
+  options?: {
+    equalityFn?: (a: U, b: U) => boolean
+    fireImmediately?: boolean
+  },
+): () => void
+```
 
-### Code Example: Selective Subscription
+### Code Example
 
 ```typescript
 import { createStore } from 'zustand/vanilla'
 import { subscribeWithSelector } from 'zustand/middleware'
 
-type PositionState = {
+interface PositionState {
   position: { x: number; y: number }
   setPosition: (pos: { x: number; y: number }) => void
 }
 
-const positionStore = createStore<PositionState>()(
+const store = createStore<PositionState>()(
   subscribeWithSelector((set) => ({
     position: { x: 0, y: 0 },
     setPosition: (position) => set({ position }),
   }))
 )
 
-// Subscribe to entire state
-positionStore.subscribe((state) => {
-  console.log('State changed:', state)
-})
-
 // Subscribe to specific slice
-positionStore.subscribe(
+const unsub1 = store.subscribe(
   (state) => state.position,
-  (position) => {
-    console.log('Position changed:', position)
-  }
+  (position) => console.log('Position changed:', position),
 )
 
 // Subscribe to nested value
-positionStore.subscribe(
+const unsub2 = store.subscribe(
   (state) => state.position.x,
-  (x) => {
-    console.log('X coordinate changed:', x)
-  }
+  (x) => console.log('X changed:', x),
 )
 
-// Update state
-positionStore.setState({ position: { x: 100, y: 200 } })
-// Logs: "Position changed: {x:100,y:200}"
-// Logs: "X coordinate changed: 100"
-```
-
-### Code Example: DOM Integration
-
-```typescript
-import { createStore } from 'zustand/vanilla'
-import { subscribeWithSelector } from 'zustand/middleware'
-
-const store = createStore()(
-  subscribeWithSelector((set) => ({
-    color: 'red',
-    size: 10,
-    setColor: (color) => set({ color }),
-    setSize: (size) => set({ size }),
-  }))
+// With custom equality
+const unsub3 = store.subscribe(
+  (state) => state.position,
+  (pos) => console.log('Position changed significantly:', pos),
+  {
+    equalityFn: (a, b) =>
+      Math.abs(a.x - b.x) < 5 && Math.abs(a.y - b.y) < 5,
+  },
 )
 
-const element = document.getElementById('box')
-
-// React to color changes
-store.subscribe(
-  (state) => state.color,
-  (color) => {
-    element.style.backgroundColor = color
-  }
+// Fire immediately on subscribe
+const unsub4 = store.subscribe(
+  (state) => state.position,
+  (pos) => console.log('Current position:', pos),
+  { fireImmediately: true },
 )
-
-// React to size changes
-store.subscribe(
-  (state) => state.size,
-  (size) => {
-    element.style.width = `${size}px`
-    element.style.height = `${size}px`
-  }
-)
-
-// Initial render
-const initialState = store.getState()
-element.style.backgroundColor = initialState.color
-element.style.width = `${initialState.size}px`
 ```
 
 ---
 
 ## Middleware Composition
 
-### Basic Composition
+### Full Stack Example
 
 ```typescript
 import { create } from 'zustand'
-import { persist, combine, subscribeWithSelector } from 'zustand/middleware'
+import { persist, devtools, subscribeWithSelector } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 
-const useStore = create(
-  persist(
-    subscribeWithSelector(
-      combine(
-        { count: 0 },
-        (set) => ({ increment: () => set((s) => ({ count: s.count + 1 })) })
-      )
-    ),
-    { name: 'store' }
-  )
-)
-```
-
-**Middleware Order:** The order of middleware wrapping is important!
-
-| Position | Middleware | Effect |
-|----------|-----------|--------|
-| **Outermost** | `persist` | Persists/rehydrates state |
-| **Middle** | `subscribeWithSelector` | Enables selective subscriptions |
-| **Inner** | `combine` | Type inference and initial state |
-
-### ❌ WRONG Order
-
-```typescript
-// DON'T: persist inside subscribeWithSelector
-create(subscribeWithSelector(persist((set) => ({...}))))
-// DevTools won't see persisted state properly
-```
-
-### ✅ RIGHT Order
-
-```typescript
-// DO: persist outside other middleware
-create(persist(subscribeWithSelector((set) => ({...}))))
-// DevTools sees full lifecycle including persistence
-```
-
----
-
-## TypeScript Mutators
-
-When composing middleware, TypeScript needs to understand the mutator chain:
-
-### Mutator Type Pattern
-
-```typescript
-import { create, Mutate, StoreApi } from 'zustand'
-import { persist, subscribeWithSelector, combine } from 'zustand/middleware'
-
-type State = {
+interface AppState {
   count: number
+  user: { name: string }
   increment: () => void
+  setUser: (name: string) => void
 }
 
-type Store = Mutate<
-  StoreApi<State>,
-  [
-    ['zustand/persist', unknown],
-    ['zustand/subscribeWithSelector', never],
-  ]
->
-
-const useStore: Store = create(
+const useAppStore = create<AppState>()(
   persist(
-    subscribeWithSelector((set) => ({
-      count: 0,
-      increment: () => set((s) => ({ count: s.count + 1 })),
-    })),
-    { name: 'store' }
+    devtools(
+      subscribeWithSelector(
+        immer((set) => ({
+          count: 0,
+          user: { name: '' },
+          increment: () =>
+            set((state) => { state.count += 1 }, undefined, 'increment'),
+          setUser: (name) =>
+            set((state) => { state.user.name = name }, undefined, 'setUser'),
+        }))
+      ),
+      { name: 'AppStore' }
+    ),
+    {
+      name: 'app-storage',
+      partialize: (state) => ({ count: state.count, user: state.user }),
+    }
   )
 )
 ```
 
-### Simpler Alternative with combine()
+### TypeScript with Middleware Mutators
+
+When composing middleware, TypeScript tracks the mutator chain:
 
 ```typescript
-import { create } from 'zustand'
-import { persist, subscribeWithSelector, combine } from 'zustand/middleware'
+import { create, StateCreator } from 'zustand'
+import { persist, devtools } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
 
-// combine automatically infers types
+// Use combine for automatic inference (recommended)
+import { combine } from 'zustand/middleware'
+
 const useStore = create(
   persist(
-    subscribeWithSelector(
+    devtools(
       combine(
         { count: 0 },
-        (set) => ({ increment: () => set((s) => ({ count: s.count + 1 })) })
-      )
+        (set) => ({
+          increment: () => set((s) => ({ count: s.count + 1 })),
+        })
+      ),
+      { name: 'Store' }
     ),
-    { name: 'store' }
+    { name: 'store-key' }
   )
 )
-
-// Types work perfectly without explicit annotations!
+// Types inferred automatically -- no explicit annotation needed
 ```
 
 ---
 
-## Best Practices
+**Source:**
+- https://zustand.docs.pmnd.rs/middlewares/devtools
+- https://zustand.docs.pmnd.rs/middlewares/immer
+- https://zustand.docs.pmnd.rs/middlewares/combine
+- https://zustand.docs.pmnd.rs/middlewares/subscribe-with-selector
 
-### ✅ DO
-
-- **Use `combine()` for automatic type inference**
-```typescript
-create(
-  combine(
-    { initial: 'state' },
-    (set) => ({ action: () => {} })
-  )
-)
-```
-
-- **Compose middleware intentionally**
-- **Use `subscribeWithSelector` for DOM reactivity**
-- **Test middleware composition** - order matters!
-
-### ❌ DON'T
-
-- **Don't randomly change middleware order** - it affects behavior
-- **Don't nest persist** inside other middleware
-- **Don't mix manual types with combine()** - let it infer types
-- **Don't forget mutator types** when manually composing
-
----
-
-## Comparison: combine() Patterns
-
-| Pattern | Type Safety | Boilerplate | Inference |
-|---------|-------------|------------|-----------|
-| Manual types | Excellent | High | Manual |
-| `combine()` | Excellent | Low | Automatic |
-| No types | Poor | Low | None |
-
----
-
-## Cross-Module References
-
-- **Store Creation:** [API Reference: Store Creation](02-api-store-creation.md)
-- **Persistence:** [Middleware: Persistence](05-middleware-persist.md)
-- **Advanced Patterns:** [Advanced Patterns](07-advanced-patterns.md)
-- **Selectors:** [API Reference: Selectors](04-api-selectors.md)
-
----
-
-**Official Sources:**
-- [https://zustand.docs.pmnd.rs/middlewares/combine](https://zustand.docs.pmnd.rs/middlewares/combine)
-- [https://zustand.docs.pmnd.rs/middlewares/subscribe-with-selector](https://zustand.docs.pmnd.rs/middlewares/subscribe-with-selector)
+**Version:** 5.x (^5.0.2)

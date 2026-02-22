@@ -1,193 +1,268 @@
 # Keyboard Controller: UI Components
 
-**KeyboardToolbar, KeyboardAwareScrollView, and more**
+**KeyboardToolbar, KeyboardAwareScrollView, KeyboardStickyView, KeyboardAvoidingView**
 
 ---
 
-## Component Comparison
+## Component Overview
 
-| Component | Sticks to Keyboard | Manages Layout | Use Case |
-|-----------|-------------------|-----------------|----------|
-| **KeyboardToolbar** | Yes | Yes | Multi-input forms |
-| **KeyboardAwareScrollView** | No | Yes | Long forms |
-| **KeyboardStickyView** | Yes | No | Custom accessories |
-| **KeyboardAvoidingView** | No | Yes | Avoid overlap |
-| **OverKeyboardView** | Yes | No | Suggestions |
+| Component | Sticks to Keyboard | Manages Scroll | Use Case |
+|-----------|-------------------|----------------|----------|
+| **KeyboardToolbar** | Yes | No | Multi-input form navigation |
+| **KeyboardAwareScrollView** | No | Yes | Long scrollable forms |
+| **KeyboardStickyView** | Yes | No | Custom sticky accessories |
+| **KeyboardAvoidingView** | No | Yes | Simple keyboard avoidance |
 
 ---
 
-## KeyboardToolbar (v1.19)
+## KeyboardToolbar
 
-Sticky toolbar above keyboard with navigation and done buttons.
+Sticky toolbar above keyboard with prev/next field navigation and done button. Uses compound component pattern.
 
-### Compound API
-```typescript
-<KeyboardToolbar>
-  <KeyboardToolbar.Previous />
-  <KeyboardToolbar.Next />
-  <KeyboardToolbar.Done onPress={handleDone} />
-</KeyboardToolbar>
-```
+### Props (Main Component)
 
-### Props
-| Prop | Type | Description |
-|------|------|-------------|
-| `children` | `ReactNode` | Toolbar buttons |
-| `style` | `ViewStyle` | Container style |
-| `backgroundColor` | `string` | Background color |
-| `onDone` | `() => void` | Done callback |
+Inherits `View` props and `KeyboardStickyView` props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `insets` | `{ left: number; right: number }` | -- | Padding to prevent overlap with system UI |
+| `opacity` | `string` (hex) | `"FF"` | Container opacity in hex (e.g., `"80"` for 50%) |
+| `theme` | `object` | `DefaultKeyboardToolbarTheme` | Brand colors for dark/light modes |
+
+### Compound Components
+
+#### `KeyboardToolbar.Prev` / `KeyboardToolbar.Next`
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `button` | `React.ComponentType` | Built-in | Custom touchable component |
+| `icon` | `React.ComponentType` | Built-in | Custom icon renderer |
+| `onPress` | `(e: GestureResponderEvent) => void` | -- | Callback; call `e.preventDefault()` to block default navigation |
+
+#### `KeyboardToolbar.Done`
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `button` | `React.ComponentType` | Built-in | Custom touchable component |
+| `text` | `string` | `"Done"` | Custom button label |
+| `onPress` | `(e: GestureResponderEvent) => void` | -- | Callback; call `e.preventDefault()` to block keyboard dismissal |
+
+#### `KeyboardToolbar.Content`
+
+Renders custom content in the middle of the toolbar.
+
+#### `KeyboardToolbar.Background`
+
+Renders a custom background (e.g., blur effect) that overlays the entire toolbar.
 
 ### Example
+
 ```typescript
+import React from 'react';
+import { TextInput, View, StyleSheet } from 'react-native';
 import {
   KeyboardToolbar,
   KeyboardAwareScrollView,
 } from 'react-native-keyboard-controller';
 
-function FormScreen() {
+export function FormWithToolbar() {
   return (
     <>
       <KeyboardAwareScrollView bottomOffset={62}>
-        <TextInput placeholder="First name" />
-        <TextInput placeholder="Last name" />
-        <TextInput placeholder="Email" />
+        <View style={styles.container}>
+          <TextInput placeholder="First name" style={styles.input} />
+          <TextInput placeholder="Last name" style={styles.input} />
+          <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
+          <TextInput placeholder="Phone" style={styles.input} keyboardType="phone-pad" />
+        </View>
       </KeyboardAwareScrollView>
 
       <KeyboardToolbar>
-        <KeyboardToolbar.Previous />
+        <KeyboardToolbar.Prev />
         <KeyboardToolbar.Next />
-        <KeyboardToolbar.Done label="Done" />
+        <KeyboardToolbar.Done text="Submit" />
       </KeyboardToolbar>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { padding: 16 },
+  input: {
+    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+  },
+});
+```
+
+### Custom Toolbar Content
+
+```typescript
+<KeyboardToolbar>
+  <KeyboardToolbar.Prev />
+  <KeyboardToolbar.Content>
+    <Text style={{ textAlign: 'center' }}>Step 2 of 5</Text>
+  </KeyboardToolbar.Content>
+  <KeyboardToolbar.Done text="Next" />
+</KeyboardToolbar>
 ```
 
 ---
 
 ## KeyboardAwareScrollView
 
-Auto-scrolls to keep focused input visible.
+Auto-scrolls to keep focused input visible above the keyboard. Drop-in replacement for ScrollView.
 
 ### Props
-```typescript
-interface KeyboardAwareScrollViewProps extends ScrollViewProps {
-  bottomOffset?: number;    // Gap between keyboard and caret
-  ScrollViewComponent?: typeof ScrollView;
-  disableScrollOnKeyboardHide?: boolean;
-  enabled?: boolean;
-  extraKeyboardSpace?: number;
-}
-```
+
+Inherits all `ScrollView` props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `bottomOffset` | `number` | `0` | Gap between keyboard top and text caret (equivalent to `extraHeight` in older libraries) |
+| `disableScrollOnKeyboardHide` | `boolean` | `false` | Prevents automatic scroll-back when keyboard hides, maintaining current position |
+| `enabled` | `boolean` | `true` | Enable/disable keyboard awareness |
+| `extraKeyboardSpace` | `number` | `0` | Extra bottom spacing. Negative for elements between scroll and screen edge, positive for sticky elements |
+| `ScrollViewComponent` | `typeof ScrollView` | `ScrollView` | Custom ScrollView component (e.g., from gesture-handler) |
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `assureFocusedInputVisible()` | Programmatically ensure the focused input is visible |
 
 ### Example
+
 ```typescript
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { TextInput, View, StyleSheet } from 'react-native';
 
-function Form() {
+function RegistrationForm() {
   return (
     <KeyboardAwareScrollView
       bottomOffset={50}
+      disableScrollOnKeyboardHide={false}
       contentContainerStyle={{ padding: 16 }}
+      keyboardShouldPersistTaps="handled"
     >
-      {[...Array(10)].map((_, i) => (
-        <TextInput
-          key={i}
-          placeholder={`Field ${i + 1}`}
-          style={styles.input}
-        />
-      ))}
+      <TextInput placeholder="Name" style={styles.input} />
+      <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
+      <TextInput placeholder="Password" style={styles.input} secureTextEntry />
+      <TextInput placeholder="Confirm Password" style={styles.input} secureTextEntry />
+      <TextInput placeholder="Address" style={styles.input} />
+      <TextInput placeholder="City" style={styles.input} />
+      <TextInput placeholder="Zip Code" style={styles.input} keyboardType="number-pad" />
     </KeyboardAwareScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  input: {
+    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+  },
+});
 ```
 
 ---
 
 ## KeyboardStickyView
 
-Positions content to stick to keyboard.
+Sticks content to the keyboard -- follows keyboard position as it animates.
 
 ### Props
-```typescript
-interface KeyboardStickyViewProps extends ViewProps {
-  offset?: number;
-  visible?: boolean;
-}
-```
+
+Inherits `View` props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enabled` | `boolean` | `true` | When disabled, view returns to initial position and stops responding to keyboard |
+| `offset` | `{ closed?: number; opened?: number }` | `{ closed: 0, opened: 0 }` | Extra spacing when keyboard is hidden (`closed`) or visible (`opened`) |
 
 ### Example
+
 ```typescript
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 function StickyButton() {
   return (
-    <KeyboardStickyView offset={10}>
+    <KeyboardStickyView offset={{ opened: 10, closed: 0 }}>
       <TouchableOpacity style={styles.button}>
-        <Text>Send</Text>
+        <Text style={styles.buttonText}>Send Message</Text>
       </TouchableOpacity>
     </KeyboardStickyView>
   );
 }
-```
 
----
-
-## OverKeyboardView
-
-Displays content above keyboard without dismissing it.
-
-### Props
-```typescript
-interface OverKeyboardViewProps extends ViewProps {
-  offset?: number;
-  hideWhenKeyboardHides?: boolean;
-}
-```
-
-### Example
-```typescript
-import { OverKeyboardView } from 'react-native-keyboard-controller';
-
-function AutocompleteInput() {
-  const [text, setText] = useState('');
-  const suggestions = ['Apple', 'Banana', 'Cherry'];
-
-  return (
-    <>
-      <TextInput value={text} onChangeText={setText} />
-
-      {text.length > 0 && (
-        <OverKeyboardView offset={10}>
-          <ScrollView>
-            {suggestions.map((item) => (
-              <TouchableOpacity key={item} onPress={() => setText(item)}>
-                <Text>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </OverKeyboardView>
-      )}
-    </>
-  );
-}
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 14,
+    borderRadius: 8,
+    margin: 16,
+    alignItems: 'center',
+  },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});
 ```
 
 ---
 
 ## KeyboardAvoidingView
 
-Avoids keyboard overlap with padding/height/position behavior.
+Adjusts layout to avoid keyboard overlap. Provides four behavior modes.
 
 ### Props
+
+Inherits `View` props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `behavior` | `'translate-with-padding' \| 'padding' \| 'height' \| 'position'` | -- | How the view responds to keyboard |
+| `keyboardVerticalOffset` | `number` | `0` | Extra offset for headers/navigation bars above the view |
+| `enabled` | `boolean` | `true` | Enable/disable avoidance |
+| `contentContainerStyle` | `ViewStyle` | -- | Style for content container when `behavior="position"` |
+
+### Behavior Modes
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| `translate-with-padding` | Translates + adds paddingTop | Chat apps (best performance) |
+| `padding` | Adds paddingBottom | ScrollView-based layouts |
+| `height` | Shrinks entire view | Fixed-height layouts |
+| `position` | Shifts view upward | Fixed bottom buttons |
+
+### Example
+
 ```typescript
-interface KeyboardAvoidingViewProps extends ViewProps {
-  behavior?: 'padding' | 'height' | 'position';
-  keyboardVerticalOffset?: number;
-  enabled?: boolean;
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { Platform, TextInput, StyleSheet } from 'react-native';
+
+function SimpleForm() {
+  return (
+    <KeyboardAvoidingView
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      style={styles.container}
+    >
+      <TextInput placeholder="Message" style={styles.input} />
+    </KeyboardAvoidingView>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'flex-end' },
+  input: { padding: 12, borderWidth: 1, borderColor: '#ccc', margin: 16 },
+});
 ```
 
 ---
 
-**See Also**: [Extensions](05-extensions.md) | [Implementation Guides](06-implementation-guides.md)
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/

@@ -482,4 +482,4 @@ describe('Server error handling', () => {
 
 ---
 
-**Source:** https://react-hook-form.com/form-builder
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/form-builder

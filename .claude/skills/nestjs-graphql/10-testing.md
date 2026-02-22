@@ -1,5 +1,7 @@
 # Testing GraphQL Resolvers
 
+Testing patterns for resolvers, guards, and end-to-end GraphQL queries with Vitest.
+
 ## Unit Testing Resolvers
 
 ```typescript
@@ -9,74 +11,109 @@ import { UsersService } from './users.service';
 
 describe('UsersResolver', () => {
   let resolver: UsersResolver;
-  let service: UsersService;
-
-  const mockUsersService = {
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
+  let usersService: {
+    findAll: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
+    usersService = {
+      findAll: vi.fn(),
+      findOne: vi.fn(),
+      create: vi.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersResolver,
-        {
-          provide: UsersService,
-          useValue: mockUsersService,
-        },
+        { provide: UsersService, useValue: usersService },
       ],
     }).compile();
 
     resolver = module.get<UsersResolver>(UsersResolver);
-    service = module.get<UsersService>(UsersService);
   });
 
-  it('should be defined', () => {
-    expect(resolver).toBeDefined();
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe('findAll', () => {
-    it('should return an array of users', async () => {
+    it('should return array of users', async () => {
       const mockUsers = [
-        { id: 1, name: 'John', email: 'john@example.com' },
-        { id: 2, name: 'Jane', email: 'jane@example.com' },
+        { id: '1', name: 'John', email: 'john@example.com' },
+        { id: '2', name: 'Jane', email: 'jane@example.com' },
       ];
-
-      mockUsersService.findAll.mockResolvedValue(mockUsers);
+      usersService.findAll.mockResolvedValue(mockUsers);
 
       const result = await resolver.findAll();
 
       expect(result).toEqual(mockUsers);
-      expect(mockUsersService.findAll).toHaveBeenCalled();
+      expect(usersService.findAll).toHaveBeenCalledOnce();
     });
   });
 
-  describe('create', () => {
-    it('should create a new user', async () => {
+  describe('createUser', () => {
+    it('should create and return a new user', async () => {
       const input = { name: 'Bob', email: 'bob@example.com' };
-      const mockUser = { id: 3, ...input };
+      const mockUser = { id: '3', ...input };
+      usersService.create.mockResolvedValue(mockUser);
 
-      mockUsersService.create.mockResolvedValue(mockUser);
-
-      const result = await resolver.create(input);
+      const result = await resolver.createUser(input);
 
       expect(result).toEqual(mockUser);
-      expect(mockUsersService.create).toHaveBeenCalledWith(input);
+      expect(usersService.create).toHaveBeenCalledWith(input);
     });
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 });
 ```
 
-## E2E Testing
+## Testing Field Resolvers with DataLoader
 
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { PostsResolver } from './posts.resolver';
+import { UsersLoader } from '../users/users.loader';
+
+describe('PostsResolver', () => {
+  let resolver: PostsResolver;
+  let usersLoader: { batchUsers: { load: ReturnType<typeof vi.fn> } };
+
+  beforeEach(async () => {
+    usersLoader = {
+      batchUsers: { load: vi.fn() },
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PostsResolver,
+        { provide: UsersLoader, useValue: usersLoader },
+      ],
+    }).compile();
+
+    resolver = module.get<PostsResolver>(PostsResolver);
+  });
+
+  describe('author field resolver', () => {
+    it('should load author via DataLoader', async () => {
+      const mockUser = { id: '1', name: 'John' };
+      usersLoader.batchUsers.load.mockResolvedValue(mockUser);
+
+      const post = { id: 'p1', title: 'Test', authorId: '1' };
+      const result = await resolver.author(post);
+
+      expect(result).toEqual(mockUser);
+      expect(usersLoader.batchUsers.load).toHaveBeenCalledWith('1');
+    });
+  });
+});
+```
+
+## E2E Testing GraphQL Queries
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 
@@ -89,6 +126,7 @@ describe('GraphQL (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -101,15 +139,7 @@ describe('GraphQL (e2e)', () => {
       return request(app.getHttpServer())
         .post('/graphql')
         .send({
-          query: `
-            query {
-              users {
-                id
-                name
-                email
-              }
-            }
-          `,
+          query: `query { users { id name email } }`,
         })
         .expect(200)
         .expect((res) => {
@@ -121,29 +151,20 @@ describe('GraphQL (e2e)', () => {
 
   describe('createUser mutation', () => {
     it('should create a new user', () => {
-      const input = {
-        name: 'Test User',
-        email: 'test@example.com',
-      };
-
       return request(app.getHttpServer())
         .post('/graphql')
         .send({
           query: `
             mutation CreateUser($input: CreateUserInput!) {
-              createUser(input: $input) {
-                id
-                name
-                email
-              }
+              createUser(input: $input) { id name email }
             }
           `,
-          variables: { input },
+          variables: { input: { name: 'Test', email: 'test@example.com' } },
         })
         .expect(200)
         .expect((res) => {
           expect(res.body.data.createUser).toBeDefined();
-          expect(res.body.data.createUser.name).toBe(input.name);
+          expect(res.body.data.createUser.name).toBe('Test');
         });
     });
   });
@@ -153,99 +174,74 @@ describe('GraphQL (e2e)', () => {
 ## Testing with Authentication
 
 ```typescript
-describe('authenticated queries', () => {
+describe('Authenticated GraphQL queries', () => {
   let authToken: string;
 
   beforeAll(async () => {
-    const loginResponse = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post('/graphql')
       .send({
         query: `
-          mutation {
-            login(email: "test@example.com", password: "password") {
-              token
-            }
-          }
+          mutation { login(email: "admin@test.com", password: "pass") { accessToken } }
         `,
       });
-
-    authToken = loginResponse.body.data.login.token;
+    authToken = res.body.data.login.accessToken;
   });
 
-  it('should return current user when authenticated', () => {
+  it('should return current user', () => {
     return request(app.getHttpServer())
       .post('/graphql')
       .set('Authorization', `Bearer ${authToken}`)
-      .send({
-        query: `
-          query {
-            me {
-              id
-              email
-            }
-          }
-        `,
-      })
+      .send({ query: `query { me { id email roles } }` })
       .expect(200)
       .expect((res) => {
         expect(res.body.data.me).toBeDefined();
+        expect(res.body.data.me.email).toBe('admin@test.com');
+      });
+  });
+
+  it('should reject unauthenticated request', () => {
+    return request(app.getHttpServer())
+      .post('/graphql')
+      .send({ query: `query { me { id email } }` })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.errors).toBeDefined();
+        expect(res.body.errors[0].extensions.code).toBe('UNAUTHENTICATED');
       });
   });
 });
 ```
 
-## Testing Subscriptions
+## Testing Validation
 
 ```typescript
-import { WebSocket } from 'ws';
-
-describe('GraphQL Subscriptions', () => {
-  let ws: WebSocket;
-
-  beforeAll(() => {
-    ws = new WebSocket('ws://localhost:3000/graphql', 'graphql-ws');
-  });
-
-  afterAll(() => {
-    ws.close();
-  });
-
-  it('should receive notification updates', (done) => {
-    ws.on('open', () => {
-      ws.send(JSON.stringify({
-        type: 'subscribe',
-        id: '1',
-        payload: {
-          query: `subscription { notificationAdded }`,
-        },
-      }));
-
-      // Trigger notification
-      request(app.getHttpServer())
-        .post('/graphql')
-        .send({
-          query: `mutation { addNotification(message: "Test") }`,
-        });
+it('should reject invalid email in mutation', () => {
+  return request(app.getHttpServer())
+    .post('/graphql')
+    .send({
+      query: `
+        mutation { createUser(input: { name: "A", email: "invalid" }) { id } }
+      `,
+    })
+    .expect(200)
+    .expect((res) => {
+      expect(res.body.errors).toBeDefined();
     });
-
-    ws.on('message', (data) => {
-      const message = JSON.parse(data.toString());
-      if (message.type === 'next') {
-        expect(message.payload.data.notificationAdded).toBe('Test');
-        done();
-      }
-    });
-  });
 });
 ```
 
 ## Best Practices
 
-1. **Mock Dependencies** - Use `jest.fn()` to mock services
-2. **Test Data Management** - Set up/tear down test data
-3. **Error Scenarios** - Test various error cases
-4. **Bottom-Up Testing** - Test services first, then resolvers
-5. **Use Testing Database** - Keep test data separate
-6. **Clear Mock History** - Use `jest.clearAllMocks()` in `afterEach`
-7. **Test Field Resolvers** - Include tests for computed fields
-8. **Validate Response Structure** - Check GraphQL response format
+| Practice | Rationale |
+|----------|-----------|
+| Mock services, not resolvers | Test resolver logic, not service implementation |
+| Mock DataLoader `.load()` | Avoid actual batching in unit tests |
+| Use `vi.clearAllMocks()` in `afterEach` | Prevent test pollution |
+| Test error scenarios | Verify error codes and messages |
+| Test auth + roles | Verify guard behavior |
+| Use `supertest` for e2e | Standard HTTP testing for GraphQL |
+
+---
+
+**Version:** @nestjs/graphql 13.x + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing

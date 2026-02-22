@@ -2,16 +2,16 @@
 
 **Document URL:** https://oss.callstack.com/react-native-testing-library/docs/start/installation
 
-**Version:** 13.3.3
+**Version:** ^13.0.0
 
 ---
 
 ## Prerequisites
 
-- **Node.js:** v14 or higher
-- **React Native:** v0.63 or higher
-- **React:** v17 or higher
-- **Jest:** v26 or higher (typically included with React Native)
+- **Node.js:** v18 or higher
+- **React Native:** v0.73 or higher (tested through 0.81.x)
+- **React:** v18 or higher, including React 19.x (React 16/17 no longer supported)
+- **Jest:** v29 or higher (typically included with React Native)
 
 ---
 
@@ -33,27 +33,20 @@ Or with Expo:
 npx expo install @testing-library/react-native
 ```
 
-### Step 2: Install React Test Renderer
-
-**CRITICAL:** Match your React version exactly. Check your `package.json` for React version.
-
-```bash
-# Example: If using React 18.2.0
-npm install --save-dev react-test-renderer@18.2.0
-```
-
-### Step 3: Verify Installation
+### Step 2: Verify Installation
 
 Add this to your `package.json` to verify all dependencies:
 
 ```json
 {
   "devDependencies": {
-    "@testing-library/react-native": "^13.3.3",
-    "jest": "^29.0.0",
-    "react-test-renderer": "^18.2.0"
+    "@testing-library/react-native": "^13.0.0",
+    "jest": "^29.0.0"
   }
 }
+```
+
+> **Note:** `react-test-renderer` is no longer required as a peer dependency in v13. It will be fully removed in v14.
 ```
 
 ---
@@ -85,26 +78,12 @@ module.exports = {
 ### Create jest.setup.js
 
 ```javascript
-// Enable @testing-library/jest-native matchers
-import '@testing-library/jest-native/extend-expect';
+// v13: Jest matchers (toBeOnTheScreen, etc.) are auto-extended.
+// No need to import '@testing-library/react-native/extend-expect' or
+// '@testing-library/jest-native/extend-expect' — they are registered automatically.
 
-// Optional: Suppress act() warnings in tests
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render')
-    ) {
-      return;
-    }
-    originalError.call(console, ...args);
-  };
-});
-
-afterAll(() => {
-  console.error = originalError;
-});
+// Optional: Increase default timeout for async tests
+jest.setTimeout(10000);
 ```
 
 ---
@@ -122,7 +101,6 @@ cd MyApp
 npx expo install --save-dev @testing-library/react-native
 npx expo install --save-dev jest
 npx expo install --save-dev jest-expo
-npx expo install --save-dev react-test-renderer
 ```
 
 ### Jest Config for Expo
@@ -160,7 +138,7 @@ module.exports = {
 ### Installation
 
 ```bash
-npm install --save-dev @testing-library/react-native jest react-test-renderer
+npm install --save-dev @testing-library/react-native jest
 ```
 
 ### Jest Configuration
@@ -272,17 +250,28 @@ Time:        2.345s
 
 ---
 
+## v13 Migration Notes
+
+### Key Changes from v12
+
+1. **React 18+ required (React 19 supported)** -- React 16 and 17 are no longer supported
+2. **`react-test-renderer` no longer required** -- v13 uses React's own APIs; `react-test-renderer` will be fully removed in v14
+3. **Jest matchers auto-extend** -- No need to import `@testing-library/react-native/extend-expect` or `@testing-library/jest-native/extend-expect`
+4. **Concurrent rendering enabled by default** -- Pass `concurrentRoot: false` to `render()` options as an escape hatch if needed
+5. **Uses React's `act()`** -- Instead of React Test Renderer's `act()`
+6. **Jest preset removed** -- Use the standard `react-native` preset, not `@testing-library/react-native`
+7. **Removed queries**: `*ByA11yState` (use `*ByRole` with state options or `toHaveAccessibilityState` matcher) and `*ByA11yValue` (use `*ByRole` or `toHaveAccessibleValue` matcher)
+8. **`debug.shallow` removed** -- No shallow rendering support
+9. **Node 18+** -- Minimum Node.js version requirement
+
+### v14 Preview (NOT in v13 yet)
+
+- `render` and `fireEvent` will become async
+- `react-test-renderer` will be fully removed
+
+---
+
 ## Troubleshooting Setup
-
-### Issue: "Cannot find module 'react-test-renderer'"
-
-```bash
-# Check your React version
-npm list react
-
-# Install matching react-test-renderer
-npm install --save-dev react-test-renderer@<your-react-version>
-```
 
 ### Issue: "ReferenceError: regeneratorRuntime is not defined"
 

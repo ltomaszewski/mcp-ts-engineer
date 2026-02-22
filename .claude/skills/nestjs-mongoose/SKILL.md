@@ -1,5 +1,6 @@
 ---
 name: nestjs-mongoose
+version: "NestJS 11 + Mongoose 8.x"
 description: NestJS Mongoose/MongoDB integration - schemas, models, repository pattern, transactions, virtuals, hooks, discriminators. Use when working with MongoDB, creating schemas, or implementing data access patterns.
 ---
 

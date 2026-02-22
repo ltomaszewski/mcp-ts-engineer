@@ -1,292 +1,305 @@
 # API Reference
 
-**Source:** [https://biomejs.dev](https://biomejs.dev)
+**Source:** https://github.com/biomejs/biome/tree/main/packages/@biomejs/js-api
 
 ---
 
 ## Overview
 
-Biome provides programmatic access via `@biomejs/wasm` and `@biomejs/js` packages for JavaScript/TypeScript environments.
+Biome provides programmatic access via the `@biomejs/js-api` package, which uses WebAssembly bindings to run Biome's Rust core in JavaScript environments. The API supports formatting, linting, and diagnostics.
+
+**Status:** The JS API is currently in alpha and not yet considered stable for production use. For most workflows, prefer the CLI.
 
 ---
 
 ## Installation
 
-### @biomejs/wasm (WebAssembly)
+### @biomejs/js-api + WASM Peer Dependency
 
 ```bash
-npm install --save-dev @biomejs/wasm
+npm install @biomejs/js-api @biomejs/wasm-nodejs
 ```
 
-**Return:** WASM-based Biome for universal JavaScript environments
+Three WASM distribution targets are available as peer dependencies:
+
+| Package | Environment | Notes |
+|---------|-------------|-------|
+| `@biomejs/wasm-nodejs` | Node.js | Uses `fs` API for WASM loading |
+| `@biomejs/wasm-bundler` | Bundlers (webpack, Vite) | Direct WASM imports |
+| `@biomejs/wasm-web` | Browsers | Uses `fetch` API for WASM loading |
 
 ---
 
-### @biomejs/js (JavaScript Binding)
+## Import Paths
 
-```bash
-npm install --save-dev @biomejs/js
+Each environment has a dedicated import path:
+
+```typescript
+// Node.js
+import { Biome } from "@biomejs/js-api/nodejs";
+
+// Bundler (webpack, Vite)
+import { Biome, Distribution } from "@biomejs/js-api/bundler";
+
+// Web / Browser
+import { Biome, Distribution } from "@biomejs/js-api/web";
 ```
-
-**Return:** JavaScript binding for native Biome binary
 
 ---
 
-## Basic Usage
+## Core API Methods
 
-### Formatting Code
+### Project Management
 
-```javascript
-import { format } from "@biomejs/wasm";
+#### openProject
 
-const code = `const  x  =  1`;
-const formatted = format(code, {
-  filepath: "test.js"
+Opens a project directory for processing.
+
+```typescript
+const project = biome.openProject("/path/to/project");
+// Returns: { projectKey: string }
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `string` | Absolute path to the project root |
+
+**Returns:** `{ projectKey: string }` -- identifier for subsequent operations.
+
+---
+
+#### applyConfiguration
+
+Applies configuration programmatically instead of reading `biome.json`.
+
+```typescript
+biome.applyConfiguration(projectKey, {
+  formatter: {
+    indentStyle: "space",
+    indentWidth: 2,
+    lineWidth: 100,
+  },
+  linter: {
+    rules: {
+      recommended: true,
+    },
+  },
+});
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `projectKey` | `string` | Project identifier from `openProject` |
+| `config` | `object` | Biome configuration (same schema as `biome.json`) |
+
+---
+
+### Formatting
+
+#### formatContent
+
+Formats source code according to Biome rules.
+
+```typescript
+const result = biome.formatContent(projectKey, code, {
+  filePath: "src/index.ts",
+});
+console.log(result.content);
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `projectKey` | `string` | Project identifier |
+| `content` | `string` | Source code to format |
+| `options.filePath` | `string` | Virtual file path (for language detection) |
+
+**Returns:** `{ content: string }` -- the formatted code.
+
+---
+
+### Linting
+
+#### lintContent
+
+Analyzes code and returns diagnostics.
+
+```typescript
+const result = biome.lintContent(projectKey, code, {
+  filePath: "src/index.ts",
 });
 
-console.log(formatted);
-// Output: const x = 1;
+for (const diagnostic of result.diagnostics) {
+  console.log(diagnostic.message);
+}
 ```
 
-**Parameters:**
-- `code` (string): Source code to format
-- `options` (object): Configuration options
-  - `filepath` (string): Virtual file path for language detection
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `projectKey` | `string` | Project identifier |
+| `content` | `string` | Source code to lint |
+| `options.filePath` | `string` | Virtual file path (for language/rule detection) |
 
-**Return:** Formatted code string
+**Returns:** `{ diagnostics: Diagnostic[] }` -- array of diagnostic objects.
 
 ---
 
-### Linting Code
+### Diagnostics Display
 
-```javascript
-import { lint } from "@biomejs/wasm";
+#### printDiagnostics
 
-const code = `const unused = 1;`;
-const diagnostics = lint(code, {
-  filepath: "test.js"
+Converts diagnostic objects into formatted HTML for display.
+
+```typescript
+const html = biome.printDiagnostics(result.diagnostics, {
+  filePath: "src/index.ts",
+  fileSource: code,
 });
-
-console.log(diagnostics);
-// Output: Array of diagnostic objects
 ```
 
-**Parameters:**
-- `code` (string): Source code to lint
-- `options` (object): Configuration options
-  - `filepath` (string): File path for language detection
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `diagnostics` | `Diagnostic[]` | Array from `lintContent` |
+| `options.filePath` | `string` | File path for display |
+| `options.fileSource` | `string` | Original source for context |
 
-**Return:** Array of diagnostic objects
+**Returns:** `string` -- HTML-formatted diagnostic output.
 
 ---
 
-### Parsing Code
+## Complete Node.js Example
 
-```javascript
-import { parse } from "@biomejs/wasm";
+```typescript
+import { Biome } from "@biomejs/js-api/nodejs";
 
-const code = `function hello() { return 42; }`;
-const ast = parse(code, {
-  filepath: "test.js"
-});
+async function main(): Promise<void> {
+  const biome = new Biome();
 
-console.log(JSON.stringify(ast, null, 2));
-// Output: Abstract Syntax Tree
-```
+  // Open project
+  const { projectKey } = biome.openProject(".");
 
-**Parameters:**
-- `code` (string): Source code
-- `options` (object): Configuration
-  - `filepath` (string): File path
+  // Apply configuration
+  biome.applyConfiguration(projectKey, {
+    formatter: {
+      indentStyle: "space",
+      indentWidth: 2,
+    },
+    linter: {
+      rules: {
+        recommended: true,
+        correctness: {
+          noUnusedVariables: "error",
+        },
+      },
+    },
+  });
 
-**Return:** AST object
+  // Format code
+  const code = `const  x  =  1;\nconst unused = 2;`;
+  const formatted = biome.formatContent(projectKey, code, {
+    filePath: "test.ts",
+  });
+  console.log("Formatted:", formatted.content);
 
----
+  // Lint code
+  const linted = biome.lintContent(projectKey, code, {
+    filePath: "test.ts",
+  });
 
-## Configuration
-
-### Format Options
-
-```javascript
-import { format } from "@biomejs/wasm";
-
-const code = `const x=1`;
-const options = {
-  filepath: "test.js",
-  indentStyle: "space",
-  indentWidth: 4,
-  lineWidth: 120,
-  quoteStyle: "single",
-  semicolons: "asNeeded"
-};
-
-const formatted = format(code, options);
-```
-
----
-
-### Lint Options
-
-```javascript
-import { lint } from "@biomejs/wasm";
-
-const code = `const unused = 1;`;
-const options = {
-  filepath: "test.js",
-  rules: {
-    correctness: {
-      noUnusedVariables: "error"
-    }
+  for (const diagnostic of linted.diagnostics) {
+    console.log("Issue:", diagnostic.message);
   }
-};
+}
 
-const diagnostics = lint(code, options);
-```
-
----
-
-## Advanced Usage
-
-### TypeScript/JSX Parsing
-
-```javascript
-import { parse } from "@biomejs/wasm";
-
-// Automatic language detection via filepath
-const jsCode = parse("const x: string = 'hello';", {
-  filepath: "test.ts"  // Detected as TypeScript
-});
-
-const jsxCode = parse("<Component prop='value' />", {
-  filepath: "component.jsx"  // Detected as JSX
-});
-```
-
----
-
-### Multi-Language Formatting
-
-```javascript
-import { format } from "@biomejs/wasm";
-
-const formats = [
-  { filepath: "index.js", code: "const x=1" },
-  { filepath: "style.css", code: "body{color:red}" },
-  { filepath: "data.json", code: '{"key":"value"}' }
-];
-
-formats.forEach(({ filepath, code }) => {
-  const formatted = format(code, { filepath });
-  console.log(`${filepath}:`, formatted);
-});
+main();
 ```
 
 ---
 
 ## CLI Integration from Node.js
 
-Use Node.js child processes to invoke Biome CLI:
+For production use, prefer invoking the CLI via child processes:
 
-```javascript
-import { execSync } from "child_process";
+```typescript
+import { execSync } from "node:child_process";
 
 // Format files
-const result = execSync("npx biome format --write src/", {
-  encoding: "utf-8"
+execSync("npx biome format --write src/", { encoding: "utf-8" });
+
+// Lint with JSON output
+const output = execSync("npx biome lint --reporter=json src/", {
+  encoding: "utf-8",
 });
+const diagnostics = JSON.parse(output);
 
-// Check with JSON output
-const diagnostics = JSON.parse(
-  execSync("npx biome lint --reporter=json src/", {
-    encoding: "utf-8"
-  })
-);
-
-console.log(diagnostics);
+// CI check (read-only, exits non-zero on violations)
+execSync("npx biome ci .", { encoding: "utf-8" });
 ```
 
 ---
 
-## Error Handling
+## Daemon Mode for Performance
 
-```javascript
-import { format } from "@biomejs/wasm";
-
-try {
-  const code = "const x = {";  // Syntax error
-  const result = format(code, { filepath: "test.js" });
-} catch (error) {
-  console.error("Format error:", error.message);
-}
-```
-
----
-
-## Build Tool Integration
-
-### Webpack Plugin
-
-```javascript
-class BiomePlugin {
-  apply(compiler) {
-    compiler.hooks.compilation.tap("BiomePlugin", (compilation) => {
-      compilation.hooks.processAssets.tap(
-        { name: "BiomePlugin" },
-        (assets) => {
-          for (const [filename, source] of Object.entries(assets)) {
-            if (filename.endsWith(".js")) {
-              const { lint } = require("@biomejs/wasm");
-              const diagnostics = lint(source.source(), {
-                filepath: filename
-              });
-              
-              if (diagnostics.some(d => d.severity === "error")) {
-                compilation.errors.push(
-                  new Error(`${filename} has lint errors`)
-                );
-              }
-            }
-          }
-        }
-      );
-    });
-  }
-}
-
-module.exports = BiomePlugin;
-```
-
----
-
-## Performance Considerations
-
-### Memory Usage
-
-WASM module consumes ~50-80MB depending on rules enabled.
-
-```javascript
-import { lint } from "@biomejs/wasm";
-
-// Memory-efficient for single file
-const diag1 = lint(smallCode, { filepath: "test.js" });
-```
-
----
-
-### Batch Processing
-
-For processing multiple files, use daemon mode:
+For repeated operations, use the daemon for 2-5x speedup:
 
 ```bash
-npx biome start
-
-# Then use child_process with daemon
-node process-files.js
+npx biome start                    # Start daemon
+npx biome check --use-server .     # Use daemon (faster)
+npx biome stop                     # Stop daemon
 ```
 
-**Speed Improvement:** 5-10x faster for repeated operations
+The daemon keeps Biome's Rust binary loaded in memory, eliminating startup cost on each invocation. The `--use-server` flag connects to the running daemon instead of spawning a new process.
 
 ---
 
-**Document Version:** 2.3.10  
-**Last Updated:** December 2024
+## Architecture Notes
+
+### Parser (CST)
+
+Biome uses a Concrete Syntax Tree that preserves all program information including trivia (spaces, tabs, comments). The parser is resilient -- it recovers from syntax errors and uses "Bogus" nodes to protect consumers from incorrect syntax.
+
+### File Scanner
+
+The scanner performs three functions:
+- Discovers nested `biome.json`/`biome.jsonc` configs in monorepos
+- Locates `.gitignore` files when `vcs.useIgnoreFile` is enabled
+- Indexes `package.json` manifests for domain rule auto-detection
+
+### Daemon
+
+The daemon is a long-running server that Biome spawns in the background. It processes requests from editors (via LSP) and CLI commands (via `--use-server`). Uses a server-client model over a socket.
+
+---
+
+## Language Detection
+
+The `filePath` parameter determines language detection:
+
+| Extension | Language |
+|-----------|----------|
+| `.js`, `.mjs`, `.cjs` | JavaScript |
+| `.jsx` | JSX |
+| `.ts`, `.mts`, `.cts` | TypeScript |
+| `.tsx` | TSX |
+| `.json`, `.jsonc` | JSON |
+| `.css` | CSS |
+| `.graphql`, `.gql` | GraphQL |
+| `.html` | HTML |
+
+---
+
+## When to Use JS API vs CLI
+
+| Use Case | Recommended |
+|----------|-------------|
+| CI pipelines | CLI (`biome ci`) |
+| Pre-commit hooks | CLI (`biome check --staged`) |
+| Editor integration | LSP (built-in) |
+| Build tool plugins | CLI via child process |
+| Custom tooling / analysis | JS API (`@biomejs/js-api`) |
+| Batch file processing | CLI with daemon (`--use-server`) |
+
+**Recommendation:** Use the CLI for all standard workflows. Reserve the JS API for custom tooling where you need programmatic control over individual file processing.
+
+---
+
+**Version:** 2.x (^2.4.4) | **Source:** https://biomejs.dev/ , https://github.com/biomejs/biome/tree/main/packages/@biomejs/js-api

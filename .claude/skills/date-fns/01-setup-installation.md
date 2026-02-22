@@ -280,4 +280,4 @@ console.log('date-fns version:', pkg.version);
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/v4.1.0/docs/Getting-Started

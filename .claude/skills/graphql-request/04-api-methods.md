@@ -630,4 +630,4 @@ const data = await request(endpoint, query, variables, headers)
 
 **Source:** [github.com/jasonkuhrt/graphql-request](https://github.com/jasonkuhrt/graphql-request)  
 **Package:** graphql-request 7.4.0  
-**Last Updated:** December 27, 2025
+**Last Updated:** February 2026

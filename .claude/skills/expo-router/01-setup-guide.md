@@ -1,19 +1,10 @@
-# Setup Guide — Expo Router 6.0.19
+# Setup Guide -- Expo Router 6.x
 
-Complete initialization and configuration for new Expo Router projects.
-
-**Module Summary:** Initial project setup, dependency installation, entry point configuration, deep linking, and project verification.
-
-**🔗 Cross-References:**
-- Folder structure → `02-routing-basics.md`
-- Navigation implementation → `03-api-navigation.md`
-- Authentication setup → `06-auth-protected-routes.md`
+Complete initialization and configuration for Expo Router projects with SDK 54.
 
 ---
 
-## Quick Start (Recommended)
-
-### Create New Project with Expo Router
+## Quick Start (New Project)
 
 ```bash
 npx create-expo-app@latest my-app
@@ -21,13 +12,7 @@ cd my-app
 npm start
 ```
 
-This command:
-- ✅ Creates a new Expo project with Expo Router **pre-installed**
-- ✅ Configures `package.json` entry point automatically
-- ✅ Sets up `app/_layout.tsx` as root layout
-- ✅ Includes all required peer dependencies
-
-**Official Source:** https://docs.expo.dev/router/installation/
+This creates a new Expo project with Expo Router pre-installed, `app/_layout.tsx` as root layout, and all required peer dependencies.
 
 ---
 
@@ -51,21 +36,16 @@ npx expo install expo-router react-native-safe-area-context \
 
 ### Step 2: Update Entry Point
 
-Modify `package.json`:
-
 ```json
 {
   "main": "expo-router/entry"
 }
 ```
 
-This tells Expo to load Expo Router's entry point instead of the default.
-
 ### Step 3: Create Root Layout
 
-Create `app/_layout.tsx`:
-
 ```typescript
+// app/_layout.tsx
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
@@ -73,18 +53,22 @@ export default function RootLayout() {
 }
 ```
 
-Your project structure should now look like:
+### Step 4: Create Home Screen
 
-```
-project-root/
-├── app/
-│   └── _layout.tsx        // Root layout
-│   └── index.tsx          // Home screen
-├── package.json
-└── babel.config.js
+```typescript
+// app/index.tsx
+import { Text, View } from 'react-native';
+
+export default function Home() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Home Screen</Text>
+    </View>
+  );
+}
 ```
 
-### Step 4: Update Babel Configuration
+### Step 5: Babel Configuration
 
 Ensure `babel.config.js` uses the Expo preset:
 
@@ -97,28 +81,17 @@ module.exports = function (api) {
 };
 ```
 
-If your file is missing, create it with the above content.
-
-### Step 5: Clear Cache & Start
+### Step 6: Clear Cache and Start
 
 ```bash
 npx expo start --clear
 ```
-
-Press:
-- `w` for web
-- `i` for iOS (requires macOS + Xcode)
-- `a` for Android (requires Android Studio)
-
-**Official Source:** https://docs.expo.dev/router/installation/
 
 ---
 
 ## Deep Linking Configuration
 
 ### Configure Scheme in app.json
-
-Add a unique scheme that identifies your app in deep links:
 
 ```json
 {
@@ -129,14 +102,9 @@ Add a unique scheme that identifies your app in deep links:
 }
 ```
 
-**Examples of deep links with this scheme:**
-- `myapp://home`
-- `myapp://profile/123`
-- `myapp://feed?sort=latest`
+Deep link examples: `myapp://home`, `myapp://profile/123`, `myapp://feed?sort=latest`.
 
 ### Web Platform Setup
-
-For web development, enable Metro bundler:
 
 ```json
 {
@@ -148,36 +116,25 @@ For web development, enable Metro bundler:
 }
 ```
 
-Then install web dependencies:
+Install web dependencies:
 
 ```bash
 npx expo install react-native-web react-dom
 ```
 
-**⚠️ Note:** Web uses client-side routing. For server-side rendering or SSG, deploy to Vercel, Netlify, or Expo Static.
-
 ### Custom Entry Point (Optional)
 
-For initializing global services before app load:
-
-**Create `index.js` in project root:**
+For initializing global services before app load, create `index.js` in project root:
 
 ```javascript
-// Initialize analytics
 import * as Analytics from './services/analytics';
 Analytics.initialize();
 
-// Setup error tracking
-import * as Sentry from '@sentry/react-native';
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-});
-
-// ⚠️ MUST be last import
+// MUST be last import
 import 'expo-router/entry';
 ```
 
-**Update `package.json`:**
+Update `package.json`:
 
 ```json
 {
@@ -185,37 +142,32 @@ import 'expo-router/entry';
 }
 ```
 
-**Official Source:** https://docs.expo.dev/router/installation/
-
 ---
 
-## Verify Installation
+## TypeScript Setup
 
-### Test Navigation
-
-Create `app/index.tsx`:
+Expo Router generates automatic type definitions. No additional setup required.
 
 ```typescript
-import { Link } from 'expo-router';
-import { View, Text, Pressable } from 'react-native';
+// app/[id].tsx
+import { useLocalSearchParams } from 'expo-router';
+import { Text, View } from 'react-native';
 
-export default function Home() {
+export default function Details() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 20, marginBottom: 16 }}>
-        Expo Router Installed ✅
-      </Text>
-      <Link href="/about" asChild>
-        <Pressable>
-          <Text style={{ color: '#0a7ea4', fontSize: 16 }}>
-            Go to About →
-          </Text>
-        </Pressable>
-      </Link>
+    <View>
+      <Text>ID: {id}</Text>
     </View>
   );
 }
 ```
+
+TypeScript automatically suggests valid route names in `href`, types route parameters correctly, and catches broken links at compile time.
+
+---
+
+## Verify Installation
 
 Create `app/about.tsx`:
 
@@ -225,77 +177,35 @@ import { View, Text, Pressable } from 'react-native';
 
 export default function About() {
   const router = useRouter();
-  
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>About Screen</Text>
       <Pressable onPress={() => router.back()}>
-        <Text style={{ color: '#0a7ea4', marginTop: 16 }}>← Go Back</Text>
+        <Text style={{ color: '#0a7ea4', marginTop: 16 }}>Go Back</Text>
       </Pressable>
     </View>
   );
 }
 ```
 
-### Expected Behavior
-
-1. App launches to Home screen
-2. Click "Go to About" → navigates to `/about`
-3. Click "Go Back" → returns to Home
-4. Deep link test: `myapp://about` → should open About directly
-
-**🎯 If all three work, installation is complete!**
-
----
-
-## TypeScript Setup (Recommended)
-
-Expo Router generates automatic type definitions. No additional setup required—types work out of the box.
-
-### Verify TypeScript Types
-
-Create `app/[id].tsx` (dynamic route):
-
-```typescript
-import { useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
-
-export default function Details() {
-  // TypeScript automatically knows `id` is a string
-  const { id } = useLocalSearchParams<{ id: string }>();
-  
-  return (
-    <View>
-      <Text>ID: {id}</Text>
-    </View>
-  );
-}
-```
-
-**TypeScript automatically:**
-- ✅ Suggests valid route names in `href`
-- ✅ Types route parameters correctly
-- ✅ Catches broken links at compile time
-
-**Official Source:** https://github.com/expo/router#type-safety
+Expected behavior:
+1. App launches to Home screen at `/`
+2. Navigate to `/about` renders About screen
+3. `router.back()` returns to Home
+4. Deep link `myapp://about` opens About directly
 
 ---
 
 ## Common Setup Issues
 
-### Issue: "Cannot find module 'expo-router'"
+### "Cannot find module 'expo-router'"
 
-**Solution:**
 ```bash
 npx expo install expo-router
-npm start -- --clear
+npx expo start --clear
 ```
 
----
-
-### Issue: App shows blank white screen
-
-**Solution:**
+### Blank white screen
 
 Ensure `app/_layout.tsx` exists and exports a valid component:
 
@@ -307,89 +217,25 @@ export default function RootLayout() {
 }
 ```
 
-Clear cache:
-```bash
-rm -rf .expo
-npx expo start --clear
-```
+Clear cache: `rm -rf .expo && npx expo start --clear`
+
+### Deep links not working
+
+1. `scheme` is set in `app.json`
+2. Route file exists (e.g., `app/about.tsx` for `/about`)
+3. Project rebuilt after config changes: `npx expo start --clear`
+4. On native: app reinstalled after scheme change
 
 ---
 
-### Issue: Deep links not working
+## Verification Checklist
 
-**Verify:**
-
-1. ✅ `scheme` is set in `app.json`
-2. ✅ Route file exists (e.g., `app/about.tsx` for `/about`)
-3. ✅ Project rebuilt after config changes:
-   ```bash
-   npm start -- --clear
-   ```
-4. ✅ On native: app is installed (uninstall and reinstall)
-
----
-
-### Issue: "LogBox" warnings about modules
-
-**Solution:**
-
-Suppress in custom entry point:
-
-```javascript
-import { LogBox } from 'react-native';
-
-// Suppress specific warnings
-LogBox.ignoreLogs([
-  'Non-serializable values',
-  'Encountered two children with the same key',
-]);
-
-import 'expo-router/entry';
-```
-
----
-
-## Next Steps
-
-1. **Explore routing:** Read `routing-basics.md` for folder structure patterns
-2. **Build navigation UI:** Review `api-components.md` for Stack, Tabs, Drawer
-3. **Add authentication:** See `auth-protected-routes.md` for login flows
-4. **Setup deep linking:** Reference `deep-linking.md` for external link handling
-
----
-
-## Troubleshooting Checklist
-
-- [ ] `package.json` main field is set to `expo-router/entry` or custom entry file
-- [ ] `app/_layout.tsx` exists and exports a valid React component
+- [ ] `package.json` main field is `expo-router/entry` or custom entry file
+- [ ] `app/_layout.tsx` exists and exports a React component
 - [ ] `babel.config.js` uses `babel-preset-expo`
-- [ ] All dependencies installed: `npx expo install ...` (not `npm install`)
+- [ ] All dependencies installed via `npx expo install` (not `npm install`)
 - [ ] Cache cleared: `npx expo start --clear`
-- [ ] For native apps: app reinstalled after config changes
-- [ ] For web: Metro bundler enabled if targeting web platform
 
 ---
 
-## Verification Commands
-
-```bash
-# Check all required files exist
-ls app/_layout.tsx
-ls app/index.tsx
-
-# Verify package.json configuration
-grep '"main"' package.json
-
-# Check dependencies installed
-npm ls expo-router react-native-safe-area-context
-
-# Start fresh for testing
-rm -rf node_modules/.cache .expo
-npx expo start --clear
-```
-
----
-
-**Next Module:** `02-routing-basics.md` — File structure and routing conventions
-
-**Source Documentation:** https://docs.expo.dev/router/installation/
+**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/router/installation/

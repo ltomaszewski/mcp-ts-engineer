@@ -1,50 +1,31 @@
 # Keyboard Controller: Implementation Guides
 
-**Step-by-step tutorials and patterns**
+**Step-by-step patterns for forms, chat UIs, and keyboard animations.**
 
 ---
 
 ## First Animation Guide
 
 ### Goal
-Create animated view that moves up when keyboard appears.
 
-### Step 1: Get Animated Values
-```typescript
-import { useKeyboardAnimation } from 'react-native-keyboard-controller';
+Move a view up when keyboard appears using Reanimated.
 
-const { height } = useKeyboardAnimation();
-```
-
-### Step 2: Apply Animation
-```typescript
-const animatedStyle = {
-  transform: [{ translateY: Animated.multiply(height, -1) }],
-};
-```
-
-### Complete Example
 ```typescript
 import React from 'react';
-import { Animated, StyleSheet, TextInput, SafeAreaView } from 'react-native';
-import { KeyboardProvider, useKeyboardAnimation } from 'react-native-keyboard-controller';
+import { StyleSheet, TextInput, SafeAreaView } from 'react-native';
+import { KeyboardProvider, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-function AnimatedContainer() {
-  const { height, progress } = useKeyboardAnimation();
+function FloatingInput() {
+  const { height, progress } = useReanimatedKeyboardAnimation();
 
-  const translateY = Animated.multiply(height, -1);
-  const opacity = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1],
-  });
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: height.value * -1 }],
+    opacity: 0.5 + progress.value * 0.5,
+  }));
 
   return (
-    <Animated.View
-      style={[
-        styles.floatingContainer,
-        { transform: [{ translateY }], opacity },
-      ]}
-    >
+    <Animated.View style={[styles.floating, style]}>
       <TextInput placeholder="Message..." style={styles.input} />
     </Animated.View>
   );
@@ -54,7 +35,7 @@ export function FirstAnimation() {
   return (
     <KeyboardProvider>
       <SafeAreaView style={styles.container}>
-        <AnimatedContainer />
+        <FloatingInput />
       </SafeAreaView>
     </KeyboardProvider>
   );
@@ -62,12 +43,8 @@ export function FirstAnimation() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  floatingContainer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-  },
-  input: { padding: 12 },
+  floating: { position: 'absolute', bottom: 0, width: '100%' },
+  input: { padding: 12, borderTopWidth: 1, borderTopColor: '#ddd' },
 });
 ```
 
@@ -75,23 +52,26 @@ const styles = StyleSheet.create({
 
 ## Interactive Keyboard Dismiss
 
-### iOS Setup
+### iOS
+
 ```typescript
 <ScrollView keyboardDismissMode="interactive">
-  {/* Content */}
+  {/* Content -- swipe down to dismiss keyboard */}
 </ScrollView>
 ```
 
-### Android 11+ Setup
+### Android 11+
+
 ```typescript
 import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 
-<KeyboardGestureArea style={{ flex: 1 }}>
-  {/* Swipe to dismiss */}
+<KeyboardGestureArea interpolator="ios" style={{ flex: 1 }}>
+  {/* Content -- swipe down to dismiss keyboard */}
 </KeyboardGestureArea>
 ```
 
 ### Detect Interactive Dismiss
+
 ```typescript
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import { useSharedValue } from 'react-native-reanimated';
@@ -104,6 +84,10 @@ function useInteractiveDismiss() {
       'worklet';
       isInteractive.value = true;
     },
+    onEnd: () => {
+      'worklet';
+      isInteractive.value = false;
+    },
   }, []);
 
   return isInteractive;
@@ -112,11 +96,10 @@ function useInteractiveDismiss() {
 
 ---
 
-## Multi-Input Forms
+## Multi-Input Form with Toolbar
 
-### Complete Form with Toolbar
 ```typescript
-import React, { useRef } from 'react';
+import React from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import {
   KeyboardProvider,
@@ -125,40 +108,36 @@ import {
 } from 'react-native-keyboard-controller';
 
 const FIELDS = [
-  { id: 'email', placeholder: 'Email' },
-  { id: 'password', placeholder: 'Password', secureTextEntry: true },
-  { id: 'name', placeholder: 'Full Name' },
+  { key: 'email', placeholder: 'Email', keyboardType: 'email-address' as const },
+  { key: 'password', placeholder: 'Password', secureTextEntry: true },
+  { key: 'name', placeholder: 'Full Name' },
+  { key: 'phone', placeholder: 'Phone', keyboardType: 'phone-pad' as const },
+  { key: 'address', placeholder: 'Address' },
 ];
 
 export function CompleteForm() {
-  const refs = useRef<Record<string, TextInput | null>>({});
-
-  const handleDone = () => {
-    Object.values(refs.current).forEach((ref) => ref?.blur());
-  };
-
   return (
     <KeyboardProvider>
       <>
-        <KeyboardAwareScrollView bottomOffset={62}>
-          <View style={styles.container}>
-            {FIELDS.map((field) => (
-              <TextInput
-                key={field.id}
-                ref={(ref) => { refs.current[field.id] = ref; }}
-                placeholder={field.placeholder}
-                style={styles.input}
-                returnKeyType="next"
-                {...field}
-              />
-            ))}
-          </View>
+        <KeyboardAwareScrollView
+          bottomOffset={62}
+          contentContainerStyle={styles.scroll}
+        >
+          {FIELDS.map((field) => (
+            <TextInput
+              key={field.key}
+              placeholder={field.placeholder}
+              style={styles.input}
+              returnKeyType="next"
+              {...field}
+            />
+          ))}
         </KeyboardAwareScrollView>
 
-        <KeyboardToolbar onDone={handleDone}>
-          <KeyboardToolbar.Previous />
+        <KeyboardToolbar>
+          <KeyboardToolbar.Prev />
           <KeyboardToolbar.Next />
-          <KeyboardToolbar.Done label="Submit" />
+          <KeyboardToolbar.Done text="Submit" />
         </KeyboardToolbar>
       </>
     </KeyboardProvider>
@@ -166,43 +145,109 @@ export function CompleteForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  scroll: { padding: 16 },
   input: {
     marginBottom: 16,
     padding: 12,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
+    fontSize: 16,
   },
 });
 ```
 
 ---
 
-## Animation Performance
+## Chat Input with Sticky View
 
-### Performance Checklist
-- [ ] Use `useKeyboardHandler` with worklets
-- [ ] Avoid heavy computation in callbacks
-- [ ] Use `React.memo()` for animated components
-- [ ] Profile on real devices
-- [ ] Monitor frame drops
-
-### Reanimated vs Animated
 ```typescript
-// ❌ Less efficient
-const { height } = useKeyboardAnimation();
-const style = {
-  transform: [{ translateY: Animated.multiply(height, -1) }],
-};
+import React, { useState } from 'react';
+import { FlatList, TextInput, View, Text, StyleSheet } from 'react-native';
+import {
+  KeyboardProvider,
+  KeyboardStickyView,
+  KeyboardGestureArea,
+} from 'react-native-keyboard-controller';
 
-// ✅ More efficient
-const { height } = useReanimatedKeyboardAnimation();
-const style = useAnimatedStyle(() => ({
-  transform: [{ translateY: height.value * -1 }],
-}));
+function ChatScreen() {
+  const [message, setMessage] = useState('');
+
+  return (
+    <KeyboardProvider>
+      <View style={styles.container}>
+        <KeyboardGestureArea interpolator="ios" style={styles.flex}>
+          <FlatList
+            data={messages}
+            renderItem={({ item }) => (
+              <View style={styles.bubble}>
+                <Text>{item.text}</Text>
+              </View>
+            )}
+            inverted
+            keyboardDismissMode="interactive"
+          />
+        </KeyboardGestureArea>
+
+        <KeyboardStickyView offset={{ opened: 0, closed: 0 }}>
+          <View style={styles.inputRow}>
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Type a message..."
+              style={styles.input}
+            />
+          </View>
+        </KeyboardStickyView>
+      </View>
+    </KeyboardProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  flex: { flex: 1 },
+  bubble: { padding: 10, margin: 4, backgroundColor: '#e8e8e8', borderRadius: 12 },
+  inputRow: { flexDirection: 'row', padding: 8, borderTopWidth: 1, borderTopColor: '#ddd' },
+  input: { flex: 1, padding: 10, fontSize: 16 },
+});
 ```
 
 ---
 
-**See Also**: [Core API](02-core-api.md) | [Advanced API](03-advanced-api.md) | [Troubleshooting](10-troubleshooting.md)
+## Dynamic Input Mode per Screen
+
+```typescript
+import { KeyboardController, AndroidSoftInputModes } from 'react-native-keyboard-controller';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+
+function useAdjustResize() {
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      KeyboardController.setInputMode(
+        AndroidSoftInputModes.SOFT_INPUT_ADJUST_RESIZE
+      );
+      return () => {
+        KeyboardController.setDefaultMode();
+      };
+    }
+  }, []);
+}
+```
+
+---
+
+## Performance Checklist
+
+- [ ] Use `useReanimatedKeyboardAnimation` over `useKeyboardAnimation`
+- [ ] Add `'worklet'` directive in all `useKeyboardHandler` callbacks
+- [ ] Keep worklet callbacks lightweight (no heavy computation)
+- [ ] Use `React.memo()` for animated components
+- [ ] Enable ProMotion on iOS (Info.plist `CADisableMinimumFrameDurationOnPhone`)
+- [ ] Profile on real devices, not simulators
+- [ ] Monitor frame drops with Perf Monitor
+
+---
+
+**Version:** 1.19.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/recipes/

@@ -1,30 +1,74 @@
 # GraphQL Error Handling
 
-## formatError
+Error handling patterns specific to GraphQL with Yoga driver.
 
-Customize error responses:
+## IMPORTANT: Use GraphQLError, Not HttpException
+
+NestJS `HttpException` results in `INTERNAL_SERVER_ERROR` in GraphQL. Always use `GraphQLError`:
 
 ```typescript
 import { GraphQLError } from 'graphql';
 
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
+// WRONG -- results in generic INTERNAL_SERVER_ERROR
+throw new NotFoundException('User not found');
+
+// CORRECT -- proper GraphQL error with extensions
+throw new GraphQLError('User not found', {
+  extensions: { code: 'NOT_FOUND' },
+});
+```
+
+## GraphQLError Options
+
+```typescript
+throw new GraphQLError('Error message', {
+  extensions: {
+    code: 'CUSTOM_ERROR_CODE',
+    http: { status: 400 },      // Optional: HTTP status hint
+    userId: id,                   // Custom metadata
+    timestamp: new Date().toISOString(),
+  },
+  path: ['user', 'email'],       // Optional: error path
+});
+```
+
+### Standard Error Codes
+
+| Code | HTTP Equivalent | When |
+|------|----------------|------|
+| `BAD_USER_INPUT` | 400 | Invalid input data |
+| `UNAUTHENTICATED` | 401 | Missing/invalid auth |
+| `FORBIDDEN` | 403 | Insufficient permissions |
+| `NOT_FOUND` | 404 | Resource not found |
+| `INTERNAL_SERVER_ERROR` | 500 | Unexpected errors |
+| `GRAPHQL_PARSE_FAILED` | 400 | Invalid query syntax |
+| `GRAPHQL_VALIDATION_FAILED` | 400 | Schema validation failure |
+
+## Custom Error Formatting
+
+```typescript
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
   autoSchemaFile: true,
   formatError: (error: GraphQLError) => {
     const originalError = error.extensions?.originalError as any;
 
-    // Don't expose internal errors in production
-    if (process.env.NODE_ENV === 'production' &&
-        error.extensions?.code === 'INTERNAL_SERVER_ERROR') {
+    // Hide internal errors in production
+    if (
+      process.env.NODE_ENV === 'production' &&
+      error.extensions?.code === 'INTERNAL_SERVER_ERROR'
+    ) {
       return {
         message: 'An unexpected error occurred',
-        code: error.extensions?.code,
+        extensions: { code: 'INTERNAL_SERVER_ERROR' },
       };
     }
 
     return {
-      message: originalError?.message || error.message,
-      code: error.extensions?.code,
+      message: originalError?.message ?? error.message,
+      extensions: {
+        code: error.extensions?.code,
+      },
       locations: error.locations,
       path: error.path,
     };
@@ -32,91 +76,81 @@ GraphQLModule.forRoot<ApolloDriverConfig>({
 })
 ```
 
-## Important: Use GraphQLError Instead of HttpException
+## Custom Exception Filter for GraphQL
 
-Throwing NestJS `HttpException` results in `INTERNAL_SERVER_ERROR` in GraphQL:
-
-```typescript
-import { GraphQLError } from 'graphql';
-
-// WRONG - Results in INTERNAL_SERVER_ERROR
-throw new NotFoundException('User not found');
-
-// CORRECT - Proper GraphQL error
-throw new GraphQLError('User not found', {
-  extensions: { code: 'NOT_FOUND' },
-});
-```
-
-## Custom Exception Filter
+Catch NestJS exceptions and convert them to GraphQLError:
 
 ```typescript
 import { Catch, ArgumentsHost } from '@nestjs/common';
 import { GqlExceptionFilter, GqlArgumentsHost } from '@nestjs/graphql';
 import { GraphQLError } from 'graphql';
+import { HttpException } from '@nestjs/common';
 
 @Catch()
 export class GraphQLErrorFilter implements GqlExceptionFilter {
-  catch(exception: any, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const gqlHost = GqlArgumentsHost.create(host);
 
-    console.error('GraphQL Error:', exception);
-
-    if (exception.status) {
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
       return new GraphQLError(exception.message, {
         extensions: {
-          code: this.mapHttpStatusToGraphQLCode(exception.status),
-          status: exception.status,
+          code: this.mapStatusToCode(status),
+          status,
         },
       });
     }
 
-    return exception;
+    if (exception instanceof GraphQLError) {
+      return exception;
+    }
+
+    // Unknown errors
+    return new GraphQLError('Internal server error', {
+      extensions: { code: 'INTERNAL_SERVER_ERROR' },
+    });
   }
 
-  private mapHttpStatusToGraphQLCode(status: number): string {
-    switch (status) {
-      case 400: return 'BAD_USER_INPUT';
-      case 401: return 'UNAUTHENTICATED';
-      case 403: return 'FORBIDDEN';
-      case 404: return 'NOT_FOUND';
-      default: return 'INTERNAL_SERVER_ERROR';
-    }
+  private mapStatusToCode(status: number): string {
+    const map: Record<number, string> = {
+      400: 'BAD_USER_INPUT',
+      401: 'UNAUTHENTICATED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'CONFLICT',
+      422: 'BAD_USER_INPUT',
+      429: 'TOO_MANY_REQUESTS',
+    };
+    return map[status] ?? 'INTERNAL_SERVER_ERROR';
   }
 }
-```
 
-Register globally:
-
-```typescript
-import { APP_FILTER } from '@nestjs/core';
-
+// Register globally
 @Module({
   providers: [
-    {
-      provide: APP_FILTER,
-      useClass: GraphQLErrorFilter,
-    },
+    { provide: APP_FILTER, useClass: GraphQLErrorFilter },
   ],
 })
 export class AppModule {}
 ```
 
-## Throwing Errors with Extensions
+## Yoga Error Masking
+
+GraphQL Yoga masks unexpected errors by default in production for security:
 
 ```typescript
-throw new GraphQLError('User not found', {
-  extensions: {
-    code: 'USER_NOT_FOUND',
-    userId: id,
-    timestamp: new Date().toISOString(),
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
+  autoSchemaFile: true,
+  maskedErrors: {
+    isDev: process.env.NODE_ENV !== 'production',
   },
-});
+})
 ```
 
 ## Error Response Format
 
-GraphQL returns partial data with errors:
+GraphQL returns partial data alongside errors:
 
 ```json
 {
@@ -139,23 +173,44 @@ GraphQL returns partial data with errors:
 }
 ```
 
-## Apollo Server 5 Fix
-
-Apollo Server 4 had a regression with validation errors. Fix in v5:
+## Service-Level Error Throwing
 
 ```typescript
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
-  autoSchemaFile: true,
-  status400ForVariableCoercionErrors: true, // Fix for 400 errors
-})
+@Injectable()
+export class UsersService {
+  async findById(id: string): Promise<User> {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new GraphQLError(`User ${id} not found`, {
+        extensions: { code: 'NOT_FOUND', userId: id },
+      });
+    }
+    return user;
+  }
+
+  async create(input: CreateUserInput): Promise<User> {
+    const existing = await this.userModel.findOne({ email: input.email });
+    if (existing) {
+      throw new GraphQLError('Email already registered', {
+        extensions: { code: 'BAD_USER_INPUT', field: 'email' },
+      });
+    }
+    return this.userModel.create(input);
+  }
+}
 ```
 
 ## Best Practices
 
-1. **Use GraphQLError for throwing** - Not HttpException
-2. **Map HTTP to GraphQL codes** - BAD_USER_INPUT, UNAUTHENTICATED, FORBIDDEN
-3. **Don't expose internals** - Hide sensitive info in production
-4. **Log errors server-side** - Use exception filters for logging
-5. **Include meaningful extensions** - Add context without exposing secrets
-6. **Handle validation errors** - Let pipes transform to proper GraphQL errors
+| Practice | Rationale |
+|----------|-----------|
+| Use `GraphQLError` | Proper error format for GraphQL clients |
+| Map HTTP codes to GQL codes | Consistent error handling |
+| Hide internals in production | Don't expose stack traces |
+| Include error extensions | Add context without exposing secrets |
+| Log errors server-side | Use exception filters for logging |
+| Use error masking | Yoga's built-in security feature |
+
+---
+
+**Version:** @nestjs/graphql 13.x + graphql-yoga 5.x | **Source:** https://docs.nestjs.com/graphql/other-features#exception-filters

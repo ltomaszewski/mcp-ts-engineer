@@ -28,12 +28,12 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
           cache: 'npm'
       
       - name: Install Dependencies
@@ -73,7 +73,7 @@ jobs:
       
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: maestro-results-${{ matrix.device }}
           path: maestro-results/

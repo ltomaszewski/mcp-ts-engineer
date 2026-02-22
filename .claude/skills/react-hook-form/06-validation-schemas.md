@@ -507,4 +507,4 @@ export async function handleSignup(data: SignupData) {
 
 ---
 
-**Source:** https://github.com/react-hook-form/resolvers
+**Version:** 7.71.2 | **Source:** https://github.com/react-hook-form/resolvers

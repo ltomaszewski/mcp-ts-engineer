@@ -1,78 +1,133 @@
 # Advanced Patterns & Best Practices
-**Module:** `07-advanced-patterns.md` | **Version:** 4.x | **Status:** Complete
 
-**Source:** [https://zustand.docs.pmnd.rs/guides](https://zustand.docs.pmnd.rs/guides)
-
----
-
-## Table of Contents
-1. [Store Composition](#store-composition)
-2. [Store Slicing (Modular Stores)](#store-slicing-modular-stores)
-3. [Global Patterns](#global-patterns)
-4. [Async Operations](#async-operations)
-5. [Debugging & DevTools](#debugging--devtools)
-6. [Performance Optimization](#performance-optimization)
-7. [Common Pitfalls](#common-pitfalls)
+**Module:** `07-advanced-patterns.md` | **Version:** 5.x (^5.0.2)
 
 ---
 
-## Store Composition
+## Store Slicing (Modular Stores)
 
-### Pattern: Single Unified Store
+### Typed Slices Pattern
 
-Best for small to medium applications with related state:
+Organize large stores into typed slices using `StateCreator`:
 
 ```typescript
-import { create } from 'zustand'
-import { persist, combine } from 'zustand/middleware'
+import { create, StateCreator } from 'zustand'
 
-const useAppStore = create(
-  persist(
-    combine(
-      {
-        // Auth
-        user: null as { id: string; email: string } | null,
-        isAuthenticated: false,
-        
-        // UI
-        sidebarOpen: true,
-        theme: 'light' as 'light' | 'dark',
-        
-        // Data
-        items: [] as Array<{ id: string; title: string }>,
-        selectedItem: null as string | null,
-      },
-      (set, get) => ({
-        // Auth actions
-        login: (user) => set({ user, isAuthenticated: true }),
-        logout: () => set({ user: null, isAuthenticated: false }),
-        
-        // UI actions
-        toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-        setTheme: (theme) => set({ theme }),
-        
-        // Data actions
-        addItem: (item) => set((s) => ({ items: [...s.items, item] })),
-        selectItem: (id) => set({ selectedItem: id }),
-      })
-    ),
-    { name: 'app-store' }
+// Define slice interfaces
+interface AuthSlice {
+  user: { id: string; email: string } | null
+  isAuthenticated: boolean
+  login: (user: AuthSlice['user']) => void
+  logout: () => void
+}
+
+interface UISlice {
+  theme: 'light' | 'dark'
+  sidebarOpen: boolean
+  toggleTheme: () => void
+  toggleSidebar: () => void
+}
+
+interface DataSlice {
+  items: Array<{ id: string; title: string }>
+  addItem: (item: DataSlice['items'][number]) => void
+}
+
+// Combined store type
+type AppStore = AuthSlice & UISlice & DataSlice
+
+// Create typed slices with StateCreator
+const createAuthSlice: StateCreator<AppStore, [], [], AuthSlice> = (set) => ({
+  user: null,
+  isAuthenticated: false,
+  login: (user) => set({ user, isAuthenticated: true }),
+  logout: () => set({ user: null, isAuthenticated: false }),
+})
+
+const createUISlice: StateCreator<AppStore, [], [], UISlice> = (set) => ({
+  theme: 'light',
+  sidebarOpen: true,
+  toggleTheme: () =>
+    set((s) => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+})
+
+const createDataSlice: StateCreator<AppStore, [], [], DataSlice> = (set) => ({
+  items: [],
+  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
+})
+
+// Compose slices
+const useAppStore = create<AppStore>()((...a) => ({
+  ...createAuthSlice(...a),
+  ...createUISlice(...a),
+  ...createDataSlice(...a),
+}))
+```
+
+### Cross-Slice Access
+
+Slices can access other slices via `get()`:
+
+```typescript
+const createAuthSlice: StateCreator<AppStore, [], [], AuthSlice> = (
+  set,
+  get,
+) => ({
+  user: null,
+  isAuthenticated: false,
+  login: (user) => {
+    set({ user, isAuthenticated: true })
+    // Access UISlice
+    const { theme } = get()
+    console.log(`Logged in with ${theme} theme`)
+  },
+  logout: () => set({ user: null, isAuthenticated: false }),
+})
+```
+
+### Slices with Middleware
+
+```typescript
+import { devtools } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
+
+// Middleware mutators must be declared in each slice type
+const createAuthSlice: StateCreator<
+  AppStore,
+  [['zustand/devtools', never], ['zustand/immer', never]],
+  [],
+  AuthSlice
+> = (set) => ({
+  user: null,
+  isAuthenticated: false,
+  login: (user) => set((s) => { s.user = user; s.isAuthenticated = true }),
+  logout: () => set((s) => { s.user = null; s.isAuthenticated = false }),
+})
+
+const useAppStore = create<AppStore>()(
+  devtools(
+    immer((...a) => ({
+      ...createAuthSlice(...a),
+      ...createUISlice(...a),
+    })),
+    { name: 'AppStore' }
   )
 )
 ```
 
-### Pattern: Multiple Specialized Stores
+---
 
-Best for large applications with independent concerns:
+## Multiple Specialized Stores
+
+For large applications with independent concerns:
 
 ```typescript
-// auth-store.ts
-import { create } from 'zustand'
-
-export const useAuth = create((set) => ({
+// stores/auth.ts
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: false,
-  login: async (email, password) => {
+  login: async (email: string, password: string) => {
     set({ isLoading: true })
     const user = await authenticate(email, password)
     set({ user, isLoading: false })
@@ -80,405 +135,247 @@ export const useAuth = create((set) => ({
   logout: () => set({ user: null }),
 }))
 
-// ui-store.ts
-export const useUI = create((set) => ({
+// stores/ui.ts
+export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: true,
-  theme: 'light',
+  theme: 'light' as const,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-}))
-
-// data-store.ts
-export const useData = create((set) => ({
-  items: [],
-  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
 }))
 
 // In components: use only what you need
 function Dashboard() {
-  const user = useAuth((s) => s.user)
-  const sidebarOpen = useUI((s) => s.sidebarOpen)
-  const items = useData((s) => s.items)
+  const user = useAuthStore((s) => s.user)
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+  // ...
 }
 ```
 
-**Advantages:**
-- Stores evolve independently
-- No unnecessary re-renders
-- Easier testing
-- Easier code-splitting
-
----
-
-## Store Slicing (Modular Stores)
-
-### Pattern: Slice Architecture
-
-Organize related state and actions into logical slices:
-
-```typescript
-import { create } from 'zustand'
-import { combine } from 'zustand/middleware'
-
-// Create slices
-const createAuthSlice = (set, get) => ({
-  user: null,
-  login: (user) => set({ user }),
-  logout: () => set({ user: null }),
-})
-
-const createUISlice = (set, get) => ({
-  theme: 'light',
-  sidebarOpen: true,
-  toggleTheme: () => set((s) => ({
-    theme: s.theme === 'light' ? 'dark' : 'light'
-  })),
-})
-
-const createDataSlice = (set, get) => ({
-  items: [],
-  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
-})
-
-// Compose slices
-const useStore = create((set, get) => ({
-  ...createAuthSlice(set, get),
-  ...createUISlice(set, get),
-  ...createDataSlice(set, get),
-}))
-
-export default useStore
-```
-
-### Slice with Cross-Slice Access
-
-```typescript
-const createAuthSlice = (set, get) => ({
-  user: null,
-  login: (user) => {
-    set({ user })
-    // Access other slices via get()
-    const isProUser = get().subscription === 'pro'
-    if (isProUser) {
-      // Do something special
-    }
-  },
-})
-```
-
----
-
-## Global Patterns
-
-### Pattern: Context Bridge (For Legacy React Apps)
-
-If you need React Context compatibility:
-
-```typescript
-import { createContext, useContext } from 'react'
-import { create } from 'zustand'
-
-const useStore = create((set) => ({
-  count: 0,
-  increment: () => set((s) => ({ count: s.count + 1 })),
-}))
-
-const StoreContext = createContext(useStore)
-
-export function StoreProvider({ children }) {
-  return <StoreContext.Provider value={useStore}>{children}</StoreContext.Provider>
-}
-
-export function useAppStore() {
-  return useContext(StoreContext)
-}
-
-// In components
-function Counter() {
-  const { count, increment } = useAppStore((s) => ({
-    count: s.count,
-    increment: s.increment,
-  }))
-  return <button onClick={increment}>{count}</button>
-}
-```
+**When to use multiple stores:**
+- State domains are independent (auth, UI, data)
+- Different update frequencies (mouse position vs config)
+- Easier testing and code splitting
 
 ---
 
 ## Async Operations
 
-### Pattern: Loading States
+### Loading/Error State Pattern
 
 ```typescript
-const useAsyncStore = create((set) => ({
+import { create } from 'zustand'
+
+interface AsyncState<T> {
+  data: T | null
+  isLoading: boolean
+  error: string | null
+}
+
+interface DataStore extends AsyncState<User[]> {
+  fetchData: () => Promise<void>
+}
+
+const useDataStore = create<DataStore>((set) => ({
   data: null,
   isLoading: false,
   error: null,
-  
   fetchData: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch('/api/data')
+      const response = await fetch('/api/users')
+      if (!response.ok) throw new Error('Failed to fetch')
       const data = await response.json()
       set({ data, isLoading: false })
     } catch (error) {
-      set({ error: error.message, isLoading: false })
+      set({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        isLoading: false,
+      })
     }
   },
 }))
-
-function DataComponent() {
-  const { data, isLoading, error, fetchData } = useAsyncStore()
-  
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-  
-  if (isLoading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
-  return <div>{data}</div>
-}
 ```
 
-### Pattern: Abort Controller for Cleanup
+### AbortController for Cleanup
 
 ```typescript
-const useAbortStore = create((set, get) => {
-  let abortController = null
-  
+const useSearchStore = create<SearchState>((set, get) => {
+  let controller: AbortController | null = null
+
   return {
-    data: null,
+    results: [],
     isLoading: false,
-    
-    fetchData: async () => {
-      // Cancel previous request
-      abortController?.abort()
-      abortController = new AbortController()
-      
+    search: async (query: string) => {
+      controller?.abort()
+      controller = new AbortController()
       set({ isLoading: true })
       try {
-        const response = await fetch('/api/data', {
-          signal: abortController.signal,
+        const res = await fetch(`/api/search?q=${query}`, {
+          signal: controller.signal,
         })
-        const data = await response.json()
-        set({ data, isLoading: false })
+        const results = await res.json()
+        set({ results, isLoading: false })
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error(error)
+        if (error instanceof Error && error.name !== 'AbortError') {
+          set({ isLoading: false })
         }
       }
     },
-    
-    cancel: () => abortController?.abort(),
+    cancel: () => controller?.abort(),
   }
 })
 ```
 
 ---
 
-## Debugging & DevTools
+## Transient Updates (Subscribe for DOM)
 
-### Pattern: Redux DevTools Integration
+Use `subscribe` for high-frequency updates that bypass React:
+
+```typescript
+import { createStore } from 'zustand/vanilla'
+import { subscribeWithSelector } from 'zustand/middleware'
+
+const cursorStore = createStore(
+  subscribeWithSelector((set) => ({
+    x: 0,
+    y: 0,
+    setPosition: (x: number, y: number) => set({ x, y }),
+  }))
+)
+
+// Direct DOM update -- no React re-renders
+const $cursor = document.getElementById('cursor')!
+cursorStore.subscribe(
+  (state) => ({ x: state.x, y: state.y }),
+  ({ x, y }) => {
+    $cursor.style.transform = `translate(${x}px, ${y}px)`
+  },
+)
+
+document.addEventListener('mousemove', (e) => {
+  cursorStore.getState().setPosition(e.clientX, e.clientY)
+})
+```
+
+---
+
+## Store Reset Pattern
+
+```typescript
+interface BearState {
+  bears: number
+  fish: number
+  addBear: () => void
+  addFish: () => void
+  reset: () => void
+}
+
+const initialState = {
+  bears: 0,
+  fish: 0,
+}
+
+const useBearStore = create<BearState>((set) => ({
+  ...initialState,
+  addBear: () => set((s) => ({ bears: s.bears + 1 })),
+  addFish: () => set((s) => ({ fish: s.fish + 1 })),
+  reset: () => set(initialState),
+}))
+```
+
+Or using the `store` argument:
+
+```typescript
+const useBearStore = create<BearState>((set, get, store) => ({
+  bears: 0,
+  fish: 0,
+  addBear: () => set((s) => ({ bears: s.bears + 1 })),
+  reset: () => set(store.getInitialState()),
+}))
+```
+
+---
+
+## Debugging with DevTools
 
 ```typescript
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 
-const useStore = create(
-  devtools((set) => ({
-    count: 0,
-    increment: () => set((s) => ({ count: s.count + 1 }), false, 'increment'),
-  }))
-)
-
-// Action names appear in DevTools
-// See time-travel debugging, action history
-```
-
-### Pattern: Console Logging Middleware
-
-```typescript
-const logger = (config) => (set, get, store) => {
-  return config(
-    (...args) => {
-      console.log('SET', args)
-      set(...args)
-    },
-    get,
-    store
+const useStore = create<State>()(
+  devtools(
+    (set) => ({
+      count: 0,
+      // Named actions appear in DevTools
+      increment: () =>
+        set((s) => ({ count: s.count + 1 }), undefined, 'count/increment'),
+      decrement: () =>
+        set((s) => ({ count: s.count - 1 }), undefined, 'count/decrement'),
+    }),
+    {
+      name: 'CounterStore',
+      enabled: process.env.NODE_ENV === 'development',
+    }
   )
-}
-
-const useStore = create(
-  logger((set) => ({
-    count: 0,
-    increment: () => set({ count: get().count + 1 }),
-  }))
 )
-```
-
----
-
-## Performance Optimization
-
-### ✅ Strategy 1: Selector Memoization
-
-```typescript
-import { shallow } from 'zustand'
-
-// Selector function (memoized)
-const selectCountAndStatus = (state) => ({
-  count: state.count,
-  status: state.status,
-})
-
-function Component() {
-  const { count, status } = useStore(selectCountAndStatus, shallow)
-  // Only re-renders if count or status changes
-}
-```
-
-### ✅ Strategy 2: Split Stores by Update Frequency
-
-```typescript
-// Frequent changes - in separate store
-const useUIStore = create((set) => ({
-  mousePos: { x: 0, y: 0 },
-  setMousePos: (pos) => set({ mousePos: pos }),
-}))
-
-// Infrequent changes
-const useAppStore = create((set) => ({
-  appConfig: {},
-  setConfig: (config) => set({ appConfig: config }),
-}))
-
-// In component
-function Tracker() {
-  // Only subscribes to mousePos changes
-  const mousePos = useUIStore((s) => s.mousePos)
-  return <div>Position: {mousePos.x}, {mousePos.y}</div>
-}
-```
-
-### ✅ Strategy 3: Batch Updates
-
-```typescript
-const useStore = create((set) => ({
-  count: 0,
-  user: null,
-  
-  // Batch multiple changes
-  initialize: (count, user) => {
-    set({ count, user }) // Single subscription notification
-  },
-}))
-
-// Not:
-useStore.setState({ count: 5 })
-useStore.setState({ user: userData })
-// Two subscription notifications!
 ```
 
 ---
 
 ## Common Pitfalls
 
-### ❌ Pitfall 1: Mutating State Directly
+### Pitfall 1: Direct Mutation
 
 ```typescript
 // WRONG
-const store = create((set) => ({
-  items: [1, 2, 3],
-  addItem: (item) => {
-    store.getState().items.push(item) // Direct mutation!
-  },
-}))
+store.getState().items.push(item)
 
 // CORRECT
-const store = create((set) => ({
-  items: [1, 2, 3],
-  addItem: (item) => set((state) => ({
-    items: [...state.items, item] // New array
-  })),
-}))
+set((s) => ({ items: [...s.items, item] }))
+// Or with immer: set(s => { s.items.push(item) })
 ```
 
-### ❌ Pitfall 2: Selecting Entire State Unnecessarily
+### Pitfall 2: Missing useShallow
 
 ```typescript
-// WRONG - re-renders on ANY state change
-function Component() {
-  const state = useStore()
-  return <div>{state.count}</div>
-}
-
-// CORRECT - re-renders only when count changes
-function Component() {
-  const count = useStore((s) => s.count)
-  return <div>{count}</div>
-}
-```
-
-### ❌ Pitfall 3: Middleware Order
-
-```typescript
-// WRONG - devtools won't see persistence properly
-create(devtools(persist(...)))
-
-// CORRECT - persist on outside
-create(persist(devtools(...)))
-```
-
-### ❌ Pitfall 4: Missing shallow on Multi-Select
-
-```typescript
-// WRONG - new object every render = always re-renders
+// WRONG: new object every render
 const { a, b } = useStore((s) => ({ a: s.a, b: s.b }))
 
 // CORRECT
-import { shallow } from 'zustand'
-const { a, b } = useStore((s) => ({ a: s.a, b: s.b }), shallow)
+import { useShallow } from 'zustand/react/shallow'
+const { a, b } = useStore(useShallow((s) => ({ a: s.a, b: s.b })))
 ```
 
-### ❌ Pitfall 5: Storing Frequently-Changing Values
+### Pitfall 3: Middleware Ordering
 
 ```typescript
-// WRONG - causes unnecessary re-renders
-const store = create((set) => ({
-  mouseX: 0,
-  mouseY: 0,
-  appConfig: {}, // Rarely changes
-  setMouse: (x, y) => set({ mouseX: x, mouseY: y }),
-}))
+// WRONG: devtools inside immer loses action names
+create(immer(devtools((set) => ({...}))))
 
-// CORRECT - separate stores
-const useMouseStore = create((set) => ({
-  mouseX: 0,
-  mouseY: 0,
-  setMouse: (x, y) => set({ mouseX: x, mouseY: y }),
-}))
-
-const useAppStore = create((set) => ({
-  appConfig: {},
-  setConfig: (c) => set({ appConfig: c }),
-}))
+// CORRECT: devtools wraps immer
+create(devtools(immer((set) => ({...}))))
 ```
 
----
+### Pitfall 4: Storing High-Frequency State Together
 
-## Production Checklist
+```typescript
+// WRONG: mouse position in same store as config
+const useStore = create((set) => ({
+  mouseX: 0,
+  mouseY: 0,
+  appConfig: {},
+}))
 
-Before deploying your Zustand stores:
-
-- [ ] All state changes are immutable (no direct mutations)
-- [ ] Selectors are optimized (single values or `shallow`)
-- [ ] Sensitive data isn't persisted
-- [ ] Migrations handle schema changes
-- [ ] DevTools enabled for debugging
-- [ ] Error handling in async operations
-- [ ] Performance tested with DevTools
-- [ ] TypeScript types are correct
-- [ ] No console warnings/errors
+// CORRECT: separate stores by update frequency
+const useMouseStore = create((set) => ({
+  x: 0, y: 0,
+  setPos: (x: number, y: number) => set({ x, y }),
+}))
+const useConfigStore = create((set) => ({
+  config: {},
+  setConfig: (c: Config) => set({ config: c }),
+}))
+```
 
 ---
 
@@ -486,25 +383,20 @@ Before deploying your Zustand stores:
 
 | Need | Solution |
 |------|----------|
-| Simple store | `create((set) => {...})` |
-| Type inference | `combine(initialState, (set) => {...})` |
-| Persistence | Add `persist(...)` middleware |
-| Selective subscription | Add `subscribeWithSelector()` |
+| Simple store | `create<T>((set) => ({...}))` |
+| Auto type inference | `combine(initialState, (set) => ({...}))` |
+| Persistence | `persist(...)` middleware |
+| Selective subscription | `subscribeWithSelector()` middleware |
+| Mutable-style updates | `immer()` middleware |
+| DevTools debugging | `devtools()` middleware |
+| Non-React usage | `createStore()` from `zustand/vanilla` |
+| Custom equality | `createWithEqualityFn()` from `zustand/traditional` |
 | Multiple stores | Separate `create()` calls |
-| Store composition | Slice pattern or separate stores |
-| Async operations | `async/await` in actions |
-| Debugging | `devtools` middleware |
+| Large store organization | Slices pattern with `StateCreator` |
+| Reset to initial | `store.getInitialState()` or custom `reset` action |
+| DOM transient updates | `subscribe()` with vanilla store |
 
 ---
 
-## Cross-Module References
-
-- **Store Creation:** [API Reference: Store Creation](02-api-store-creation.md)
-- **State Management:** [API Reference: State Management](03-api-state-management.md)
-- **Selectors:** [API Reference: Selectors](04-api-selectors.md)
-- **Persistence:** [Middleware: Persistence](05-middleware-persist.md)
-- **Core Middleware:** [Middleware: Core Features](06-middleware-core.md)
-
----
-
-**Documentation Reference:** [https://zustand.docs.pmnd.rs/guides](https://zustand.docs.pmnd.rs/guides)
+**Source:** https://zustand.docs.pmnd.rs/guides/slices-pattern | https://zustand.docs.pmnd.rs/guides/updating-state
+**Version:** 5.x (^5.0.2)

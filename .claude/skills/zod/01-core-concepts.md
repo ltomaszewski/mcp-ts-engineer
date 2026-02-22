@@ -8,10 +8,12 @@
 
 Zod is a **TypeScript-first schema validation library** that bridges compile-time type safety with runtime data validation.
 
+**Requirements**: TypeScript 5.5+ | `"strict": true` in tsconfig | `import { z } from "zod"`
+
 ### The Problem Zod Solves
 
 ```typescript
-// ❌ WITHOUT ZOD - TypeScript limitation
+// WITHOUT ZOD - TypeScript limitation
 interface User {
   name: string;
   age: number;
@@ -24,13 +26,13 @@ const apiData: User = fetchUserFromAPI();
 ```
 
 ```typescript
-// ✅ WITH ZOD - Runtime + Type safety
+// WITH ZOD - Runtime + Type safety
 import { z } from "zod";
 
 const UserSchema = z.object({
   name: z.string(),
   age: z.number(),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 type User = z.infer<typeof UserSchema>;
@@ -45,16 +47,17 @@ const apiData = UserSchema.parse(await fetchUserFromAPI());
 | Benefit | Impact |
 |---------|--------|
 | **Runtime Type Assurance** | Catch data mismatches before crashes |
-| **Zero Dependencies** | 2KB gzipped |
+| **Zero Dependencies** | Lightweight core, tree-shakable |
 | **Automatic Type Inference** | Define validation once, auto-generate TS types |
 | **Security** | Prevent injection attacks via strict validation |
 | **Developer Experience** | Clear error messages explaining exactly what's wrong |
 | **Framework Integration** | Works with React, Express, tRPC, Next.js, etc. |
+| **Performance (v4)** | 14.7x faster string parsing, 6.5x faster object parsing vs v3 |
 
 ## Installation & Setup
 
 ```bash
-npm install zod
+npm install zod    # v4 is the default
 ```
 
 Enable TypeScript strict mode in `tsconfig.json`:
@@ -69,6 +72,19 @@ Enable TypeScript strict mode in `tsconfig.json`:
 }
 ```
 
+### Import Options
+
+```typescript
+// Standard import (full library)
+import { z } from "zod";
+
+// Zod Mini -- tree-shakable ~2kb variant (no built-in error messages)
+import { z } from "zod/mini";
+
+// Zod Core -- minimal shared utilities
+import * as z from "zod/v4/core";
+```
+
 ---
 
 ## Core Patterns
@@ -77,8 +93,8 @@ Enable TypeScript strict mode in `tsconfig.json`:
 
 ```typescript
 const baseSchema = z.string();
-const emailSchema = baseSchema.email();      // NEW instance
-const trimmedSchema = emailSchema.trim();    // NEW instance
+const emailSchema = z.email();               // Top-level validator (v4)
+const trimmedSchema = z.string().trim();     // NEW instance
 
 // baseSchema unchanged - still just z.string()
 baseSchema.parse("  test@example.com  ");    // "  test@example.com  " (untrimmed)
@@ -91,17 +107,18 @@ trimmedSchema.parse("  test@example.com  "); // "test@example.com" (trimmed)
 const UserSchema = z.object({
   id: z.number(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   age: z.number().optional(),
 });
 
+// Output type (after transforms/defaults)
 type User = z.infer<typeof UserSchema>;
-// type User = {
-//   id: number;
-//   name: string;
-//   email: string;
-//   age?: number;
-// }
+
+// Input type (before transforms/defaults)
+type UserInput = z.input<typeof UserSchema>;
+
+// Output type (explicit)
+type UserOutput = z.output<typeof UserSchema>;
 ```
 
 ### 3. Parse vs SafeParse
@@ -116,10 +133,11 @@ try {
   }
 }
 
-// safeParse() - Returns result object
+// safeParse() - Returns result object (PREFERRED)
 const result = schema.safeParse("not a number");
 if (!result.success) {
-  console.error(result.error.issues);
+  const tree = z.treeifyError(result.error);
+  console.error(z.prettifyError(result.error));
 } else {
   console.log("Valid:", result.data);
 }
@@ -130,26 +148,24 @@ if (!result.success) {
 ## Validation Workflow Example
 
 ```typescript
-// Define schema
+// Define schema with v4 error param
 const RegistrationSchema = z.object({
-  username: z.string().min(3).max(20),
-  password: z.string().min(8),
-  email: z.string().email(),
-  acceptTerms: z.boolean().refine(v => v === true),
+  username: z.string().min(3, { error: "At least 3 characters" }).max(20),
+  password: z.string().min(8, { error: "At least 8 characters" }),
+  email: z.email({ error: "Invalid email address" }),
+  acceptTerms: z.boolean().refine((v) => v === true, {
+    error: "Must accept terms",
+  }),
 });
 
-// Infer type
 type RegistrationData = z.infer<typeof RegistrationSchema>;
 
-// Validate data
 async function handleRegistration(formData: unknown) {
   const result = RegistrationSchema.safeParse(formData);
 
   if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten().fieldErrors,
-    };
+    const tree = z.treeifyError(result.error);
+    return { success: false, errors: tree };
   }
 
   const user = await db.users.create(result.data);
@@ -159,49 +175,46 @@ async function handleRegistration(formData: unknown) {
 
 ---
 
-## Quick Start Guide
+## v4 Error Handling
 
-### For Different Use Cases
+```typescript
+// .format() and .flatten() are REMOVED in v4
+// Use these instead:
 
-#### 👤 First-Time User
+const result = schema.safeParse(data);
+if (!result.success) {
+  // Structured error tree
+  const tree = z.treeifyError(result.error);
+  // tree.email._errors => ["Invalid email"]
+
+  // Human-readable output
+  const pretty = z.prettifyError(result.error);
+  // Formatted multi-line string
+}
 ```
-1. Read: Core Concepts (this module)
-2. Read: Basic Types (module 02)
-3. Pick your use case below
-```
-
-#### 📝 Form Developer
-→ Basic Types → Objects & Collections → Integration: React Hook Form
-
-#### 🔌 API Developer
-→ Basic Types → Objects & Collections → Parsing → Integration: Express/tRPC
-
-#### 🚀 Full-Stack Developer
-→ Read all modules in order
-
-#### 🔧 Troubleshooting
-→ Jump to Best Practices "Common Pitfalls" section
 
 ---
 
-## Module Overview
+## All Schema Types
 
-| Module | Purpose | Size | Audience |
-|--------|---------|------|----------|
-| **Core Concepts** | Foundations & philosophy | 3.2k tokens | All (start here) |
-| **Basic Types** | Primitive validators | 4.8k tokens | All developers |
-| **Objects & Collections** | Complex structures | 4.2k tokens | Intermediate+ |
-| **Advanced Features** | Custom validation | 4.5k tokens | Advanced |
-| **Parsing & Errors** | Error handling | 3.8k tokens | All developers |
-| **Integration** | Framework examples | 3.5k tokens | Full-stack |
-| **Best Practices** | Production patterns | 4.1k tokens | Teams |
+| Category | Types |
+|----------|-------|
+| **Primitives** | `z.string()`, `z.number()`, `z.bigint()`, `z.boolean()`, `z.symbol()`, `z.undefined()`, `z.null()` |
+| **Special** | `z.any()`, `z.unknown()`, `z.never()`, `z.nan()`, `z.void()` |
+| **Literals** | `z.literal()`, `z.enum()` |
+| **Collections** | `z.array()`, `z.tuple()`, `z.object()`, `z.record()`, `z.map()`, `z.set()` |
+| **Unions** | `z.union()`, `z.discriminatedUnion()`, `z.intersection()`, `z.xor()` |
+| **Advanced** | `z.function()`, `z.instanceof()`, `z.lazy()`, `z.custom()` |
+| **Special v4** | `z.file()`, `z.json()`, `z.stringbool()`, `z.templateLiteral()` |
+| **Top-level** | `z.email()`, `z.uuid()`, `z.url()`, `z.ipv4()`, `z.ipv6()`, `z.jwt()`, `z.base64()`, `z.nanoid()`, `z.cuid2()`, `z.ulid()`, `z.semver()`, `z.e164()`, `z.cidrv4()`, `z.cidrv6()` |
+| **Integers** | `z.int()`, `z.int32()` |
+| **Coercion** | `z.coerce.string()`, `z.coerce.number()`, `z.coerce.boolean()`, `z.coerce.date()`, `z.coerce.bigint()` |
 
 ---
 
 **See Also**:
-- [Basic Types & Primitives](02-basic-types.md) — Primitive validators
-- [Objects & Collections](03-objects-collections.md) — Complex structures
-- [API Parsing & Error Handling](05-api-parsing.md) — Error handling
-- [Best Practices](07-best-practices.md) — Production patterns
+- [Basic Types & Primitives](02-basic-types.md)
+- [Objects & Collections](03-objects-collections.md)
+- [API Parsing & Error Handling](05-api-parsing.md)
 
-**Source**: https://zod.dev/
+**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/

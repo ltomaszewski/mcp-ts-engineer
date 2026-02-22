@@ -1,483 +1,377 @@
-# React Native 0.83 - Native Modules (Turbo Modules)
+# React Native 0.81.5 -- Turbo Native Modules
 
-**Type-safe native integration with direct C++ communication**
-
----
-
-## 🎯 Turbo Modules Overview
-
-Turbo Modules enable JavaScript-to-native communication with:
-- **Type-safe calls** — TypeScript/Flow type checking
-- **Direct C++ communication** — Faster than the bridge
-- **Lazy loading** — Modules load on demand
-- **Synchronous calls** — When needed for performance
+Type-safe native integration via JSI, Codegen, and platform implementations.
 
 ---
 
-## 📋 Module Specification (TypeScript)
+## Overview
 
-Define your module's interface in TypeScript:
+Turbo Native Modules are the New Architecture replacement for legacy Native Modules. They provide:
+- **Type-safe contracts** -- TypeScript/Flow specs generate native interfaces via Codegen
+- **JSI-based calls** -- Direct C++ communication, no JSON serialization bridge
+- **Lazy loading** -- Modules instantiated on first use, not at startup
+- **Synchronous support** -- Sync and async methods via JSI host objects
+
+---
+
+## Step 1: Define the JavaScript Spec
+
+Create a TypeScript specification file. The filename must start with `Native`.
 
 ```typescript
-// NativeMyModule.ts
+// specs/NativeDeviceInfo.ts
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
 export interface Spec extends TurboModule {
-  // Synchronous method (returns immediately)
-  getString(id: string): string;
+  // Synchronous method
+  getDeviceName(): string;
 
-  // Asynchronous method (returns Promise)
-  getStringAsync(id: string): Promise<string>;
+  // Asynchronous method
+  getBatteryLevel(): Promise<number>;
 
-  // Multiple parameters
-  add(a: number, b: number): number;
+  // Methods with parameters
+  multiply(a: number, b: number): number;
 
-  // Return objects
-  getUserData(id: string): Promise<{
-    id: string;
-    name: string;
-    email: string;
+  // Methods returning objects
+  getDeviceInfo(): Promise<{
+    model: string;
+    osVersion: string;
+    batteryLevel: number;
   }>;
+
+  // Optional callback pattern
+  addListener(eventName: string): void;
+  removeListeners(count: number): void;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('MyModule');
+// getEnforcing throws if module unavailable; use get() for optional modules
+export default TurboModuleRegistry.getEnforcing<Spec>('DeviceInfo');
 ```
+
+### Supported Spec Types
+
+| JS Type | Android (Java/Kotlin) | iOS (Obj-C) | C++ |
+|---------|----------------------|-------------|-----|
+| `string` | `String` | `NSString` | `std::string` |
+| `number` | `double` | `double` | `double` |
+| `boolean` | `boolean` | `BOOL` | `bool` |
+| `Object` (`{}`) | `ReadableMap` | `NSDictionary` | `jsi::Object` |
+| `Array` (`[]`) | `ReadableArray` | `NSArray` | `jsi::Array` |
+| `Promise<T>` | `Promise` | `resolve/reject blocks` | `AsyncCallback` |
+| `null \| T` | `@Nullable T` | `nullable T` | `std::optional<T>` |
+
+### TurboModuleRegistry Methods
+
+| Method | Behavior |
+|--------|----------|
+| `TurboModuleRegistry.getEnforcing<Spec>(name)` | Returns module or throws if unavailable |
+| `TurboModuleRegistry.get<Spec>(name)` | Returns module or `null` if unavailable |
 
 ---
 
-## 🔧 Android Implementation (Java)
+## Step 2: Run Codegen
 
-### Generate Native Code
+Codegen generates native interfaces from your spec. It runs automatically during build, but you can trigger it manually:
 
-First, Turbo Modules generates a Java spec from TypeScript:
-
+**Android:**
 ```bash
-cd android && ./gradlew generateCodegenArtifactsFromSchema && cd ..
+cd android && ./gradlew generateCodegenArtifactsFromSchema
 ```
 
-### Implement the Module
+**iOS:**
+Codegen runs during `pod install`:
+```bash
+cd ios && pod install
+```
 
-Create `MyModule.java`:
+---
 
-```java
-package com.myapp;
+## Step 3: Android Implementation (Kotlin)
 
-import com.facebook.react.bridge.Promise;
-import com.facebook.react.module.annotations.ReactModule;
-import com.facebook.react.turbomodule.core.TurboModule;
+### Module Implementation
 
-@ReactModule(name = "MyModule")
-public class MyModule extends NativeMyModuleSpec {
-    public static final String NAME = "MyModule";
+```kotlin
+// android/app/src/main/java/com/myapp/DeviceInfoModule.kt
+package com.myapp
 
-    MyModule(ReactContext context) {
-        super(context);
+import android.os.Build
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.WritableNativeMap
+import com.facebook.react.module.annotations.ReactModule
+
+@ReactModule(name = DeviceInfoModule.NAME)
+class DeviceInfoModule(reactContext: ReactApplicationContext) :
+    NativeDeviceInfoSpec(reactContext) {
+
+    companion object {
+        const val NAME = "DeviceInfo"
     }
 
-    // Synchronous method
-    @Override
-    public String getString(String id) {
-        return "Hello from Android: " + id;
+    override fun getName(): String = NAME
+
+    override fun getDeviceName(): String {
+        return Build.MODEL
     }
 
-    // Asynchronous method
-    @Override
-    public void getStringAsync(String id, Promise promise) {
+    override fun getBatteryLevel(promise: Promise) {
         try {
-            String result = "Async result: " + id;
-            promise.resolve(result);
-        } catch (Exception e) {
-            promise.reject("ERROR", e.getMessage());
+            // Implementation using BatteryManager
+            promise.resolve(0.85)
+        } catch (e: Exception) {
+            promise.reject("BATTERY_ERROR", e.message)
         }
     }
 
-    // Multiple parameters
-    @Override
-    public double add(double a, double b) {
-        return a + b;
+    override fun multiply(a: Double, b: Double): Double {
+        return a * b
     }
 
-    // Return objects
-    @Override
-    public void getUserData(String id, Promise promise) {
+    override fun getDeviceInfo(promise: Promise) {
         try {
-            WritableMap userData = Arguments.createMap();
-            userData.putString("id", id);
-            userData.putString("name", "John Doe");
-            userData.putString("email", "john@example.com");
-            promise.resolve(userData);
-        } catch (Exception e) {
-            promise.reject("ERROR", e.getMessage());
+            val info = WritableNativeMap().apply {
+                putString("model", Build.MODEL)
+                putString("osVersion", Build.VERSION.RELEASE)
+                putDouble("batteryLevel", 0.85)
+            }
+            promise.resolve(info)
+        } catch (e: Exception) {
+            promise.reject("DEVICE_INFO_ERROR", e.message)
         }
     }
 }
 ```
 
-### Register Module
+### Package Registration
 
-Create `MyModulePackage.java`:
+```kotlin
+// android/app/src/main/java/com/myapp/DeviceInfoPackage.kt
+package com.myapp
 
-```java
-package com.myapp;
+import com.facebook.react.TurboReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.facebook.react.module.model.ReactModuleInfo
 
-import com.facebook.react.TurboReactPackage;
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
-import java.util.ArrayList;
-import java.util.List;
+class DeviceInfoPackage : TurboReactPackage() {
+    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
+        return if (name == DeviceInfoModule.NAME) {
+            DeviceInfoModule(reactContext)
+        } else null
+    }
 
-public class MyModulePackage extends TurboReactPackage {
-    @Override
-    public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
-        List<NativeModule> nativeModules = new ArrayList<>();
-        nativeModules.add(new MyModule(reactContext));
-        return nativeModules;
+    override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
+        return ReactModuleInfoProvider {
+            mapOf(
+                DeviceInfoModule.NAME to ReactModuleInfo(
+                    DeviceInfoModule.NAME,
+                    DeviceInfoModule.NAME,
+                    false, // canOverrideExistingModule
+                    false, // needsEagerInit
+                    true,  // isCxxModule
+                    true   // isTurboModule
+                )
+            )
+        }
     }
 }
 ```
 
-Register in `MainApplication.java`:
+Register in `MainApplication.kt`:
 
-```java
-public class MainApplication extends Application implements ReactApplication {
-  private final ReactNativeHost mReactNativeHost =
-      new ReactNativeHost(this) {
-        @Override
-        protected List<ReactPackage> getPackages() {
-          List<ReactPackage> packages = new PackageList(this).getPackages();
-          packages.add(new MyModulePackage());  // Add your package
-          return packages;
-        }
-      };
+```kotlin
+override fun getPackages(): List<ReactPackage> {
+    val packages = PackageList(this).packages.toMutableList()
+    packages.add(DeviceInfoPackage())
+    return packages
 }
 ```
 
 ---
 
-## 🍎 iOS Implementation (Swift)
+## Step 3 (Alt): iOS Implementation (Objective-C++)
 
-### Implement the Module
+### Module Implementation
 
-Create `MyModule.swift`:
+```objectivec
+// ios/DeviceInfoModule.mm
+#import "DeviceInfoModule.h"
+#import <UIKit/UIKit.h>
 
-```swift
-import Foundation
+// The spec header is generated by Codegen
+#import <NativeDeviceInfoSpec/NativeDeviceInfoSpec.h>
 
-@objc(MyModule)
-class MyModule: NSObject, RCTBridgeModule {
-    static func moduleName() -> String! {
-        return "MyModule"
-    }
+@implementation DeviceInfoModule
 
-    // Synchronous method
-    @objc
-    func getString(_ id: String) -> String {
-        return "Hello from iOS: \(id)"
-    }
+RCT_EXPORT_MODULE(DeviceInfo)
 
-    // Asynchronous method
-    @objc
-    func getStringAsync(
-        _ id: String,
-        resolve: @escaping RCTPromiseResolveBlock,
-        reject: @escaping RCTPromiseRejectBlock
-    ) {
-        DispatchQueue.main.async {
-            let result = "Async: \(id)"
-            resolve(result)
-        }
-    }
-
-    // Multiple parameters
-    @objc
-    func add(_ a: NSNumber, _ b: NSNumber) -> NSNumber {
-        return NSNumber(value: a.doubleValue + b.doubleValue)
-    }
-
-    // Return objects
-    @objc
-    func getUserData(
-        _ id: String,
-        resolve: @escaping RCTPromiseResolveBlock,
-        reject: @escaping RCTPromiseRejectBlock
-    ) {
-        let userData: [String: Any] = [
-            "id": id,
-            "name": "John Doe",
-            "email": "john@example.com"
-        ]
-        resolve(userData)
-    }
+- (NSString *)getDeviceName {
+    return [[UIDevice currentDevice] model];
 }
+
+- (void)getBatteryLevel:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject {
+    [UIDevice currentDevice].batteryMonitoringEnabled = YES;
+    float level = [UIDevice currentDevice].batteryLevel;
+    resolve(@(level));
+}
+
+- (NSNumber *)multiply:(double)a b:(double)b {
+    return @(a * b);
+}
+
+- (void)getDeviceInfo:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject {
+    UIDevice *device = [UIDevice currentDevice];
+    device.batteryMonitoringEnabled = YES;
+
+    resolve(@{
+        @"model": device.model,
+        @"osVersion": device.systemVersion,
+        @"batteryLevel": @(device.batteryLevel)
+    });
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params {
+    return std::make_shared<facebook::react::NativeDeviceInfoSpecJSI>(params);
+}
+
+@end
 ```
 
-### Bridge Header
+### Header File
 
-Create `MyModule-Bridging-Header.h`:
-
-```swift
-//
-//  MyModule-Bridging-Header.h
-//
-
-#ifndef MyModule_Bridging_Header_h
-#define MyModule_Bridging_Header_h
-
+```objectivec
+// ios/DeviceInfoModule.h
 #import <React/RCTBridgeModule.h>
-#import <React/RCTEventEmitter.h>
 
-#endif /* MyModule_Bridging_Header_h */
+@interface DeviceInfoModule : NSObject <RCTBridgeModule>
+@end
 ```
 
 ---
 
-## 📱 Usage in JavaScript
+## Step 3 (Alt): Cross-Platform C++ Module
 
-Import and call your native module:
+For logic shared across both platforms without platform-specific code:
 
-```typescript
-import MyModule from './NativeMyModule';
+```cpp
+// cpp/NativeDeviceInfoModule.h
+#pragma once
 
-// Synchronous call
-const result = MyModule.getString('test-id');
-console.log(result); // "Hello from Android: test-id" or iOS equivalent
+#include <NativeDeviceInfoSpec.h>
 
-// Asynchronous call
-MyModule.getStringAsync('test-id')
-  .then(result => console.log(result))
-  .catch(error => console.error(error));
+namespace facebook::react {
 
-// Multiple parameters
-const sum = MyModule.add(5, 3);
-console.log(sum); // 8
+class NativeDeviceInfoModule : public NativeDeviceInfoCxxSpec<NativeDeviceInfoModule> {
+public:
+    NativeDeviceInfoModule(std::shared_ptr<CallInvoker> jsInvoker);
 
-// Return objects
-MyModule.getUserData('user-123')
-  .then(userData => {
-    console.log(userData.name); // "John Doe"
-  })
-  .catch(error => console.error(error));
-```
-
----
-
-## 🎯 Complete Real-World Example: Camera Module
-
-### TypeScript Spec
-
-```typescript
-// NativeCameraModule.ts
-import type { TurboModule } from 'react-native';
-import { TurboModuleRegistry } from 'react-native';
-
-export interface CameraPhoto {
-  uri: string;
-  width: number;
-  height: number;
-  base64?: string;
-}
-
-export interface Spec extends TurboModule {
-  takePhoto(): Promise<CameraPhoto>;
-  hasPermission(): Promise<boolean>;
-  requestPermission(): Promise<boolean>;
-}
-
-export default TurboModuleRegistry.getEnforcing<Spec>('CameraModule');
-```
-
-### Android Implementation
-
-```java
-// CameraModule.java
-package com.myapp;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
-import com.facebook.react.bridge.Promise;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.Arguments;
-import com.facebook.react.module.annotations.ReactModule;
-import androidx.core.app.ActivityCompat;
-
-@ReactModule(name = "CameraModule")
-public class CameraModule extends NativeCameraModuleSpec {
-    CameraModule(ReactContext context) {
-        super(context);
-    }
-
-    @Override
-    public void takePhoto(Promise promise) {
-        try {
-            // In production, use Camera2 API or similar
-            WritableMap photo = Arguments.createMap();
-            photo.putString("uri", "file:///data/photos/photo.jpg");
-            photo.putInt("width", 1920);
-            photo.putInt("height", 1440);
-            promise.resolve(photo);
-        } catch (Exception e) {
-            promise.reject("CAMERA_ERROR", e.getMessage());
-        }
-    }
-
-    @Override
-    public void hasPermission(Promise promise) {
-        int permission = ActivityCompat.checkSelfPermission(
-            getReactApplicationContext(),
-            Manifest.permission.CAMERA
-        );
-        promise.resolve(permission == PackageManager.PERMISSION_GRANTED);
-    }
-
-    @Override
-    public void requestPermission(Promise promise) {
-        // Request permission from user
-        promise.resolve(false); // Simplified
-    }
-}
-```
-
-### iOS Implementation
-
-```swift
-// CameraModule.swift
-import AVFoundation
-
-@objc(CameraModule)
-class CameraModule: NSObject, RCTBridgeModule {
-    static func moduleName() -> String! {
-        return "CameraModule"
-    }
-
-    @objc
-    func takePhoto(
-        _ resolve: @escaping RCTPromiseResolveBlock,
-        reject: @escaping RCTPromiseRejectBlock
-    ) {
-        // Use AVFoundation to capture photo
-        let photoData: [String: Any] = [
-            "uri": "file:///tmp/photo.jpg",
-            "width": 1920,
-            "height": 1440
-        ]
-        resolve(photoData)
-    }
-
-    @objc
-    func hasPermission(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        let status = AVCaptureDevice.authorizationStatus(for: .video)
-        resolve(status == .authorized)
-    }
-
-    @objc
-    func requestPermission(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        AVCaptureDevice.requestAccess(for: .video) { granted in
-            resolve(granted)
-        }
-    }
-}
-```
-
-### JavaScript Usage
-
-```typescript
-import CameraModule from './NativeCameraModule';
-import { useEffect, useState } from 'react';
-import { View, Image, Button, Text } from 'react-native';
-
-const CameraScreen = () => {
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [hasPermission, setHasPermission] = useState(false);
-
-  useEffect(() => {
-    checkPermission();
-  }, []);
-
-  const checkPermission = async () => {
-    try {
-      const permitted = await CameraModule.hasPermission();
-      setHasPermission(permitted);
-      if (!permitted) {
-        await CameraModule.requestPermission();
-      }
-    } catch (error) {
-      console.error('Permission check failed:', error);
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    try {
-      const photoData = await CameraModule.takePhoto();
-      setPhoto(photoData.uri);
-    } catch (error) {
-      console.error('Failed to take photo:', error);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      {photo && (
-        <Image
-          source={{ uri: photo }}
-          style={{ width: 200, height: 200 }}
-        />
-      )}
-      {hasPermission && (
-        <Button title="Take Photo" onPress={handleTakePhoto} />
-      )}
-      {!hasPermission && (
-        <Text>Camera permission denied</Text>
-      )}
-    </View>
-  );
+    jsi::String getDeviceName(jsi::Runtime &rt);
+    double multiply(jsi::Runtime &rt, double a, double b);
 };
 
-export default CameraScreen;
+} // namespace facebook::react
 ```
 
 ---
 
-## 🔒 Best Practices
+## Step 4: Use in JavaScript
 
-✅ **DO:**
-- Type all parameters and return values
-- Handle errors explicitly
-- Check permissions before use
-- Use async methods for long operations
-- Test on real devices (emulator may behave differently)
+```typescript
+import DeviceInfo from './specs/NativeDeviceInfo';
 
-❌ **DON'T:**
-- Block the UI thread in sync methods
-- Return mutable objects without copying
-- Forget error handling in promises
-- Hardcode platform-specific behavior in JS
+// Synchronous call
+const deviceName: string = DeviceInfo.getDeviceName();
 
----
+// Asynchronous call
+async function loadDeviceInfo(): Promise<void> {
+  try {
+    const battery = await DeviceInfo.getBatteryLevel();
+    console.log('Battery:', battery);
 
-## 📚 Common Issues
+    const info = await DeviceInfo.getDeviceInfo();
+    console.log('Model:', info.model);
+    console.log('OS:', info.osVersion);
+  } catch (error) {
+    console.error('Failed to get device info:', error);
+  }
+}
 
-### "Module not found" Error
-- Verify module is registered (AndroidManifest.xml, iOS Podfile)
-- Clean build: `cd android && ./gradlew clean && cd ..`
-- Reinstall pods: `cd ios && rm -rf Pods && pod install && cd ..`
-
-### "Method not implemented" Error
-- Check TypeScript spec matches Android/iOS implementation
-- Ensure method signatures are identical
-- Run codegen: `cd android && ./gradlew generateCodegenArtifactsFromSchema && cd ..`
-
-### Type Mismatch
-- Use `WritableMap` for objects in Java
-- Use dictionaries `[String: Any]` in Swift
-- Ensure JSON-serializable types only
+// Synchronous computation
+const result: number = DeviceInfo.multiply(6, 7); // 42
+```
 
 ---
 
-See **[07-best-practices.md](07-best-practices.md)** for security considerations with native modules.
+## Sending Events to JavaScript
+
+TurboModules can emit events to JavaScript:
+
+### Spec with Events
+
+```typescript
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  startObserving(): void;
+  stopObserving(): void;
+  addListener(eventName: string): void;
+  removeListeners(count: number): void;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('MyEventEmitter');
+```
+
+### Listening to Events
+
+```typescript
+import { NativeEventEmitter, NativeModules } from 'react-native';
+import { useEffect } from 'react';
+
+const eventEmitter = new NativeEventEmitter(NativeModules.MyEventEmitter);
+
+function useMyEvent(handler: (data: unknown) => void): void {
+  useEffect(() => {
+    const subscription = eventEmitter.addListener('onDataReceived', handler);
+    return () => subscription.remove();
+  }, [handler]);
+}
+```
 
 ---
 
-**Source**: https://reactnative.dev/docs/the-new-architecture/turbo-modules-intro
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+## Best Practices
+
+**DO:**
+- Type all parameters and return values in the spec
+- Handle errors with try/catch in native and reject promises
+- Use `getEnforcing` for required modules, `get` for optional
+- Run Codegen after spec changes to verify type alignment
+- Test on real devices (emulator behavior may differ)
+
+**DO NOT:**
+- Block the UI thread in synchronous methods
+- Return mutable objects from native -- copy first
+- Hardcode platform behavior in JS -- use Platform.select or file extensions
+- Forget to register the package in MainApplication
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| "Module not found" | Verify package registration and module name matches spec |
+| "Method not implemented" | Run Codegen, check spec signature matches native |
+| Type mismatch | Ensure JS types map to correct native types (see table above) |
+| Build failure after spec change | Clean build: `cd android && ./gradlew clean` or `cd ios && pod install` |
+
+---
+
+**Version:** React Native 0.81.5 | New Architecture (default)
+**Source:** https://reactnative.dev/docs/turbo-native-modules-introduction

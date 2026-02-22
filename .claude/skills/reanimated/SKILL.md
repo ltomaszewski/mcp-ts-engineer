@@ -1,41 +1,42 @@
 ---
 name: reanimated
-description: React Native Reanimated animations - shared values, animated styles, timing, spring, gestures. Use when implementing animations, gesture-driven interactions, or UI transitions.
+description: React Native Reanimated 4.x animations - shared values, animated styles, timing, spring, decay, gestures, layout animations, entering/exiting transitions, keyframes. Use when implementing animations, gesture-driven interactions, or UI transitions.
 ---
 
-# Reanimated
+# React Native Reanimated
 
-> High-performance animations running on the UI thread for smooth 60/120fps experiences.
-
-**Package:** `react-native-reanimated`
+High-performance animations running on the UI thread for smooth 60/120fps experiences in React Native.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
-- Creating timing, spring, or decay animations
+LOAD THIS SKILL when user is:
+- Creating timing, spring, decay, or layout animations
 - Using shared values for animated state
-- Implementing gesture-driven animations
-- Building animated components with useAnimatedStyle
-- Optimizing animation performance
+- Implementing gesture-driven animations with react-native-gesture-handler
+- Building entering/exiting transitions or layout transitions
+- Optimizing animation performance on the UI thread
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Use `useSharedValue` for animated state — runs on UI thread, not React state
-2. Add `'worklet'` directive in callbacks passed to animation functions — required for UI thread execution
-3. Use `withTiming` for predictable UI animations — duration-based, consistent
-4. Use `withSpring` for natural interactions — physics-based, feels responsive
-5. Check `reduceMotion` accessibility setting — respect user preferences
+1. Use `useSharedValue` for animated state -- runs on UI thread, not React state
+2. Pass animated styles only to `Animated.View`, `Animated.Text`, etc. -- regular components ignore them
+3. Use `withTiming` for predictable UI transitions -- duration-based, easing-driven
+4. Use `withSpring` for natural interactions -- physics-based, responsive feel
+5. Respect `useReducedMotion()` or `ReduceMotion.System` -- accessibility requirement
+6. Install both `react-native-reanimated` and `react-native-worklets` -- separate packages in v4
+7. Place `react-native-worklets/plugin` **last** in Babel plugins array -- required ordering
 
 **NEVER:**
-1. Access `.value` in render (outside useAnimatedStyle) — causes re-renders, breaks performance
-2. Forget `'worklet'` directive — code runs on JS thread instead of UI thread
-3. Capture large objects in worklet closures — copied to UI thread, memory issues
-4. Mix Animated and Reanimated components — use only `Animated.View` from reanimated
+1. Mutate shared values inside `useAnimatedStyle` -- causes infinite loops
+2. Mutate nested object properties directly (`sv.value.x = 10`) -- loses reactivity, use spread or `.modify()`
+3. Capture large objects in worklet closures -- copied to UI thread, memory overhead
+4. Use `useAnimatedGestureHandler` -- removed in v4, use Gesture Handler v2 API (`Gesture.Pan()`)
+5. Use `runOnJS`/`runOnUI` -- renamed to `scheduleOnRN`/`scheduleOnUI` in v4
 
 ---
 
@@ -72,25 +73,23 @@ export function AnimatedBox() {
 }
 ```
 
-### Timing Animation with Easing
+### Timing with Easing
 
 ```typescript
 import { withTiming, Easing } from 'react-native-reanimated';
 
-// Smooth fade in
 opacity.value = withTiming(1, {
   duration: 300,
   easing: Easing.bezier(0.25, 0.1, 0.25, 1),
 });
 
-// Slide in from right
 translateX.value = withTiming(0, {
   duration: 250,
   easing: Easing.out(Easing.cubic),
 });
 ```
 
-### Sequence and Repeat
+### Sequence, Repeat, and Delay
 
 ```typescript
 import { withSequence, withRepeat, withDelay } from 'react-native-reanimated';
@@ -108,59 +107,15 @@ scale.value = withRepeat(
     withTiming(1.2, { duration: 500 }),
     withTiming(1, { duration: 500 })
   ),
-  -1, // infinite
-  true // reverse
+  -1,
+  true
 );
 
 // Delayed animation
 opacity.value = withDelay(500, withTiming(1));
 ```
 
-### Worklet for Custom Logic
-
-```typescript
-import { useAnimatedStyle, interpolate } from 'react-native-reanimated';
-
-const animatedStyle = useAnimatedStyle(() => {
-  'worklet';
-  return {
-    opacity: interpolate(progress.value, [0, 1], [0.5, 1]),
-    transform: [
-      { scale: interpolate(progress.value, [0, 1], [0.8, 1]) },
-      { rotate: `${progress.value * 360}deg` },
-    ],
-  };
-});
-```
-
-### React Compiler Compatible Pattern
-
-```typescript
-// Use .get() and .set() instead of .value for React Compiler
-export function ReactCompilerSafe() {
-  const width = useSharedValue(100);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: width.get() * 2,
-  }));
-
-  const handlePress = () => {
-    width.set((prev) => prev + 10);
-  };
-
-  return <Animated.View style={animatedStyle} />;
-}
-
-// For large objects, use .modify() for in-place updates
-const items = useSharedValue([1, 2, 3]);
-items.modify((value) => {
-  'worklet';
-  value.push(4);
-  return value;
-});
-```
-
-### Gesture Integration
+### Gesture Integration (Gesture Handler v2 API)
 
 ```typescript
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -195,50 +150,77 @@ export function DraggableBox() {
 }
 ```
 
+### Entering/Exiting Layout Animations
+
+```typescript
+import Animated, { FadeIn, SlideOutLeft } from 'react-native-reanimated';
+
+export function AnimatedItem({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <Animated.View
+      entering={FadeIn.duration(300).delay(100)}
+      exiting={SlideOutLeft.duration(200)}
+      style={styles.item}
+    />
+  );
+}
+```
+
+### React Compiler Compatible Pattern (.get/.set)
+
+```typescript
+export function ReactCompilerSafe() {
+  const width = useSharedValue(100);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: width.get() * 2,
+  }));
+
+  const handlePress = () => {
+    width.set((prev) => prev + 10);
+  };
+
+  return <Animated.View style={animatedStyle} />;
+}
+```
+
 ---
 
 ## Anti-Patterns
 
-**BAD** — Accessing .value in render:
+**BAD** -- Mutating shared value inside useAnimatedStyle:
 ```typescript
-function Component() {
-  const offset = useSharedValue(0);
-  return <Text>Value: {offset.value}</Text>; // Re-renders, breaks perf!
-}
-```
-
-**GOOD** — Use useDerivedValue or keep in animatedStyle:
-```typescript
-const animatedStyle = useAnimatedStyle(() => ({
-  transform: [{ translateX: offset.value }],
-}));
-```
-
-**BAD** — Missing worklet directive:
-```typescript
-const pan = Gesture.Pan().onUpdate((e) => {
-  translateX.value = e.translationX; // Runs on JS thread!
+const badStyle = useAnimatedStyle(() => {
+  opacity.value = withTiming(0); // Infinite loop!
+  return { opacity: opacity.value };
 });
 ```
-
-**GOOD** — Gesture handlers are worklets by default, but custom functions need it:
+**GOOD** -- Mutate in event handlers, read in style:
 ```typescript
-function customAnimation(value: number) {
-  'worklet';
-  return value * 2;
-}
+const goodStyle = useAnimatedStyle(() => ({
+  opacity: opacity.value,
+}));
+const handlePress = () => { opacity.value = withTiming(0); };
 ```
 
-**BAD** — Capturing large objects in closures:
+**BAD** -- Passing animated style to regular View:
+```typescript
+<View style={animatedStyle} /> // No effect
+```
+**GOOD** -- Use Animated.View:
+```typescript
+<Animated.View style={animatedStyle} />
+```
+
+**BAD** -- Capturing large objects in closures:
 ```typescript
 const bigData = useMemo(() => generateLargeArray(), []);
 const style = useAnimatedStyle(() => ({
-  // bigData copied to UI thread every frame!
-  opacity: bigData.length > 0 ? 1 : 0,
+  opacity: bigData.length > 0 ? 1 : 0, // bigData copied to UI thread!
 }));
 ```
-
-**GOOD** — Capture only primitives:
+**GOOD** -- Extract primitives:
 ```typescript
 const hasData = bigData.length > 0;
 const style = useAnimatedStyle(() => ({
@@ -254,12 +236,21 @@ const style = useAnimatedStyle(() => ({
 |------|-----|---------|
 | Create animated value | `useSharedValue()` | `const x = useSharedValue(0)` |
 | Animated styles | `useAnimatedStyle()` | `useAnimatedStyle(() => ({ opacity: x.value }))` |
+| Derived value | `useDerivedValue()` | `useDerivedValue(() => x.value * 2)` |
 | Timing animation | `withTiming()` | `x.value = withTiming(100, { duration: 300 })` |
 | Spring animation | `withSpring()` | `x.value = withSpring(100)` |
+| Decay animation | `withDecay()` | `withDecay({ velocity: e.velocityX })` |
 | Sequence | `withSequence()` | `withSequence(withTiming(1), withTiming(0))` |
-| Repeat | `withRepeat()` | `withRepeat(animation, 3, true)` |
+| Repeat | `withRepeat()` | `withRepeat(animation, -1, true)` |
 | Delay | `withDelay()` | `withDelay(500, withTiming(1))` |
+| Cancel | `cancelAnimation()` | `cancelAnimation(sharedValue)` |
 | Interpolate | `interpolate()` | `interpolate(x.value, [0, 1], [0, 100])` |
+| Color interpolate | `interpolateColor()` | `interpolateColor(x.value, [0, 1], ['red', 'blue'])` |
+| Scroll handler | `useAnimatedScrollHandler()` | Pass to `Animated.ScrollView` `onScroll` |
+| Animated ref | `useAnimatedRef()` | Use with `measure()` and `scrollTo()` |
+| Entering animation | `entering` prop | `<Animated.View entering={FadeIn} />` |
+| Layout transition | `layout` prop | `<Animated.View layout={LinearTransition} />` |
+| Reduced motion | `useReducedMotion()` | `const reduced = useReducedMotion()` |
 
 ---
 
@@ -267,17 +258,30 @@ const style = useAnimatedStyle(() => ({
 
 | When you need | Load |
 |---------------|------|
-| Installation and babel plugin | [01-setup-installation.md](01-setup-installation.md) |
-| useSharedValue, .get(), .set() | [02-core-shared-values.md](02-core-shared-values.md) |
-| useAnimatedStyle patterns | [03-core-animated-style.md](03-core-animated-style.md) |
-| withTiming, withSpring, easing | [04-animations-timing-spring.md](04-animations-timing-spring.md) |
-| withSequence, withRepeat, withDelay | [05-animations-modifiers.md](05-animations-modifiers.md) |
-| Worklets and UI thread | [06-worklets-guide.md](06-worklets-guide.md) |
-| Gesture handler integration | [07-gestures-events.md](07-gestures-events.md) |
-| Full API reference | [08-api-reference-core.md](08-api-reference-core.md) |
-| Performance and accessibility | [09-best-practices.md](09-best-practices.md) |
-| Debugging and common errors | [10-troubleshooting-faq.md](10-troubleshooting-faq.md) |
+| Installation, Babel plugin, v3-to-v4 migration | [01-setup-installation.md](01-setup-installation.md) |
+| useSharedValue, .get(), .set(), .modify() | [02-core-shared-values.md](02-core-shared-values.md) |
+| useAnimatedStyle, useAnimatedProps, useDerivedValue | [03-core-animated-style.md](03-core-animated-style.md) |
+| withTiming, withSpring, Easing, all config params | [04-animations-timing-spring.md](04-animations-timing-spring.md) |
+| withSequence, withRepeat, withDelay, withDecay | [05-animations-modifiers.md](05-animations-modifiers.md) |
+| Worklets, UI thread, scheduleOnUI/scheduleOnRN | [06-worklets-guide.md](06-worklets-guide.md) |
+| Gesture handler v2 integration, pan/tap/pinch | [07-gestures-events.md](07-gestures-events.md) |
+| Entering/exiting animations, layout transitions, keyframes | [08-layout-animations.md](08-layout-animations.md) |
+| Performance, accessibility, code organization | [09-best-practices.md](09-best-practices.md) |
+| Common errors, debugging, platform issues | [10-troubleshooting-faq.md](10-troubleshooting-faq.md) |
 
 ---
 
-**Version:** 3.x | **Source:** https://docs.swmansion.com/react-native-reanimated/
+### v4 Migration Summary
+
+Key changes from Reanimated 3.x:
+- **New Architecture (Fabric) required** -- legacy architecture not supported
+- **Separate worklets package**: Install `react-native-worklets` alongside `react-native-reanimated`
+- **Babel plugin changed**: `react-native-reanimated/plugin` replaced by `react-native-worklets/plugin`
+- **API renames**: `runOnJS` -> `scheduleOnRN`, `runOnUI` -> `scheduleOnUI`
+- **Removed**: `useAnimatedGestureHandler` (use Gesture Handler v2 API)
+- **Spring defaults changed**: `damping: 120`, `stiffness: 900`, `mass: 4` (use `Reanimated3DefaultSpringConfig` for old defaults)
+- **React Compiler support**: `.get()`/`.set()` pattern recommended
+- **Minimum versions**: React Native 0.80+, Expo SDK 54+
+
+---
+**Version:** Reanimated 4.x (^4.2.2) | **Source:** https://docs.swmansion.com/react-native-reanimated/

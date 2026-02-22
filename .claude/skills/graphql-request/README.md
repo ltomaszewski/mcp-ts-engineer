@@ -284,7 +284,7 @@ For complete navigation and module dependencies, see **[00-master-index.md](./00
 
 ---
 
-**Last Updated:** December 2025
+**Last Updated:** February 2026
 **Status:** Complete modular knowledge base
 **Package:** graphql-request 7.4.0
-**TypeScript:** 4.5+
+**TypeScript:** 5.x+

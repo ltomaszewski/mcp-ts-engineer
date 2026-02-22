@@ -1,38 +1,40 @@
 ---
 name: react-query
-description: "@tanstack/react-query (TanStack Query) data fetching - useQuery, useMutation, caching, invalidation. Use when working with @tanstack/react-query, TanStack Query, fetching API data, or managing server state."
+description: "@tanstack/react-query v5 server state management - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, caching, invalidation, optimistic updates. Use when fetching API data, managing server state, implementing pagination, or cache management."
 ---
 
-# React Query (@tanstack/react-query)
+# TanStack React Query v5
 
-> Server state management with automatic caching, background refetching, and stale-while-revalidate strategy.
+Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate strategy.
 
 ---
 
 ## When to Use
 
-**LOAD THIS SKILL** when user is:
+LOAD THIS SKILL when user is:
 - Fetching data from APIs with `useQuery`
-- Creating/updating/deleting with `useMutation`
-- Setting up caching or stale time configuration
-- Implementing query invalidation after mutations
-- Adding optimistic updates
+- Creating/updating/deleting data with `useMutation`
+- Implementing pagination or infinite scroll with `useInfiniteQuery`
+- Setting up caching, stale time, or garbage collection
+- Implementing optimistic updates or query invalidation
 
 ---
 
 ## Critical Rules
 
 **ALWAYS:**
-1. Use array format for query keys — `['users', userId]` enables proper invalidation
-2. Set appropriate `staleTime` — prevents unnecessary refetches (default is 0)
-3. Invalidate queries after mutations — keeps data in sync
-4. Handle `isLoading`, `isError`, `data` states — provide good UX
+1. Use array format for query keys -- `['users', userId]` enables hierarchical invalidation
+2. Set appropriate `staleTime` -- default is `0` which means data is immediately stale
+3. Invalidate queries after mutations -- keeps UI in sync with server
+4. Handle `isPending`, `isError`, `data` states -- provide good UX
+5. Include all variables in query key -- ensures correct caching per parameter
 
 **NEVER:**
-1. Use string query keys — arrays allow hierarchical invalidation
-2. Fetch in useEffect — use `useQuery` for automatic caching/deduping
-3. Forget `enabled` option — prevents queries from running before deps are ready
-4. Call `mutate` in render — triggers infinite loops
+1. Fetch in useEffect -- use `useQuery` for automatic caching, deduping, retries
+2. Forget `enabled` option when query depends on other data -- prevents premature fetching
+3. Call `mutate()` in render body -- triggers infinite loops
+4. Use string query keys -- arrays allow hierarchical matching and invalidation
+5. Create multiple QueryClient instances -- export a single shared instance
 
 ---
 
@@ -41,23 +43,19 @@ description: "@tanstack/react-query (TanStack Query) data fetching - useQuery, u
 ### Basic Query with Types
 
 ```typescript
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query'
 
-interface User {
-  id: string;
-  name: string;
-}
+interface User { id: string; name: string }
 
 function useUsers() {
   return useQuery<User[]>({
     queryKey: ['users'],
     queryFn: () => fetch('/api/users').then(res => res.json()),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
-// Usage
-const { data: users, isLoading, isError, error } = useUsers();
+const { data: users, isPending, isError, error } = useUsers()
 ```
 
 ### Query with Parameters
@@ -66,36 +64,30 @@ const { data: users, isLoading, isError, error } = useUsers();
 function useUser(id: string) {
   return useQuery<User>({
     queryKey: ['users', id],
-    queryFn: () => fetch(`/api/users/${id}`).then(res => res.json()),
-    enabled: !!id, // Only run when id exists
-  });
+    queryFn: () => fetch(`/api/users/${id}`).then(r => r.json()),
+    enabled: !!id,
+  })
 }
 ```
 
 ### Mutation with Invalidation
 
 ```typescript
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 function useCreateUser() {
-  const queryClient = useQueryClient();
-
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (newUser: CreateUserInput) =>
       fetch('/api/users', {
         method: 'POST',
         body: JSON.stringify(newUser),
-      }).then(res => res.json()),
+      }).then(r => r.json()),
     onSuccess: () => {
-      // Invalidate and refetch users list
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-  });
+  })
 }
-
-// Usage
-const { mutate, isPending, isError } = useCreateUser();
-mutate({ name: 'John' });
 ```
 
 ### Optimistic Update
@@ -104,48 +96,47 @@ mutate({ name: 'John' });
 useMutation({
   mutationFn: updateTodo,
   onMutate: async (newTodo) => {
-    await queryClient.cancelQueries({ queryKey: ['todos', newTodo.id] });
-    const previousTodo = queryClient.getQueryData(['todos', newTodo.id]);
-    queryClient.setQueryData(['todos', newTodo.id], newTodo);
-    return { previousTodo };
+    await queryClient.cancelQueries({ queryKey: ['todos', newTodo.id] })
+    const previous = queryClient.getQueryData(['todos', newTodo.id])
+    queryClient.setQueryData(['todos', newTodo.id], newTodo)
+    return { previous }
   },
-  onError: (err, newTodo, context) => {
-    queryClient.setQueryData(['todos', newTodo.id], context?.previousTodo);
+  onError: (_err, newTodo, context) => {
+    queryClient.setQueryData(['todos', newTodo.id], context?.previous)
   },
   onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: ['todos'] });
+    queryClient.invalidateQueries({ queryKey: ['todos'] })
   },
-});
+})
 ```
 
 ---
 
 ## Anti-Patterns
 
-**BAD** — String query key:
-```typescript
-useQuery({ queryKey: 'users', ... }) // Can't invalidate hierarchically
-```
-
-**GOOD** — Array query key:
-```typescript
-useQuery({ queryKey: ['users'], ... })
-useQuery({ queryKey: ['users', userId], ... }) // Child of ['users']
-```
-
-**BAD** — Fetching in useEffect:
+**BAD** -- Fetching in useEffect:
 ```typescript
 useEffect(() => {
-  fetch('/api/users').then(setUsers);
-}, []); // No caching, no loading state, no error handling
+  fetch('/api/users').then(setUsers)
+}, [])
 ```
 
-**GOOD** — Using useQuery:
+**GOOD** -- Using useQuery:
 ```typescript
-const { data, isLoading, error } = useQuery({
+const { data, isPending, error } = useQuery({
   queryKey: ['users'],
   queryFn: fetchUsers,
-});
+})
+```
+
+**BAD** -- String query key:
+```typescript
+useQuery({ queryKey: 'users', queryFn: fetchUsers })
+```
+
+**GOOD** -- Array query key:
+```typescript
+useQuery({ queryKey: ['users'], queryFn: fetchUsers })
 ```
 
 ---
@@ -156,29 +147,34 @@ const { data, isLoading, error } = useQuery({
 |------|-----|---------|
 | Fetch data | `useQuery` | `useQuery({ queryKey, queryFn })` |
 | Mutate data | `useMutation` | `useMutation({ mutationFn, onSuccess })` |
+| Infinite list | `useInfiniteQuery` | `useInfiniteQuery({ queryKey, queryFn, getNextPageParam, initialPageParam })` |
+| Suspense query | `useSuspenseQuery` | `useSuspenseQuery({ queryKey, queryFn })` |
 | Get client | `useQueryClient()` | `const qc = useQueryClient()` |
 | Invalidate | `invalidateQueries` | `qc.invalidateQueries({ queryKey: ['users'] })` |
 | Prefetch | `prefetchQuery` | `qc.prefetchQuery({ queryKey, queryFn })` |
-| Set data | `setQueryData` | `qc.setQueryData(['user', id], user)` |
-| Get data | `getQueryData` | `qc.getQueryData(['user', id])` |
+| Set cache | `setQueryData` | `qc.setQueryData(['user', id], data)` |
+| Get cache | `getQueryData` | `qc.getQueryData(['user', id])` |
+| Remove cache | `removeQueries` | `qc.removeQueries({ queryKey: ['users'] })` |
+| Cancel | `cancelQueries` | `qc.cancelQueries({ queryKey: ['users'] })` |
 | Conditional | `enabled` | `enabled: !!id` |
-| Stale time | `staleTime` | `staleTime: 5 * 60 * 1000` |
-| Cache time | `gcTime` | `gcTime: 30 * 60 * 1000` |
+| Fresh duration | `staleTime` | `staleTime: 5 * 60 * 1000` |
+| Cache lifetime | `gcTime` | `gcTime: 30 * 60 * 1000` |
 
 ---
 
 ## Deep Dive References
 
-Load additional context when needed:
-
 | When you need | Load |
 |---------------|------|
 | Core concepts and architecture | [01-overview.md](01-overview.md) |
 | Setup and QueryClientProvider | [02-installation-setup.md](02-installation-setup.md) |
-| useQuery options and patterns | [03-api-usequery.md](03-api-usequery.md) |
+| useQuery all options and patterns | [03-api-usequery.md](03-api-usequery.md) |
 | useMutation and optimistic updates | [04-api-usemutation.md](04-api-usemutation.md) |
-| Query key patterns and invalidation | [09-guide-query-keys.md](09-guide-query-keys.md) |
+| useInfiniteQuery and pagination | [05-api-infinitequery.md](05-api-infinitequery.md) |
+| QueryClient methods reference | [06-api-queryclient.md](06-api-queryclient.md) |
+| Query key patterns and factories | [07-guide-query-keys.md](07-guide-query-keys.md) |
+| Advanced patterns and best practices | [08-guide-advanced.md](08-guide-advanced.md) |
 
 ---
 
-**Version:** 5.x | **Source:** https://tanstack.com/query/latest
+**Version:** 5.x (^5.62.11) | **Source:** https://tanstack.com/query/latest

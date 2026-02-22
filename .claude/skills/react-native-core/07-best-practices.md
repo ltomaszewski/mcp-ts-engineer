@@ -1,643 +1,359 @@
-# React Native 0.83 - Best Practices
+# React Native 0.81.5 -- Best Practices
 
-**Performance, Security, Accessibility, and Common Pitfalls**
-
----
-
-## 🏗️ One Hook Per Screen Pattern (MANDATORY)
-
-> **⚠️ CRITICAL: This pattern is AUDIT ENFORCED in the project. Violations block merges.**
-
-Every screen must have a single custom hook containing **ALL business logic**. Screens must be pure JSX rendering only.
-
-### Pattern Structure
-
-```
-Screen file (40-60 lines MAX):
-  ✓ Import statements
-  ✓ Single useScreenHook() call
-  ✓ Pure JSX rendering
-  ✗ NO useState, NO handlers, NO useEffect, NO logic
-
-Hook file (useScreenName.ts, 100-200 lines):
-  ✓ State management (useState)
-  ✓ Validation logic
-  ✓ Event handlers (const handleX = async () => { ... })
-  ✓ API calls (useMutation, useQuery)
-  ✓ Navigation logic (useRouter hooks)
-  ✓ Error handling (try/catch)
-```
-
-### Why This Pattern
-
-- ✅ **Testable**: Test hook logic without rendering components
-- ✅ **Reusable**: Hook can be used in multiple screens if needed
-- ✅ **Maintainable**: Clear separation = easier changes
-- ✅ **Readable**: Screen file shows what it renders, hook shows how it works
-
-### ❌ BAD Pattern (DO NOT USE)
-
-```typescript
-// Screen with all business logic mixed in - AVOID THIS
-export function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const handleLogin = async () => {
-    if (!email.trim()) {
-      setFormError('Email is required');
-      return;
-    }
-    try {
-      const response = await apiCall({ email, password });
-      updateAuthStore(response.token);
-      router.replace('/(tabs)');
-    } catch (err) {
-      setFormError(err.message);
-    }
-  };
-
-  return (
-    <ScrollView>
-      {/* 50+ lines of JSX mixed with logic */}
-    </ScrollView>
-  );
-}
-```
-
-### ✅ GOOD Pattern (USE THIS)
-
-**1. Create custom hook for screen:**
-
-```typescript
-// src/features/auth/hooks/useLoginScreen.ts
-export function useLoginScreen() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const { mutateAsync: login, isPending } = useLogin();
-
-  const handleLogin = async () => {
-    setFormError(null);
-
-    if (!email.trim()) {
-      setFormError('Email is required');
-      return;
-    }
-    if (!password.trim()) {
-      setFormError('Password is required');
-      return;
-    }
-
-    try {
-      await login({ email: email.trim(), password });
-      router.replace('/(tabs)');
-    } catch {
-      setFormError('Login failed. Please try again.');
-    }
-  };
-
-  return {
-    email,
-    setEmail,
-    password,
-    setPassword,
-    formError,
-    isLoading: isPending,
-    handleLogin,
-  };
-}
-```
-
-**2. Screen becomes pure rendering (30-40 lines):**
-
-```typescript
-// src/features/auth/screens/LoginScreen.tsx
-import { useLoginScreen } from '../hooks/useLoginScreen';
-import { Button, Input } from '@/shared/components/ui';
-import { ScrollView, Text, View } from 'react-native';
-
-export function LoginScreen() {
-  const {
-    email,
-    setEmail,
-    password,
-    setPassword,
-    formError,
-    isLoading,
-    handleLogin,
-  } = useLoginScreen();
-
-  return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="flex-1 justify-center px-6 py-12">
-        {formError && (
-          <View className="mb-4 p-3 bg-red-100 rounded-lg">
-            <Text className="text-red-700">{formError}</Text>
-          </View>
-        )}
-
-        <Input
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          editable={!isLoading}
-        />
-
-        <Input
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!isLoading}
-        />
-
-        <Button
-          title={isLoading ? 'Signing In...' : 'Sign In'}
-          onPress={handleLogin}
-          disabled={isLoading}
-        />
-      </View>
-    </ScrollView>
-  );
-}
-```
-
-**3. Test hook logic independently:**
-
-```typescript
-// src/features/auth/hooks/__tests__/useLoginScreen.test.ts
-import { renderHook, act } from '@testing-library/react-native';
-import { useLoginScreen } from '../useLoginScreen';
-
-jest.mock('../../api/hooks');
-
-describe('useLoginScreen', () => {
-  it('validates email is required', async () => {
-    const { result } = renderHook(() => useLoginScreen());
-
-    act(() => {
-      result.current.handleLogin();
-    });
-
-    expect(result.current.formError).toBe('Email is required');
-  });
-});
-```
-
-### File Structure
-
-```
-src/features/auth/
-├── hooks/
-│   ├── useLoginScreen.ts        ← All logic for login screen
-│   ├── useSignupScreen.ts       ← All logic for signup screen
-│   ├── useLogin.ts              ← API mutation (shared)
-│   └── __tests__/
-│       └── useLoginScreen.test.ts
-├── screens/
-│   ├── LoginScreen.tsx          ← ~40 lines pure JSX
-│   ├── SignupScreen.tsx         ← ~40 lines pure JSX
-│   └── __tests__/
-│       └── LoginScreen.test.tsx
-└── index.ts
-```
+Performance optimization, security, accessibility, and common pitfalls.
 
 ---
 
-## ⚡ Performance Optimization
+## Performance: FlatList Optimization
 
-### FlatList Tuning
+### Recommended Configuration
 
 ```typescript
-import { FlatList, memo, useCallback } from 'react-native';
-
-const ListItem = memo(({ item, onPress }: any) => (
-  <View onPress={() => onPress(item.id)}>
-    <Text>{item.title}</Text>
-  </View>
-));
-
 <FlatList
-  // DATA
-  data={largeList}
+  data={data}
+  renderItem={renderItem}
   keyExtractor={(item) => item.id}
-
-  // RENDERING
-  renderItem={({ item }) => <ListItem item={item} onPress={handlePress} />}
-  initialNumToRender={10}         // Initial count
-  maxToRenderPerBatch={10}        // Per batch
-  updateCellsBatchingPeriod={50}  // Batch interval (ms)
-  windowSize={5}                   // Ahead/behind items
-
-  // PERFORMANCE
-  removeClippedSubviews={true}    // Android: remove off-screen
-  scrollEventThrottle={16}        // 60fps throttle (16ms)
-
-  // PAGINATION
+  // Performance props
+  initialNumToRender={10}
+  maxToRenderPerBatch={10}
+  updateCellsBatchingPeriod={50}
+  windowSize={5}
+  removeClippedSubviews={true}  // Important on Android
+  scrollEventThrottle={16}       // 60fps
+  // Pagination
   onEndReached={loadMore}
-  onEndReachedThreshold={0.5}     // 50% from end
+  onEndReachedThreshold={0.5}
 />
 ```
 
-### Memoization Pattern
+### Performance Props Explained
+
+| Prop | Default | Recommended | Effect |
+|------|---------|-------------|--------|
+| `initialNumToRender` | 10 | 10 | Items in first render pass |
+| `maxToRenderPerBatch` | 10 | 10 | Items per subsequent batch |
+| `updateCellsBatchingPeriod` | 50 | 50 | Delay between batches (ms) |
+| `windowSize` | 21 | 5 | Viewports to keep rendered |
+| `removeClippedSubviews` | false | true (Android) | Detach off-screen native views |
+| `getItemLayout` | -- | Provide if possible | Skip async layout measurement |
+
+### getItemLayout (Major Optimization)
+
+If items have fixed height, provide `getItemLayout` to skip measurement:
+
+```typescript
+<FlatList
+  data={data}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  getItemLayout={(data, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/>
+```
+
+---
+
+## Performance: Memoization
+
+### Memoize Components
 
 ```typescript
 import { memo, useCallback, useMemo } from 'react';
 
-// Memoize expensive component
-const UserCard = memo(({ user, onPress }: any) => (
-  <Pressable onPress={onPress}>
-    <Text>{user.name}</Text>
-  </Pressable>
-), (prevProps, nextProps) => {
-  // Custom comparison (return true if equal, false if different)
-  return prevProps.user.id === nextProps.user.id;
+// Memoize item component
+const ListItem = memo(function ListItem({ item, onPress }: { item: Item; onPress: (id: string) => void }) {
+  return (
+    <Pressable onPress={() => onPress(item.id)}>
+      <Text>{item.title}</Text>
+    </Pressable>
+  );
 });
 
-// Parent component
-const UserList = ({ users }: any) => {
-  // Memoize callback
-  const handleUserPress = useCallback((userId: string) => {
-    console.log('Pressed:', userId);
+// Custom comparator for complex props
+const ExpensiveItem = memo(
+  function ExpensiveItem({ item }: { item: Item }) { return <View />; },
+  (prev, next) => prev.item.id === next.item.id && prev.item.updatedAt === next.item.updatedAt,
+);
+```
+
+### Memoize Callbacks and Values
+
+```typescript
+function ParentComponent({ items }: { items: Item[] }): React.ReactElement {
+  // Memoize callback (stable reference)
+  const handlePress = useCallback((id: string) => {
+    console.log('Pressed:', id);
   }, []);
 
   // Memoize expensive computation
-  const sortedUsers = useMemo(() => {
-    return users.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [users]);
-
-  return (
-    <FlatList
-      data={sortedUsers}
-      renderItem={({ item }) => (
-        <UserCard user={item} onPress={() => handleUserPress(item.id)} />
-      )}
-    />
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
+    [items],
   );
-};
-```
 
-### Image Optimization
+  const renderItem = useCallback(
+    ({ item }: { item: Item }) => <ListItem item={item} onPress={handlePress} />,
+    [handlePress],
+  );
 
-```typescript
-import { Image } from 'react-native';
-
-// ✅ CORRECT - Explicit dimensions
-<Image
-  source={{ uri: 'https://...' }}
-  style={{ width: 200, height: 200 }}
-  resizeMode="contain"
-/>
-
-// ❌ WRONG - No dimensions
-<Image source={{ uri: 'https://...' }} />
-
-// ✅ Cache strategies
-<Image
-  source={{ uri: 'https://...', cache: 'force-cache' }}
-  style={{ width: 200, height: 200 }}
-/>
+  return <FlatList data={sortedItems} renderItem={renderItem} keyExtractor={(i) => i.id} />;
+}
 ```
 
 ---
 
-## 🔐 Security Best Practices
+## Performance: Images
+
+```typescript
+// ALWAYS set dimensions for remote images
+<Image source={{ uri: remoteUrl }} style={{ width: 200, height: 200 }} resizeMode="cover" />
+
+// Use cache control
+<Image source={{ uri: remoteUrl, cache: 'force-cache' }} style={{ width: 200, height: 200 }} />
+
+// Prefetch images for smoother UX
+Image.prefetch('https://example.com/image.jpg');
+```
+
+---
+
+## Performance: Deferred Work
+
+### InteractionManager
+
+Schedule heavy work after animations/interactions complete:
+
+```typescript
+import { InteractionManager } from 'react-native';
+
+useEffect(() => {
+  const task = InteractionManager.runAfterInteractions(() => {
+    // Expensive computation runs after transition animation
+    processLargeDataset();
+  });
+
+  return () => task.cancel();
+}, []);
+```
+
+### Animated API: useNativeDriver
+
+Offload animations to native thread:
+
+```typescript
+import { Animated } from 'react-native';
+
+const fadeAnim = new Animated.Value(0);
+Animated.timing(fadeAnim, {
+  toValue: 1,
+  duration: 300,
+  useNativeDriver: true, // Runs on native thread, not JS
+}).start();
+```
+
+---
+
+## Security
+
+### Token Storage
+
+```typescript
+// WRONG -- unencrypted
+import AsyncStorage from '@react-native-async-storage/async-storage';
+await AsyncStorage.setItem('token', accessToken); // Never do this
+
+// CORRECT -- encrypted
+import * as SecureStore from 'expo-secure-store';
+await SecureStore.setItemAsync('token', accessToken);
+```
 
 ### API Key Management
 
 ```typescript
-// ❌ WRONG - Hardcoded
-const API_KEY = 'sk_live_123456789';
+// WRONG -- hardcoded
+const API_KEY = 'sk_live_abc123';
 
-// ✅ CORRECT - Environment variable
-import { API_KEY } from '@env';
-
-// Setup:
-// Create .env file with:
-// API_KEY=sk_live_123456789
-// npm install react-native-dotenv
-// In metro.config.js, add dotenv configuration
-```
-
-### Secure Network Communication
-
-```typescript
-import * as SecureStore from 'expo-secure-store';
-
-const secureAPI = async (endpoint: string) => {
-  try {
-    // Get token securely
-    const token = await SecureStore.getItemAsync('auth_token');
-
-    const response = await fetch(`https://api.example.com${endpoint}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Token expired, refresh and retry
-        await refreshToken();
-        return secureAPI(endpoint);
-      }
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Request failed:', error);
-    throw error;
-  }
-};
-```
-
-### Sensitive Data Handling
-
-```typescript
-// ✅ Store tokens securely
-import * as SecureStore from 'expo-secure-store';
-
-const saveAuthToken = async (token: string) => {
-  await SecureStore.setItemAsync('auth_token', token);
-};
-
-const getAuthToken = async () => {
-  return await SecureStore.getItemAsync('auth_token');
-};
-
-const clearAuthToken = async () => {
-  await SecureStore.deleteItemAsync('auth_token');
-};
+// CORRECT -- environment variable
+import { API_KEY } from '@env'; // via react-native-dotenv
 ```
 
 ### Input Validation
 
 ```typescript
-// ✅ CORRECT - Validate user input
-const validateEmail = (email: string): boolean => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-};
+import { z } from 'zod';
 
-const handleLogin = (email: string, password: string) => {
-  if (!validateEmail(email)) {
-    setError('Invalid email');
-    return;
-  }
+const loginSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(8, 'Password too short'),
+});
 
-  if (password.length < 8) {
-    setError('Password too short');
-    return;
-  }
-
-  // Proceed with login
-};
+function validateLogin(input: unknown): { email: string; password: string } {
+  return loginSchema.parse(input);
+}
 ```
+
+### Network Security
+
+- Always use HTTPS
+- Pin SSL certificates for sensitive APIs
+- Validate response data before using
+- Implement token refresh with retry logic
+- Set request timeouts
 
 ---
 
-## ♿ Accessibility (WCAG 2.1)
+## Accessibility (WCAG 2.1)
 
-### Color Contrast
-
-```typescript
-import { Text, View } from 'react-native';
-
-// ✅ GOOD: Dark on white = 21:1 contrast
-<Text style={{ color: '#000000', backgroundColor: '#FFFFFF' }}>
-  Accessible Text
-</Text>
-
-// ❌ BAD: Gray on white = 2.5:1 contrast (below 4.5:1 minimum)
-<Text style={{ color: '#CCCCCC', backgroundColor: '#FFFFFF' }}>
-  Hard to Read
-</Text>
-
-// Check contrast: https://webaim.org/resources/contrastchecker/
-```
-
-### Accessibility Labels
-
-```typescript
-import { Pressable, Text } from 'react-native';
-
-<Pressable
-  accessible={true}
-  accessibilityLabel="Add to favorites"
-  accessibilityRole="button"
-  accessibilityState={{ disabled: false }}
-  onPress={() => toggleFavorite()}
->
-  <Text>❤️</Text>
-</Pressable>
-```
-
-### Keyboard Navigation
+### Labels and Roles
 
 ```typescript
 <Pressable
-  onFocus={() => setFocused(true)}
-  onBlur={() => setFocused(false)}
-  style={({ focused }) => ({
-    borderWidth: focused ? 2 : 1,
-    borderColor: focused ? '#007AFF' : '#CCCCCC',
-  })}
+  accessible={true}
+  accessibilityLabel="Add item to cart"
+  accessibilityHint="Double tap to add this item to your shopping cart"
   accessibilityRole="button"
+  accessibilityState={{ disabled: isDisabled }}
+  onPress={handleAddToCart}
 >
-  <Text>Focusable Element</Text>
+  <Text>Add to Cart</Text>
 </Pressable>
 ```
 
-### Screen Reader Support
+### Accessibility Props
 
-```typescript
-import { View, Text, AccessibilityInfo } from 'react-native';
+| Prop | Type | Description |
+|------|------|-------------|
+| `accessible` | `boolean` | Mark as accessible element |
+| `accessibilityLabel` | `string` | Screen reader label |
+| `accessibilityHint` | `string` | Describes result of action |
+| `accessibilityRole` | `string` | `'button'`, `'header'`, `'link'`, `'image'`, `'text'` etc. |
+| `accessibilityState` | `object` | `{ disabled, selected, checked, busy, expanded }` |
+| `accessibilityValue` | `object` | `{ min, max, now, text }` for sliders/progress |
+| `importantForAccessibility` | `string` | `'auto'`, `'yes'`, `'no'`, `'no-hide-descendants'` |
 
-<View
-  accessible={true}
-  accessibilityLabel="User profile card for John Doe"
-  accessibilityHint="Double tap to open profile details"
->
-  <Text>John Doe</Text>
-  <Text>john@example.com</Text>
-</View>
-```
+### Checklist
+
+- Color contrast ratio >= 4.5:1 for text
+- Touch targets >= 44x44 dp
+- All interactive elements have `accessibilityLabel`
+- Form errors announced to screen readers
+- Focus order follows visual layout
 
 ---
 
-## ⚠️ Common Pitfalls & Solutions
+## Common Pitfalls
 
-### Pitfall 1: Unnecessary Re-renders
+### 1: Inline Functions in renderItem
 
 ```typescript
-// ❌ WRONG
-const MyList = () => {
-  const handlePress = (id: string) => { console.log(id); }; // New function every render
+// BAD -- new function on every render
+<FlatList renderItem={({ item }) => <ListItem item={item} />} />
 
-  return (
-    <FlatList
-      data={data}
-      renderItem={({ item }) => (
-        <ListItem item={item} onPress={handlePress} />
-      )}
-    />
-  );
-};
-
-// ✅ CORRECT
-const MyList = () => {
-  const handlePress = useCallback((id: string) => {
-    console.log(id);
-  }, []); // Memoized, recreated only if dependencies change
-
-  return (
-    <FlatList
-      data={data}
-      renderItem={({ item }) => (
-        <ListItem item={item} onPress={handlePress} />
-      )}
-    />
-  );
-};
+// GOOD -- stable reference
+const renderItem = useCallback(({ item }) => <ListItem item={item} />, []);
+<FlatList renderItem={renderItem} />
 ```
 
-### Pitfall 2: Memory Leaks
+### 2: Memory Leaks from Subscriptions
 
 ```typescript
-// ❌ WRONG
+// BAD -- no cleanup
 useEffect(() => {
-  const unsubscribe = navigation.addListener('focus', () => {
-    console.log('Screen focused');
-  });
-  // Never unsubscribed!
+  const sub = eventEmitter.addListener('event', handler);
+  // Missing return cleanup!
 }, []);
 
-// ✅ CORRECT
+// GOOD -- proper cleanup
 useEffect(() => {
-  const unsubscribe = navigation.addListener('focus', () => {
-    console.log('Screen focused');
-  });
-
-  return () => unsubscribe(); // Cleanup on unmount
-}, [navigation]);
-```
-
-### Pitfall 3: Async State Updates After Unmount
-
-```typescript
-// ❌ WRONG
-useEffect(() => {
-  const fetchData = async () => {
-    const data = await api.fetch();
-    setData(data); // May warn if component unmounted
-  };
-
-  fetchData();
-}, []);
-
-// ✅ CORRECT
-useEffect(() => {
-  let isMounted = true;
-
-  const fetchData = async () => {
-    const data = await api.fetch();
-    if (isMounted) {
-      setData(data);
-    }
-  };
-
-  fetchData();
-
-  return () => {
-    isMounted = false;
-  };
+  const sub = eventEmitter.addListener('event', handler);
+  return () => sub.remove();
 }, []);
 ```
 
-### Pitfall 4: Missing Keys in Lists
+### 3: State Updates After Unmount
 
 ```typescript
-// ❌ WRONG - Using index as key
-<FlatList
-  data={users}
-  keyExtractor={(item, index) => index.toString()} // Wrong!
-  renderItem={({ item }) => <UserCard user={item} />}
-/>
+// BAD -- may warn after unmount
+useEffect(() => {
+  fetchData().then(setData);
+}, []);
 
-// ✅ CORRECT - Using unique identifier
-<FlatList
-  data={users}
-  keyExtractor={(item) => item.id} // Unique per item
-  renderItem={({ item }) => <UserCard user={item} />}
-/>
+// GOOD -- abort on cleanup
+useEffect(() => {
+  const controller = new AbortController();
+  fetchData({ signal: controller.signal })
+    .then(setData)
+    .catch((e) => { if (!controller.signal.aborted) console.error(e); });
+  return () => controller.abort();
+}, []);
 ```
 
-### Pitfall 5: Blocking UI Thread
+### 4: Array Index as Key
 
 ```typescript
-// ❌ WRONG
-const expensiveOperation = () => {
-  let sum = 0;
-  for (let i = 0; i < 1000000000; i++) {
-    sum += i; // Blocks UI for seconds
-  }
-  return sum;
-};
+// BAD -- causes incorrect reordering/animation
+keyExtractor={(item, index) => index.toString()}
 
-// ✅ CORRECT - Use InteractionManager
-import { InteractionManager } from 'react-native';
+// GOOD -- stable unique ID
+keyExtractor={(item) => item.id}
+```
 
+### 5: Blocking JS Thread
+
+```typescript
+// BAD -- freezes UI
+function heavySort(data: Item[]): Item[] {
+  return data.sort(/* expensive comparator */);
+}
+
+// GOOD -- defer after interactions
 InteractionManager.runAfterInteractions(() => {
-  let sum = 0;
-  for (let i = 0; i < 1000000000; i++) {
-    sum += i; // Runs after interactions complete
-  }
+  const sorted = heavySort(data);
+  setData(sorted);
 });
 ```
 
+### 6: Deprecated SafeAreaView
+
+```typescript
+// BAD -- deprecated in RN 0.81
+import { SafeAreaView } from 'react-native';
+
+// GOOD -- community package
+import { SafeAreaView } from 'react-native-safe-area-context';
+// Or use hooks:
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+```
+
 ---
 
-## 📋 Pre-Production Checklist
+## Pre-Production Checklist
 
 **Performance:**
-- [ ] FlatList optimized (initialNumToRender, maxToRenderPerBatch)
-- [ ] Components memoized appropriately
-- [ ] No inline functions in list renders
+- [ ] FlatList has performance props configured
+- [ ] renderItem is memoized with useCallback
+- [ ] Item components wrapped with memo
 - [ ] Images have explicit dimensions
-- [ ] Navigation listeners cleaned up
-- [ ] No console.logs in production
+- [ ] No console.log in production (use `__DEV__` guard)
+- [ ] Animations use `useNativeDriver: true`
 
 **Security:**
-- [ ] No API keys hardcoded
 - [ ] Tokens stored in SecureStore
-- [ ] HTTPS only for network requests
-- [ ] Sensitive data encrypted
-- [ ] Input validation implemented
-- [ ] Error messages don't leak info
+- [ ] No hardcoded API keys
+- [ ] HTTPS for all network requests
+- [ ] User input validated
+- [ ] Error messages do not leak sensitive info
 
 **Accessibility:**
-- [ ] Color contrast 4.5:1 minimum
+- [ ] Color contrast >= 4.5:1
+- [ ] Touch targets >= 44x44 dp
 - [ ] All buttons have accessibilityLabel
-- [ ] Screen reader support added
-- [ ] Keyboard navigation works
-- [ ] Touch targets 44x44 minimum
-
-**Testing:**
-- [ ] Unit tests for business logic
-- [ ] Integration tests for flows
-- [ ] Manual testing on real devices
-- [ ] All platforms tested (iOS/Android)
-- [ ] Error scenarios tested
+- [ ] Screen reader tested (VoiceOver/TalkBack)
 
 ---
 
-**Source**: https://reactnative.dev/docs/performance
-**Version**: React Native 0.83
-**Last Updated**: December 2025
+**Version:** React Native 0.81.5
+**Source:** https://reactnative.dev/docs/performance | https://reactnative.dev/docs/accessibility

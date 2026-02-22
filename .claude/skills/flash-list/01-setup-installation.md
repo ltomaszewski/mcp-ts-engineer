@@ -1,113 +1,110 @@
-# FlashList - Setup & Installation
+# FlashList v1.7.x - Setup & Installation
 
 **Installation, basic setup, environment configuration**
-
----
-
-## React Native (Standard CLI)
-
-**Description**: Install FlashList for standard React Native projects using Yarn or npm.
-
-### Installation Steps
-
-```bash
-# Using Yarn (recommended)
-yarn add @shopify/flash-list
-
-# Using npm
-npm install @shopify/flash-list
-
-# For iOS, install pods
-cd ios && pod install && cd ..
-```
-
-**Supported Versions:**
-- React Native 0.71.0 or higher
-- All platforms (iOS, Android, Windows, macOS)
 
 **Source:** https://shopify.github.io/flash-list/docs/
 
 ---
 
-## Expo Setup
-
-**Description**: Install FlashList in Expo projects with support for Expo Go and Development Builds.
-
-### Option 1: Expo Go (SDK 46+)
+## React Native (Standard CLI)
 
 ```bash
-# Install the package
-npx expo install @shopify/flash-list
+# Using npm
+npm install @shopify/flash-list
 
-# FlashList is built-in support for Expo Go from SDK 46 onwards
-# No additional configuration needed
+# Using Yarn
+yarn add @shopify/flash-list
+
+# iOS: install pods
+cd ios && pod install && cd ..
 ```
 
-### Option 2: Expo Development Build (Recommended for complex projects)
-
-```bash
-# Install the package
-npx expo install @shopify/flash-list expo-dev-client
-
-# Create a new development build
-npx expo run:ios
-# or
-npx expo run:android
-
-# Start development server
-npx expo start --dev-client
-```
-
-**Key Points:**
-- ✅ No config plugin required
-- ✅ Works with Development Builds from SDK 46+
-- ✅ Fully compatible with Expo Go from SDK 46+
+**Supported Versions:**
+- React Native 0.63 or higher (v1.x)
+- All platforms: iOS, Android, Windows, macOS
 
 ---
 
-## Minimum Configuration (Required)
+## Expo Setup
+
+### Expo SDK 54+ (Expo Go supported)
+
+```bash
+npx expo install @shopify/flash-list
+```
+
+FlashList is included in Expo Go from SDK 54 onwards -- no config plugin or development build required for basic usage.
+
+### Expo Development Build
+
+```bash
+npx expo install @shopify/flash-list expo-dev-client
+npx expo run:ios   # or npx expo run:android
+npx expo start --dev-client
+```
+
+---
+
+## Minimum Working Example
 
 ```typescript
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 
-interface ItemType {
+interface Item {
   id: string;
   title: string;
 }
 
-const DATA: ItemType[] = [
+const DATA: Item[] = [
   { id: '1', title: 'First Item' },
   { id: '2', title: 'Second Item' },
   { id: '3', title: 'Third Item' },
 ];
 
-const MyList = () => {
+export default function MyList() {
+  const renderItem = useCallback(({ item }: { item: Item }) => (
+    <View style={styles.item}>
+      <Text style={styles.title}>{item.title}</Text>
+    </View>
+  ), []);
+
   return (
     <View style={{ flex: 1 }}>
       <FlashList
         data={DATA}
-        renderItem={({ item }) => (
-          <Text style={{ padding: 16 }}>{item.title}</Text>
-        )}
+        renderItem={renderItem}
         estimatedItemSize={50}
+        keyExtractor={(item) => item.id}
       />
     </View>
   );
-};
+}
 
-export default MyList;
+const styles = StyleSheet.create({
+  item: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  title: { fontSize: 16 },
+});
 ```
 
-**What's Required:**
-- `data` prop: Array of items
-- `renderItem` prop: Function that renders each item
-- Parent container with defined dimensions (height/width)
+**Required for rendering:**
+1. `data` -- array of items
+2. `renderItem` -- render function
+3. `estimatedItemSize` -- average item height/width in pixels
+4. Parent container with defined dimensions (`flex: 1` or explicit height)
 
 ---
 
-## Next Steps
+## Verification Checklist
 
-👉 Read **02-core-concepts.md** to understand how FlashList works
-👉 Jump to **03-api-props.md** for specific prop reference
+- [ ] Package installed (`@shopify/flash-list` in `node_modules`)
+- [ ] iOS pods installed (if applicable)
+- [ ] Parent `View` has `flex: 1` or explicit height
+- [ ] `estimatedItemSize` set to approximate average item height
+- [ ] No `ScrollView` wrapper around FlashList
+- [ ] Test in release mode for real performance
+
+---
+
+**Version:** 1.7.x | **Source:** https://shopify.github.io/flash-list/docs/

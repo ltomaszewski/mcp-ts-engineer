@@ -1,123 +1,260 @@
-# Advanced Features & Plugins - NativeWind v4
+# Advanced Features - NativeWind v4
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** October 14, 2025  
-**Version:** NativeWind v4
+**Source:** https://www.nativewind.dev/docs/api/css-interop
+**Last Verified:** February 2026
+**Version:** NativeWind v4 (^4.1.23) + Tailwind 3.4.17
 
 ---
 
 ## Table of Contents
-1. [Arbitrary Values](#arbitrary-values-advanced)
-2. [Plugin System](#plugin-system)
-3. [Performance Plugins](#performance-plugins)
-4. [Platform-Specific Media Queries](#platform-specific-media-queries)
+1. [cssInterop API](#cssinterop-api)
+2. [Safe Area Utilities](#safe-area-utilities)
+3. [Arbitrary Values](#arbitrary-values)
+4. [Plugin System](#plugin-system)
+5. [Container Queries](#container-queries)
+6. [Advanced Configuration](#advanced-configuration)
 
 ---
 
-## Arbitrary Values (Advanced)
+## cssInterop API
 
-Beyond basic arbitrary values, NativeWind supports advanced patterns.
+`cssInterop` tags a component so NativeWind's runtime resolves `className` strings into style objects. Required for third-party components that do not pass className through the JSX transform.
 
-### Advanced Arbitrary Syntax
+### When to Use
+
+- Custom native components that accept a `style` prop
+- Third-party libraries (FlashList, React Native Maps, etc.)
+- Components that accept style sub-props (e.g., `contentContainerStyle`)
+
+### Basic Syntax
 
 ```typescript
-// Color with arbitrary opacity
-<View className="bg-blue-500/50" />     // 50% opacity
-<View className="bg-blue-500/75" />     // 75% opacity
+import { cssInterop } from 'nativewind';
+import { FlashList } from '@shopify/flash-list';
+import MapView from 'react-native-maps';
 
-// Custom values with calc approximation
-<View className="w-[calc(100%-32px)]" />  // Caution: limited support
-<View className="p-[calc(1rem+2px)]" />   // Works but complex
-
-// Viewport-relative values
-<View className="w-screen" />  // Full screen width
-<View className="h-screen" />  // Full screen height
-
-// Container-query based sizing
-<View className="w-[calc(100cqw-32px)]" /> // Container width unit
+// Map className -> style prop
+cssInterop(FlashList, { className: 'style' });
+cssInterop(MapView, { className: 'style' });
 ```
 
-### Performance with Arbitrary Values
+### Multiple Prop Mapping
 
-Arbitrary values skip Tailwind's purging optimization:
+```typescript
+import { cssInterop } from 'nativewind';
+import { FlashList } from '@shopify/flash-list';
 
-```javascript
-// tailwind.config.js
+// Map multiple className props to their style counterparts
+cssInterop(FlashList, {
+  className: 'style',
+  contentContainerClassName: 'contentContainerStyle',
+});
 
-module.exports = {
-  theme: {
-    extend: {},
+// Usage after mapping
+<FlashList
+  className="flex-1 bg-white"
+  contentContainerClassName="p-4"
+  data={data}
+  renderItem={renderItem}
+  estimatedItemSize={80}
+/>
+```
+
+### Advanced: nativeStyleToProp
+
+Extract specific CSS properties and route them to component props:
+
+```typescript
+import { cssInterop } from 'nativewind';
+import { TextInput } from 'react-native';
+
+cssInterop(TextInput, {
+  className: {
+    target: 'style',
+    nativeStyleToProp: {
+      textAlign: true,            // Extract textAlign as a direct prop
+      color: 'placeholderTextColor', // Route color to placeholderTextColor
+    },
   },
-  // Use safelist to pre-include dynamic patterns
-  safelist: [
-    // Include patterns by regex
-    { pattern: /w-(1\/2|1\/3|1\/4|1\/5)/ },
-    { pattern: /bg-(red|blue|green)-[0-9]+/ },
-    { pattern: /text-(xs|sm|base|lg|xl)/ },
-  ],
+});
+```
+
+### Performance Note
+
+Enabling `cssInterop` on a component adds runtime overhead -- NativeWind must resolve styles, add event handlers, and inject context. Only use it when necessary.
+
+### Common Third-Party Integrations
+
+| Library | Configuration |
+|---------|--------------|
+| `@shopify/flash-list` | `cssInterop(FlashList, { className: 'style', contentContainerClassName: 'contentContainerStyle' })` |
+| `react-native-maps` | `cssInterop(MapView, { className: 'style' })` |
+| `react-native-svg` | `cssInterop(Svg, { className: 'style' })` |
+
+---
+
+## Safe Area Utilities
+
+NativeWind provides safe area inset utilities that adapt to device notches, home indicators, and rounded corners. Requires `react-native-safe-area-context`.
+
+### Padding Safe Area
+
+```typescript
+// Pad all sides by safe area insets
+<View className="p-safe">Content</View>
+
+// Individual sides
+<View className="pt-safe pb-safe">
+  <Text>Respects top notch and bottom home indicator</Text>
+</View>
+
+// Horizontal safe areas (useful for landscape)
+<View className="px-safe">Horizontal safe</View>
+```
+
+### Available Safe Area Classes
+
+| Category | Classes |
+|----------|---------|
+| **Margin** | `m-safe` `mx-safe` `my-safe` `mt-safe` `mr-safe` `mb-safe` `ml-safe` `ms-safe` `me-safe` |
+| **Padding** | `p-safe` `px-safe` `py-safe` `pt-safe` `pr-safe` `pb-safe` `pl-safe` `ps-safe` `pe-safe` |
+| **Position** | `inset-safe` `inset-x-safe` `inset-y-safe` `top-safe` `right-safe` `bottom-safe` `left-safe` |
+| **Height** | `h-screen-safe` `min-h-screen-safe` `max-h-screen-safe` |
+
+### Variants: safe-or and safe-offset
+
+```typescript
+// Use the GREATER of safe area inset or specified spacing
+<View className="pt-safe-or-4">
+  {/* If safe area top = 0, uses p-4 (16px). If safe area top = 47px, uses 47px */}
+</View>
+
+// ADD spacing ON TOP OF the safe area inset
+<View className="pt-safe-offset-4">
+  {/* safe area top + 16px */}
+</View>
+```
+
+### Full Screen Safe Layout
+
+```typescript
+import { View, Text } from 'react-native';
+
+export function SafeScreen() {
+  return (
+    <View className="flex-1 bg-white dark:bg-slate-900 pt-safe pb-safe">
+      <View className="px-4 flex-1">
+        <Text className="text-xl font-bold text-slate-900 dark:text-white">
+          Safe content area
+        </Text>
+      </View>
+    </View>
+  );
 }
 ```
 
-This prevents arbitrary values from bloating bundle size.
+**How it works:** On native, these use CSS `env()` functions with values from `react-native-safe-area-context`. On web, standard CSS `env(safe-area-inset-*)` variables are used.
+
+**Source:** https://www.nativewind.dev/docs/tailwind/new-concepts/safe-area-insets
+
+---
+
+## Arbitrary Values
+
+Use any value not in the Tailwind design system with bracket syntax.
+
+### Supported Categories
+
+```typescript
+// Colors
+<View className="bg-[#3498db]" />
+<View className="bg-[rgb(52,152,219)]" />
+<View className="bg-[hsl(217,71%,53%)]" />
+
+// Sizing
+<View className="w-[250px] h-[100px]" />
+<View className="w-[45%]" />
+<View className="aspect-[3/2]" />
+
+// Spacing
+<View className="p-[18px] m-[25px] gap-[13px]" />
+
+// Border radius
+<View className="rounded-[15px]" />
+
+// Color with opacity (slash syntax)
+<View className="bg-blue-500/50" />   {/* 50% opacity */}
+<View className="bg-blue-500/75" />   {/* 75% opacity */}
+<Text className="text-red-600/80" />  {/* 80% opacity */}
+```
+
+### CSS Variable References
+
+```typescript
+<View
+  style={{ '--brand': '#3498db' } as any}
+  className="bg-[var(--brand)] p-[var(--spacing,16px)]"
+/>
+```
+
+### Safelist for Dynamic Patterns
+
+When classes are generated dynamically and Tailwind cannot detect them, add a safelist:
+
+```javascript
+// tailwind.config.js
+module.exports = {
+  safelist: [
+    { pattern: /bg-(red|blue|green)-[0-9]+/ },
+    { pattern: /w-(1\/2|1\/3|1\/4)/ },
+  ],
+};
+```
 
 ---
 
 ## Plugin System
 
-NativeWind supports Tailwind CSS plugins for extending functionality.
-
-### Official Plugins
-
-#### Container Queries Plugin
-
-The `@tailwindcss/container-queries` plugin adds container query support:
+### Container Queries Plugin
 
 ```bash
 npm install -D @tailwindcss/container-queries
 ```
 
-Configure in `tailwind.config.js`:
-
 ```javascript
+// tailwind.config.js
 module.exports = {
-  plugins: [
-    require('@tailwindcss/container-queries'),
-  ],
-}
-```
-
-Usage with NativeWind:
-
-```typescript
-export const ContainerQuery = () => {
-  return (
-    <View className="@container p-4 gap-4">
-      {/* Layout changes based on container width */}
-      <View className="flex-col @md:flex-row gap-4">
-        <View className="@md:w-1/2">Left</View>
-        <View className="@md:w-1/2">Right</View>
-      </View>
-    </View>
-  );
+  plugins: [require('@tailwindcss/container-queries')],
 };
 ```
 
-### Custom Plugins
+```typescript
+<View className="@container p-4">
+  <View className="flex-col @md:flex-row gap-4">
+    <View className="@md:flex-1">Left</View>
+    <View className="@md:flex-1">Right</View>
+  </View>
+</View>
+```
 
-Create a custom plugin for project-specific utilities:
+### Container Query Breakpoints
+
+| Prefix | Min Width |
+|--------|-----------|
+| `@sm:` | 384px |
+| `@md:` | 448px |
+| `@lg:` | 512px |
+| `@xl:` | 576px |
+| `@2xl:` | 672px |
+
+### Custom Plugin
 
 ```javascript
 // tailwind.config.js
-
 module.exports = {
   plugins: [
     function ({ addUtilities }) {
-      const newUtilities = {
-        '.glass': {
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '8px',
-        },
+      addUtilities({
         '.card-shadow': {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
@@ -125,351 +262,104 @@ module.exports = {
           shadowRadius: 8,
           elevation: 3,
         },
-      };
-
-      addUtilities(newUtilities);
+      });
     },
   ],
-}
-```
-
-Usage:
-
-```typescript
-<View className="glass p-4 rounded-lg">
-  <Text>Glassmorphic effect</Text>
-</View>
-
-<View className="card-shadow p-4 rounded-lg">
-  <Text>With shadow</Text>
-</View>
-```
-
-### Theme Extension Plugin
-
-Extend Tailwind's theme with custom values:
-
-```javascript
-module.exports = {
-  theme: {
-    extend: {
-      // Add custom colors
-      colors: {
-        'brand-blue': '#3498db',
-        'brand-green': '#2ecc71',
-      },
-      
-      // Add custom spacing
-      spacing: {
-        '128': '32rem',
-        '144': '36rem',
-      },
-      
-      // Add custom font sizes
-      fontSize: {
-        'xxs': '10px',
-      },
-      
-      // Add custom border radius
-      borderRadius: {
-        'xl': '20px',
-        'full': '9999px',
-      },
-    },
-  },
-}
-```
-
----
-
-## Performance Plugins
-
-### Tree Shaking Optimization
-
-For production, ensure optimal bundle size:
-
-```javascript
-// tailwind.config.js
-
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-  ],
-  
-  // Only include used core plugins
-  corePlugins: {
-    preflight: false,        // Disable web resets
-    backdropBlur: false,     // Unused
-    backdropBrightness: false,
-  },
-  
-  // Limit color palette if not using all
-  theme: {
-    colors: {
-      // Only include used colors
-      white: '#ffffff',
-      black: '#000000',
-      blue: {
-        500: '#3498db',
-        600: '#2980b9',
-      },
-    },
-  },
-}
-```
-
-### Profiling & Analysis
-
-Find unused styles:
-
-```bash
-# Generate CSS and analyze
-npx tailwindcss -i ./global.css -o ./output.css
-
-# Use bundle analyzer
-npm install --save-dev webpack-bundle-analyzer
-```
-
----
-
-## Platform-Specific Media Queries
-
-Apply platform-specific theme configurations using media queries:
-
-```css
-/* global.css */
-
-@layer theme {
-  :root {
-    --font-sans: 'Segoe UI', sans-serif;
-    @media ios {
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI';
-    }
-    @media android {
-      --font-sans: 'Roboto', sans-serif;
-    }
-  }
-}
-```
-
-Usage:
-
-```typescript
-export const PlatformAwareText = () => {
-  return (
-    <Text className="font-sans text-base">
-      Platform-aware typography
-    </Text>
-  );
 };
-
-// iOS: System font
-// Android: Roboto
-// Web: Segoe UI fallback
 ```
 
-### Dark Mode + Platform
-
-Combine dark mode with platform selectors:
-
-```css
-/* global.css */
-
-@layer theme {
-  :root {
-    --bg-primary: #ffffff;
-    --text-primary: #000000;
-    
-    @media (prefers-color-scheme: dark) {
-      --bg-primary: #1a1a1a;
-      --text-primary: #ffffff;
-    }
-    
-    /* Override on iOS */
-    @media ios {
-      --bg-primary: #f5f5f5;
-      @media (prefers-color-scheme: dark) {
-        --bg-primary: #0a0a0a;
-      }
-    }
-  }
-}
-```
+Usage: `<View className="card-shadow p-4 rounded-lg" />`
 
 ---
 
-## Advanced Configuration Patterns
+## Container Queries
 
-### Multi-Environment Configuration
+Style children based on parent container size instead of viewport.
 
-```javascript
-// tailwind.config.js
+```typescript
+import { View, Text } from 'react-native';
 
-const dev = process.env.NODE_ENV === 'development';
-const prod = !dev;
-
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    // ... other paths
-  ],
-  
-  theme: {
-    extend: {
-      colors: dev ? {
-        // Development: full color palette for testing
-        'dev-red': '#ff0000',
-        'dev-blue': '#0000ff',
-      } : {},
-    },
-  },
-  
-  // Production: minimize features
-  corePlugins: prod ? {
-    preflight: false,
-    // Only production-necessary plugins
-  } : {},
+export function AdaptiveCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <View className="@container bg-white rounded-lg p-4 shadow-sm">
+      <View className="gap-4 @md:flex-row @md:gap-6">
+        <View className="w-full @md:w-32 h-32 bg-gray-300 rounded-lg" />
+        <View className="flex-1 justify-center">
+          <Text className="text-lg font-bold">{title}</Text>
+          <Text className="text-gray-600 text-sm">{desc}</Text>
+        </View>
+      </View>
+    </View>
+  );
 }
 ```
 
-### Dynamic Theme Configuration
+**Benefits:** Component-level responsiveness, reusable across different container widths.
+
+---
+
+## Advanced Configuration
+
+### Theme Extension
 
 ```javascript
 // tailwind.config.js
+module.exports = {
+  content: ['./app/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        brand: { DEFAULT: '#3498db', dark: '#2980b9' },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui'],
+      },
+      spacing: { '128': '32rem' },
+      fontSize: { xxs: '10px' },
+      borderRadius: { xl: '20px' },
+    },
+  },
+  corePlugins: {
+    preflight: false, // Disable web resets for React Native
+  },
+};
+```
 
+### Brand-Specific Builds
+
+```javascript
 const brands = {
   acme: { primary: '#ff6b6b', secondary: '#339af0' },
   tech: { primary: '#1976d2', secondary: '#00bcd4' },
 };
-
-const currentBrand = process.env.REACT_APP_BRAND || 'acme';
-const brandConfig = brands[currentBrand];
+const brand = process.env.REACT_APP_BRAND || 'acme';
 
 module.exports = {
   theme: {
     extend: {
       colors: {
-        'brand-primary': brandConfig.primary,
-        'brand-secondary': brandConfig.secondary,
+        'brand-primary': brands[brand].primary,
+        'brand-secondary': brands[brand].secondary,
       },
     },
   },
-}
-```
-
-### Feature Flags
-
-```javascript
-// tailwind.config.js
-
-module.exports = {
-  theme: {
-    extend: {
-      // Only enable if feature flag is set
-      ...(process.env.FEATURE_EXPERIMENTAL_GRADIENTS && {
-        backgroundGradient: {
-          // gradient config
-        },
-      }),
-    },
-  },
-}
-```
-
----
-
-## Experimental Features
-
-### CSS-in-JS Interop
-
-In v4, some CSS-in-JS patterns are supported:
-
-```typescript
-// enableCSSInterop - allow specific components
-export const StyledComponent = () => {
-  return (
-    <View
-      style={{
-        // Inline styles work alongside className
-        shadowColor: '#000',
-      }}
-      className="p-4 rounded-lg bg-white"
-    >
-      Content
-    </View>
-  );
 };
 ```
 
-### Re-export Components
+### Platform-Specific CSS Variables
 
-Share styled components across projects:
-
-```typescript
-// Create a shared component library
-export { Button } from './components/Button';
-export { Card } from './components/Card';
-export { Input } from './components/Input';
-
-// Use in another project
-import { Button, Card } from '@company/ui';
-
-<Card>
-  <Button>Click me</Button>
-</Card>
-```
-
----
-
-## Troubleshooting Advanced Features
-
-### Plugin Not Loading
-
-```javascript
-// ✅ CORRECT
-module.exports = {
-  plugins: [
-    require('@tailwindcss/container-queries'),
-  ],
-}
-
-// ❌ WRONG
-module.exports = {
-  plugins: [
-    '@tailwindcss/container-queries', // String not allowed
-  ],
-}
-```
-
-### Custom Utilities Not Appearing
-
-1. Check tailwind.config.js syntax
-2. Verify file is imported in global.css
-3. Clear cache: `npm start -- --reset-cache`
-4. Check content paths include all files
-
-### Performance Issues with Plugins
-
-Large plugins can increase build time:
-
-```javascript
-// ✅ GOOD: Only load needed plugins
-module.exports = {
-  plugins: [
-    process.env.NODE_ENV === 'production' && require('@tailwindcss/container-queries'),
-  ].filter(Boolean),
-}
-
-// ❌ AVOID: Loading all plugins
-module.exports = {
-  plugins: [
-    require('@tailwindcss/container-queries'),
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
-    // ... more plugins
-  ],
+```css
+/* global.css */
+@layer base {
+  :root {
+    --font-sans: 'Segoe UI', sans-serif;
+  }
+  @media ios {
+    :root { --font-sans: -apple-system, BlinkMacSystemFont; }
+  }
+  @media android {
+    :root { --font-sans: 'Roboto', sans-serif; }
+  }
 }
 ```
 
@@ -477,8 +367,10 @@ module.exports = {
 
 ## Related Documentation
 
-- **Core Concepts:** `02-core-concepts.md` - Architecture
-- **Custom Values:** `09-custom-values.md` - CSS variables
-- **Best Practices:** `11-best-practices.md` - Production optimization
+- **Core Concepts:** `02-core-concepts.md`
+- **CSS Variables:** `09-custom-values.md`
+- **Best Practices:** `11-best-practices.md`
 
-**Source:** https://www.nativewind.dev/docs
+---
+
+**Version:** NativeWind 4.x (^4.1.23) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/docs/api/css-interop

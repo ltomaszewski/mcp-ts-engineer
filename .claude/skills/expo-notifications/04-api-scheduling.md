@@ -1,558 +1,357 @@
-# Expo Notifications: Scheduling & Cancellation API
+# Scheduling & Cancellation API -- Expo Notifications SDK 54
 
-> Complete reference for scheduling notifications, managing scheduled notifications, cancellation, retrieval, and trigger timing strategies.
-
-**Module Purpose**: Scheduling methods, trigger types, cancellation API, and practical scheduling patterns.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Scheduling notifications, trigger types, cancellation, and retrieval.
 
 ---
 
-## Scheduling Notifications
+## scheduleNotificationAsync(request)
 
-### `scheduleNotificationAsync(request)`
-
-**Purpose**: Schedule a notification to be triggered at a specific time or interval.
-
-**Parameters**:
+Schedule a notification to be triggered at a specific time or interval.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `request` | `NotificationRequestInput` | Yes | Configuration for the scheduled notification |
-| `request.content` | `NotificationContentInput` | Yes | Notification content (title, body, etc.) |
-| `request.trigger` | `NotificationTriggerInput` | Yes | When to trigger (time, date, interval) |
+| `request.content` | `NotificationContentInput` | Yes | Notification content |
+| `request.trigger` | `NotificationTriggerInput \| null` | Yes | When to trigger (`null` = immediate) |
+| `request.identifier` | `string` | No | Custom notification ID |
 
-**Return Type**: `Promise<string>` — Notification ID for later cancellation/tracking
-
-**Code Example - Simple Delay**:
+**Returns:** `Promise<string>` -- notification identifier
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-async function scheduleDelayedNotification() {
-  try {
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Time's up! ⏰",
-        body: 'Your timer has completed',
-        sound: 'default',
-        badge: 1,
-        data: { timerType: 'workout' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 60,
-        repeats: false,
-      },
-    });
-
-    console.log('Notification scheduled:', notificationId);
-    return notificationId;
-
-  } catch (error) {
-    console.error('Failed to schedule notification:', error);
-  }
-}
+// Immediate notification (trigger = null)
+const id = await Notifications.scheduleNotificationAsync({
+  content: {
+    title: 'Hello',
+    body: 'This fires immediately',
+    data: { screen: 'home' },
+  },
+  trigger: null,
+});
 ```
-
-**Code Example - Repeating Notification**:
-
-```typescript
-async function scheduleRepeatingNotification() {
-  try {
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Drink Water 💧',
-        body: 'Stay hydrated throughout the day',
-        sound: 'default',
-        data: { reminderType: 'hydration' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 60 * 30,  // Every 30 minutes
-        repeats: true,
-      },
-    });
-
-    console.log('Repeating notification scheduled:', notificationId);
-    return notificationId;
-
-  } catch (error) {
-    console.error('Failed to schedule repeating notification:', error);
-  }
-}
-```
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
 
 ---
 
 ## Trigger Types
 
+### SchedulableTriggerInputTypes Enum
+
+| Type | Value | Description |
+|------|-------|-------------|
+| `TIME_INTERVAL` | `'timeInterval'` | Fire after N seconds (optionally repeating) |
+| `DATE` | `'date'` | Fire at specific date/time |
+| `CALENDAR` | `'calendar'` | Fire based on date components (repeating) |
+| `DAILY` | `'daily'` | Fire daily at specific time |
+| `WEEKLY` | `'weekly'` | Fire weekly on specific day and time |
+| `MONTHLY` | `'monthly'` | Fire monthly on specific day and time |
+| `YEARLY` | `'yearly'` | Fire yearly on specific date and time |
+
+---
+
 ### TIME_INTERVAL Trigger
 
-**Purpose**: Schedule a notification to trigger after a delay or repeatedly at fixed intervals.
+Fire after a delay or repeatedly at fixed intervals.
 
-**Code Example - One-Time Delay**:
-
-```typescript
-async function scheduleInFiveSeconds() {
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Hello!',
-      body: 'This notification fires in 5 seconds',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 5,
-      repeats: false,
-    },
-  });
-  console.log('Scheduled notification ID:', id);
-}
-```
-
-**Common Intervals**:
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.TIME_INTERVAL` | Yes | Trigger type |
+| `seconds` | `number` | Yes | Seconds until trigger |
+| `repeats` | `boolean` | No | Repeat at interval (default: false) |
 
 ```typescript
-// Every minute
-seconds: 60
+// One-time delay (5 seconds)
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Timer', body: 'Time is up!' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+    seconds: 5,
+    repeats: false,
+  },
+});
 
-// Every 5 minutes
-seconds: 60 * 5
-
-// Every 15 minutes
-seconds: 60 * 15
-
-// Every hour
-seconds: 60 * 60
-
-// Every day
-seconds: 60 * 60 * 24
-
-// Every week
-seconds: 60 * 60 * 24 * 7
+// Repeating every 30 minutes
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Reminder', body: 'Stay hydrated' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+    seconds: 1800,
+    repeats: true,
+  },
+});
 ```
 
 ---
 
 ### DATE Trigger
 
-**Purpose**: Schedule a notification for a specific date and time.
+Fire at a specific date and time. Does not repeat.
 
-**Code Example - Tomorrow at 9 AM**:
-
-```typescript
-async function scheduleTomorrowAt9AM() {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(9, 0, 0, 0);
-
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Good Morning! 🌅",
-      body: 'Start your day with our app',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: tomorrow,
-    },
-  });
-  return id;
-}
-```
-
-**Code Example - Next Week Monday 2 PM**:
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.DATE` | Yes | Trigger type |
+| `date` | `Date \| number` | Yes | Date object or Unix timestamp (ms) |
 
 ```typescript
-async function scheduleNextMondayAt2PM() {
-  const now = new Date();
-  const nextMonday = new Date(now);
+// Schedule for tomorrow at 9 AM
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+tomorrow.setHours(9, 0, 0, 0);
 
-  const day = nextMonday.getDay();
-  const daysToMonday = (1 - day + 7) % 7 || 7;
-
-  nextMonday.setDate(nextMonday.getDate() + daysToMonday);
-  nextMonday.setHours(14, 0, 0, 0);
-
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Weekly Meeting 📅',
-      body: 'Team sync-up in 1 hour',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: nextMonday,
-    },
-  });
-  return id;
-}
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Good Morning', body: 'Start your day' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: tomorrow,
+  },
+});
 ```
 
 ---
 
-### CALENDAR Trigger (iOS)
+### DAILY Trigger
 
-**Purpose**: Schedule recurring notifications based on calendar components (daily, weekly, monthly).
+Fire every day at a specific time.
 
-**Code Example - Daily at 9 AM**:
-
-```typescript
-async function scheduleDailyAt9AM() {
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Daily Reminder 📌',
-      body: 'Check your tasks',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      dateComponents: {
-        hour: 9,
-        minute: 0,
-        second: 0,
-      },
-      repeats: true,
-    },
-  });
-  return id;
-}
-```
-
-**Code Example - Weekdays at 8 AM**:
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.DAILY` | Yes | Trigger type |
+| `hour` | `number` | Yes | Hour (0-23) |
+| `minute` | `number` | Yes | Minute (0-59) |
 
 ```typescript
-async function scheduleWeekdayMorning() {
-  // Weekday values: 1 = Sunday, 2 = Monday, ..., 7 = Saturday
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Weekday Reminder',
-      body: 'Good morning! Time to work',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      dateComponents: {
-        weekday: 2,  // Monday
-        hour: 8,
-        minute: 0,
-      },
-      repeats: true,
-    },
-  });
-  return id;
-}
-```
-
-**Code Example - Every Friday at 5 PM**:
-
-```typescript
-async function scheduleFriday5PM() {
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'End of Week! 🎉',
-      body: 'Great work this week!',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      dateComponents: {
-        weekday: 6,  // Friday
-        hour: 17,    // 5 PM
-        minute: 0,
-      },
-      repeats: true,
-    },
-  });
-  return id;
-}
+// Daily at 9:00 AM
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Daily Reminder', body: 'Check your tasks' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.DAILY,
+    hour: 9,
+    minute: 0,
+  },
+});
 ```
 
 ---
 
-## Real-World Scheduling Patterns
+### WEEKLY Trigger
 
-### User Preference-Based Scheduling
+Fire every week on a specific day and time.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.WEEKLY` | Yes | Trigger type |
+| `weekday` | `number` | Yes | Day of week (1=Sunday, 7=Saturday) |
+| `hour` | `number` | Yes | Hour (0-23) |
+| `minute` | `number` | Yes | Minute (0-59) |
 
 ```typescript
-interface NotificationPreferences {
-  enabled: boolean;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  preferredTime: { hour: number; minute: number };
-  preferredDays?: number[];
-}
+// Every Monday at 8:00 AM
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Weekly Review', body: 'Plan your week' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+    weekday: 2, // Monday
+    hour: 8,
+    minute: 0,
+  },
+});
+```
 
-async function scheduleBasedOnPreferences(prefs: NotificationPreferences) {
-  if (!prefs.enabled) return null;
+---
 
-  switch (prefs.frequency) {
-    case 'daily': {
-      return await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Daily Update',
-          body: 'Your daily summary is ready',
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          dateComponents: {
-            hour: prefs.preferredTime.hour,
-            minute: prefs.preferredTime.minute,
-          },
-          repeats: true,
-        },
-      });
-    }
+### MONTHLY Trigger
 
-    case 'weekly': {
-      if (!prefs.preferredDays?.length) return null;
+Fire every month on a specific day and time.
 
-      const results = [];
-      for (const day of prefs.preferredDays) {
-        const id = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Weekly Update',
-            body: 'Your weekly summary is ready',
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-            dateComponents: {
-              weekday: day,
-              hour: prefs.preferredTime.hour,
-              minute: prefs.preferredTime.minute,
-            },
-            repeats: true,
-          },
-        });
-        results.push(id);
-      }
-      return results;
-    }
-  }
-}
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.MONTHLY` | Yes | Trigger type |
+| `day` | `number` | Yes | Day of month (1-31) |
+| `hour` | `number` | Yes | Hour (0-23) |
+| `minute` | `number` | Yes | Minute (0-59) |
+
+```typescript
+// 1st of every month at noon
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Monthly Report', body: 'Time to review' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.MONTHLY,
+    day: 1,
+    hour: 12,
+    minute: 0,
+  },
+});
+```
+
+---
+
+### YEARLY Trigger
+
+Fire every year on a specific date and time.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.YEARLY` | Yes | Trigger type |
+| `month` | `number` | Yes | Month (0-11) |
+| `day` | `number` | Yes | Day of month (1-31) |
+| `hour` | `number` | Yes | Hour (0-23) |
+| `minute` | `number` | Yes | Minute (0-59) |
+
+```typescript
+// Every January 1st at midnight
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Happy New Year!', body: 'Best wishes' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.YEARLY,
+    month: 0, // January
+    day: 1,
+    hour: 0,
+    minute: 0,
+  },
+});
+```
+
+---
+
+### CALENDAR Trigger
+
+Fire based on date components with optional repeat. Most flexible trigger type.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `SchedulableTriggerInputTypes.CALENDAR` | Yes | Trigger type |
+| `dateComponents` | `DateComponentsInput` | Yes | Date component fields |
+| `repeats` | `boolean` | No | Repeat (default: false) |
+
+Date components: `year`, `month`, `day`, `hour`, `minute`, `second`, `weekday`, `weekOfMonth`, `weekOfYear`, `weekdayOrdinal`
+
+```typescript
+// Every weekday at 8 AM (weekday values: 1=Sunday, 2=Monday...7=Saturday)
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Work Reminder', body: 'Time to start' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+    dateComponents: { weekday: 2, hour: 8, minute: 0 }, // Monday
+    repeats: true,
+  },
+});
 ```
 
 ---
 
 ## Cancellation Methods
 
-### `cancelScheduledNotificationAsync(identifier)`
+### cancelScheduledNotificationAsync(identifier)
 
-**Purpose**: Cancel a single scheduled notification by its ID.
-
-**Parameters**:
+Cancel a single scheduled notification by its ID.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `identifier` | `string` | Notification ID from `scheduleNotificationAsync()` |
 
-**Return Type**: `Promise<void>`
-
-**Code Example**:
+**Returns:** `Promise<void>`
 
 ```typescript
-import * as Notifications from 'expo-notifications';
+const id = await Notifications.scheduleNotificationAsync({ content, trigger });
 
-let timerNotificationId: string | null = null;
-
-async function startTimer() {
-  try {
-    timerNotificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Timer Complete',
-        body: '5 minutes elapsed',
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 300,
-      },
-    });
-
-    console.log('Timer started:', timerNotificationId);
-  } catch (error) {
-    console.error('Error starting timer:', error);
-  }
-}
-
-async function cancelTimer() {
-  try {
-    if (timerNotificationId) {
-      await Notifications.cancelScheduledNotificationAsync(timerNotificationId);
-      console.log('Timer cancelled');
-      timerNotificationId = null;
-    }
-  } catch (error) {
-    console.error('Error cancelling timer:', error);
-  }
-}
+// Later, cancel it
+await Notifications.cancelScheduledNotificationAsync(id);
 ```
 
 ---
 
-### `cancelAllScheduledNotificationsAsync()`
+### cancelAllScheduledNotificationsAsync()
 
-**Purpose**: Cancel all scheduled notifications at once.
+Cancel all scheduled notifications.
 
-**Parameters**: None
-
-**Return Type**: `Promise<void>`
-
-**Code Example**:
+**Returns:** `Promise<void>`
 
 ```typescript
-async function clearAllNotifications() {
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('All scheduled notifications cancelled');
-  } catch (error) {
-    console.error('Error cancelling notifications:', error);
-  }
-}
+await Notifications.cancelAllScheduledNotificationsAsync();
 ```
 
 ---
 
 ## Information Retrieval
 
-### `getAllScheduledNotificationsAsync()`
+### getAllScheduledNotificationsAsync()
 
-**Purpose**: Fetch details about all scheduled notifications.
+Get all scheduled notifications.
 
-**Parameters**: None
-
-**Return Type**: `Promise<NotificationRequest[]>`
-
-**Code Example**:
+**Returns:** `Promise<NotificationRequest[]>`
 
 ```typescript
-async function listAllScheduledNotifications() {
-  try {
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+console.log('Total scheduled:', scheduled.length);
 
-    console.log(`Total scheduled: ${scheduled.length}`);
-
-    scheduled.forEach((notification, index) => {
-      console.log(`\n[${index + 1}] ${notification.content.title}`);
-      console.log(`ID: ${notification.identifier}`);
-      console.log(`Body: ${notification.content.body}`);
-    });
-
-    return scheduled;
-
-  } catch (error) {
-    console.error('Error fetching scheduled notifications:', error);
-  }
-}
-
-// Find notification by title
-async function findNotificationByTitle(title: string) {
-  try {
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    return scheduled.find(n => n.content.title === title);
-  } catch (error) {
-    console.error('Error searching notifications:', error);
-  }
-}
+scheduled.forEach((notif) => {
+  console.log(notif.identifier, notif.content.title);
+});
 ```
 
 ---
 
-### `getNextTriggerDateAsync(trigger)`
+### getNextTriggerDateAsync(trigger)
 
-**Purpose**: Calculate when a notification trigger will next fire.
-
-**Parameters**:
+Calculate when a trigger will next fire.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `trigger` | `SchedulableNotificationTriggerInput` | The trigger to calculate for |
+| `trigger` | `SchedulableNotificationTriggerInput` | Trigger to calculate |
 
-**Return Type**: `Promise<number \| null>` — Unix timestamp or null if never fires
-
-**Code Example**:
+**Returns:** `Promise<number | null>` -- Unix timestamp in milliseconds, or null
 
 ```typescript
-async function showNextTriggerTime(trigger: any) {
-  try {
-    const nextTimestamp = await Notifications.getNextTriggerDateAsync(trigger);
+const nextTime = await Notifications.getNextTriggerDateAsync({
+  type: Notifications.SchedulableTriggerInputTypes.DAILY,
+  hour: 9,
+  minute: 0,
+});
 
-    if (nextTimestamp === null) {
-      console.log('This trigger will never fire');
-      return;
-    }
-
-    const nextDate = new Date(nextTimestamp);
-    console.log('Next trigger time:', nextDate.toLocaleString());
-
-    return nextDate;
-
-  } catch (error) {
-    console.error('Error getting next trigger time:', error);
-  }
+if (nextTime) {
+  console.log('Next trigger:', new Date(nextTime).toLocaleString());
 }
 ```
 
 ---
 
-## Complete Notification Manager Class
+## Common Scheduling Patterns
+
+### Preference-Based Scheduling
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-export class NotificationManager {
-  private scheduledIds: Map<string, string> = new Map();
+interface ReminderPrefs {
+  enabled: boolean;
+  hour: number;
+  minute: number;
+  days: number[]; // weekday values (1=Sun, 2=Mon...7=Sat)
+}
 
-  async scheduleNotification(
-    key: string,
-    content: Notifications.NotificationContentInput,
-    trigger: Notifications.NotificationTriggerInput
-  ) {
-    try {
-      const id = await Notifications.scheduleNotificationAsync({
-        content,
-        trigger,
-      });
+async function scheduleReminders(prefs: ReminderPrefs): Promise<string[]> {
+  // Cancel existing reminders first
+  await Notifications.cancelAllScheduledNotificationsAsync();
 
-      this.scheduledIds.set(key, id);
-      console.log(`Scheduled [${key}]:`, id);
-      return id;
+  if (!prefs.enabled) return [];
 
-    } catch (error) {
-      console.error(`Failed to schedule [${key}]:`, error);
-    }
+  const ids: string[] = [];
+  for (const weekday of prefs.days) {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: { title: 'Reminder', body: 'Time to check in' },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday,
+        hour: prefs.hour,
+        minute: prefs.minute,
+      },
+    });
+    ids.push(id);
   }
 
-  async cancelNotification(key: string) {
-    const id = this.scheduledIds.get(key);
-    if (id) {
-      await Notifications.cancelScheduledNotificationAsync(id);
-      this.scheduledIds.delete(key);
-      console.log(`Cancelled [${key}]:`, id);
-    }
-  }
-
-  async getScheduledCount() {
-    const all = await Notifications.getAllScheduledNotificationsAsync();
-    return all.length;
-  }
-
-  async clearAll() {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    this.scheduledIds.clear();
-  }
-
-  async listAll() {
-    return await Notifications.getAllScheduledNotificationsAsync();
-  }
+  return ids;
 }
 ```
 
 ---
 
-## Next Steps
-
-- **Listeners & Events**: See [`05-api-listeners.md`](05-api-listeners.md)
-- **Android Channels**: See [`07-api-android-channels.md`](07-api-android-channels.md) (for scheduling on Android)
-- **Complete Patterns**: See [`09-guide-patterns.md`](09-guide-patterns.md)
-- **Troubleshooting**: See [`10-troubleshooting.md`](10-troubleshooting.md)
-
----
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
-**Last Updated**: December 2025
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

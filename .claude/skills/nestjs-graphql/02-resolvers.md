@@ -5,14 +5,15 @@ Resolvers provide instructions for turning GraphQL operations into data.
 ## Basic Resolver
 
 ```typescript
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Inject } from '@nestjs/common';
 import { User } from './models/user.model';
 import { UsersService } from './users.service';
 import { CreateUserInput } from './dto/create-user.input';
 
 @Resolver(() => User)
 export class UsersResolver {
-  constructor(private usersService: UsersService) {}
+  constructor(@Inject(UsersService) private usersService: UsersService) {}
 
   @Query(() => [User], { name: 'users', description: 'Get all users' })
   async findAll(): Promise<User[]> {
@@ -20,7 +21,7 @@ export class UsersResolver {
   }
 
   @Query(() => User, { nullable: true })
-  async user(@Args('id', { type: () => Int }) id: number): Promise<User> {
+  async user(@Args('id', { type: () => ID }) id: string): Promise<User | null> {
     return this.usersService.findOne(id);
   }
 
@@ -28,12 +29,39 @@ export class UsersResolver {
   async createUser(@Args('input') input: CreateUserInput): Promise<User> {
     return this.usersService.create(input);
   }
+
+  @Mutation(() => Boolean)
+  async deleteUser(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+    return this.usersService.delete(id);
+  }
 }
 ```
 
+## @Resolver Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `() => Type` | Function | Parent type for field resolvers |
+| `{ isAbstract: true }` | Object | Abstract resolver (not directly registered) |
+
+## @Query Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `() => Type` | Function | required | Return type |
+| `name` | `string` | method name | GraphQL query name |
+| `description` | `string` | -- | Schema documentation |
+| `nullable` | `boolean \| 'items' \| 'itemsAndList'` | `false` | Nullability |
+| `deprecationReason` | `string` | -- | Mark as deprecated |
+| `complexity` | `number \| Function` | -- | Query complexity cost |
+
+## @Mutation Options
+
+Same as @Query options.
+
 ## Field Resolvers
 
-Compute fields dynamically:
+Compute fields dynamically using `@ResolveField`:
 
 ```typescript
 import { ResolveField, Parent } from '@nestjs/graphql';
@@ -41,36 +69,65 @@ import { ResolveField, Parent } from '@nestjs/graphql';
 @Resolver(() => User)
 export class UsersResolver {
   constructor(
-    private usersService: UsersService,
-    private postsService: PostsService,
+    @Inject(UsersService) private usersService: UsersService,
+    @Inject(PostsService) private postsService: PostsService,
   ) {}
 
   @ResolveField(() => [Post])
-  async posts(@Parent() user: User) {
+  async posts(@Parent() user: User): Promise<Post[]> {
     return this.postsService.findByUserId(user.id);
   }
 
   @ResolveField(() => String)
-  fullName(@Parent() user: User) {
+  fullName(@Parent() user: User): string {
     return `${user.firstName} ${user.lastName}`;
+  }
+
+  @ResolveField(() => Int)
+  async postCount(@Parent() user: User): Promise<number> {
+    return this.postsService.countByUserId(user.id);
   }
 }
 ```
 
+## @ResolveField Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `() => Type` | Function | Return type |
+| `name` | `string` | Field name (default: method name) |
+| `nullable` | `boolean` | Can be null |
+| `description` | `string` | Schema docs |
+| `complexity` | `number \| Function` | Complexity cost |
+| `middleware` | `FieldMiddleware[]` | Field middleware |
+
 ## Args Patterns
 
-### Single Arguments
+### Single Argument
 
 ```typescript
 @Query(() => User)
-async user(@Args('id', { type: () => Int }) id: number) {
+async user(@Args('id', { type: () => ID }) id: string) {
   return this.usersService.findOne(id);
 }
 ```
 
+### @Args Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| First param | `string` | Argument name |
+| `type` | `() => Type` | GraphQL type (required for ID, Int, Float) |
+| `nullable` | `boolean` | Optional argument |
+| `description` | `string` | Schema docs |
+| `defaultValue` | `any` | Default value |
+
 ### ArgsType for Multiple Arguments
 
 ```typescript
+import { ArgsType, Field, Int } from '@nestjs/graphql';
+import { Min, Max } from 'class-validator';
+
 @ArgsType()
 export class PaginationArgs {
   @Field(() => Int)
@@ -84,23 +141,26 @@ export class PaginationArgs {
 }
 
 @Query(() => [User])
-async users(@Args() paginationArgs: PaginationArgs): Promise<User[]> {
-  return this.usersService.findAll(paginationArgs);
+async users(@Args() pagination: PaginationArgs): Promise<User[]> {
+  return this.usersService.findAll(pagination);
 }
 ```
 
 ### InputType for Complex Inputs
 
 ```typescript
+import { InputType, Field } from '@nestjs/graphql';
+import { IsEmail, MinLength } from 'class-validator';
+
 @InputType()
 export class CreateUserInput {
-  @Field()
+  @Field(() => String)
   @IsEmail()
-  email: string;
+  email!: string;
 
-  @Field()
+  @Field(() => String)
   @MinLength(3)
-  name: string;
+  name!: string;
 }
 
 @Mutation(() => User)
@@ -109,34 +169,30 @@ async createUser(@Args('input') input: CreateUserInput) {
 }
 ```
 
-## Query Options
+## Context and Info Decorators
 
 ```typescript
-@Query(() => [User], {
-  name: 'users',           // GraphQL query name
-  description: 'Get users', // Schema documentation
-  nullable: true,           // Can return null
-  deprecationReason: 'Use findUsers instead', // Mark deprecated
-})
-async findAll() {}
-```
+import { Context, Info } from '@nestjs/graphql';
+import { GraphQLResolveInfo } from 'graphql';
 
-## Mutation Options
-
-```typescript
-@Mutation(() => User, {
-  name: 'createUser',
-  description: 'Create a new user',
-  nullable: false,
-})
-async create(@Args('input') input: CreateUserInput) {}
+@Query(() => User)
+async me(
+  @Context() ctx: { req: Request },
+  @Info() info: GraphQLResolveInfo,
+) {
+  return ctx.req.user;
+}
 ```
 
 ## Best Practices
 
-1. **Keep resolvers thin** - Delegate business logic to services
-2. **Use InputType for mutations** - Separate input from output types
-3. **Return promises** - Let NestJS handle async/await
-4. **Name queries/mutations explicitly** - Use `name` option for clarity
-5. **Document with descriptions** - Add descriptions for API documentation
-6. **Use nullable appropriately** - Mark optional returns as nullable
+1. **Keep resolvers thin** -- delegate business logic to services
+2. **Use InputType for mutations** -- separate input from output types
+3. **Name queries explicitly** -- use `name` option for clarity
+4. **Document with descriptions** -- add descriptions for API docs
+5. **Use nullable appropriately** -- mark optional returns as nullable
+6. **Always use explicit @Inject()** -- required for tsx/esbuild
+
+---
+
+**Version:** @nestjs/graphql 13.x | **Source:** https://docs.nestjs.com/graphql/resolvers

@@ -1,13 +1,6 @@
-# Hooks Reference — Expo Router 6.0.19
+# Hooks Reference -- Expo Router 6.x
 
 All navigation and state hooks with typed return values and practical examples.
-
-**Module Summary:** Hook functions for accessing route parameters, pathname, focus events, and navigation state.
-
-**🔗 Cross-References:**
-- Imperative navigation → `03-api-navigation.md`
-- Components and Slot → `05-api-components.md`
-- Routing fundamentals → `02-routing-basics.md`
 
 ---
 
@@ -15,30 +8,9 @@ All navigation and state hooks with typed return values and practical examples.
 
 ### useLocalSearchParams()
 
-Get search parameters for the **currently focused route** only.
+Get search parameters for the currently focused route only. Updates only when this route is focused.
 
-**Signature:**
-
-```typescript
-function useLocalSearchParams<T = UnknownOutputParams>(): T extends AllRoutes
-  ? SearchParams<T>
-  : T;
-```
-
-**Return Type:**
-
-```typescript
-Record<string, string | string[]>
-```
-
-(All parameters are strings because they come from URLs)
-
-**When to Use:**
-- ✅ You're in a Stack and need local params
-- ✅ Params should only update when THIS route is focused
-- ✅ Working with dynamic route segments
-
-**Example:**
+**Returns:** `RouteParams<T> & TParams` (Record of string keys to `string | string[]` values)
 
 ```typescript
 // app/users/[id].tsx
@@ -46,9 +18,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 
 export default function UserDetail() {
-  // TypeScript is smart about route params
   const { id } = useLocalSearchParams<{ id: string }>();
-  
   return (
     <View>
       <Text>User ID: {id}</Text>
@@ -57,7 +27,7 @@ export default function UserDetail() {
 }
 ```
 
-**With Multiple Parameters:**
+With multiple parameters:
 
 ```typescript
 // URL: /products?category=electronics&sort=price&limit=10
@@ -67,69 +37,25 @@ const { category, sort, limit } = useLocalSearchParams<{
   limit: string;
 }>();
 
-// Convert to appropriate type when needed
+// All URL parameters are strings -- convert manually
 const pageLimit = parseInt(limit, 10);
 ```
 
-**Example with Dynamic Segment:**
-
-```typescript
-// app/feed/[[filter]].tsx - Optional segment
-const { filter } = useLocalSearchParams<{ filter?: string }>();
-
-const feedData = filter === 'trending'
-  ? getTrendingPosts()
-  : getAllPosts();
-```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#uselocalsearchparams
+When to use:
+- Working with dynamic route segments in a Stack
+- Params should only update when THIS route is focused
+- Most common hook for reading route params
 
 ---
 
 ### useGlobalSearchParams()
 
-Get search parameters for the **entire app**, even when route is not focused.
+Get search parameters across the entire app, even when route is not focused. Re-renders on every URL change.
 
-**Signature:**
-
-```typescript
-function useGlobalSearchParams<T = UnknownOutputParams>(): T extends AllRoutes
-  ? SearchParams<T>
-  : T;
-```
-
-**Return Type:**
-
-```typescript
-Record<string, string | string[]>
-```
-
-**When to Use:**
-- ✅ Route is not focused but you need current params (background operations)
-- ✅ Analytics tracking with current route info
-- ✅ Global state updates based on URL
-- ✅ Cross-route parameter sharing
-
-**Difference Example:**
-
-```typescript
-// Stack: Home → Profile → Details
-
-// In Details component (focused route):
-const params1 = useLocalSearchParams();   // Only updates for Details
-const params2 = useGlobalSearchParams();  // Updates even if Details not focused
-
-// If user navigates away and back:
-// useLocalSearchParams resets
-// useGlobalSearchParams preserves values
-```
-
-**Example: Background Analytics**
+**Returns:** `RouteParams<T> & TParams`
 
 ```typescript
 import { useGlobalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
-import * as Analytics from './services/analytics';
 
 export default function AnalyticsTracker() {
   const { userId, campaignId } = useGlobalSearchParams<{
@@ -139,7 +65,6 @@ export default function AnalyticsTracker() {
 
   useEffect(() => {
     if (userId && campaignId) {
-      // Track even if this component is not visible
       Analytics.logCampaignImpression(userId, campaignId);
     }
   }, [userId, campaignId]);
@@ -148,7 +73,19 @@ export default function AnalyticsTracker() {
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#useglobalsearchparams
+When to use:
+- Background operations that need current URL params
+- Analytics tracking across all routes
+- Global state updates based on URL
+
+**Difference from useLocalSearchParams:**
+
+```typescript
+// Stack: Home -> Profile -> Details
+// In Home component (not focused):
+const params1 = useLocalSearchParams();   // Does NOT update when Details changes
+const params2 = useGlobalSearchParams();  // DOES update when Details changes
+```
 
 ---
 
@@ -156,21 +93,9 @@ export default function AnalyticsTracker() {
 
 ### usePathname()
 
-Get the current route path **without search parameters**.
+Get the current route path without search parameters.
 
-**Signature:**
-
-```typescript
-function usePathname(): string
-```
-
-**Return Type:**
-
-```typescript
-string  // e.g., "/users/123", "/profile"
-```
-
-**Example:**
+**Returns:** `string`
 
 ```typescript
 import { usePathname } from 'expo-router';
@@ -178,23 +103,19 @@ import { Text } from 'react-native';
 
 export default function Header() {
   const pathname = usePathname();
-
-  return <Text>Current Page: {pathname}</Text>;
-  // If URL is "/profile?theme=dark"
-  // Shows: "Current Page: /profile"
+  // URL: "/profile?theme=dark" -> pathname: "/profile"
+  return <Text>Current: {pathname}</Text>;
 }
 ```
 
-**Practical Use: Active Tab Indicator**
+Active tab indicator pattern:
 
 ```typescript
-import { usePathname } from 'expo-router';
+import { usePathname, Link } from 'expo-router';
 import { View, Text, Pressable } from 'react-native';
-import { Link } from 'expo-router';
 
 export default function TabBar() {
   const pathname = usePathname();
-
   const isActive = (href: string) => pathname === href;
 
   return (
@@ -204,7 +125,6 @@ export default function TabBar() {
           <Text>Home</Text>
         </Pressable>
       </Link>
-      
       <Link href="/explore" asChild>
         <Pressable style={isActive('/explore') && { backgroundColor: '#0a7ea4' }}>
           <Text>Explore</Text>
@@ -215,59 +135,35 @@ export default function TabBar() {
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#usepathname
-
 ---
 
 ### useSegments()
 
-Get the route segments array (file path breakdown).
+Get the route segments array (file path breakdown). Returns non-normalized segments.
 
-**Signature:**
-
-```typescript
-function useSegments<T = string[]>(): T
-```
-
-**Return Type:**
-
-```typescript
-string[]  // e.g., ["users", "[id]"], ["feed"]
-```
-
-**Example:**
+**Returns:** `RouteSegments<T>` (default `string[]`)
 
 ```typescript
 import { useSegments } from 'expo-router';
-import { Text } from 'react-native';
 
-export default function BreadcrumbNav() {
+export default function Breadcrumbs() {
   const segments = useSegments();
-
-  return (
-    <Text>
-      Path: /{segments.join('/')}
-    </Text>
-    // If URL is "/users/123"
-    // Shows: "Path: /users/123"
-  );
+  // URL: "/users/123" -> segments: ["users", "123"]
+  return <Text>Path: /{segments.join('/')}</Text>;
 }
 ```
 
-**With TypeScript:**
+With TypeScript narrowing:
 
 ```typescript
 type RootSegments = ['home'] | ['users', '[id]'] | ['settings'];
 
 const segments = useSegments<RootSegments>();
 
-// TypeScript knows segments is one of the three tuples above
 if (segments[0] === 'users' && segments[1]) {
   console.log('User ID:', segments[1]);
 }
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#usesegments
 
 ---
 
@@ -275,38 +171,13 @@ if (segments[0] === 'users' && segments[1]) {
 
 Get the navigation state tree of the root navigator.
 
-**Signature:**
-
-```typescript
-function useRootNavigationState(): Readonly<NavigationState | undefined>
-```
-
-**Return Type:**
-
-```typescript
-{
-  index: number;
-  routes: Array<{
-    key: string;
-    name: string;
-    params?: any;
-  }>;
-  type: 'stack' | 'tab' | 'drawer';
-  // ... additional properties
-}
-```
-
-**Use Case:** Accessing raw navigation state for advanced routing logic.
-
-**Example:**
+**Returns:** `Readonly<NavigationState | undefined>`
 
 ```typescript
 import { useRootNavigationState } from 'expo-router';
-import { Text, View } from 'react-native';
 
-export default function NavigationDebugger() {
+export default function DebugInfo() {
   const state = useRootNavigationState();
-
   return (
     <View>
       <Text>Current Route: {state?.routes[state.index]?.name}</Text>
@@ -316,41 +187,33 @@ export default function NavigationDebugger() {
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#userootnavigationstate
+Use case: advanced routing logic, debugging navigation state.
 
 ---
 
-## Focus & Lifecycle Hooks
+### useRootNavigation()
 
-### useFocusEffect()
+Access the root navigation container reference.
 
-Run side effects when a route is focused/unfocused.
+**Returns:** `null | NavigationContainerRef<RootParamList>`
 
-**Signature:**
+Returns `null` until navigation is ready. Use `useNavigationContainerRef()` for a ref-based approach instead.
 
-```typescript
-function useFocusEffect(
-  effect: EffectCallback,
-  deps?: DependencyList
-): void
-```
+---
 
-**Parameters:**
+## Focus and Lifecycle Hooks
 
-| Param | Type | Description |
-|-------|------|-------------|
-| `effect` | `() => void \| (() => void)` | Function to run on focus, optionally returns cleanup |
-| `deps` | `any[]` | Dependencies array (optional) |
+### useFocusEffect(effect)
+
+Run side effects when a route gains or loses focus. Similar to `useEffect` but tied to route focus state.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `effect` | `EffectCallback` | Function to run on focus; optionally returns cleanup |
 
 **Returns:** `void`
 
-**When to Use:**
-- ✅ Refresh data when route is focused
-- ✅ Start/stop background tasks (timers, subscriptions)
-- ✅ Track route visibility
-- ✅ Clear state on unfocus
-
-**Example: Refresh Data on Focus**
+**IMPORTANT:** Always wrap the effect in `useCallback` to prevent infinite loops.
 
 ```typescript
 import { useFocusEffect } from 'expo-router';
@@ -370,15 +233,13 @@ export default function Messages() {
         setMessages(data);
         setLoading(false);
       };
-
       fetchMessages();
 
-      // Return cleanup function (runs on unfocus)
+      // Cleanup runs on unfocus
       return () => {
         console.log('Messages route unfocused');
-        // Could cancel requests, stop timers, etc.
       };
-    }, []) // Empty deps = runs every focus
+    }, [])
   );
 
   return (
@@ -393,104 +254,52 @@ export default function Messages() {
 }
 ```
 
-**Example: Timer on Focus**
+Timer example:
 
 ```typescript
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
-
-export default function Timer() {
-  const [seconds, setSeconds] = useState(0);
-
-  useFocusEffect(
-    useCallback(() => {
-      // Start timer when focused
-      const interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
-
-      // Cleanup on unfocus
-      return () => clearInterval(interval);
-    }, [])
-  );
-
-  return <Text>Elapsed: {seconds}s</Text>;
-}
-```
-
-**⚠️ Important:**
-
-```typescript
-// ✅ CORRECT: Wrap effect in useCallback
 useFocusEffect(
   useCallback(() => {
-    // effect code
+    const interval = setInterval(() => {
+      setSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, [])
 );
-
-// ❌ WRONG: Direct function causes infinite reruns
-useFocusEffect(() => {
-  // effect code—avoid this!
-});
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#usefocuseffect
 
 ---
 
 ## Navigation Control Hooks
 
-### useNavigation()
+### useNavigation(parent?)
 
 Access the parent layout's navigation object for layout-specific methods.
 
-**Signature:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `parent` | `string \| HrefObject` | Optional path to specific parent layout |
 
-```typescript
-function useNavigation<T = any>(parent?: string | HrefObject): T
-```
-
-**Parameters:**
-
-| Param | Type | Description |
-|-------|------|-------------|
-| `parent` | `string` | Optional: path to specific parent layout |
-
-**Return Type:**
-
-React Navigation navigation object with layout-specific methods like `openDrawer()`.
-
-**Example: Open Drawer from Nested Route**
+**Returns:** React Navigation navigation object with layout-specific methods.
 
 ```typescript
 import { useNavigation } from 'expo-router';
-import { Pressable, Text } from 'react-native';
 
 export default function NestedRoute() {
   const navigation = useNavigation();
-
   return (
     <Pressable onPress={() => navigation.openDrawer()}>
-      <Text>Open Drawer Menu</Text>
+      <Text>Open Drawer</Text>
     </Pressable>
   );
 }
 ```
 
-**Accessing Specific Parent Layout:**
+Accessing specific parent layout:
 
 ```typescript
-// For nested layouts: /app/orders/menu/
-// Current file is menu/index.tsx
-
-// Get navigation from different parent levels
 const rootNavigation = useNavigation('/');
 const ordersNavigation = useNavigation('/orders');
-const currentNavigation = useNavigation('/orders/menu');
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#usenavigation
 
 ---
 
@@ -498,123 +307,75 @@ const currentNavigation = useNavigation('/orders/menu');
 
 Get the root navigation container ref.
 
-**Signature:**
-
-```typescript
-function useNavigationContainerRef(): NavigationContainerRefWithCurrent<RootParamList>
-```
-
-**Use Case:** Advanced navigation control, access to root navigation methods.
-
-**Example:**
+**Returns:** `NavigationContainerRefWithCurrent<RootParamList>`
 
 ```typescript
 import { useNavigationContainerRef } from 'expo-router';
-import { useEffect } from 'react';
 
 export default function App() {
   const navigationRef = useNavigationContainerRef();
-
   useEffect(() => {
-    // Access ref if available
     if (navigationRef.current) {
       console.log('Navigation ready');
     }
   }, [navigationRef]);
-
   return null;
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#usenavigationcontainerref
-
 ---
 
-## Preview Hook
+## Common Mistakes and Solutions
 
-### useIsPreview()
-
-Determine if the current route is rendered in a preview context.
-
-**Signature:**
+### Infinite loop in useFocusEffect
 
 ```typescript
-function useIsPreview(): boolean
+// BAD -- direct function causes infinite reruns
+useFocusEffect(() => {
+  fetchData();
+});
+
+// GOOD -- wrap in useCallback
+useFocusEffect(
+  useCallback(() => {
+    fetchData();
+  }, [])
+);
 ```
 
-**Return Type:**
+### Parameters are always strings
 
 ```typescript
-boolean  // true if in preview, false otherwise
+// BAD -- TypeScript may say number but runtime value is string
+const { count } = useLocalSearchParams<{ count: number }>();
+const total = count + 5;  // "5" + 5 = "55" (string concatenation!)
+
+// GOOD -- parse explicitly
+const params = useLocalSearchParams<{ count: string }>();
+const count = parseInt(params.count, 10);
+const total = count + 5;  // 10 (correct math)
 ```
 
-**When to Use:**
-- ✅ Show preview-specific UI (e.g., "Preview" badge)
-- ✅ Skip expensive operations in preview
-- ✅ Different behavior for preview vs. normal rendering
-
-**Example:**
+### Local vs. Global confusion
 
 ```typescript
-import { useIsPreview } from 'expo-router';
-import { Text, View } from 'react-native';
+// Use LOCAL for route-specific params (most cases)
+const { id } = useLocalSearchParams<{ id: string }>();
 
-export default function Post({ id }) {
-  const isPreview = useIsPreview();
-
-  return (
-    <View>
-      {isPreview && <Text style={{ color: 'orange' }}>Preview</Text>}
-      <Text>Post {id}</Text>
-    </View>
-  );
-}
-```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/
-
----
-
-## Hook Combinations (Real-World Patterns)
-
-### Pattern 1: Breadcrumb Navigation
-
-```typescript
-import { useSegments, usePathname } from 'expo-router';
-import { Text, View, Pressable } from 'react-native';
-import { Link } from 'expo-router';
-
-export default function Breadcrumbs() {
-  const segments = useSegments();
-  const pathname = usePathname();
-
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      <Link href="/" asChild>
-        <Pressable>
-          <Text>Home</Text>
-        </Pressable>
-      </Link>
-      
-      {segments.map((segment, index) => (
-        <Text key={index}>
-          {' '} / {segment}
-        </Text>
-      ))}
-    </View>
-  );
-}
+// Use GLOBAL only when you need params from unfocused routes
+const { userId } = useGlobalSearchParams<{ userId?: string }>();
 ```
 
 ---
 
-### Pattern 2: Route-Specific Header
+## Hook Combinations Pattern
+
+### Route-Specific Header
 
 ```typescript
 import { usePathname, useLocalSearchParams } from 'expo-router';
-import { Text } from 'react-native';
 
-export default function Header() {
+export default function DynamicHeader() {
   const pathname = usePathname();
   const params = useLocalSearchParams<{ title?: string }>();
 
@@ -625,88 +386,10 @@ export default function Header() {
     return 'App';
   };
 
-  return <Text>{getTitle()}</Text>;
+  return <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{getTitle()}</Text>;
 }
 ```
 
 ---
 
-### Pattern 3: Data Refresh on Focus
-
-```typescript
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-
-export default function RefreshOnFocus() {
-  const [data, setData] = useState(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      const loadData = async () => {
-        const fresh = await fetchData();
-        setData(fresh);
-      };
-
-      loadData();
-      
-      return () => {
-        // Optional cleanup
-      };
-    }, [])
-  );
-
-  return null;
-}
-```
-
----
-
-## Common Mistakes & Solutions
-
-### Issue: Infinite loop in useFocusEffect
-
-```typescript
-// ❌ WRONG
-useFocusEffect(() => {
-  setData(fetchData());
-});
-
-// ✅ CORRECT
-useFocusEffect(
-  useCallback(() => {
-    setData(fetchData());
-  }, [])
-);
-```
-
----
-
-### Issue: Parameters are always strings
-
-```typescript
-// ❌ These won't parse automatically
-const { count } = useLocalSearchParams<{ count: number }>();
-const total = count + 5;  // ❌ count is string "5", not number
-
-// ✅ Convert manually
-const count = parseInt(useLocalSearchParams().count as string, 10);
-const total = count + 5;  // ✅ Now works
-```
-
----
-
-## Key Takeaways
-
-- 📍 **useLocalSearchParams()** = Route-focused params (Stack)
-- 🌍 **useGlobalSearchParams()** = App-wide params (always current)
-- 📄 **usePathname()** = Current route without query string
-- 📑 **useSegments()** = Route path as array
-- 👀 **useFocusEffect()** = Run effects when route focused
-- ☝️ **Always wrap useFocusEffect effect in useCallback**
-- 🔗 **All URL parameters are strings**
-
----
-
-**Next Module:** `05-api-components.md` — Link, Redirect, Stack, Tabs components
-
-**Source Documentation:** https://docs.expo.dev/versions/latest/sdk/router/
+**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/

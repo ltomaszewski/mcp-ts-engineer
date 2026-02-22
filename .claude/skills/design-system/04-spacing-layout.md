@@ -3,7 +3,7 @@
 > **Purpose**: Define spacing primitives and tokens that ensure consistent padding, margins, gaps, and border radii across all components.
 
 **Version**: 1.0.0
-**Last Updated**: December 2025
+**Last Updated**: February 2026
 **Prerequisite**: [01-architecture.md](01-architecture.md)
 
 ---
@@ -239,6 +239,4 @@ Component Type → Radius
 
 ---
 
-**Module**: 04-spacing-layout
-**Last Updated**: December 2025
-**Status**: Complete
+**Version:** WCAG 2.2 | **Source:** https://www.w3.org/TR/WCAG22/

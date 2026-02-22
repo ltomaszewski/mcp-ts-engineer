@@ -4,7 +4,7 @@
 
 **Framework:** date-fns (200+ pure functions for date manipulation)
 **Version:** v4.1.0 (September 17, 2024)
-**Documentation Date:** December 2024
+**Documentation Date:** February 2026
 **Status:** ✅ Complete and Verified
 
 ---
@@ -22,7 +22,7 @@ This knowledge base is organized into 8 self-contained modules optimized for Cla
 | **API: Formatting & Parsing** | `03-api-formatting.md` | String ↔ Date conversion, format tokens, locale-aware formatting, relative formatting | `format()`, `parse()`, `parseISO()`, `formatDistance()`, `formatRelative()` | Converting dates to strings, parsing user input, relative time |
 | **API: Manipulation Functions** | `04-api-manipulation.md` | Date arithmetic, component setting, period boundaries | `add()`, `sub()`, `addDays()`, `setMonth()`, `startOfDay()`, `endOfMonth()` | Modifying dates, calculating future/past dates, range creation |
 | **API: Query & Comparison** | `05-api-query.md` | Date inspection, comparisons, type checking, differences | `isValid()`, `isBefore()`, `isAfter()`, `isSameDay()`, `differenceInDays()`, `compareAsc()` | Validating dates, comparing timelines, calculating intervals |
-| **API: Advanced Utilities** | `06-api-advanced.md` | Special operations, interval handling, type conversion, timezone operations | `intervalToDuration()`, `toDate()`, `toUnixTime()`, `fromUnixTime()`, `getTime()` | Duration calculations, timestamp conversions, complex operations |
+| **API: Advanced Utilities** | `06-api-advanced.md` | Special operations, interval handling, type conversion, timezone operations | `intervalToDuration()`, `toDate()`, `getUnixTime()`, `fromUnixTime()`, `getTime()` | Duration calculations, timestamp conversions, complex operations |
 | **Localization & I18n** | `07-locales-i18n.md` | Multi-language support, 50+ locales, custom locale creation, timezone-aware locales | Locale imports, custom locales, locale-specific formatting, language-aware operations | International applications, multi-language support |
 | **Practical Guides & Recipes** | `08-practical-guides.md` | Real-world examples, patterns, solutions, performance optimization | Date ranges, business days, age calculations, scheduling, validation patterns | Building features, solving common problems |
 
@@ -171,7 +171,7 @@ compareAsc(date1, date2)                  // Compare for sorting
 ```typescript
 intervalToDuration(interval)              // Convert to Duration object
 toDate(value)                             // Convert to Date
-toUnixTime(date)                          // Get Unix timestamp (seconds)
+getUnixTime(date)                         // Get Unix timestamp (seconds)
 fromUnixTime(timestamp)                   // From Unix timestamp
 getTime(date)                             // Get milliseconds
 getDay(date)                              // Get day of week
@@ -189,7 +189,7 @@ getDate(date)                             // Get day of month
 | 03-api-formatting.md | ~360 | 5 | format, parse, parseISO, formatDistance, formatRelative | 15+ examples |
 | 04-api-manipulation.md | ~320 | 8 | add, sub, addDays, setMonth, startOfDay, endOfMonth | 15+ examples |
 | 05-api-query.md | ~300+ | 8 | isValid, isBefore, isAfter, isSameDay, differenceInDays | 10+ examples |
-| 06-api-advanced.md | ~280+ | 5 | intervalToDuration, toDate, toUnixTime, fromUnixTime | 10+ examples |
+| 06-api-advanced.md | ~280+ | 5 | intervalToDuration, toDate, getUnixTime, fromUnixTime | 10+ examples |
 | 07-locales-i18n.md | ~260+ | 4 | Locale usage, 50+ languages, Custom locales, Formatting | 8+ examples |
 | 08-practical-guides.md | ~350+ | 8 | Date ranges, Business days, Age calc, Scheduling, Validation | 15+ real-world recipes |
 | **Total** | **~2400+** | **50+** | **80+ functions** | **80+ examples** |
@@ -283,7 +283,7 @@ getDate(date)                             // Get day of month
 ✅ **All modules verified against:**
 - Official date-fns v4.1.0 documentation
 - Source code at https://github.com/date-fns/date-fns
-- Current best practices as of December 2024
+- Current best practices as of February 2026
 - TypeScript definitions and types
 - Real-world usage patterns
 
@@ -311,7 +311,8 @@ getDate(date)                             // Get day of month
 
 ---
 
-**Last Updated:** December 27, 2024
-**Status:** ✅ Complete
+**Version:** 4.1.0 | **Source:** https://date-fns.org
+**Last Updated:** February 2026
+**Status:** Complete
 **Module Count:** 8 core modules
 **Total Content:** 2400+ lines, 80+ functions, 80+ examples

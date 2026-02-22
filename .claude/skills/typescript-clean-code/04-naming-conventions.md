@@ -1,4 +1,9 @@
-# Naming Conventions
+# 04 - Naming Conventions
+
+**Source:** https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html
+**TypeScript:** 5.9 | **Status:** Complete reference
+
+---
 
 ## Variables and Functions
 
@@ -234,3 +239,9 @@ class UserService {
   private hashPassword(password: string): string { /* ... */ }
 }
 ```
+
+---
+
+**Source:** https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html
+**TypeScript:** 5.9
+**Last Updated:** February 2026

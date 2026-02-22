@@ -1,105 +1,166 @@
-# Interactive Notifications & User Actions
+# Interactive Notifications -- Expo Notifications SDK 54
 
-**Module Purpose**: Complete guide to notification categories, action buttons, text input, and user interactions.
-
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+Notification categories, action buttons, text input, and handling user actions.
 
 ---
 
-## Notification Categories & Actions
-
-### What are Categories?
+## Notification Categories
 
 Categories define sets of actions (buttons) that users can perform on a notification without opening the app.
 
-**Common Uses**:
-- Reply to messages
-- Accept/Reject invitations
-- Mark as read
-- Snooze reminders
+### setNotificationCategoryAsync(identifier, actions, options?)
 
----
+Create a notification category with action buttons.
 
-## iOS Implementation
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `identifier` | `string` | Yes | Unique category ID |
+| `actions` | `NotificationAction[]` | Yes | Array of action definitions |
+| `options` | `NotificationCategoryOptions` | No | Category options |
 
-### Setting Up Categories (iOS)
+**Returns:** `Promise<NotificationCategory>`
 
-**Step 1: Define Actions**
+### NotificationAction Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `identifier` | `string` | Yes | Unique action ID |
+| `buttonTitle` | `string` | Yes | Button label text |
+| `options.isDestructive` | `boolean` | No | Show in red (iOS) |
+| `options.isAuthenticationRequired` | `boolean` | No | Require device unlock (iOS) |
+| `options.opensAppToForeground` | `boolean` | No | Open app on tap |
+| `textInput` | `object` | No | Enable text input |
+| `textInput.placeholder` | `string` | No | Placeholder text |
+| `textInput.submitButtonTitle` | `string` | No | Submit button label |
 
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-const messageActions = [
-  {
-    identifier: 'reply',
-    buttonTitle: 'Reply',
-    options: {
-      isDestructive: false,
-      isAuthenticationRequired: false,
-      opensAppToForeground: false,
+async function setupMessageCategory(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync('message', [
+    {
+      identifier: 'reply',
+      buttonTitle: 'Reply',
+      textInput: {
+        placeholder: 'Type your reply...',
+        submitButtonTitle: 'Send',
+      },
     },
-  },
-  {
-    identifier: 'read',
-    buttonTitle: 'Mark as Read',
-    options: {
-      isDestructive: false,
-      isAuthenticationRequired: false,
-      opensAppToForeground: false,
+    {
+      identifier: 'mark_read',
+      buttonTitle: 'Mark as Read',
+      options: {
+        isDestructive: false,
+        opensAppToForeground: false,
+      },
     },
-  },
-  {
-    identifier: 'delete',
-    buttonTitle: 'Delete',
-    options: {
-      isDestructive: true,
-      isAuthenticationRequired: false,
-      opensAppToForeground: false,
+    {
+      identifier: 'delete',
+      buttonTitle: 'Delete',
+      options: {
+        isDestructive: true,
+        opensAppToForeground: false,
+      },
     },
-  },
-];
-```
-
-**Step 2: Create Category**
-
-```typescript
-async function setupMessageCategory() {
-  if (Platform.OS !== 'ios') return;
-  
-  await Notifications.setNotificationCategoryAsync('message', messageActions);
-}
-```
-
-**Step 3: Use Category in Notification**
-
-```typescript
-async function scheduleMessageNotification() {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'New Message',
-      body: 'You have a new message from Alex',
-      categoryIdentifier: 'message',
-      data: { messageId: '123' },
-    },
-    trigger: null,
-  });
+  ]);
 }
 ```
 
 ---
 
-### iOS Action Button Examples
+### getNotificationCategoriesAsync()
 
-**Code Example - Simple Actions**:
+Get all registered notification categories.
+
+**Returns:** `Promise<NotificationCategory[]>`
 
 ```typescript
-async function setupCalendarCategory() {
-  if (Platform.OS !== 'ios') return;
-  
-  const actions = [
+const categories = await Notifications.getNotificationCategoriesAsync();
+categories.forEach((cat) => {
+  console.log(cat.identifier, cat.actions.length, 'actions');
+});
+```
+
+---
+
+### deleteNotificationCategoryAsync(identifier)
+
+Delete a notification category.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `identifier` | `string` | Category ID to delete |
+
+**Returns:** `Promise<boolean>` -- true if category existed and was deleted
+
+```typescript
+const deleted = await Notifications.deleteNotificationCategoryAsync('message');
+```
+
+---
+
+## Using Categories in Notifications
+
+Set `categoryIdentifier` in notification content to attach action buttons:
+
+```typescript
+await Notifications.scheduleNotificationAsync({
+  content: {
+    title: 'New Message',
+    body: 'You have a message from Alex',
+    categoryIdentifier: 'message', // matches category ID
+    data: { messageId: '123', senderId: 'alex' },
+  },
+  trigger: null,
+});
+```
+
+---
+
+## Handling User Actions
+
+### DEFAULT_ACTION_IDENTIFIER
+
+Constant returned when user taps the notification itself (not an action button).
+
+```typescript
+import * as Notifications from 'expo-notifications';
+
+Notifications.addNotificationResponseReceivedListener((response) => {
+  const { actionIdentifier, userText } = response;
+  const { data } = response.notification.request.content;
+
+  switch (actionIdentifier) {
+    case Notifications.DEFAULT_ACTION_IDENTIFIER:
+      // User tapped notification body
+      handleOpenNotification(data);
+      break;
+    case 'reply':
+      // User used text input action
+      handleReply(data?.messageId as string, userText);
+      break;
+    case 'mark_read':
+      handleMarkRead(data?.messageId as string);
+      break;
+    case 'delete':
+      handleDelete(data?.messageId as string);
+      break;
+  }
+});
+```
+
+---
+
+## Complete Example: Calendar Invite
+
+```typescript
+import * as Notifications from 'expo-notifications';
+
+async function setupCalendarCategory(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync('calendar_invite', [
     {
       identifier: 'accept',
-      buttonTitle: 'Accept ✓',
+      buttonTitle: 'Accept',
       options: {
         isDestructive: false,
         opensAppToForeground: false,
@@ -107,7 +168,7 @@ async function setupCalendarCategory() {
     },
     {
       identifier: 'decline',
-      buttonTitle: 'Decline ✗',
+      buttonTitle: 'Decline',
       options: {
         isDestructive: true,
         opensAppToForeground: false,
@@ -121,285 +182,45 @@ async function setupCalendarCategory() {
         opensAppToForeground: false,
       },
     },
-  ];
-  
-  await Notifications.setNotificationCategoryAsync('calendar', actions);
-}
-```
-
----
-
-### iOS Text Input Actions
-
-```typescript
-async function setupReplyCategory() {
-  if (Platform.OS !== 'ios') return;
-  
-  const actions = [
-    {
-      identifier: 'reply',
-      buttonTitle: 'Reply',
-      options: {
-        isDestructive: false,
-        opensAppToForeground: false,
-        textInputAction: {
-          placeholder: 'Type your reply...',
-          submitButtonTitle: 'Send',
-        },
-      },
-    },
-    {
-      identifier: 'quick_reply_yes',
-      buttonTitle: 'Quick: Yes',
-      options: {
-        isDestructive: false,
-        opensAppToForeground: false,
-      },
-    },
-  ];
-  
-  await Notifications.setNotificationCategoryAsync('reply', actions);
-}
-
-// Handle response with text
-Notifications.addNotificationResponseReceivedListener((response) => {
-  if (response.actionIdentifier === 'reply') {
-    const userText = response.userText;
-    console.log('User replied:', userText);
-  }
-});
-```
-
----
-
-## Android Implementation
-
-### Android Notification Styles
-
-Android doesn't use categories but supports different content styles:
-
-**BigTextStyle** (Default for long text):
-
-```typescript
-async function sendBigTextNotification() {
-  if (Platform.OS !== 'android') return;
-  
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Email from Boss',
-      body: 'This is a very long notification that will use the BigTextStyle...',
-      data: {
-        style: 'big_text',
-      },
-    },
-    trigger: null,
-  });
-}
-```
-
-**InboxStyle** (Multiple lines):
-
-```typescript
-async function sendInboxNotification() {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Inbox (5 new)',
-      body: 'Message 1\nMessage 2\nMessage 3',
-      data: {
-        style: 'inbox',
-      },
-    },
-    trigger: null,
-  });
-}
-```
-
----
-
-## Handling User Actions
-
-### Response Listener Pattern
-
-```typescript
-import * as Notifications from 'expo-notifications';
-
-Notifications.addNotificationResponseReceivedListener((response) => {
-  const { actionIdentifier, userText } = response;
-  const { data, title } = response.notification.request.content;
-  
-  console.log(`User action: ${actionIdentifier}`);
-  console.log(`User text: ${userText}`);
-  console.log(`Notification data:`, data);
-  
-  // Handle different actions
-  switch (actionIdentifier) {
-    case 'reply':
-      handleReplyAction(data?.messageId, userText);
-      break;
-    case 'accept':
-      handleAcceptAction(data?.eventId);
-      break;
-    case 'decline':
-      handleDeclineAction(data?.eventId);
-      break;
-    case Notifications.DEFAULT_ACTION_IDENTIFIER:
-      handleUserOpenedNotification(data);
-      break;
-  }
-});
-```
-
----
-
-## Complete Example: Email-Like Notification
-
-```typescript
-async function setupEmailCategories() {
-  if (Platform.OS !== 'ios') return;
-  
-  // Reply category
-  await Notifications.setNotificationCategoryAsync('email_reply', [
-    {
-      identifier: 'reply',
-      buttonTitle: 'Reply',
-      options: {
-        textInputAction: {
-          placeholder: 'Type your reply...',
-          submitButtonTitle: 'Send',
-        },
-      },
-    },
-    {
-      identifier: 'archive',
-      buttonTitle: 'Archive',
-      options: {
-        isDestructive: false,
-      },
-    },
-    {
-      identifier: 'spam',
-      buttonTitle: 'Spam',
-      options: {
-        isDestructive: true,
-      },
-    },
   ]);
 }
 
-async function scheduleEmailNotification(email: {
-  from: string;
-  subject: string;
-  preview: string;
-  emailId: string;
-}) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: email.from,
-      body: email.subject,
-      subtitle: email.preview,
-      categoryIdentifier: 'email_reply',
-      data: { emailId: email.emailId },
-    },
-    trigger: null,
-  });
-}
-
-function handleEmailActions() {
-  Notifications.addNotificationResponseReceivedListener((response) => {
-    const { actionIdentifier, userText } = response;
-    const { emailId } = response.notification.request.content.data;
-    
-    if (actionIdentifier === 'reply' && userText) {
-      sendEmailReply(emailId, userText);
-    } else if (actionIdentifier === 'archive') {
-      archiveEmail(emailId);
-    } else if (actionIdentifier === 'spam') {
-      markAsSpam(emailId);
-    }
-  });
-}
-```
-
----
-
-## Complete Example: Todo List Notification
-
-```typescript
-async function setupTodoCategories() {
-  if (Platform.OS !== 'ios') return;
-  
-  await Notifications.setNotificationCategoryAsync('todo', [
-    {
-      identifier: 'done',
-      buttonTitle: 'Mark Done ✓',
-      options: {
-        isDestructive: false,
-      },
-    },
-    {
-      identifier: 'snooze_15',
-      buttonTitle: 'Snooze 15min',
-      options: {
-        isDestructive: false,
-      },
-    },
-    {
-      identifier: 'snooze_1h',
-      buttonTitle: 'Snooze 1h',
-      options: {
-        isDestructive: false,
-      },
-    },
-    {
-      identifier: 'delete',
-      buttonTitle: 'Delete',
-      options: {
-        isDestructive: true,
-      },
-    },
-  ]);
-}
-
-async function scheduleTodoNotification(todo: {
+async function sendCalendarInvite(event: {
   id: string;
   title: string;
-  dueDate: Date;
-}) {
+  time: string;
+}): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'Todo Due',
-      body: todo.title,
-      categoryIdentifier: 'todo',
-      data: { todoId: todo.id },
+      title: 'Calendar Invite',
+      body: `${event.title} at ${event.time}`,
+      categoryIdentifier: 'calendar_invite',
+      data: { eventId: event.id },
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: todo.dueDate,
-    },
+    trigger: null,
   });
 }
 
-function handleTodoActions() {
+function handleCalendarActions(): void {
   Notifications.addNotificationResponseReceivedListener(async (response) => {
     const { actionIdentifier } = response;
-    const { todoId } = response.notification.request.content.data;
-    
+    const eventId = response.notification.request.content.data?.eventId;
+
+    if (typeof eventId !== 'string') return;
+
     switch (actionIdentifier) {
-      case 'done':
-        markTodoComplete(todoId);
+      case 'accept':
+        await respondToInvite(eventId, 'accepted');
         break;
-      case 'snooze_15':
-        snoozeTodo(todoId, 15);
+      case 'decline':
+        await respondToInvite(eventId, 'declined');
         break;
-      case 'snooze_1h':
-        snoozeTodo(todoId, 60);
-        break;
-      case 'delete':
-        deleteTodo(todoId);
+      case 'maybe':
+        await respondToInvite(eventId, 'tentative');
         break;
     }
-    
-    // Clear related notifications
+
+    // Dismiss the notification
     await Notifications.dismissNotificationAsync(
       response.notification.request.identifier
     );
@@ -409,67 +230,81 @@ function handleTodoActions() {
 
 ---
 
-## Action Response Handling
-
-### Complete Response Handler
+## Complete Example: Todo Reminder with Snooze
 
 ```typescript
-export class NotificationActionHandler {
-  private handlers: Map<string, (data: any, text?: string) => void> = new Map();
-  
-  registerHandler(actionId: string, handler: (data: any, text?: string) => void) {
-    this.handlers.set(actionId, handler);
-  }
-  
-  setup() {
-    Notifications.addNotificationResponseReceivedListener((response) => {
-      const { actionIdentifier, userText } = response;
-      const { data } = response.notification.request.content;
-      
-      const handler = this.handlers.get(actionIdentifier);
-      
-      if (handler) {
-        handler(data, userText);
-      } else if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-        // User tapped notification itself
-        this.handleDefaultAction(data);
-      }
-    });
-  }
-  
-  private handleDefaultAction(data: any) {
-    console.log('Notification tapped:', data);
-  }
+import * as Notifications from 'expo-notifications';
+
+async function setupTodoCategory(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync('todo', [
+    {
+      identifier: 'done',
+      buttonTitle: 'Mark Done',
+      options: { isDestructive: false },
+    },
+    {
+      identifier: 'snooze_15',
+      buttonTitle: 'Snooze 15min',
+      options: { isDestructive: false },
+    },
+    {
+      identifier: 'snooze_1h',
+      buttonTitle: 'Snooze 1h',
+      options: { isDestructive: false },
+    },
+  ]);
 }
 
-// Usage
-const handler = new NotificationActionHandler();
+function handleTodoActions(): void {
+  Notifications.addNotificationResponseReceivedListener(async (response) => {
+    const { actionIdentifier } = response;
+    const { data, title, body } = response.notification.request.content;
+    const todoId = data?.todoId;
 
-handler.registerHandler('reply', (data, text) => {
-  console.log('Replying with:', text);
-});
-
-handler.registerHandler('accept', (data) => {
-  console.log('Accepted:', data.eventId);
-});
-
-handler.setup();
+    switch (actionIdentifier) {
+      case 'done':
+        await markTodoComplete(todoId as string);
+        break;
+      case 'snooze_15':
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, categoryIdentifier: 'todo', data },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: 900,
+          },
+        });
+        break;
+      case 'snooze_1h':
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, categoryIdentifier: 'todo', data },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: 3600,
+          },
+        });
+        break;
+    }
+  });
+}
 ```
 
 ---
 
-## Default Notification Action
+## Platform Notes
 
-```typescript
-// When user taps the notification itself (not an action button)
-Notifications.addNotificationResponseReceivedListener((response) => {
-  if (response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-    console.log('User tapped the notification');
-    // Navigate to app screen
-  }
-});
-```
+### iOS
+- Full support for categories with action buttons
+- Text input actions supported
+- `isDestructive` renders button in red
+- `isAuthenticationRequired` requires Face ID/Touch ID
+- Up to 4 actions per category
+
+### Android
+- Categories work but with limited visual customization
+- Text input support is limited
+- Actions appear in notification shade when expanded
+- Use Android notification channels for sound/vibration control
 
 ---
 
-**Source**: https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

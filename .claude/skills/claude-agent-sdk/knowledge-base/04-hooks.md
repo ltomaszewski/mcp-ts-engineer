@@ -455,3 +455,7 @@ PreToolUse: async (data) => {
   return decision;
 }
 ```
+
+---
+
+**Version:** ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

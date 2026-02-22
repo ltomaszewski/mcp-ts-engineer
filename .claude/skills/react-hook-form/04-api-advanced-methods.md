@@ -155,6 +155,21 @@ swap(0, 1);
 
 ---
 
+#### update()
+
+**Description:** Update field at specific index without removing/re-adding.
+
+```typescript
+const { update } = useFieldArray({ control, name: 'items' });
+
+// Update item at index 1
+update(1, { name: 'Updated Item', value: 'new-value' });
+```
+
+**Note:** `update` replaces the entire field object at the given index. Unlike `setValue`, it preserves the field's `id` for stable rendering.
+
+---
+
 #### replace()
 
 **Description:** Replace entire array.
@@ -167,6 +182,22 @@ replace([
   { name: 'Item 2', value: '' }
 ]);
 ```
+
+---
+
+### useFieldArray Methods Summary
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `fields` | `FieldArrayWithId[]` | Array of field objects with unique `id` |
+| `append` | `(obj \| obj[], opts?) => void` | Add to end |
+| `prepend` | `(obj \| obj[], opts?) => void` | Add to start |
+| `insert` | `(index, obj \| obj[], opts?) => void` | Insert at index |
+| `remove` | `(index?) => void` | Remove by index (or all) |
+| `move` | `(from, to) => void` | Move field position |
+| `swap` | `(indexA, indexB) => void` | Swap two fields |
+| `update` | `(index, obj) => void` | Update field at index |
+| `replace` | `(obj[]) => void` | Replace entire array |
 
 ---
 
@@ -344,6 +375,41 @@ function CustomInput({ control, name, label }: CustomInputProps) {
 // Usage
 const { control } = useForm();
 <CustomInput control={control} name="email" label="Email" />
+```
+
+---
+
+## setFocus()
+
+**Description:** Programmatically focus a registered field.
+
+```typescript
+const { setFocus } = useForm();
+
+// Focus email field
+setFocus('email');
+
+// Focus and select text
+setFocus('email', { shouldSelect: true });
+
+// Focus first field on mount
+useEffect(() => {
+  setFocus('firstName');
+}, [setFocus]);
+```
+
+---
+
+## unregister()
+
+**Description:** Unregister a field or fields from the form.
+
+```typescript
+const { unregister } = useForm();
+
+unregister('email');                 // single field
+unregister(['email', 'password']);   // multiple fields
+unregister('email', { keepValue: true }); // keep value in form state
 ```
 
 ---
@@ -579,4 +645,4 @@ export function ContactForm() {
 
 ---
 
-**Source:** https://react-hook-form.com/api
+**Version:** 7.71.2 | **Source:** https://react-hook-form.com/api

@@ -1,40 +1,58 @@
-# Testing Best Practices
+# Testing with Vitest
 
-## Unit Testing
+NestJS testing utilities with Vitest for unit and e2e tests.
 
-### Test Module Setup
+## Test Module Setup
+
+Use `Test.createTestingModule()` to create an isolated module for testing. Mock all dependencies.
 
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getModelToken } from '@nestjs/mongoose';
 import { UsersService } from './users.service';
-import { User } from './user.entity';
+import { ConfigService } from '@nestjs/config';
+import { User } from './user.schema';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let mockRepository: any;
+  let mockUserModel: {
+    find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    findByIdAndUpdate: ReturnType<typeof vi.fn>;
+    findByIdAndDelete: ReturnType<typeof vi.fn>;
+  };
+  let mockConfigService: { get: ReturnType<typeof vi.fn>; getOrThrow: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
-    mockRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+    mockUserModel = {
+      find: vi.fn(),
+      findOne: vi.fn(),
+      findById: vi.fn(),
+      create: vi.fn(),
+      findByIdAndUpdate: vi.fn(),
+      findByIdAndDelete: vi.fn(),
+    };
+
+    mockConfigService = {
+      get: vi.fn().mockReturnValue('test-value'),
+      getOrThrow: vi.fn().mockReturnValue('test-value'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        {
-          provide: getRepositoryToken(User),
-          useValue: mockRepository,
-        },
+        { provide: getModelToken(User.name), useValue: mockUserModel },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -42,51 +60,195 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of users', async () => {
+    it('should return array of users', async () => {
       const users = [{ id: '1', email: 'test@example.com' }];
-      mockRepository.find.mockResolvedValue(users);
+      mockUserModel.find.mockReturnValue({ exec: vi.fn().mockResolvedValue(users) });
 
       const result = await service.findAll();
 
       expect(result).toEqual(users);
-      expect(mockRepository.find).toHaveBeenCalledTimes(1);
+      expect(mockUserModel.find).toHaveBeenCalledOnce();
     });
   });
 
   describe('create', () => {
     it('should create a new user', async () => {
-      const userData = { email: 'new@example.com', password: 'password' };
-      const createdUser = { id: '1', ...userData };
+      const input = { email: 'new@example.com', name: 'Test' };
+      const created = { id: '1', ...input };
+      mockUserModel.create.mockResolvedValue(created);
 
-      mockRepository.create.mockReturnValue(createdUser);
-      mockRepository.save.mockResolvedValue(createdUser);
+      const result = await service.create(input);
 
-      const result = await service.create(userData);
-
-      expect(result).toEqual(createdUser);
-      expect(mockRepository.create).toHaveBeenCalledWith(userData);
-      expect(mockRepository.save).toHaveBeenCalledWith(createdUser);
+      expect(result).toEqual(created);
+      expect(mockUserModel.create).toHaveBeenCalledWith(input);
     });
   });
 });
 ```
 
-### Mock Factories
+## Testing Module Methods
+
+| Method | Purpose |
+|--------|---------|
+| `Test.createTestingModule({ ... })` | Create test module builder |
+| `.compile()` | Compile the module |
+| `.overrideProvider(token)` | Override a provider |
+| `.overrideGuard(guard)` | Override a guard |
+| `.overrideInterceptor(interceptor)` | Override an interceptor |
+| `.overridePipe(pipe)` | Override a pipe |
+| `.overrideFilter(filter)` | Override an exception filter |
+| `module.get<T>(token)` | Get provider instance |
+| `module.resolve<T>(token)` | Resolve request-scoped provider |
+
+## Override Patterns
+
+```typescript
+const module = await Test.createTestingModule({
+  imports: [UsersModule],
+})
+  .overrideProvider(ConfigService)
+  .useValue({ get: vi.fn().mockReturnValue('mock') })
+  .overrideGuard(AuthGuard)
+  .useValue({ canActivate: () => true })
+  .compile();
+```
+
+## Mock Factories
 
 ```typescript
 // test/factories/user.factory.ts
-import { User } from '../../src/users/user.entity';
+import { User } from '../../src/users/user.schema';
 
-export const createMockUser = (overrides?: Partial<User>): User => ({
-  id: '1',
-  email: 'test@example.com',
-  password: 'hashedPassword',
-  firstName: 'John',
-  lastName: 'Doe',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  isActive: true,
-  ...overrides,
+export function createMockUser(overrides?: Partial<User>): User {
+  return {
+    _id: '507f1f77bcf86cd799439011',
+    email: 'test@example.com',
+    name: 'John Doe',
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
+    ...overrides,
+  } as User;
+}
+
+export function createMockUserList(count: number): User[] {
+  return Array.from({ length: count }, (_, i) =>
+    createMockUser({ _id: `id-${i}`, email: `user${i}@example.com` }),
+  );
+}
+```
+
+## Testing Guards
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { RolesGuard } from './roles.guard';
+
+describe('RolesGuard', () => {
+  let guard: RolesGuard;
+  let reflector: Reflector;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [RolesGuard, Reflector],
+    }).compile();
+
+    guard = module.get<RolesGuard>(RolesGuard);
+    reflector = module.get<Reflector>(Reflector);
+  });
+
+  const createMockContext = (user: any): ExecutionContext =>
+    ({
+      switchToHttp: () => ({ getRequest: () => ({ user }) }),
+      getHandler: () => ({}),
+      getClass: () => ({}),
+    }) as unknown as ExecutionContext;
+
+  it('should allow when no roles required', () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const context = createMockContext({ roles: ['user'] });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('should allow when user has required role', () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
+    const context = createMockContext({ roles: ['admin'] });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('should deny when user lacks required role', () => {
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
+    const context = createMockContext({ roles: ['user'] });
+
+    expect(guard.canActivate(context)).toBe(false);
+  });
+});
+```
+
+## Testing Interceptors
+
+```typescript
+import { CallHandler, ExecutionContext } from '@nestjs/common';
+import { of } from 'rxjs';
+import { LoggingInterceptor } from './logging.interceptor';
+
+describe('LoggingInterceptor', () => {
+  let interceptor: LoggingInterceptor;
+
+  beforeEach(() => {
+    interceptor = new LoggingInterceptor();
+  });
+
+  it('should return response from handler', (done) => {
+    const mockContext = {} as ExecutionContext;
+    const mockHandler: CallHandler = {
+      handle: () => of({ data: 'test' }),
+    };
+
+    interceptor.intercept(mockContext, mockHandler).subscribe((result) => {
+      expect(result).toEqual({ data: 'test' });
+      done();
+    });
+  });
+});
+```
+
+## Testing Exception Filters
+
+```typescript
+import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { AllExceptionsFilter } from './all-exceptions.filter';
+
+describe('AllExceptionsFilter', () => {
+  let filter: AllExceptionsFilter;
+  let mockJson: ReturnType<typeof vi.fn>;
+  let mockStatus: ReturnType<typeof vi.fn>;
+  let mockHost: ArgumentsHost;
+
+  beforeEach(() => {
+    filter = new AllExceptionsFilter();
+    mockJson = vi.fn();
+    mockStatus = vi.fn().mockReturnValue({ json: mockJson });
+    mockHost = {
+      switchToHttp: () => ({
+        getResponse: () => ({ status: mockStatus }),
+        getRequest: () => ({ url: '/test' }),
+      }),
+    } as unknown as ArgumentsHost;
+  });
+
+  it('should handle HttpException', () => {
+    const exception = new HttpException('Not Found', HttpStatus.NOT_FOUND);
+    filter.catch(exception, mockHost);
+
+    expect(mockStatus).toHaveBeenCalledWith(404);
+    expect(mockJson).toHaveBeenCalledWith(
+      expect.objectContaining({ statusCode: 404, message: 'Not Found' }),
+    );
+  });
 });
 ```
 
@@ -94,9 +256,9 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
 
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { AppModule } from '../src/app.module';
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
@@ -107,6 +269,7 @@ describe('UsersController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -114,42 +277,67 @@ describe('UsersController (e2e)', () => {
     await app.close();
   });
 
-  it('/users (GET)', () => {
+  it('GET /users should return array', () => {
     return request(app.getHttpServer())
       .get('/users')
       .expect(200)
       .expect((res) => {
-        expect(Array.isArray(res.body)).toBeTruthy();
+        expect(Array.isArray(res.body)).toBe(true);
       });
   });
 
-  it('/users (POST)', () => {
-    const createUserDto = {
-      email: 'test@example.com',
-      password: 'password123',
-    };
-
+  it('POST /users should create user', () => {
     return request(app.getHttpServer())
       .post('/users')
-      .send(createUserDto)
+      .send({ email: 'test@example.com', name: 'Test' })
       .expect(201)
       .expect((res) => {
         expect(res.body).toHaveProperty('id');
-        expect(res.body.email).toBe(createUserDto.email);
+        expect(res.body.email).toBe('test@example.com');
       });
   });
 });
 ```
 
-## Best Practices Summary
+## Vitest Configuration for NestJS
 
-1. **Organize tests by feature** - Keep `.spec.ts` files next to source files
-2. **Use test fixtures** - Create reusable test data factories
-3. **Mock external dependencies** - Isolate units under test
-4. **Use separate test database** - Never test against production data
-5. **Clean up between tests** - Ensure test isolation with `beforeEach`/`afterEach`
-6. **Test edge cases** - Include error handling, null values, boundaries
-7. **Use descriptive test names** - Clearly state what is being tested
-8. **Aim for meaningful coverage** - Prioritize critical paths over 100% coverage
-9. **Run tests in CI/CD** - Automate testing in deployment pipeline
-10. **Use `createTestingModule`** - Leverage NestJS testing utilities
+```typescript
+// vitest.config.ts
+import swc from 'unplugin-swc';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    root: './',
+    include: ['**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      thresholds: { lines: 80, functions: 80, statements: 80 },
+    },
+  },
+  plugins: [swc.vite()],
+});
+```
+
+```typescript
+// vitest.setup.ts
+import 'reflect-metadata';
+```
+
+## Best Practices
+
+| Practice | Rationale |
+|----------|-----------|
+| Mock all dependencies in unit tests | Isolate unit under test |
+| Use `vi.clearAllMocks()` in `afterEach` | Prevent test pollution |
+| Create mock factories for common entities | Reusable, consistent test data |
+| Test error paths, not just happy paths | Verify exception handling |
+| Use `supertest` for e2e | Standard HTTP testing |
+| Use `unplugin-swc` with Vitest | Handles decorators, 3-4x faster than Jest |
+| Always `app.close()` in `afterAll` | Prevents port/connection leaks |
+| Use `getModelToken(Name)` for Mongoose mocks | Correct injection token |
+
+---
+
+**Version:** NestJS 11.x + vitest 4.x | **Source:** https://docs.nestjs.com/fundamentals/testing

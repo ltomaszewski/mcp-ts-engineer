@@ -19,18 +19,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const registrationSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.email({ error: "Invalid email address" }),
   password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Must contain uppercase letter")
-    .regex(/[0-9]/, "Must contain number"),
+    .min(8, { error: "Password must be at least 8 characters" })
+    .regex(/[A-Z]/, { error: "Must contain uppercase letter" })
+    .regex(/[0-9]/, { error: "Must contain number" }),
   confirmPassword: z.string(),
 }).refine(
   (data) => data.password === data.confirmPassword,
-  {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  }
+  { error: "Passwords don't match", path: ["confirmPassword"] },
 );
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
@@ -51,27 +48,15 @@ export function RegistrationForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <input {...register("email")} placeholder="Email" />
-      {errors.email && <span className="error">{errors.email.message}</span>}
+      {errors.email && <span>{errors.email.message}</span>}
 
-      <input
-        {...register("password")}
-        type="password"
-        placeholder="Password"
-      />
-      {errors.password && <span className="error">{errors.password.message}</span>}
+      <input {...register("password")} type="password" placeholder="Password" />
+      {errors.password && <span>{errors.password.message}</span>}
 
-      <input
-        {...register("confirmPassword")}
-        type="password"
-        placeholder="Confirm Password"
-      />
-      {errors.confirmPassword && (
-        <span className="error">{errors.confirmPassword.message}</span>
-      )}
+      <input {...register("confirmPassword")} type="password" placeholder="Confirm" />
+      {errors.confirmPassword && <span>{errors.confirmPassword.message}</span>}
 
-      <button type="submit" disabled={isSubmitting}>
-        Register
-      </button>
+      <button type="submit" disabled={isSubmitting}>Register</button>
     </form>
   );
 }
@@ -87,18 +72,16 @@ import { z } from "zod";
 
 const app = express();
 
-// Validation middleware factory
-const validateBody = (schema: z.ZodSchema) => {
-  return async (req, res, next) => {
+const validateBody = (schema: z.ZodType) => {
+  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-      const validated = await schema.parseAsync(req.body);
-      req.body = validated;
+      req.body = await schema.parseAsync(req.body);
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: "Validation failed",
-          details: error.flatten().fieldErrors,
+          details: z.treeifyError(error),
         });
       } else {
         next(error);
@@ -107,47 +90,16 @@ const validateBody = (schema: z.ZodSchema) => {
   };
 };
 
-// Define schemas
 const createPostSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1).max(5000),
   tags: z.array(z.string()).optional(),
 });
 
-const getPaginationSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().default(10),
+app.post("/posts", validateBody(createPostSchema), async (req, res) => {
+  const post = await db.posts.create(req.body);
+  res.json(post);
 });
-
-// Routes
-app.post(
-  "/posts",
-  validateBody(createPostSchema),
-  async (req, res) => {
-    // req.body is typed and validated
-    const post = await db.posts.create(req.body);
-    res.json(post);
-  }
-);
-
-app.get(
-  "/posts",
-  (req, res, next) => {
-    const result = getPaginationSchema.safeParse(req.query);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error.flatten().fieldErrors });
-    }
-    req.query = result.data;
-    next();
-  },
-  async (req, res) => {
-    const posts = await db.posts.find({
-      limit: req.query.limit,
-      offset: (req.query.page - 1) * req.query.limit,
-    });
-    res.json(posts);
-  }
-);
 ```
 
 ---
@@ -163,39 +115,26 @@ const t = initTRPC.create();
 export const appRouter = t.router({
   user: t.router({
     create: t.procedure
-      .input(
-        z.object({
-          email: z.string().email(),
-          name: z.string(),
-          age: z.number().int().positive(),
-        })
-      )
-      .output(
-        z.object({
-          id: z.number(),
-          email: z.string(),
-          name: z.string(),
-          createdAt: z.date(),
-        })
-      )
+      .input(z.object({
+        email: z.email(),
+        name: z.string(),
+        age: z.number().int().positive(),
+      }))
+      .output(z.object({
+        id: z.number(),
+        email: z.string(),
+        name: z.string(),
+        createdAt: z.date(),
+      }))
       .mutation(async ({ input }) => {
-        const user = await db.users.create(input);
-        return user;
-      }),
-
-    get: t.procedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return db.users.findById(input.id);
+        return db.users.create(input);
       }),
 
     list: t.procedure
-      .input(
-        z.object({
-          limit: z.number().default(10),
-          offset: z.number().default(0),
-        })
-      )
+      .input(z.object({
+        limit: z.number().default(10),
+        offset: z.number().default(0),
+      }))
       .query(async ({ input }) => {
         return db.users.find(input);
       }),
@@ -230,45 +169,37 @@ export async function createPost(formData: FormData) {
   const result = await createPostSchema.safeParseAsync(input);
 
   if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.flatten().fieldErrors,
-    };
+    return { success: false, errors: z.treeifyError(result.error) };
   }
 
   const post = await db.posts.create(result.data);
-  return {
-    success: true,
-    post,
-  };
+  return { success: true, post };
 }
+```
 
-// In component
-"use client";
+---
 
-import { createPost } from "@/app/actions";
-import { useFormState } from "react-dom";
+## JSON Schema Conversion (v4)
 
-export default function CreatePostPage() {
-  const [state, formAction] = useFormState(createPost, null);
+```typescript
+import { z } from "zod";
 
-  return (
-    <form action={formAction}>
-      <input name="title" placeholder="Title" required />
-      {state?.errors?.title && <span>{state.errors.title[0]}</span>}
+const userSchema = z.object({
+  id: z.number(),
+  email: z.email(),
+  name: z.string().min(1).max(100),
+  role: z.enum(["admin", "user"]),
+}).meta({ title: "User", description: "A user object" });
 
-      <textarea name="content" placeholder="Content" required />
-      {state?.errors?.content && <span>{state.errors.content[0]}</span>}
-
-      <label>
-        <input name="published" type="checkbox" />
-        Publish immediately
-      </label>
-
-      <button type="submit">Create</button>
-    </form>
-  );
-}
+// Convert Zod schema to JSON Schema
+const jsonSchema = z.toJSONSchema(userSchema);
+// {
+//   type: "object",
+//   title: "User",
+//   description: "A user object",
+//   properties: { ... },
+//   required: ["id", "email", "name", "role"]
+// }
 ```
 
 ---
@@ -281,7 +212,7 @@ import { z } from "zod";
 
 export const userBaseSchema = z.object({
   id: z.number(),
-  email: z.string().email(),
+  email: z.email(),
   name: z.string(),
   createdAt: z.date(),
 });
@@ -299,28 +230,32 @@ export const updateUserSchema = userBaseSchema.partial().omit({
 export type User = z.infer<typeof userBaseSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+```
 
-// packages/api/src/routes/users.ts
-import { createUserSchema, updateUserSchema } from "@schemas/user";
+---
 
-app.post("/users", validateBody(createUserSchema), async (req, res) => {
-  // ...
-});
+## Zod Mini (v4)
 
-// packages/web/src/hooks/useCreateUser.ts
-import { createUserSchema } from "@schemas/user";
-import { zodResolver } from "@hookform/resolvers/zod";
+For bundle-sensitive applications, use the tree-shakable mini variant (~2kb):
 
-const { register, handleSubmit } = useForm({
-  resolver: zodResolver(createUserSchema),
+```typescript
+import { z } from "zod/mini";
+
+// Same API, but no built-in error messages
+// You must provide error messages explicitly via .check()
+const schema = z.object({
+  name: z.string().check(
+    z.minLength(1, { error: "Name required" }),
+  ),
+  email: z.email({ error: "Invalid email" }),
 });
 ```
 
 ---
 
 **See Also**:
-- [Objects & Collections](03-objects-collections.md) — Schema design
-- [API Parsing](05-api-parsing.md) — Error handling details
-- [Best Practices](07-best-practices.md) — Production patterns
+- [Objects & Collections](03-objects-collections.md)
+- [API Parsing](05-api-parsing.md)
+- [Best Practices](07-best-practices.md)
 
-**Source**: https://zod.dev/docs/integrations
+**Version**: 4.x (^4.3.0) | **Source**: https://zod.dev/

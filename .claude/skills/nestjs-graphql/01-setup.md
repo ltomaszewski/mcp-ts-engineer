@@ -1,53 +1,127 @@
 # NestJS GraphQL Setup
 
+Installation and configuration with GraphQL Yoga driver.
+
 ## Installation
 
 ```bash
-npm i @nestjs/graphql @nestjs/apollo @apollo/server @as-integrations/express5 graphql
+npm i @nestjs/graphql @graphql-yoga/nestjs graphql-yoga graphql
 ```
 
-## Package Compatibility (2025)
+## Package Compatibility
 
-- `@nestjs/apollo@13.2.1` requires `@apollo/server@^5.0.0`
-- `@nestjs/graphql v12.2.2` supports NestJS v11
-- GraphQL.js v16.11.0+ required for Apollo Server 5
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@nestjs/graphql` | ^13.0.0 | NestJS GraphQL integration |
+| `@graphql-yoga/nestjs` | ^3.19.0 | Yoga driver for NestJS |
+| `graphql-yoga` | ^5.18.0 | Underlying GraphQL server |
+| `graphql` | ^16.0.0 | GraphQL.js runtime |
 
-## Important 2025 Update
-
-**Apollo playground is deprecated** and will be removed in the next major release. Use GraphiQL:
+## Code-First Configuration
 
 ```typescript
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
+import { YogaDriver, YogaDriverConfig } from '@graphql-yoga/nestjs';
+import { join } from 'path';
 
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      graphiql: true, // Use GraphiQL instead of deprecated playground
-      autoSchemaFile: 'schema.gql',
+    GraphQLModule.forRoot<YogaDriverConfig>({
+      driver: YogaDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      graphiql: true,
+      // Or generate in memory:
+      // autoSchemaFile: true,
     }),
   ],
 })
 export class AppModule {}
 ```
 
-**Note:** If using subscriptions, you must use `graphql-ws` as `subscriptions-transport-ws` isn't supported by GraphiQL.
+## GraphQLModule.forRoot Options
 
-## Code-First Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `driver` | `Type<GqlModuleOptions>` | required | `YogaDriver` |
+| `autoSchemaFile` | `string \| boolean` | -- | Code-first: path or `true` for in-memory |
+| `sortSchema` | `boolean` | `false` | Alphabetically sort schema |
+| `graphiql` | `boolean` | `false` | Enable built-in GraphiQL IDE |
+| `introspection` | `boolean` | `true` | Allow schema introspection |
+| `path` | `string` | `'/graphql'` | GraphQL endpoint path |
+| `include` | `Function[]` | -- | Modules to include in this schema |
+| `typePaths` | `string[]` | -- | Schema-first: paths to `.graphql` files |
+| `definitions` | `object` | -- | Schema-first: generated types output |
+| `context` | `Function \| object` | -- | Context factory for resolvers |
+| `formatError` | `Function` | -- | Custom error formatting |
+| `plugins` | `any[]` | -- | Envelop/Yoga plugins |
+| `cors` | `object \| boolean` | -- | CORS configuration |
+| `validationRules` | `Function[]` | -- | Custom GraphQL validation rules |
+
+## Async Configuration
 
 ```typescript
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'path';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
+GraphQLModule.forRootAsync<YogaDriverConfig>({
+  driver: YogaDriver,
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (configService: ConfigService) => ({
+    autoSchemaFile: true,
+    sortSchema: true,
+    introspection: configService.get('NODE_ENV') !== 'production',
+    graphiql: configService.get('NODE_ENV') !== 'production',
+    context: ({ req }: { req: Request }) => ({ req }),
+  }),
+})
+```
+
+## Context Configuration
+
+The context factory provides data to all resolvers:
+
+```typescript
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
+  autoSchemaFile: true,
+  context: ({ req }: { req: Request }) => ({ req }),
+  // req.user is populated by Passport after JWT validation
+})
+```
+
+## Envelop Plugins
+
+GraphQL Yoga uses the Envelop plugin ecosystem:
+
+```typescript
+import { useDisableIntrospection } from '@envelop/disable-introspection';
+
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
+  autoSchemaFile: true,
+  plugins: [
+    useDisableIntrospection(),
+  ],
+})
+```
+
+## Multiple GraphQL Endpoints
+
+```typescript
 @Module({
   imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      // Or generate in memory:
-      // autoSchemaFile: true,
+    GraphQLModule.forRoot<YogaDriverConfig>({
+      driver: YogaDriver,
+      autoSchemaFile: 'userSchema.gql',
+      include: [UsersModule],
+      path: '/graphql/users',
+    }),
+    GraphQLModule.forRoot<YogaDriverConfig>({
+      driver: YogaDriver,
+      autoSchemaFile: 'adminSchema.gql',
+      include: [AdminModule],
+      path: '/graphql/admin',
     }),
   ],
 })
@@ -57,77 +131,26 @@ export class AppModule {}
 ## Schema-First Configuration
 
 ```typescript
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
+GraphQLModule.forRoot<YogaDriverConfig>({
+  driver: YogaDriver,
   typePaths: ['./**/*.graphql'],
   definitions: {
     path: join(process.cwd(), 'src/graphql.ts'),
+    outputAs: 'class',
   },
 })
 ```
 
-## Async Configuration
-
-```typescript
-GraphQLModule.forRootAsync<ApolloDriverConfig>({
-  driver: ApolloDriver,
-  imports: [ConfigModule],
-  inject: [ConfigService],
-  useFactory: async (configService: ConfigService) => ({
-    autoSchemaFile: true,
-    sortSchema: true,
-    introspection: configService.get('NODE_ENV') !== 'production',
-    graphiql: true,
-  }),
-})
-```
-
-## Apollo Server 5 Landing Page
-
-```typescript
-import {
-  ApolloServerPluginLandingPageLocalDefault,
-  ApolloServerPluginLandingPageProductionDefault,
-} from '@apollo/server/plugin/landingPage/default';
-
-GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
-  autoSchemaFile: true,
-  plugins: [
-    process.env.NODE_ENV === 'production'
-      ? ApolloServerPluginLandingPageProductionDefault({ footer: false })
-      : ApolloServerPluginLandingPageLocalDefault({ footer: false }),
-  ],
-})
-```
-
-## Multiple Endpoints
-
-```typescript
-@Module({
-  imports: [
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: 'userSchema.gql',
-      include: [UserModule],
-      path: '/graphql/user',
-    }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: 'messageSchema.gql',
-      include: [MessagesModule],
-      path: '/graphql/messages',
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Key Differences: Code-First vs Schema-First
+## Code-First vs Schema-First
 
 | Aspect | Code-First | Schema-First |
 |--------|-----------|--------------|
-| Source | TypeScript decorators | .graphql SDL files |
+| Source | TypeScript decorators | `.graphql` SDL files |
 | Type Safety | Full compile-time checking | Generated types |
 | Workflow | Define classes first | Define schema first |
 | Best For | TypeScript-heavy projects | GraphQL-first teams |
+| Validation | class-validator on InputTypes | Custom validators |
+
+---
+
+**Version:** @nestjs/graphql 13.x + @graphql-yoga/nestjs 3.x + graphql-yoga 5.x | **Source:** https://docs.nestjs.com/graphql/quick-start

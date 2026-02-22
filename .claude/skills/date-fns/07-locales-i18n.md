@@ -39,7 +39,7 @@ const date = new Date(2024, 11, 27);
 
 // Without locale (English)
 console.log(format(date, 'PPPP'));
-//=> "Friday, December 27, 2024"
+//=> "Friday, February 22, 2026"
 
 // With French locale
 console.log(format(date, 'PPPP', { locale: fr }));
@@ -408,4 +408,4 @@ const LOCALES = {
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/v4.1.0/docs/I18n

@@ -1,369 +1,357 @@
-# API: Formatting & Parsing — date-fns v4.1.0
+# API: Formatting & Parsing -- date-fns v4.1.0
 
-## format() — Formatting Dates to Strings
+> Convert between Date objects and formatted strings. Includes complete format token reference.
 
-**Purpose:** Convert JavaScript Date objects to formatted strings using pattern tokens.
+**Source:** https://date-fns.org/docs/format
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/format/index.ts
+---
+
+## format() -- Date to String
 
 ### Signature
 
 ```typescript
-function format(
-  date: Date | number,
-  format: string,
-  options?: OptionsWithTZ
-): string
+function format(date: Date | number, formatStr: string, options?: FormatOptions): string
 ```
 
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `date` | `Date \| number` | Yes | The date to format. Can be Date object or Unix timestamp (ms) |
-| `format` | `string` | Yes | Pattern string with tokens (e.g., `'yyyy-MM-dd'`) |
-| `options` | `OptionsWithTZ` | No | Configuration object |
+| `date` | `Date \| number` | Yes | Date to format |
+| `formatStr` | `string` | Yes | Pattern string with Unicode tokens |
+| `options.locale` | `Locale` | No | Locale object |
+| `options.weekStartsOn` | `0-6` | No | First day of week (0=Sunday) |
+| `options.firstWeekContainsDate` | `1-7` | No | Day that defines first week of year |
 
-### Format Tokens
+---
 
-#### Year
-- `yy` — 2-digit year (24)
-- `yyyy` — 4-digit year (2024)
+## Complete Format Token Table
 
-#### Month
-- `M` — Month 1-12 (1, 12)
-- `MM` — Month zero-padded (01, 12)
-- `MMM` — Month abbreviated (Jan, Dec)
-- `MMMM` — Month full name (January, December)
+### Year
 
-#### Day
-- `d` — Day of month 1-31 (1, 27)
-- `dd` — Day zero-padded (01, 27)
-- `do` — Day with ordinal (1st, 27th)
+| Token | Output | Example |
+|-------|--------|---------|
+| `y` | Calendar year (min digits) | `2`, `26`, `2026` |
+| `yy` | 2-digit year | `26` |
+| `yyyy` | 4-digit year | `2026` |
 
-#### Weekday
-- `E` — Day name 3-letter (Fri)
-- `EEEE` — Day name full (Friday)
+### Month
 
-#### Hour/Minute/Second
-- `H` — Hour 0-23 (0, 15)
-- `HH` — Hour zero-padded (00, 15)
-- `h` — Hour 1-12 (1, 3)
-- `hh` — Hour zero-padded (01, 03)
-- `m` — Minute (0-59)
-- `mm` — Minute zero-padded
-- `s` — Second (0-59)
-- `ss` — Second zero-padded
+| Token | Output | Example |
+|-------|--------|---------|
+| `M` | Month (1-12) | `1`, `12` |
+| `MM` | Month zero-padded | `01`, `12` |
+| `MMM` | Abbreviated name | `Jan`, `Dec` |
+| `MMMM` | Full name | `January`, `December` |
+| `MMMMM` | Narrow | `J`, `D` |
 
-#### Preset Formats
-- `P` — Localized date (12/27/2024)
-- `PP` — Localized date (Dec 27, 2024)
-- `PPP` — Localized date (December 27, 2024)
-- `PPPP` — Full date with day (Friday, December 27, 2024)
-- `p` — Localized time (3:30 PM)
-- `pp` — Localized time with seconds (3:30:45 PM)
+### Day of Month
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `d` | Day (1-31) | `1`, `27` |
+| `dd` | Day zero-padded | `01`, `27` |
+| `do` | Ordinal | `1st`, `27th` |
+
+### Day of Week
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `E` | Abbreviated name | `Mon`, `Fri` |
+| `EE` | Abbreviated name | `Mon`, `Fri` |
+| `EEE` | Abbreviated name | `Mon`, `Fri` |
+| `EEEE` | Full name | `Monday`, `Friday` |
+| `EEEEE` | Narrow | `M`, `F` |
+| `EEEEEE` | Short | `Mo`, `Fr` |
+| `e` | Local day (1-7) | `2` (Mon if week starts Sun) |
+| `i` | ISO day (1=Mon, 7=Sun) | `1`, `5` |
+
+### AM/PM
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `a` | AM/PM | `AM`, `PM` |
+| `aa` | AM/PM | `AM`, `PM` |
+| `aaa` | am/pm | `am`, `pm` |
+| `aaaa` | a.m./p.m. | `a.m.`, `p.m.` |
+
+### Hour
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `h` | Hour 1-12 | `1`, `12` |
+| `hh` | Hour 1-12 padded | `01`, `12` |
+| `H` | Hour 0-23 | `0`, `23` |
+| `HH` | Hour 0-23 padded | `00`, `23` |
+
+### Minute / Second / Fraction
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `m` | Minute (0-59) | `0`, `59` |
+| `mm` | Minute padded | `00`, `59` |
+| `s` | Second (0-59) | `0`, `59` |
+| `ss` | Second padded | `00`, `59` |
+| `S` | Fraction (1/10 sec) | `1` |
+| `SS` | Fraction (1/100 sec) | `12` |
+| `SSS` | Milliseconds | `123` |
+
+### Timezone
+
+| Token | Output | Example |
+|-------|--------|---------|
+| `x` | Offset (+HHmm) | `+0530` |
+| `xx` | Offset (+HH:mm) | `+05:30` |
+| `xxx` | Offset (+HH:mm) | `+05:30` |
+| `X` | Offset (Z for UTC) | `Z`, `+05` |
+| `O` | Short GMT offset | `GMT+5` |
+| `OOOO` | Full GMT offset | `GMT+05:30` |
+
+### Localized Presets
+
+| Token | Output | Example (en-US) |
+|-------|--------|-----------------|
+| `P` | Short date | `12/27/2024` |
+| `PP` | Medium date | `Dec 27, 2024` |
+| `PPP` | Long date | `December 27, 2024` |
+| `PPPP` | Full date | `Friday, December 27, 2024` |
+| `p` | Short time | `3:30 PM` |
+| `pp` | Medium time | `3:30:45 PM` |
+| `Pp` | Date + time | `12/27/2024, 3:30 PM` |
+| `PPp` | Medium date + time | `Dec 27, 2024, 3:30 PM` |
+| `PPPp` | Long date + time | `December 27, 2024 at 3:30 PM` |
+
+### Dangerous Tokens (Common Mistakes)
+
+| Wrong | Right | Why |
+|-------|-------|-----|
+| `YYYY` | `yyyy` | `YYYY` = ISO week-numbering year, not calendar year |
+| `DD` | `dd` | `DD` = day of year (1-366), not day of month |
+| `D` | `d` | Same issue: day of year vs day of month |
+
+---
 
 ### Code Examples
 
-#### Basic Formatting
-
-```javascript
+```typescript
 import { format } from 'date-fns';
 
-const date = new Date(2024, 11, 27, 15, 30, 45);
+const date = new Date(2026, 0, 25, 14, 30, 45);
 
-// ISO format
-console.log(format(date, 'yyyy-MM-dd'));
-//=> "2024-12-27"
-
-// US format
-console.log(format(date, 'MM/dd/yyyy'));
-//=> "12/27/2024"
-
-// Full date and time
-console.log(format(date, 'PPPP, pp'));
-//=> "Friday, December 27, 2024, 3:30:45 PM"
-
-// ISO with time
-console.log(format(date, "yyyy-MM-dd'T'HH:mm:ss"));
-//=> "2024-12-27T15:30:45"
+format(date, 'yyyy-MM-dd');                // "2026-01-25"
+format(date, 'MM/dd/yyyy');                // "01/25/2026"
+format(date, 'PPPP');                      // "Sunday, January 25, 2026"
+format(date, 'PPp');                       // "Jan 25, 2026, 2:30 PM"
+format(date, "yyyy-MM-dd'T'HH:mm:ss");    // "2026-01-25T14:30:45"
+format(date, 'EEEE, MMMM do yyyy');       // "Sunday, January 25th 2026"
+format(date, 'HH:mm:ss.SSS');             // "14:30:45.000"
+format(date, 'h:mm a');                    // "2:30 PM"
 ```
 
-#### With Locale
+### With Locale
 
-```javascript
+```typescript
 import { format } from 'date-fns';
-import { fr, de, es } from 'date-fns/locale';
+import { fr, de, ja } from 'date-fns/locale';
 
-const date = new Date(2024, 11, 27);
+const date = new Date(2026, 0, 25);
 
-console.log(format(date, 'PPPP', { locale: fr }));
-//=> "vendredi 27 décembre 2024"
-
-console.log(format(date, 'PPPP', { locale: de }));
-//=> "Freitag, 27. Dezember 2024"
-
-console.log(format(date, 'PPPP', { locale: es }));
-//=> "viernes, 27 de diciembre de 2024"
+format(date, 'PPPP', { locale: fr });  // "dimanche 25 janvier 2026"
+format(date, 'PPPP', { locale: de });  // "Sonntag, 25. Januar 2026"
+format(date, 'PPPP', { locale: ja });  // "2026年1月25日日曜日"
 ```
 
 ---
 
-## parse() — Parsing Strings to Dates
-
-**Purpose:** Convert formatted strings back to Date objects using a pattern.
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/parse/index.ts
+## parse() -- String to Date
 
 ### Signature
 
 ```typescript
-function parse(
-  dateString: string,
-  formatString: string,
-  referenceDate: Date | number,
-  options?: ParseOptions
-): Date
+function parse(dateString: string, formatString: string, referenceDate: Date | number, options?: ParseOptions): Date
 ```
 
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `dateString` | `string` | Yes | Date string to parse |
-| `formatString` | `string` | Yes | Pattern describing the input format |
-| `referenceDate` | `Date \| number` | Yes | Reference date for missing values |
-| `options` | `ParseOptions` | No | Configuration object |
+| `dateString` | `string` | Yes | String to parse |
+| `formatString` | `string` | Yes | Pattern matching the string |
+| `referenceDate` | `Date \| number` | Yes | Reference for missing components |
+| `options.locale` | `Locale` | No | Locale for parsing |
 
-### Code Examples
-
-#### Basic Parsing
-
-```javascript
+```typescript
 import { parse, isValid } from 'date-fns';
 
-const dateString = '2024-12-27';
-const referenceDate = new Date();
-
-const parsed = parse(dateString, 'yyyy-MM-dd', referenceDate);
-
-if (isValid(parsed)) {
-  console.log(parsed);
-  //=> Fri Dec 27 2024 00:00:00
-} else {
-  console.error('Invalid date format');
-}
-```
-
-#### Different Formats
-
-```javascript
-import { parse } from 'date-fns';
-
 const ref = new Date();
-
-// ISO format
-parse('2024-12-27', 'yyyy-MM-dd', ref);
-
-// US format
-parse('12/27/2024', 'MM/dd/yyyy', ref);
-
-// European format
-parse('27.12.2024', 'dd.MM.yyyy', ref);
-
-// With time
-parse('2024-12-27 15:30:45', 'yyyy-MM-dd HH:mm:ss', ref);
-
-// 12-hour format
+parse('2026-01-25', 'yyyy-MM-dd', ref);             // Sun Jan 25 2026
+parse('01/25/2026', 'MM/dd/yyyy', ref);              // Sun Jan 25 2026
+parse('25.01.2026', 'dd.MM.yyyy', ref);              // Sun Jan 25 2026
+parse('2026-01-25 14:30:45', 'yyyy-MM-dd HH:mm:ss', ref);
 parse('03:30 PM', 'hh:mm a', ref);
+
+// Always validate
+const parsed = parse(userInput, 'yyyy-MM-dd', new Date());
+if (!isValid(parsed)) { /* handle invalid */ }
 ```
 
 ---
 
-## parseISO() — Parsing ISO 8601 Strings
-
-**Purpose:** Parse ISO 8601 date strings (fast, optimized).
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/parseISO/index.ts
+## parseISO() -- Parse ISO 8601
 
 ### Signature
 
 ```typescript
-function parseISO(
-  argument: string | number,
-  options?: ParseISOOptions
-): Date
+function parseISO(dateString: string, options?: ParseISOOptions): Date
 ```
 
-### Code Examples
-
-```javascript
+```typescript
 import { parseISO, format } from 'date-fns';
 
-// Full ISO 8601
-parseISO('2024-12-27T15:30:45.123Z');
-//=> Fri Dec 27 2024 15:30:45 GMT
-
-// Date only
-parseISO('2024-12-27');
-//=> Fri Dec 27 2024 00:00:00 (local time)
-
-// With timezone offset
-parseISO('2024-12-27T15:30:45+05:30');
-//=> Adjusted for timezone
-
-// API response parsing
-const apiResponse = { createdAt: '2024-12-27T15:30:45.123Z' };
-const date = parseISO(apiResponse.createdAt);
-console.log(format(date, 'PPPP'));
-//=> "Friday, December 27, 2024"
+parseISO('2026-01-25T14:30:45.123Z');    // full ISO with ms
+parseISO('2026-01-25');                   // date only
+parseISO('2026-01-25T14:30:45+05:30');   // with offset
 ```
 
 ---
 
-## formatDistance() — Relative Time Formatting
-
-**Purpose:** Format dates as relative distances ("3 days ago", "in 2 weeks").
-
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/formatDistance/index.ts
+## formatDistance() -- Relative Time
 
 ### Signature
 
 ```typescript
-function formatDistance(
-  date: Date | number,
-  baseDate?: Date | number,
-  options?: FormatDistanceOptions
-): string
+function formatDistance(date: Date | number, baseDate: Date | number, options?: FormatDistanceOptions): string
 ```
 
-### Options
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `addSuffix` | `boolean` | `false` | Add "ago" or "in" prefix/suffix |
+| `includeSeconds` | `boolean` | `false` | Include seconds for small intervals |
+| `locale` | `Locale` | `enUS` | Locale for output |
 
 ```typescript
-interface FormatDistanceOptions {
-  includeSeconds?: boolean;  // Include seconds (default: false)
-  addSuffix?: boolean;       // Add "ago" or "in" (default: false)
-  locale?: Locale;
-}
-```
-
-### Code Examples
-
-#### Basic Distance
-
-```javascript
-import { formatDistance, subDays, addDays } from 'date-fns';
+import { formatDistance, subDays, addHours } from 'date-fns';
 
 const now = new Date();
-
-formatDistance(subDays(now, 3), now);
-//=> "3 days"
-
-formatDistance(addDays(now, 7), now);
-//=> "7 days"
-
-formatDistance(now, now);
-//=> "0 seconds"
-```
-
-#### With Suffix
-
-```javascript
-import { formatDistance, subDays, addDays } from 'date-fns';
-
-const now = new Date();
-
-formatDistance(subDays(now, 3), now, { addSuffix: true });
-//=> "3 days ago"
-
-formatDistance(addDays(now, 7), now, { addSuffix: true });
-//=> "in 7 days"
+formatDistance(subDays(now, 3), now);                          // "3 days"
+formatDistance(subDays(now, 3), now, { addSuffix: true });    // "3 days ago"
+formatDistance(addHours(now, 2), now, { addSuffix: true });   // "in about 2 hours"
 ```
 
 ---
 
-## formatRelative() — Semantic Relative Formatting
+## formatDistanceToNow() -- Relative to Now
 
-**Purpose:** Format dates semantically ("last Friday", "tomorrow", "next Monday").
+Shorthand for `formatDistance(date, new Date())`.
 
-**Source:** https://github.com/date-fns/date-fns/blob/main/src/formatRelative/index.ts
+```typescript
+import { formatDistanceToNow, subMinutes } from 'date-fns';
 
-### Code Examples
+formatDistanceToNow(subMinutes(new Date(), 15), { addSuffix: true });
+// "15 minutes ago"
+```
 
-```javascript
+---
+
+## formatDuration() -- Duration to String
+
+### Signature
+
+```typescript
+function formatDuration(duration: Duration, options?: FormatDurationOptions): string
+```
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `format` | `string[]` | Units to include (default: all non-zero) |
+| `zero` | `boolean` | Include zero values (default: false) |
+| `delimiter` | `string` | Separator between parts (default: space) |
+| `locale` | `Locale` | Locale for output |
+
+```typescript
+import { formatDuration, intervalToDuration } from 'date-fns';
+
+formatDuration({ hours: 2, minutes: 30 });
+// "2 hours 30 minutes"
+
+formatDuration({ years: 1, months: 2, days: 3 });
+// "1 year 2 months 3 days"
+
+formatDuration({ hours: 1, minutes: 30 }, { format: ['hours', 'minutes'] });
+// "1 hour 30 minutes"
+
+// Combined with intervalToDuration
+const duration = intervalToDuration({
+  start: new Date(2026, 0, 1),
+  end: new Date(2026, 3, 15),
+});
+formatDuration(duration);
+// "3 months 14 days"
+```
+
+---
+
+## formatRelative() -- Semantic Relative Time
+
+```typescript
 import { formatRelative, subDays, addDays } from 'date-fns';
 
-const now = new Date(2024, 11, 27, 12, 0, 0); // Friday noon
+const now = new Date(2026, 0, 25, 12, 0);
 
-formatRelative(subDays(now, 2), now);
-//=> "Wednesday at 12:00 PM"
-
-formatRelative(now, now);
-//=> "Today at 12:00 PM"
-
-formatRelative(addDays(now, 1), now);
-//=> "Tomorrow at 12:00 PM"
-
-formatRelative(addDays(now, 3), now);
-//=> "Sunday at 12:00 PM"
+formatRelative(subDays(now, 2), now);    // "last Friday at 12:00 PM"
+formatRelative(now, now);                 // "today at 12:00 PM"
+formatRelative(addDays(now, 1), now);    // "tomorrow at 12:00 PM"
+formatRelative(addDays(now, 5), now);    // "Friday at 12:00 PM"
 ```
 
 ---
 
 ## Common Patterns
 
-### Pattern 1: Input Validation
+### Reusable Format Constants
 
-```javascript
-import { parse, isValid, format } from 'date-fns';
-
-function safeFormat(dateString, formatStr, outputFormat) {
-  const parsed = parse(dateString, formatStr, new Date());
-  
-  if (!isValid(parsed)) {
-    console.error(`Invalid date: ${dateString}`);
-    return null;
-  }
-  
-  return format(parsed, outputFormat);
-}
-
-safeFormat('2024-12-27', 'yyyy-MM-dd', 'PPPP');
-//=> "Friday, December 27, 2024"
-```
-
-### Pattern 2: Format String Reusability
-
-```javascript
+```typescript
 import { format } from 'date-fns';
 
-// Define formats as constants
-const FORMATS = {
+const DATE_FORMATS = {
   ISO: 'yyyy-MM-dd',
   US: 'MM/dd/yyyy',
-  DISPLAY: 'PPPP',
-  TIME: 'HH:mm:ss',
-  FULL: 'PPPP, pp',
-};
+  EU: 'dd/MM/yyyy',
+  DISPLAY: 'PPP',
+  FULL: 'PPPP',
+  TIME_24: 'HH:mm',
+  TIME_12: 'h:mm a',
+  DATETIME: 'PPp',
+  ISO_DATETIME: "yyyy-MM-dd'T'HH:mm:ss",
+} as const;
 
-const date = new Date();
+format(new Date(), DATE_FORMATS.ISO);      // "2026-01-25"
+format(new Date(), DATE_FORMATS.DATETIME); // "Jan 25, 2026, 2:30 PM"
+```
 
-console.log(format(date, FORMATS.ISO));
-console.log(format(date, FORMATS.DISPLAY));
-console.log(format(date, FORMATS.FULL));
+### Safe Format Helper
+
+```typescript
+import { parseISO, format, isValid } from 'date-fns';
+
+function safeFormat(isoString: string | null | undefined, fmt: string = 'PPP'): string {
+  if (!isoString) return 'N/A';
+  const date = parseISO(isoString);
+  return isValid(date) ? format(date, fmt) : 'Invalid date';
+}
 ```
 
 ---
 
-## Module Navigation
+## Cross-References
 
-- **Start here:** `01-setup-installation.md` (Installation)
-- **Concepts:** `02-core-concepts.md` (Design philosophy)
-- 📍 **You are here:** API: Formatting & Parsing (03-api-formatting.md)
-- **Related APIs:** `04-api-manipulation.md`, `05-api-query.md`, `06-api-advanced.md`
-- **For locales:** `07-locales-i18n.md` (Internationalization)
-- **Complete index:** `00-master-index.md`
+- **Manipulation:** `04-api-manipulation.md`
+- **Query and comparison:** `05-api-query.md`
+- **Intervals and durations:** `06-api-advanced.md`
+- **Localization:** `07-locales-i18n.md`
+- **Practical recipes:** `08-practical-guides.md`
 
 ---
 
-**Document Status:** Complete | **Last Updated:** December 27, 2024
+**Version:** 4.1.0 | **Source:** https://date-fns.org/docs/format

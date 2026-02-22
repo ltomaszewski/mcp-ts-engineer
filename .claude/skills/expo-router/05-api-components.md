@@ -1,63 +1,63 @@
-# Components Reference — Expo Router 6.0.19
+# Components Reference -- Expo Router 6.x
 
-Navigation and layout components for building app structure.
-
-**Module Summary:** Stack, Tabs, Link, Redirect, Slot, and ErrorBoundary components with full props documentation and composition patterns.
-
-**🔗 Cross-References:**
-- Imperative navigation → `03-api-navigation.md`
-- Hooks for state → `04-api-hooks.md`
-- Routing fundamentals → `02-routing-basics.md`
-- Authentication → `06-auth-protected-routes.md`
+Navigation and layout components for building app structure: Stack, Tabs, Drawer, Link, Redirect, Slot, ErrorBoundary.
 
 ---
 
 ## Stack Component
 
-The Stack component creates a native-style navigation stack (like browser history).
+Creates a native-style navigation stack (push/pop history).
 
-**Signature:**
-
-```typescript
-<Stack screenOptions={screenOptions}>
-  <Stack.Screen name="routeName" options={screenOptions} />
-  <Stack.Protected guard={boolean}>
-    {/* Protected content */}
-  </Stack.Protected>
-</Stack>
-```
-
-### Stack.Screen
-
-Defines a single screen in the stack.
-
-**Props:**
+### Stack.Screen Props
 
 | Prop | Type | Description |
 |------|------|-------------|
 | `name` | `string` | Route file name (required) |
-| `options` | `StackScreenOptions` | Screen configuration |
+| `options` | `NativeStackNavigationOptions` | Screen configuration |
+| `getId` | `function` | Custom ID for managing duplicate screens |
 | `listeners` | `ScreenListeners` | Navigation event listeners |
 
-**Common Options:**
+### Common Screen Options
 
-```typescript
-<Stack.Screen
-  name="profile"
-  options={{
-    title: 'User Profile',                    // Header title
-    headerShown: true,                        // Show header
-    headerBackVisible: true,                  // Show back button
-    headerStyle: { backgroundColor: '#f4511e' },
-    headerTintColor: '#fff',
-    headerTitleStyle: { fontWeight: 'bold' },
-    presentation: 'card' | 'modal' | 'transparentModal',
-    gestureEnabled: true,
-  }}
-/>
-```
+| Option | Type | Description |
+|--------|------|-------------|
+| `title` | `string` | Fallback for headerTitle |
+| `headerShown` | `boolean` | Show/hide header (default: true) |
+| `headerTitle` | `string \| function` | Header title text or component |
+| `headerStyle` | `object` | Supports `backgroundColor` |
+| `headerTintColor` | `string` | Back button and title color |
+| `headerTitleStyle` | `object` | Title font styling |
+| `headerTitleAlign` | `'left' \| 'center'` | Title alignment |
+| `headerLeft` | `function` | Custom left component |
+| `headerRight` | `function` | Custom right component |
+| `headerBackVisible` | `boolean` | Show back button |
+| `headerTransparent` | `boolean` | Float header over content |
+| `headerBlurEffect` | `string` | iOS blur (extraLight, light, dark) |
+| `headerSearchBarOptions` | `object` | iOS native search bar |
+| `presentation` | `string` | Screen presentation mode |
+| `animation` | `string` | Android transition animation |
+| `gestureEnabled` | `boolean` | Swipe-to-dismiss (iOS, default: true) |
+| `contentStyle` | `object` | Scene content styling |
+| `freezeOnBlur` | `boolean` | Prevent re-renders when inactive |
+| `statusBarStyle` | `string` | auto, inverted, dark, light |
 
-**Example:**
+### Presentation Modes
+
+| Mode | Description |
+|------|-------------|
+| `card` | Standard card (default) |
+| `modal` | Modal presentation |
+| `transparentModal` | Transparent overlay |
+| `containedModal` | Contained modal |
+| `containedTransparentModal` | Transparent contained |
+| `fullScreenModal` | Covers entire screen |
+| `formSheet` | Sheet with configurable detents |
+
+### Animation Options (Android)
+
+`default`, `fade`, `fade_from_bottom`, `flip`, `simple_push`, `slide_from_bottom`, `slide_from_right`, `slide_from_left`, `none`
+
+### Example
 
 ```typescript
 // app/_layout.tsx
@@ -67,24 +67,18 @@ export default function RootLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: '#0a7ea4',
-        },
+        headerStyle: { backgroundColor: '#0a7ea4' },
         headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
+        headerTitleStyle: { fontWeight: '600' },
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="[...]" options={{ title: 'Not Found' }} />
+      <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />
     </Stack>
   );
 }
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#stack
 
 ---
 
@@ -92,75 +86,70 @@ export default function RootLayout() {
 
 Groups screens with shared options without adding navigation structure.
 
-**Example: Modal Presentation**
-
 ```typescript
 <Stack>
-  {/* Regular screens */}
   <Stack.Group>
     <Stack.Screen name="home" />
     <Stack.Screen name="profile" />
   </Stack.Group>
 
-  {/* Modal group */}
   <Stack.Group screenOptions={{ presentation: 'modal' }}>
-    <Stack.Screen name="settings-modal" options={{ title: 'Settings' }} />
-    <Stack.Screen name="share-modal" options={{ title: 'Share' }} />
+    <Stack.Screen name="settings-modal" />
+    <Stack.Screen name="share-modal" />
   </Stack.Group>
 </Stack>
 ```
 
 ---
 
-### Stack.Protected
+### Stack.Protected (SDK 54)
 
-Conditionally shows or hides screens based on a guard condition (SDK 53+).
-
-**Props:**
+Conditionally show/hide screens based on a guard condition.
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `guard` | `boolean` | If true, content is accessible |
-| `children` | `ReactNode` | Routes to protect |
-
-**Example: Authentication Guard**
+| `guard` | `boolean` | If true, enclosed content is accessible |
 
 ```typescript
-<Stack>
-  <Stack.Protected guard={!isLoggedIn}>
-    {/* Show login if NOT logged in */}
-    <Stack.Screen name="(auth)/login" />
-  </Stack.Protected>
+import { Stack } from 'expo-router';
+import { useAuth } from '../ctx/auth';
 
-  <Stack.Protected guard={isLoggedIn}>
-    {/* Show app if logged in */}
-    <Stack.Screen name="(app)/home" />
-  </Stack.Protected>
-</Stack>
+export default function RootLayout() {
+  const { user } = useAuth();
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!user}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!user}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
 ```
-
-**Official Source:** https://docs.expo.dev/router/basics/common-navigation-patterns/
 
 ---
 
 ## Tabs Component
 
-Creates a bottom tab navigation.
+Creates bottom tab navigation.
 
-**Signature:**
+### Tabs.Screen Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `title` | `string` | Screen title |
+| `tabBarLabel` | `string \| function` | Tab label |
+| `tabBarIcon` | `function` | Icon: `({ color, size, focused }) => ReactNode` |
+| `tabBarBadge` | `string \| number` | Badge on tab |
+| `tabBarButton` | `function` | Custom tab button component |
+| `tabBarActiveTintColor` | `string` | Active tab color |
 
 ```typescript
-<Tabs screenOptions={screenOptions}>
-  <Tabs.Screen name="routeName" options={screenOptions} />
-</Tabs>
-```
-
-### Basic Tabs Example
-
-```typescript
-// app/(app)/(tabs)/_layout.tsx
+// app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import { MaterialBottomTabNavigationOptions } from '@react-navigation/material-bottom-tabs';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function TabsLayout() {
   return (
@@ -171,27 +160,31 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="index"
         options={{
           title: 'Home',
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="home" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarLabel: 'Explore',
-          tabBarIcon: ({ color }) => <ExploreIcon color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="compass" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <ProfileIcon color={color} />,
+          tabBarBadge: 3,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account" color={color} size={size} />
+          ),
         }}
       />
     </Tabs>
@@ -199,253 +192,162 @@ export default function TabsLayout() {
 }
 ```
 
-### Tabs.Screen Options
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `title` | `string` | Screen title |
-| `tabBarLabel` | `string \| function` | Tab label text |
-| `tabBarIcon` | `function` | Icon component (receives `color`, `size`, `focused`) |
-| `tabBarBadge` | `string \| number` | Badge number/text |
-| `tabBarButton` | `function` | Custom tab button |
-
-**Custom Tab Icon:**
-
-```typescript
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-
-<Tabs.Screen
-  name="home"
-  options={{
-    tabBarIcon: ({ color, size }) => (
-      <MaterialCommunityIcons name="home" color={color} size={size} />
-    ),
-  }}
-/>
-```
-
-**Badge Example:**
-
-```typescript
-<Tabs.Screen
-  name="messages"
-  options={{
-    tabBarBadge: 3,  // Shows "3" on tab
-  }}
-/>
-```
-
 ---
 
-### Conditional Tabs (Protected)
+## Drawer Component
+
+Drawer navigation (slide-in side menu). Requires additional dependencies.
+
+### Installation
+
+```bash
+npx expo install @react-navigation/drawer react-native-reanimated react-native-worklets
+```
+
+### Import
 
 ```typescript
-// app/(app)/(tabs)/_layout.tsx
-import { Tabs } from 'expo-router';
-import { useAuth } from '../../../ctx/auth';
+import { Drawer } from 'expo-router/drawer';
+```
 
-export default function TabsLayout() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+### Example
 
+```typescript
+// app/_layout.tsx
+import { Drawer } from 'expo-router/drawer';
+
+export default function Layout() {
   return (
-    <Tabs>
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      
-      {/* Only show admin tab if user is admin */}
-      <Tabs.Protected guard={isAdmin}>
-        <Tabs.Screen name="admin" options={{ title: 'Admin' }} />
-      </Tabs.Protected>
-      
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-    </Tabs>
+    <Drawer>
+      <Drawer.Screen
+        name="index"
+        options={{ drawerLabel: 'Home', title: 'Home' }}
+      />
+      <Drawer.Screen
+        name="settings"
+        options={{ drawerLabel: 'Settings', title: 'Settings' }}
+      />
+    </Drawer>
   );
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#tabs
+Open/close drawer programmatically:
+
+```typescript
+import { useNavigation } from 'expo-router';
+
+const navigation = useNavigation();
+navigation.openDrawer();
+navigation.closeDrawer();
+navigation.toggleDrawer();
+```
 
 ---
 
 ## Link Component
 
-Navigation component that wraps children and handles navigation on press.
-
-**Signature:**
-
-```typescript
-<Link href={href} asChild={false} {...props}>
-  {children}
-</Link>
-```
+Declarative navigation component. Renders as `<a>` on web, `Text` on native.
 
 ### Link Props
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `href` | `string \| HrefObject` | Route destination |
-| `asChild` | `boolean` | Forward props to child component |
+| `href` | `Href` | Route destination (required) |
+| `asChild` | `boolean` | Forward props to first child |
 | `push` | `boolean` | Always push (add to history) |
 | `replace` | `boolean` | Replace current route |
-| `dismissTo` | `string` | Dismiss to route |
+| `dismissTo` | `boolean` | Dismiss to route |
+| `prefetch` | `boolean` | Prefetch route when rendered |
 | `onPress` | `function` | Custom press handler |
-| `prefetch` | `boolean` | Prefetch on mount |
-
-### Basic Usage
-
-```typescript
-import { Link } from 'expo-router';
-import { Text } from 'react-native';
-
-export default function Home() {
-  return (
-    <Link href="/about">
-      <Text>Go to About</Text>
-    </Link>
-  );
-}
-```
-
-### With Parameters
-
-```typescript
-<Link
-  href={{
-    pathname: '/users/[id]',
-    params: { id: '123' },
-  }}
->
-  <Text>View User 123</Text>
-</Link>
-```
-
-### Custom Child Component (asChild)
+| `className` | `string` | CSS class (web) or NativeWind (native) |
+| `relativeToDirectory` | `boolean` | Relative path resolution |
+| `withAnchor` | `boolean` | Replace initial screen |
 
 ```typescript
 import { Link } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 
-export default function Home() {
-  return (
-    <Link href="/profile" asChild>
-      <Pressable>
-        <Text>Go to Profile</Text>
-      </Pressable>
-    </Link>
-  );
-}
-```
+// Basic
+<Link href="/about">About</Link>
 
-**Benefits of asChild:**
-- ✅ Access Pressable props (onLongPress, onPressIn, etc.)
-- ✅ Custom styling on Pressable directly
-- ✅ No nested Text required
-
-### Push vs Navigate
-
-```typescript
-// Always add to history—can go back multiple times
-<Link push href="/feed">
-  <Text>View Feed</Text>
+// With params
+<Link href={{ pathname: '/users/[id]', params: { id: '123' } }}>
+  View User
 </Link>
 
-// Replace current—no back to here
-<Link replace href="/home">
-  <Text>Go Home</Text>
+// Custom child (asChild)
+<Link href="/profile" asChild>
+  <Pressable>
+    <Text>Go to Profile</Text>
+  </Pressable>
 </Link>
+
+// Always push
+<Link push href="/feed">Feed</Link>
+
+// Replace
+<Link replace href="/home">Home</Link>
 ```
 
-### Link.Menu (iOS Only)
-
-Context menu on long-press.
+### Link.Menu (iOS Context Menu)
 
 ```typescript
 <Link href="/post/123">
   <Link.Trigger>
     <Text>Open Post</Text>
   </Link.Trigger>
-  
   <Link.Menu>
     <Link.MenuAction title="Save" onPress={() => savePost(123)} />
     <Link.MenuAction title="Share" onPress={() => sharePost(123)} />
-    <Link.MenuAction title="Copy Link" onPress={() => copyLink()} />
   </Link.Menu>
 </Link>
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#link
 
 ---
 
 ## Redirect Component
 
-Immediately navigate to a different route when mounted.
+Navigate to a different route immediately when mounted.
 
-**Signature:**
-
-```typescript
-<Redirect href={href} />
-```
-
-### Basic Usage
+| Prop | Type | Description |
+|------|------|-------------|
+| `href` | `Href` | Target route (required) |
+| `relativeToDirectory` | `boolean` | Relative path resolution |
+| `withAnchor` | `boolean` | Replace initial screen |
 
 ```typescript
-// app/admin.tsx - Redirect if not admin
 import { Redirect } from 'expo-router';
 import { useAuth } from './ctx/auth';
 
 export default function AdminScreen() {
   const { user } = useAuth();
-
   if (user?.role !== 'admin') {
     return <Redirect href="/unauthorized" />;
   }
-
-  return (/* Admin UI */);
+  return <Text>Admin Panel</Text>;
 }
 ```
 
-### Redirect on Auth State Change
+Auth redirect pattern:
 
 ```typescript
-// app/index.tsx - Splash/Router screen
 import { Redirect } from 'expo-router';
 import { useAuth } from './ctx/auth';
-import { Text, View } from 'react-native';
 
 export default function Index() {
   const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center' }}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (user) {
-    return <Redirect href="/home" />;
-  }
-
+  if (isLoading) return <Text>Loading...</Text>;
+  if (user) return <Redirect href="/home" />;
   return <Redirect href="/login" />;
 }
 ```
-
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#redirect
 
 ---
 
 ## Slot Component
 
-Renders the current route without a Navigator wrapper.
-
-**Use Cases:**
-- Root layout to render child routes
-- Shared layout for multiple route groups
-- Layout composition
-
-### Basic Usage
+Renders the currently selected content. Use in `_layout` files for custom layouts without navigation chrome.
 
 ```typescript
 // app/_layout.tsx
@@ -461,59 +363,34 @@ export default function RootLayout() {
 }
 ```
 
-### Shared Header with Slot
+Shared header pattern:
 
 ```typescript
-// app/(app)/_layout.tsx
 import { Slot } from 'expo-router';
 import { View, Text } from 'react-native';
 
 export default function AppLayout() {
   return (
     <View style={{ flex: 1 }}>
-      {/* Shared header */}
       <View style={{ backgroundColor: '#0a7ea4', padding: 10 }}>
-        <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>
-          My App
-        </Text>
+        <Text style={{ color: '#fff', fontSize: 18 }}>My App</Text>
       </View>
-      
-      {/* Route content */}
       <Slot />
     </View>
   );
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/#slot
-
 ---
 
-## ErrorBoundary Component
+## ErrorBoundary
 
-Catches errors in route components and displays fallback UI.
-
-**Signature:**
-
-```typescript
-export function ErrorBoundary(props: ErrorBoundaryProps) {
-  return (
-    <View>
-      <Text>Error: {props.error.message}</Text>
-      <Button onPress={props.retry} title="Retry" />
-    </View>
-  );
-}
-```
-
-### ErrorBoundaryProps
+Catches errors in route components and displays fallback UI. Export a named `ErrorBoundary` from any route file.
 
 | Prop | Type | Description |
 |------|------|-------------|
 | `error` | `Error` | The thrown error |
-| `retry` | `() => Promise<void>` | Function to retry |
-
-### Example: Route Error Boundary
+| `retry` | `() => Promise<void>` | Function to retry rendering |
 
 ```typescript
 // app/profile/[id].tsx
@@ -522,35 +399,27 @@ import { View, Text, Pressable } from 'react-native';
 
 export default function Profile() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  
-  if (!id) {
-    throw new Error('User ID is required');
-  }
-
+  if (!id) throw new Error('User ID is required');
   return <Text>Profile: {id}</Text>;
 }
 
-export function ErrorBoundary(props: ErrorBoundaryProps) {
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 16, marginBottom: 10 }}>
-        {props.error.message}
-      </Text>
-      <Pressable onPress={props.retry} style={{ backgroundColor: '#0a7ea4' }}>
-        <Text style={{ color: '#fff', padding: 10 }}>Try Again</Text>
+      <Text>{error.message}</Text>
+      <Pressable onPress={retry}>
+        <Text style={{ color: '#0a7ea4', marginTop: 10 }}>Try Again</Text>
       </Pressable>
     </View>
   );
 }
 ```
 
-**Official Source:** https://docs.expo.dev/versions/latest/sdk/router/
-
 ---
 
-## Component Composition Patterns
+## Composition Patterns
 
-### Pattern 1: Layout with Tabs and Modals
+### Layout with Tabs and Modals
 
 ```typescript
 // app/_layout.tsx
@@ -559,52 +428,17 @@ import { Stack } from 'expo-router';
 export default function RootLayout() {
   return (
     <Stack>
-      <Stack.Group screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-      </Stack.Group>
-
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Group screenOptions={{ presentation: 'modal' }}>
         <Stack.Screen name="settings-modal" />
         <Stack.Screen name="share-modal" />
       </Stack.Group>
-
-      <Stack.Group>
-        <Stack.Screen name="[...]" />
-      </Stack.Group>
     </Stack>
   );
 }
 ```
 
----
-
-### Pattern 2: Auth Conditional Navigation
-
-```typescript
-// app/_layout.tsx
-import { Stack } from 'expo-router';
-import { useAuth } from './ctx/auth';
-
-export default function RootLayout() {
-  const { user } = useAuth();
-
-  return (
-    <Stack>
-      <Stack.Protected guard={!user}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      </Stack.Protected>
-
-      <Stack.Protected guard={!!user}>
-        <Stack.Screen name="(app)" options={{ headerShown: false }} />
-      </Stack.Protected>
-    </Stack>
-  );
-}
-```
-
----
-
-### Pattern 3: Nested Layouts with Shared Header
+### Nested Stack with Shared Header
 
 ```typescript
 // app/(app)/_layout.tsx
@@ -615,11 +449,8 @@ export default function AppLayout() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ backgroundColor: '#f5f5f5', padding: 10 }}>
-        <Text style={{ fontSize: 14, color: '#666' }}>
-          Connected as: user@example.com
-        </Text>
+        <Text style={{ fontSize: 14, color: '#666' }}>user@example.com</Text>
       </View>
-
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="details" options={{ title: 'Details' }} />
@@ -631,58 +462,4 @@ export default function AppLayout() {
 
 ---
 
-## Best Practices
-
-### ✅ DO:
-
-- ✅ Use **Link** for simple navigation (better for web)
-- ✅ Use **useRouter()** for conditional logic
-- ✅ Protect routes with **Stack.Protected**
-- ✅ Use **ErrorBoundary** on error-prone routes
-- ✅ Organize with **route groups** and **layouts**
-- ✅ Use **asChild** on Link for custom styling
-
-### ❌ DON'T:
-
-- ❌ Nest multiple Stack navigators deeply
-- ❌ Use Redirect in every route (performance)
-- ❌ Forget ErrorBoundary on dynamic routes
-- ❌ Mix imperative and declarative navigation unnecessarily
-
----
-
-## Troubleshooting
-
-### Issue: Link not navigating
-
-**Check:**
-- ✅ `href` points to existing route
-- ✅ Route file exists in `app/` directory
-- ✅ Link not wrapped in another navigation component
-
----
-
-### Issue: Tab bar not showing
-
-**Verify:**
-- ✅ Using `<Tabs>` component
-- ✅ Screen names match route files
-- ✅ `screenOptions={{ headerShown: false }}` if needed
-
----
-
-## Key Takeaways
-
-- 📚 **Stack** = Native back-button navigation (Android, iOS)
-- 📑 **Tabs** = Bottom or top navigation
-- 🔗 **Link** = Safe, web-friendly navigation
-- ↪️ **Redirect** = Conditional navigation on mount
-- 📍 **Slot** = Render current route
-- 🛡️ **Protected** = Guard routes with conditions
-- ⚠️ **ErrorBoundary** = Catch route errors
-
----
-
-**Next Module:** `06-auth-protected-routes.md` — Authentication and route protection
-
-**Source Documentation:** https://docs.expo.dev/versions/latest/sdk/router/
+**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/

@@ -4,7 +4,7 @@
 
 **Source:** [github.com/jasonkuhrt/graphql-request](https://github.com/jasonkuhrt/graphql-request)
 **Package:** graphql-request 7.4.0
-**Last Updated:** December 2025
+**Last Updated:** February 2026
 
 ---
 
@@ -221,13 +221,13 @@ const data = await client.request(query, variables)
 
 - **graphql-request Version:** 7.4.0
 - **GraphQL Peer Dependency:** 15.x, 16.x, or 17.x
-- **Node.js Support:** 18.x, 20.x, 21.x, 22.x (LTS + current)
-- **TypeScript:** 4.5+ (ES modules with bundler moduleResolution)
+- **Node.js Support:** 20.x, 22.x, 24.x (LTS + current)
+- **TypeScript:** 5.x+ (ES modules with bundler moduleResolution)
 - **Runtime Environments:** Node.js, Browser, React Native, Deno, Bun
 
 ---
 
 **Status:** ✅ Complete modular knowledge base aligned with official documentation
-**Generated:** December 2025
+**Generated:** February 2026
 **Total Modules:** 10 core modules
 **Optimization:** LLM-ready with efficient token usage per module

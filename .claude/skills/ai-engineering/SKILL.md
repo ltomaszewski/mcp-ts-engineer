@@ -1,5 +1,6 @@
 ---
 name: ai-engineering
+version: "SDK 0.2.x"
 description: AI engineering with Claude Agent SDK - agent architecture, orchestration, performance optimization, security hardening, production deployment. Use when building AI agents, designing multi-agent systems, optimizing cost/latency, or hardening agent security.
 ---
 
@@ -48,7 +49,9 @@ Load when user is:
 
 ---
 
-## Decision Framework: Architecture Selection
+## Core Patterns
+
+### Architecture Selection
 
 Choose the right pattern based on task characteristics:
 
@@ -519,4 +522,4 @@ Long-running agents degrade without context management:
 
 ---
 
-**SDK Version:** 0.2.x | **Node.js:** 18+ | **Models:** Claude 4.5 series
+**Version:** SDK ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

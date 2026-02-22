@@ -302,7 +302,7 @@ import { GraphQLClient } from 'graphql-request'
 
 describe('User API', () => {
   it('should fetch user', async () => {
-    const mockFetch = jest.fn()
+    const mockFetch = vi.fn()
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -369,7 +369,7 @@ describe('Error handling', () => {
   it('should retry on failure', async () => {
     let attempts = 0
 
-    const mockFetch = jest.fn(async () => {
+    const mockFetch = vi.fn(async () => {
       attempts++
       if (attempts < 2) {
         throw new Error('Network error')
@@ -560,4 +560,4 @@ const query = gql`{ user { id name } }`
 
 **Source:** [github.com/jasonkuhrt/graphql-request](https://github.com/jasonkuhrt/graphql-request)  
 **Package:** graphql-request 7.4.0  
-**Last Updated:** December 27, 2025
+**Last Updated:** February 2026

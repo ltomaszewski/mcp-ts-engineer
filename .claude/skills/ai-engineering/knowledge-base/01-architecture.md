@@ -390,3 +390,7 @@ const rateLimiter: HookCallback = async (input) => {
   return {};
 };
 ```
+
+---
+
+**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview
