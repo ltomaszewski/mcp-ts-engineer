@@ -8,7 +8,42 @@ import {
   CommentStepOutputSchema,
   COMMENT_OUTPUT_JSON_SCHEMA,
 } from "./pr-reviewer.schema.js";
-import type { CommentStepInput, CommentStepOutput } from "./pr-reviewer.schema.js";
+import type {
+  CommentStepInput,
+  CommentStepOutput,
+  ReviewIssue,
+  ReviewIssueData,
+} from "./pr-reviewer.schema.js";
+
+/**
+ * Map internal ReviewIssue to the public ReviewIssueData schema.
+ */
+function mapIssuesToData(issues: ReviewIssue[]): ReviewIssueData[] {
+  return issues.map((issue) => ({
+    file: issue.file_path,
+    line: issue.line ?? null,
+    severity: issue.severity,
+    category: issue.category ?? "",
+    title: issue.title,
+    description: issue.details,
+    suggestedFix: issue.suggestion ?? "",
+    autoFixable: issue.auto_fixable,
+  }));
+}
+
+/**
+ * Build the "Issues Data" JSON code block for downstream tools.
+ */
+function buildIssuesDataSection(issues: ReviewIssue[]): string {
+  const data = mapIssuesToData(issues);
+  return [
+    "### Issues Data",
+    "",
+    "```json",
+    JSON.stringify(data, null, 2),
+    "```",
+  ].join("\n");
+}
 
 /**
  * Build the approval comment body for zero-issues case.
@@ -24,6 +59,8 @@ function buildApprovalComment(data: CommentStepInput): string {
     `| Mode | ${data.mode} |`,
     `| Issues | 0 |`,
     `| Cost | $${data.cost_usd.toFixed(2)} |`,
+    "",
+    buildIssuesDataSection([]),
     "",
     "*Automated review by PR Reviewer*",
   ].join("\n");
@@ -83,6 +120,8 @@ function buildFullReportComment(data: CommentStepInput): string {
     );
   }
 
+  lines.push(buildIssuesDataSection(data.issues));
+  lines.push("");
   lines.push("*Automated review by PR Reviewer*");
   return lines.join("\n");
 }

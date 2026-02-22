@@ -56,6 +56,18 @@ export interface ReviewIssue {
   confidence: number;
 }
 
+/** Structured issue data for PR comments, consumed by downstream tools (e.g. pr_fixer). */
+export interface ReviewIssueData {
+  file: string;
+  line: number | null;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  category: string;
+  title: string;
+  description: string;
+  suggestedFix: string;
+  autoFixable: boolean;
+}
+
 /** Normalize AI-returned category values (underscores → hyphens). */
 const categoryEnum = z.preprocess(
   (v) => (typeof v === "string" ? v.replace(/_/g, "-") : v),
