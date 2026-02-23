@@ -30,7 +30,7 @@ describe("PrReviewerInputSchema", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.pr).toBe("123");
-        expect(result.data.mode).toBe("review-only"); // default
+        expect(result.data.mode).toBe("review-fix"); // default (review-only removed)
         expect(result.data.incremental).toBe(false); // default
       }
     });
@@ -45,15 +45,12 @@ describe("PrReviewerInputSchema", () => {
       }
     });
 
-    it("accepts review-only mode", () => {
+    it("rejects review-only mode (removed)", () => {
       const result = PrReviewerInputSchema.safeParse({
         pr: "789",
         mode: "review-only",
       });
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.mode).toBe("review-only");
-      }
+      expect(result.success).toBe(false);
     });
 
     it("accepts review-fix mode", () => {
@@ -156,6 +153,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 3,
         medium_count: 4,
         low_count: 2,
+        unfixed_medium_count: 1,
+        unfixed_auto_fixable_count: 0,
         comment_url: "https://github.com/owner/repo/pull/123#issuecomment-456",
         cost_usd: 4.25,
       });
@@ -171,6 +170,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 2,
         medium_count: 2,
         low_count: 1,
+        unfixed_medium_count: 2,
+        unfixed_auto_fixable_count: 1,
         comment_url: "https://github.com/owner/repo/pull/123#issuecomment-789",
         cost_usd: 3.5,
       });
@@ -186,6 +187,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 0,
         medium_count: 0,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "",
         cost_usd: 0.5,
       });
@@ -201,6 +204,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 1,
         medium_count: 2,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "https://github.com/owner/repo/pull/111#issuecomment-222",
         cost_usd: 5.0,
         worktree_path: ".worktrees/pr-111-review-1234567890",
@@ -220,6 +225,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 0,
         medium_count: 0,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "https://github.com/owner/repo/pull/333#issuecomment-444",
         cost_usd: 2.0,
       });
@@ -237,6 +244,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 0,
         medium_count: 0,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "",
         cost_usd: 1.0,
       });
@@ -260,6 +269,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 0,
         medium_count: 0,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "",
         cost_usd: 1.0,
       });
@@ -275,6 +286,8 @@ describe("PrReviewerOutputSchema", () => {
         high_count: 0,
         medium_count: 0,
         low_count: 0,
+        unfixed_medium_count: 0,
+        unfixed_auto_fixable_count: 0,
         comment_url: "",
         cost_usd: -2.5,
       });
