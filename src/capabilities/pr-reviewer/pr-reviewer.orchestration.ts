@@ -9,7 +9,9 @@
  * @internal Exported for unit testing and capability reuse
  */
 
-import type { CapabilityContext } from "../../core/capability-registry/capability-registry.types.js";
+import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { getProjectConfig } from '../../config/project-config.js'
+import { loadProjectContext } from './services/project-context-loader.js'
 import type {
   PrReviewerInput,
   PrReviewerOutput,
@@ -25,45 +27,47 @@ import type {
   TestStepOutput,
   CommitStepOutput,
   CommentStepOutput,
-} from "./pr-reviewer.schema.js";
+} from './pr-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
 // Review phases
 // ---------------------------------------------------------------------------
 
 export type ReviewPhase =
-  | "preflight"
-  | "context"
-  | "review"
-  | "aggregate"
-  | "validate"
-  | "fix"
-  | "cleanup"
-  | "test"
-  | "commit"
-  | "comment"
-  | "done";
+  | 'preflight'
+  | 'context'
+  | 'review'
+  | 'aggregate'
+  | 'validate'
+  | 'fix'
+  | 'cleanup'
+  | 'test'
+  | 'commit'
+  | 'comment'
+  | 'done'
 
 // ---------------------------------------------------------------------------
 // Review state (accumulated across phases)
 // ---------------------------------------------------------------------------
 
 export interface ReviewState {
-  prContext: PrContext | null;
-  worktreePath: string | null;
-  agentResults: ReviewStepOutput[];
-  mergedIssues: ReviewIssue[];
-  validatedIssues: ReviewIssue[];
-  autoFixableIssues: ReviewIssue[];
-  manualIssues: ReviewIssue[];
-  fixesApplied: number;
-  fixesFailed: number;
-  issuesFixed: string[];
-  testsPassed: boolean;
-  commitSha: string | null;
-  commentUrl: string;
-  budgetSpent: number;
-  phase: ReviewPhase;
+  prContext: PrContext | null
+  worktreePath: string | null
+  agentResults: ReviewStepOutput[]
+  mergedIssues: ReviewIssue[]
+  validatedIssues: ReviewIssue[]
+  autoFixableIssues: ReviewIssue[]
+  manualIssues: ReviewIssue[]
+  fixesApplied: number
+  fixesFailed: number
+  issuesFixed: string[]
+  testsPassed: boolean
+  commitSha: string | null
+  commentUrl: string
+  budgetSpent: number
+  phase: ReviewPhase
+  /** Project-specific context string assembled by ProjectContextLoader for prompt injection */
+  projectContextString: string
 }
 
 // ---------------------------------------------------------------------------
@@ -87,124 +91,112 @@ export function createInitialState(): ReviewState {
     issuesFixed: [],
     testsPassed: false,
     commitSha: null,
-    commentUrl: "",
+    commentUrl: '',
     budgetSpent: 0,
-    phase: "preflight",
-  };
+    phase: 'preflight',
+    projectContextString: '',
+  }
 }
 
 /**
- * Get default budget for a given mode.
- * - review-only: $5
- * - review-fix: $10
+ * Get default budget. Always $10 (review-fix is the only mode).
  */
-export function getDefaultBudget(mode: string): number {
-  return mode === "review-only" ? 5 : 10;
+export function getDefaultBudget(_mode: string): number {
+  return 10
 }
 
 /**
  * Determine if the budget has been exceeded.
  */
-export function isOverBudget(
-  state: ReviewState,
-  budgetLimit: number,
-): boolean {
-  return state.budgetSpent >= budgetLimit;
+export function isOverBudget(state: ReviewState, budgetLimit: number): boolean {
+  return state.budgetSpent >= budgetLimit
 }
 
 /**
  * Count issues by severity.
  */
 export function countBySeverity(issues: ReviewIssue[]): {
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
+  critical: number
+  high: number
+  medium: number
+  low: number
 } {
   return issues.reduce(
     (acc, issue) => {
-      if (issue.severity === "CRITICAL") acc.critical++;
-      else if (issue.severity === "HIGH") acc.high++;
-      else if (issue.severity === "MEDIUM") acc.medium++;
-      else if (issue.severity === "LOW") acc.low++;
-      return acc;
+      if (issue.severity === 'CRITICAL') acc.critical++
+      else if (issue.severity === 'HIGH') acc.high++
+      else if (issue.severity === 'MEDIUM') acc.medium++
+      else if (issue.severity === 'LOW') acc.low++
+      return acc
     },
     { critical: 0, high: 0, medium: 0, low: 0 },
-  );
+  )
 }
 
 /**
- * Determine if a phase should be skipped based on mode and state.
+ * Determine if a phase should be skipped based on state.
+ * Mode is no longer used — skip logic is driven entirely by state.
  */
-export function shouldSkipPhase(
-  phase: ReviewPhase,
-  state: ReviewState,
-  mode: string,
-): boolean {
+export function shouldSkipPhase(phase: ReviewPhase, state: ReviewState, _mode: string): boolean {
   switch (phase) {
-    case "fix":
-      // Skip if review-only mode OR no auto-fixable issues
-      return mode === "review-only" || state.autoFixableIssues.length === 0;
+    case 'fix':
+      // Skip if no auto-fixable issues
+      return state.autoFixableIssues.length === 0
 
-    case "cleanup":
-      // Skip if review-only mode
-      return mode === "review-only";
+    case 'cleanup':
+      // Skip if no fixable issues existed
+      return state.autoFixableIssues.length === 0
 
-    case "test":
-      // Skip if review-only mode OR no fixes were applied
-      return mode === "review-only" || state.fixesApplied === 0;
+    case 'test':
+      // Skip if no fixes were applied
+      return state.fixesApplied === 0
 
-    case "commit":
-      // Skip if review-only mode OR no fixes were applied
-      return mode === "review-only" || state.fixesApplied === 0;
+    case 'commit':
+      // Skip if no fixes were applied
+      return state.fixesApplied === 0
 
     default:
-      return false;
+      return false
   }
 }
 
 /**
- * Get the next phase based on current phase, mode, and state.
+ * Get the next phase based on current phase and state.
  *
  * Phase flow:
- * - Review-only: preflight → context → review → aggregate → validate → comment → done
- * - Review-fix: preflight → context → review → aggregate → validate → fix → cleanup → test → commit → comment → done
- * - Skips fix/cleanup/test/commit if no auto-fixable issues
+ * - preflight → context → review → aggregate → validate → fix → cleanup → test → commit → comment → done
+ * - Skips fix/cleanup/test/commit if no auto-fixable issues or no fixes applied
  * - Worktree cleanup runs via catch/finally in runOrchestration (not as a phase)
  */
-export function getNextPhase(
-  current: ReviewPhase,
-  mode: string,
-  state: ReviewState,
-): ReviewPhase {
+export function getNextPhase(current: ReviewPhase, mode: string, state: ReviewState): ReviewPhase {
   const phaseOrder: ReviewPhase[] = [
-    "preflight",
-    "context",
-    "review",
-    "aggregate",
-    "validate",
-    "fix",
-    "cleanup",
-    "test",
-    "commit",
-    "comment",
-    "done",
-  ];
+    'preflight',
+    'context',
+    'review',
+    'aggregate',
+    'validate',
+    'fix',
+    'cleanup',
+    'test',
+    'commit',
+    'comment',
+    'done',
+  ]
 
-  const currentIndex = phaseOrder.indexOf(current);
+  const currentIndex = phaseOrder.indexOf(current)
   if (currentIndex === -1 || currentIndex === phaseOrder.length - 1) {
-    return "done";
+    return 'done'
   }
 
   // Find next non-skipped phase
   for (let i = currentIndex + 1; i < phaseOrder.length; i++) {
-    const nextPhase = phaseOrder[i];
+    const nextPhase = phaseOrder[i]
     if (!shouldSkipPhase(nextPhase, state, mode)) {
-      return nextPhase;
+      return nextPhase
     }
   }
 
-  return "done";
+  return 'done'
 }
 
 // ---------------------------------------------------------------------------
@@ -228,49 +220,49 @@ export async function runOrchestration(
   input: PrReviewerInput,
   context: CapabilityContext,
 ): Promise<PrReviewerOutput> {
-  const state = createInitialState();
-  const budgetLimit = input.budget ?? getDefaultBudget(input.mode);
+  const state = createInitialState()
+  const budgetLimit = input.budget ?? getDefaultBudget(input.mode)
 
   try {
-    while (state.phase !== "done") {
+    while (state.phase !== 'done') {
       // Budget check before each phase
       if (isOverBudget(state, budgetLimit)) {
-        context.logger.warn("Budget exceeded, stopping early", {
+        context.logger.warn('Budget exceeded, stopping early', {
           budgetSpent: state.budgetSpent,
           budgetLimit,
           phase: state.phase,
-        });
-        break;
+        })
+        break
       }
 
       // Execute current phase
-      await executePhase(state, input, context);
+      await executePhase(state, input, context)
 
       // Sync budget from real session cost (covers all sub-capability AI calls)
-      state.budgetSpent = context.getSessionCost().totalCostUsd;
+      state.budgetSpent = context.getSessionCost().totalCostUsd
 
       // Move to next phase
-      state.phase = getNextPhase(state.phase, input.mode, state);
+      state.phase = getNextPhase(state.phase, input.mode, state)
     }
   } catch (error) {
-    context.logger.error("Orchestration error", {
+    context.logger.error('Orchestration error', {
       error: error instanceof Error ? error.message : String(error),
-      errorName: error instanceof Error ? error.name : "Error",
+      errorName: error instanceof Error ? error.name : 'Error',
       phase: state.phase,
-    });
+    })
     // Always run revert to cleanup worktree
     if (state.worktreePath) {
-      await cleanupWorktree(state, context);
+      await cleanupWorktree(state, context)
     }
-    throw error;
+    throw error
   }
 
   // Always run revert at the end
   if (state.worktreePath) {
-    await cleanupWorktree(state, context);
+    await cleanupWorktree(state, context)
   }
 
-  return buildOutput(state);
+  return buildOutput(state)
 }
 
 /**
@@ -281,51 +273,57 @@ async function executePhase(
   input: PrReviewerInput,
   context: CapabilityContext,
 ): Promise<void> {
-  context.logger.info(`Executing phase: ${state.phase}`);
+  context.logger.info(`Executing phase: ${state.phase}`)
 
   switch (state.phase) {
-    case "preflight":
-      await executePreflight(state, input, context);
-      break;
+    case 'preflight':
+      await executePreflight(state, input, context)
+      break
 
-    case "context":
-      await executeContext(state, input, context);
-      break;
+    case 'context':
+      await executeContext(state, input, context)
+      break
 
-    case "review":
-      await executeReview(state, input, context);
-      break;
+    case 'review':
+      await executeReview(state, input, context)
+      break
 
-    case "aggregate":
-      await executeAggregate(state, context);
-      break;
+    case 'aggregate':
+      await executeAggregate(state, context)
+      break
 
-    case "validate":
-      await executeValidate(state, context);
-      break;
+    case 'validate':
+      await executeValidate(state, context)
+      break
 
-    case "fix":
-      await executeFix(state, input, context, state.budgetSpent, input.budget ?? getDefaultBudget(input.mode));
-      break;
+    case 'fix':
+      await executeFix(
+        state,
+        input,
+        context,
+        state.budgetSpent,
+        input.budget ?? getDefaultBudget(input.mode),
+      )
+      break
 
-    case "cleanup":
-      await executeCleanup(state, context);
-      break;
+    case 'cleanup':
+      await executeCleanup(state, context)
+      break
 
-    case "test":
-      await executeTest(state, context);
-      break;
+    case 'test':
+      await executeTest(state, context)
+      break
 
-    case "commit":
-      await executeCommit(state, context);
-      break;
+    case 'commit':
+      await executeCommit(state, context)
+      break
 
-    case "comment":
-      await executeComment(state, input, context);
-      break;
+    case 'comment':
+      await executeComment(state, input, context)
+      break
 
     default:
-      context.logger.warn(`Unknown phase: ${state.phase}`);
+      context.logger.warn(`Unknown phase: ${state.phase}`)
   }
 }
 
@@ -337,18 +335,16 @@ async function executePreflight(
   input: PrReviewerInput,
   context: CapabilityContext,
 ): Promise<void> {
-  const result = (await context.invokeCapability("pr_preflight_step", {
+  const result = (await context.invokeCapability('pr_preflight_step', {
     pr: input.pr,
     incremental: input.incremental,
-  })) as PreflightStepOutput;
+  })) as PreflightStepOutput
 
   if (!result.proceed || !result.pr_context) {
-    throw new Error(
-      `Preflight check failed: ${result.skip_reason ?? "Unknown reason"}`,
-    );
+    throw new Error(`Preflight check failed: ${result.skip_reason ?? 'Unknown reason'}`)
   }
 
-  state.prContext = result.pr_context;
+  state.prContext = result.pr_context
 }
 
 /**
@@ -362,31 +358,31 @@ async function executeContext(
   context: CapabilityContext,
 ): Promise<void> {
   if (!state.prContext) {
-    throw new Error("PR context not available");
+    throw new Error('PR context not available')
   }
 
-  const result = (await context.invokeCapability("pr_context_step", {
+  const result = (await context.invokeCapability('pr_context_step', {
     pr_context: state.prContext,
-  })) as ContextStepOutput;
+  })) as ContextStepOutput
 
-  state.worktreePath = result.worktree_path;
+  state.worktreePath = result.worktree_path
 
   if (!state.worktreePath) {
-    throw new Error("Context step returned empty worktree_path");
+    throw new Error('Context step returned empty worktree_path')
   }
 
   // Merge context step output back into prContext.
   // The preflight step collects PR metadata; the context step fetches the actual diff.
   if (result.diff_content) {
-    state.prContext = { ...state.prContext, diff_content: result.diff_content };
+    state.prContext = { ...state.prContext, diff_content: result.diff_content }
   }
   if (result.files_changed && result.files_changed.length > 0) {
-    state.prContext = { ...state.prContext, files_changed: result.files_changed };
+    state.prContext = { ...state.prContext, files_changed: result.files_changed }
   }
 }
 
 /**
- * Review phase: Run parallel agent reviews.
+ * Review phase: Run parallel agent reviews with project context injection.
  */
 async function executeReview(
   state: ReviewState,
@@ -394,51 +390,50 @@ async function executeReview(
   context: CapabilityContext,
 ): Promise<void> {
   if (!state.prContext || !state.worktreePath) {
-    throw new Error("PR context or worktree not available");
+    throw new Error('PR context or worktree not available')
   }
 
-  const result = (await context.invokeCapability("pr_review_step", {
+  // Load project context for prompt injection
+  const contextResult = await loadProjectContext(getProjectConfig(), state.prContext.files_changed)
+  state.projectContextString = contextResult.context
+
+  const result = (await context.invokeCapability('pr_review_step', {
     pr_context: state.prContext,
     diff_content: state.prContext.diff_content,
     worktree_path: state.worktreePath,
-  })) as ReviewStepOutput[];
+    project_context: state.projectContextString,
+  })) as ReviewStepOutput[]
 
-  state.agentResults = Array.isArray(result) ? result : [result];
+  state.agentResults = Array.isArray(result) ? result : [result]
 }
 
 /**
  * Aggregate phase: Merge and deduplicate issues.
  */
-async function executeAggregate(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
-  const result = (await context.invokeCapability("pr_aggregate_step", {
+async function executeAggregate(state: ReviewState, context: CapabilityContext): Promise<void> {
+  const result = (await context.invokeCapability('pr_aggregate_step', {
     agent_results: state.agentResults,
-  })) as AggregateStepOutput;
+  })) as AggregateStepOutput
 
-  state.mergedIssues = result.issues;
+  state.mergedIssues = result.issues
 }
 
 /**
  * Validate phase: Filter and categorize issues.
  */
-async function executeValidate(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
-  const result = (await context.invokeCapability("pr_validate_step", {
+async function executeValidate(state: ReviewState, context: CapabilityContext): Promise<void> {
+  const result = (await context.invokeCapability('pr_validate_step', {
     issues: state.mergedIssues,
     agent_results: state.agentResults,
-  })) as ValidateStepOutput;
+  })) as ValidateStepOutput
 
-  state.validatedIssues = result.issues;
-  state.autoFixableIssues = result.auto_fixable;
-  state.manualIssues = result.manual;
+  state.validatedIssues = result.issues
+  state.autoFixableIssues = result.auto_fixable
+  state.manualIssues = result.manual
 }
 
 /**
- * Fix phase: Apply automatic fixes.
+ * Fix phase: Apply automatic fixes with project context.
  */
 async function executeFix(
   state: ReviewState,
@@ -448,83 +443,75 @@ async function executeFix(
   budgetLimit: number,
 ): Promise<void> {
   if (!state.worktreePath) {
-    throw new Error("Worktree not available");
+    throw new Error('Worktree not available')
   }
 
-  const budgetRemaining = budgetLimit - budgetSpent;
+  const budgetRemaining = budgetLimit - budgetSpent
 
-  const result = (await context.invokeCapability("pr_fix_step", {
+  const result = (await context.invokeCapability('pr_fix_step', {
     issues: state.autoFixableIssues,
     worktree_path: state.worktreePath,
     budget_remaining: budgetRemaining,
-  })) as FixStepOutput;
+    project_context: state.projectContextString,
+  })) as FixStepOutput
 
-  state.fixesApplied = result.fixes_applied;
-  state.fixesFailed = result.fixes_failed;
-  state.issuesFixed = result.issues_fixed;
+  state.fixesApplied = result.fixes_applied
+  state.fixesFailed = result.fixes_failed
+  state.issuesFixed = result.issues_fixed
   // Note: budgetSpent is synced from session cost after each phase in runOrchestration
 }
 
 /**
  * Cleanup phase: Remove unused exports, verify types.
  */
-async function executeCleanup(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
+async function executeCleanup(state: ReviewState, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath) {
-    throw new Error("Worktree not available");
+    throw new Error('Worktree not available')
   }
 
-  await context.invokeCapability("pr_cleanup_step", {
+  ;(await context.invokeCapability('pr_cleanup_step', {
     worktree_path: state.worktreePath,
     files_changed: state.prContext?.files_changed ?? [],
-  }) as CleanupStepOutput;
+  })) as CleanupStepOutput
 }
 
 /**
  * Test phase: Run tests for changed files.
  */
-async function executeTest(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
+async function executeTest(state: ReviewState, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath || !state.prContext) {
-    throw new Error("Worktree or PR context not available");
+    throw new Error('Worktree or PR context not available')
   }
 
-  const result = (await context.invokeCapability("pr_test_step", {
+  const result = (await context.invokeCapability('pr_test_step', {
     worktree_path: state.worktreePath,
     files_changed: state.prContext.files_changed,
-  })) as TestStepOutput;
+  })) as TestStepOutput
 
-  state.testsPassed = result.tests_passed;
+  state.testsPassed = result.tests_passed
 }
 
 /**
  * Commit phase: Commit and push fixes.
  */
-async function executeCommit(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
+async function executeCommit(state: ReviewState, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath || !state.prContext) {
-    throw new Error("Worktree or PR context not available");
+    throw new Error('Worktree or PR context not available')
   }
 
-  const result = (await context.invokeCapability("pr_commit_step", {
+  const result = (await context.invokeCapability('pr_commit_step', {
     worktree_path: state.worktreePath,
     pr_branch: state.prContext.pr_branch,
     fixes_applied: state.fixesApplied,
-  })) as CommitStepOutput;
+  })) as CommitStepOutput
 
   if (result.committed && result.commit_sha) {
-    state.commitSha = result.commit_sha;
+    state.commitSha = result.commit_sha
   }
 }
 
 /**
- * Comment phase: Post review comment to PR.
+ * Comment phase: Post review comment to PR with unfixed issue counts.
  */
 async function executeComment(
   state: ReviewState,
@@ -532,57 +519,79 @@ async function executeComment(
   context: CapabilityContext,
 ): Promise<void> {
   if (!state.prContext) {
-    throw new Error("PR context not available");
+    throw new Error('PR context not available')
   }
 
-  const result = (await context.invokeCapability("pr_comment_step", {
+  // Calculate unfixed counts for escalation logic in comment step
+  const unfixedMediumCount = state.validatedIssues.filter(
+    (issue) => issue.severity === 'MEDIUM' && !state.issuesFixed.includes(issue.title),
+  ).length
+  const unfixedAutoFixableCount = state.autoFixableIssues.filter(
+    (issue) => !state.issuesFixed.includes(issue.title),
+  ).length
+
+  const result = (await context.invokeCapability('pr_comment_step', {
     pr_context: state.prContext,
     issues: state.validatedIssues,
     fixes_applied: state.fixesApplied,
     cost_usd: state.budgetSpent,
     mode: input.mode,
     incremental: input.incremental,
-  })) as CommentStepOutput;
+    unfixed_medium_count: unfixedMediumCount,
+    unfixed_auto_fixable_count: unfixedAutoFixableCount,
+  })) as CommentStepOutput
 
-  state.commentUrl = result.comment_url;
+  state.commentUrl = result.comment_url
 }
 
 /**
  * Cleanup worktree helper.
  */
-async function cleanupWorktree(
-  state: ReviewState,
-  context: CapabilityContext,
-): Promise<void> {
+async function cleanupWorktree(state: ReviewState, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath) {
-    return;
+    return
   }
 
   try {
-    await context.invokeCapability("pr_revert_step", {
+    await context.invokeCapability('pr_revert_step', {
       worktree_path: state.worktreePath,
-    });
+    })
   } catch (error) {
-    context.logger.warn("Worktree cleanup failed", {
+    context.logger.warn('Worktree cleanup failed', {
       error: error instanceof Error ? error.message : String(error),
-    });
+    })
   }
 }
 
 /**
  * Build final output from accumulated state.
+ * Applies auto-fix enforcement and MEDIUM escalation logic.
  */
-function buildOutput(state: ReviewState): PrReviewerOutput {
-  const counts = countBySeverity(state.validatedIssues);
+export function buildOutput(state: ReviewState): PrReviewerOutput {
+  const counts = countBySeverity(state.validatedIssues)
 
-  // Determine status
-  let status: "success" | "partial" | "failed";
+  // Calculate unfixed auto-fixable and medium counts
+  const unfixedAutoFixable = state.autoFixableIssues.filter(
+    (issue) => !state.issuesFixed.includes(issue.title),
+  ).length
+  const unfixedMediums = state.validatedIssues.filter(
+    (issue) => issue.severity === 'MEDIUM' && !state.issuesFixed.includes(issue.title),
+  ).length
+
+  // Determine status with auto-fix enforcement and MEDIUM escalation
+  let status: 'success' | 'partial' | 'failed'
   if (counts.critical > 0) {
-    status = "failed";
+    status = 'failed'
   } else if (counts.high > 0 && state.fixesApplied === 0) {
-    status = "partial";
+    status = 'partial'
+  } else if (unfixedAutoFixable > 0) {
+    // Any auto-fixable issue left unfixed escalates to partial
+    status = 'partial'
+  } else if (unfixedMediums >= 3) {
+    // 3+ unfixed MEDIUMs escalate to partial
+    status = 'partial'
   } else {
-    status = "success";
+    status = 'success'
   }
 
   return {
@@ -593,8 +602,10 @@ function buildOutput(state: ReviewState): PrReviewerOutput {
     high_count: counts.high,
     medium_count: counts.medium,
     low_count: counts.low,
+    unfixed_medium_count: unfixedMediums,
+    unfixed_auto_fixable_count: unfixedAutoFixable,
     comment_url: state.commentUrl,
     cost_usd: state.budgetSpent,
     worktree_path: state.worktreePath ?? undefined,
-  };
+  }
 }

@@ -3,30 +3,33 @@
  * Public MCP tool that resolves pr_reviewer findings via the spec pipeline.
  */
 
-import type { CapabilityDefinition, CapabilityContext } from "../../core/capability-registry/capability-registry.types.js";
-import type { AIQueryResult } from "../../core/ai-provider/ai-provider.types.js";
-import type { PromptRegistry, PromptVersion } from "../../core/prompt/prompt.types.js";
-import { parseJsonSafe } from "../../core/utils/index.js";
-import { getProjectConfig } from "../../config/project-config.js";
+import type {
+  CapabilityDefinition,
+  CapabilityContext,
+} from '../../core/capability-registry/capability-registry.types.js'
+import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
+import { parseJsonSafe } from '../../core/utils/index.js'
+import { getProjectConfig } from '../../config/project-config.js'
 import {
   PrFixerInputSchema,
   PrFixerOutputSchema,
   PR_FIXER_OUTPUT_FALLBACK,
   PR_FIXER_OUTPUT_JSON_SCHEMA,
-} from "./pr-fixer.schema.js";
-import type { PrFixerInput, PrFixerOutput } from "./pr-fixer.schema.js";
+} from './pr-fixer.schema.js'
+import type { PrFixerInput, PrFixerOutput } from './pr-fixer.schema.js'
 
 const PR_FIXER_PROMPT_V1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-22",
-  description: "PR fixer orchestration prompt",
+  version: 'v1',
+  createdAt: '2026-02-22',
+  description: 'PR fixer orchestration prompt',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const data = input as { prNumber: number; repoOwner: string; repoName: string };
+    const data = input as { prNumber: number; repoOwner: string; repoName: string }
 
     return {
-      systemPrompt: { type: "preset" as const, preset: "claude_code" as const },
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
       userPrompt: `# PR Fixer Pipeline
 
 You must fix the manual review issues found by pr_reviewer on PR #${data.prNumber} in ${data.repoOwner}/${data.repoName}.
@@ -44,9 +47,9 @@ If no comment with "Issues Data" is found, return:
 \`\`\`
 
 ### Step 2: Parse the Issues Data JSON block
-Extract the JSON array from the \`### Issues Data\` section. Filter to only issues where \`autoFixable\` is \`false\`. These are the manual issues to fix.
+Extract the JSON array from the \`### Issues Data\` section. Filter to all issues with severity other than LOW. Since the reviewer always attempts auto-fixes, any remaining issue is unfixed regardless of its original autoFixable classification.
 
-If no manual issues found, return:
+If no unfixed issues found, return:
 \`\`\`json
 {"status": "nothing_to_fix", "issues_input": 0, "issues_resolved": 0, "spec_path": "", "files_changed": [], "cost_usd": 0}
 \`\`\`
@@ -80,7 +83,7 @@ Get the PR branch name: \`gh pr view ${data.prNumber} --repo ${data.repoOwner}/$
 Push the commits: \`git push origin <branch-name>\`
 
 ### Step 8: Re-run pr_reviewer
-Use the MCP tool \`pr_reviewer\` with \`pr="${data.prNumber}"\` and \`mode="review-only"\`.
+Use the MCP tool \`pr_reviewer\` with \`pr="${data.prNumber}"\`.
 Compare the new issue count with the original to determine resolution.
 
 ### Step 9: Return result
@@ -103,53 +106,50 @@ Return a JSON object:
 IMPORTANT: Execute each step sequentially. Do NOT parallelize. Report progress after each step.
 
 Begin now.`,
-    };
+    }
   },
-};
+}
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: PR_FIXER_PROMPT_V1 };
-const CURRENT_VERSION = "v1";
+const PROMPT_VERSIONS: PromptRegistry = { v1: PR_FIXER_PROMPT_V1 }
+const CURRENT_VERSION = 'v1'
 
-export const prFixerCapability: CapabilityDefinition<
-  PrFixerInput,
-  PrFixerOutput
-> = {
-  id: "pr_fixer",
-  type: "tool",
-  visibility: "public",
-  name: "PR Fixer",
+export const prFixerCapability: CapabilityDefinition<PrFixerInput, PrFixerOutput> = {
+  id: 'pr_fixer',
+  type: 'tool',
+  visibility: 'public',
+  name: 'PR Fixer',
   description:
-    "Resolves manual pr_reviewer findings by generating a todo spec and running the spec pipeline " +
-    "(review -> implement -> finalize). Pushes fixes to the PR branch and re-runs review to verify.",
+    'Resolves manual pr_reviewer findings by generating a todo spec and running the spec pipeline ' +
+    '(review -> implement -> finalize). Pushes fixes to the PR branch and re-runs review to verify.',
   inputSchema: PrFixerInputSchema,
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "sonnet",
+    model: 'sonnet',
     maxTurns: 200,
     maxBudgetUsd: 20.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
     outputSchema: PR_FIXER_OUTPUT_JSON_SCHEMA,
   },
 
   preparePromptInput: (input: PrFixerInput, _context: CapabilityContext) => {
-    let prNumber: number;
-    if (input.pr.includes("github.com")) {
-      const match = input.pr.match(/\/pull\/(\d+)/);
-      prNumber = match ? parseInt(match[1]!, 10) : parseInt(input.pr, 10);
+    let prNumber: number
+    if (input.pr.includes('github.com')) {
+      const match = input.pr.match(/\/pull\/(\d+)/)
+      prNumber = match ? parseInt(match[1]!, 10) : parseInt(input.pr, 10)
     } else {
-      prNumber = parseInt(input.pr, 10);
+      prNumber = parseInt(input.pr, 10)
     }
 
-    const config = getProjectConfig();
+    const config = getProjectConfig()
     return {
       prNumber,
-      repoOwner: config.repoOwner || "",
-      repoName: config.repoName || "",
-    };
+      repoOwner: config.repoOwner || '',
+      repoName: config.repoName || '',
+    }
   },
 
   processResult: (
@@ -159,15 +159,15 @@ export const prFixerCapability: CapabilityDefinition<
   ): PrFixerOutput => {
     // Strategy 1: SDK structured output
     if (aiResult.structuredOutput) {
-      const validated = PrFixerOutputSchema.safeParse(aiResult.structuredOutput);
-      if (validated.success) return validated.data;
+      const validated = PrFixerOutputSchema.safeParse(aiResult.structuredOutput)
+      if (validated.success) return validated.data
     }
 
     // Strategy 2: Parse from content
     const fallback: PrFixerOutput = {
       ...PR_FIXER_OUTPUT_FALLBACK,
       cost_usd: context.getSessionCost().totalCostUsd,
-    };
-    return parseJsonSafe(aiResult.content, PrFixerOutputSchema, fallback);
+    }
+    return parseJsonSafe(aiResult.content, PrFixerOutputSchema, fallback)
   },
-};
+}

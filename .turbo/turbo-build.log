@@ -1,4 +1,4 @@
 
-> @bastion/mcp-software-house@1.0.0 build
-> rm -rf build && tsc
+> @shared/mcp-ts-engineer@1.0.0 build
+> rm -rf build && tsc -p tsconfig.build.json
 

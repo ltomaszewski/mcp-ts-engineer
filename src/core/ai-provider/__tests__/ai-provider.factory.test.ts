@@ -110,7 +110,7 @@ describe("AI Provider Factory", () => {
 
       try {
         createAIProvider({ name: "invalid" });
-        fail("Should have thrown error");
+        throw new Error("Should have thrown error");
       } catch (error) {
         expect(error).toBeInstanceOf(ConfigError);
         const message = (error as Error).message;

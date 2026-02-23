@@ -10,10 +10,27 @@ import {
   countBySeverity,
   shouldSkipPhase,
   getNextPhase,
+  buildOutput,
   type ReviewPhase,
   type ReviewState,
 } from "../pr-reviewer.orchestration.js";
 import type { ReviewIssue } from "../pr-reviewer.schema.js";
+
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
+function makeIssue(
+  severity: ReviewIssue["severity"],
+  title: string,
+  auto_fixable = false,
+): ReviewIssue {
+  return { severity, title, file_path: "f", details: "d", auto_fixable, confidence: 80 };
+}
+
+// ---------------------------------------------------------------------------
+// createInitialState
+// ---------------------------------------------------------------------------
 
 describe("createInitialState", () => {
   it("returns state with all fields initialized", () => {
@@ -30,17 +47,28 @@ describe("createInitialState", () => {
     expect(state.budgetSpent).toBe(0);
     expect(state.commentUrl).toBe("");
   });
+
+  it("AC-7: initializes projectContextString as empty string", () => {
+    const state = createInitialState();
+    expect(state.projectContextString).toBe("");
+  });
 });
+
+// ---------------------------------------------------------------------------
+// getDefaultBudget
+// ---------------------------------------------------------------------------
 
 describe("getDefaultBudget", () => {
-  it("returns $5 for review-only", () => {
-    expect(getDefaultBudget("review-only")).toBe(5);
-  });
-
-  it("returns $10 for review-fix", () => {
+  it("always returns $10 regardless of mode", () => {
     expect(getDefaultBudget("review-fix")).toBe(10);
+    expect(getDefaultBudget("review-only")).toBe(10);
+    expect(getDefaultBudget("any-other")).toBe(10);
   });
 });
+
+// ---------------------------------------------------------------------------
+// isOverBudget
+// ---------------------------------------------------------------------------
 
 describe("isOverBudget", () => {
   it("returns true when spent >= limit", () => {
@@ -53,6 +81,10 @@ describe("isOverBudget", () => {
     expect(isOverBudget(state, 5)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// countBySeverity
+// ---------------------------------------------------------------------------
 
 describe("countBySeverity", () => {
   it("counts issues by severity", () => {
@@ -71,15 +103,95 @@ describe("countBySeverity", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// shouldSkipPhase — state-based, mode no longer drives skip logic
+// ---------------------------------------------------------------------------
+
+describe("shouldSkipPhase", () => {
+  const baseState = createInitialState();
+
+  describe("fix phase", () => {
+    it("skips when no auto-fixable issues exist", () => {
+      expect(shouldSkipPhase("fix", baseState, "review-fix")).toBe(true);
+    });
+
+    it("does not skip when auto-fixable issues exist", () => {
+      const state: ReviewState = {
+        ...baseState,
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
+      };
+      expect(shouldSkipPhase("fix", state, "review-fix")).toBe(false);
+    });
+
+    it("does not skip based on mode alone when auto-fixable issues exist", () => {
+      const state: ReviewState = {
+        ...baseState,
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
+      };
+      // Mode does not affect fix skip logic anymore
+      expect(shouldSkipPhase("fix", state, "review-only")).toBe(false);
+    });
+  });
+
+  describe("cleanup phase", () => {
+    it("skips when no auto-fixable issues existed", () => {
+      expect(shouldSkipPhase("cleanup", baseState, "review-fix")).toBe(true);
+    });
+
+    it("does not skip when auto-fixable issues existed", () => {
+      const state: ReviewState = {
+        ...baseState,
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
+      };
+      expect(shouldSkipPhase("cleanup", state, "review-fix")).toBe(false);
+    });
+  });
+
+  describe("test phase", () => {
+    it("skips when no fixes were applied", () => {
+      expect(shouldSkipPhase("test", baseState, "review-fix")).toBe(true);
+    });
+
+    it("does not skip when fixes were applied", () => {
+      const state: ReviewState = { ...baseState, fixesApplied: 1 };
+      expect(shouldSkipPhase("test", state, "review-fix")).toBe(false);
+    });
+  });
+
+  describe("commit phase", () => {
+    it("skips when no fixes were applied", () => {
+      expect(shouldSkipPhase("commit", baseState, "review-fix")).toBe(true);
+    });
+
+    it("does not skip when fixes were applied", () => {
+      const state: ReviewState = { ...baseState, fixesApplied: 2 };
+      expect(shouldSkipPhase("commit", state, "review-fix")).toBe(false);
+    });
+  });
+
+  describe("other phases", () => {
+    it("does not skip comment phase", () => {
+      expect(shouldSkipPhase("comment", baseState, "review-fix")).toBe(false);
+    });
+
+    it("does not skip review phase", () => {
+      expect(shouldSkipPhase("review", baseState, "review-fix")).toBe(false);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getNextPhase
+// ---------------------------------------------------------------------------
+
 describe("getNextPhase", () => {
   const baseState = createInitialState();
 
   describe("phase order", () => {
     it("does not include revert phase", () => {
-      // Walk through ALL phases in review-fix mode with auto-fixable issues
       const stateWithFixes: ReviewState = {
         ...baseState,
-        autoFixableIssues: [{ severity: "LOW", title: "t", file_path: "f", details: "d", auto_fixable: true, confidence: 70 }],
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
         fixesApplied: 1,
       };
       const visitedPhases: ReviewPhase[] = ["preflight"];
@@ -91,24 +203,23 @@ describe("getNextPhase", () => {
       expect(visitedPhases).not.toContain("revert");
     });
 
-    it("ends with done for review-only", () => {
+    it("ends with done", () => {
       const visitedPhases: ReviewPhase[] = ["preflight"];
       let current: ReviewPhase = "preflight";
       while (current !== "done") {
-        current = getNextPhase(current, "review-only", baseState);
+        current = getNextPhase(current, "review-fix", baseState);
         visitedPhases.push(current);
       }
       expect(visitedPhases[visitedPhases.length - 1]).toBe("done");
-      expect(visitedPhases).not.toContain("revert");
     });
   });
 
-  describe("review-only mode", () => {
-    it("skips fix/cleanup/test/commit phases", () => {
+  describe("state-based phase skipping", () => {
+    it("skips fix/cleanup/test/commit when no auto-fixable issues and no fixes", () => {
       const phases: ReviewPhase[] = [];
       let current: ReviewPhase = "preflight";
       while (current !== "done") {
-        current = getNextPhase(current, "review-only", baseState);
+        current = getNextPhase(current, "review-fix", baseState);
         phases.push(current);
       }
       expect(phases).not.toContain("fix");
@@ -117,22 +228,10 @@ describe("getNextPhase", () => {
       expect(phases).not.toContain("commit");
     });
 
-    it("follows preflight → context → review → aggregate → validate → comment → done", () => {
-      const phases: ReviewPhase[] = [];
-      let current: ReviewPhase = "preflight";
-      while (current !== "done") {
-        current = getNextPhase(current, "review-only", baseState);
-        phases.push(current);
-      }
-      expect(phases).toEqual(["context", "review", "aggregate", "validate", "comment", "done"]);
-    });
-  });
-
-  describe("review-fix mode", () => {
-    it("includes fix phase when auto-fixable issues exist", () => {
+    it("includes fix/cleanup/test/commit when auto-fixable issues exist and fixes applied", () => {
       const stateWithFixes: ReviewState = {
         ...baseState,
-        autoFixableIssues: [{ severity: "LOW", title: "t", file_path: "f", details: "d", auto_fixable: true, confidence: 70 }],
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
         fixesApplied: 1,
       };
       const phases: ReviewPhase[] = [];
@@ -149,18 +248,103 @@ describe("getNextPhase", () => {
   });
 });
 
-describe("shouldSkipPhase", () => {
-  const baseState = createInitialState();
+// ---------------------------------------------------------------------------
+// buildOutput — AC-7: auto-fix enforcement and MEDIUM escalation
+// ---------------------------------------------------------------------------
 
-  it("skips fix in review-only mode", () => {
-    expect(shouldSkipPhase("fix", baseState, "review-only")).toBe(true);
+describe("buildOutput", () => {
+  it("returns failed status when critical issues exist", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [makeIssue("CRITICAL", "crit-1")],
+    };
+    expect(buildOutput(state).status).toBe("failed");
   });
 
-  it("skips cleanup in review-only mode", () => {
-    expect(shouldSkipPhase("cleanup", baseState, "review-only")).toBe(true);
+  it("returns partial when HIGH issues exist and no fixes applied", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [makeIssue("HIGH", "high-1")],
+      fixesApplied: 0,
+    };
+    expect(buildOutput(state).status).toBe("partial");
   });
 
-  it("does not skip comment phase", () => {
-    expect(shouldSkipPhase("comment", baseState, "review-only")).toBe(false);
+  it("AC-7: returns partial when 1 unfixed auto-fixable issue exists", () => {
+    const issue = makeIssue("MEDIUM", "auto-fix-1", true);
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [issue],
+      autoFixableIssues: [issue],
+      issuesFixed: [], // not fixed
+    };
+    expect(buildOutput(state).status).toBe("partial");
+  });
+
+  it("AC-7: returns success when all auto-fixable issues were fixed", () => {
+    const issue = makeIssue("MEDIUM", "auto-fix-1", true);
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [issue],
+      autoFixableIssues: [issue],
+      issuesFixed: ["auto-fix-1"],
+      fixesApplied: 1,
+    };
+    expect(buildOutput(state).status).toBe("success");
+  });
+
+  it("returns partial when 3 or more unfixed MEDIUM issues", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [
+        makeIssue("MEDIUM", "m1"),
+        makeIssue("MEDIUM", "m2"),
+        makeIssue("MEDIUM", "m3"),
+      ],
+      issuesFixed: [],
+    };
+    expect(buildOutput(state).status).toBe("partial");
+  });
+
+  it("returns success when only 2 unfixed MEDIUM issues", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [makeIssue("MEDIUM", "m1"), makeIssue("MEDIUM", "m2")],
+      issuesFixed: [],
+    };
+    expect(buildOutput(state).status).toBe("success");
+  });
+
+  it("returns success when 3 MEDIUMs exist but 1 was fixed", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [
+        makeIssue("MEDIUM", "m1"),
+        makeIssue("MEDIUM", "m2"),
+        makeIssue("MEDIUM", "m3"),
+      ],
+      issuesFixed: ["m1"],
+      fixesApplied: 1,
+    };
+    expect(buildOutput(state).status).toBe("success");
+  });
+
+  it("returns correct issue counts", () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [
+        makeIssue("HIGH", "h1"),
+        makeIssue("MEDIUM", "m1"),
+        makeIssue("LOW", "l1"),
+      ],
+      fixesApplied: 1,
+      issuesFixed: ["h1"],
+    };
+    const output = buildOutput(state);
+    expect(output.issues_found).toBe(3);
+    expect(output.issues_fixed).toBe(1);
+    expect(output.high_count).toBe(1);
+    expect(output.medium_count).toBe(1);
+    expect(output.low_count).toBe(1);
   });
 });
