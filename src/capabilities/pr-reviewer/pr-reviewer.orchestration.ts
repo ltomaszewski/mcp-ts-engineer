@@ -56,6 +56,8 @@ export type ReviewPhase =
 export interface ReviewState {
   prContext: PrContext | null
   worktreePath: string | null
+  /** True only when the worktree was created by pr_reviewer (pr-*-review pattern). External worktrees must not be cleaned up. */
+  worktreeOwnedByReviewer: boolean
   agentResults: ReviewStepOutput[]
   mergedIssues: ReviewIssue[]
   validatedIssues: ReviewIssue[]
@@ -86,6 +88,7 @@ export function createInitialState(): ReviewState {
   return {
     prContext: null,
     worktreePath: null,
+    worktreeOwnedByReviewer: false,
     agentResults: [],
     mergedIssues: [],
     validatedIssues: [],
@@ -437,6 +440,10 @@ async function executeContext(
     throw new Error('Context step returned empty worktree_path')
   }
 
+  // Only claim ownership if the worktree follows the pr-*-review pattern (created by context step).
+  // External worktrees (e.g. from /issue-implement pipeline) must NOT be removed on cleanup.
+  state.worktreeOwnedByReviewer = /\.worktrees\/pr-\d+-review/.test(state.worktreePath)
+
   // Merge context step output back into prContext.
   // The preflight step collects PR metadata; the context step fetches the actual diff.
   if (result.diff_content) {
@@ -648,9 +655,18 @@ async function executeComment(
 
 /**
  * Cleanup worktree helper.
+ * Only removes worktrees that were created by the reviewer (pr-*-review pattern).
+ * External worktrees (e.g. from /issue-implement pipeline) are left intact.
  */
 async function cleanupWorktree(state: ReviewState, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath) {
+    return
+  }
+
+  if (!state.worktreeOwnedByReviewer) {
+    context.logger.info('Skipping worktree cleanup — worktree not created by reviewer', {
+      worktreePath: state.worktreePath,
+    })
     return
   }
 
