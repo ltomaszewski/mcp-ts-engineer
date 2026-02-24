@@ -105,9 +105,11 @@ function postOrUpdateFixerComment(
   const existingId = findExistingFixerComment(owner, repo, prNumber)
 
   if (existingId) {
+    // Use --input with JSON to preserve HTML comments in body
+    const jsonPayload = JSON.stringify({ body: commentBody })
     const result = execSync(
-      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH -f body=@-`,
-      { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
+      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH --input -`,
+      { encoding: 'utf-8', input: jsonPayload, timeout: 15_000 },
     )
     const parsed = JSON.parse(result)
     return parsed.html_url ?? ''
