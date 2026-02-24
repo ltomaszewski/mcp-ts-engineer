@@ -232,7 +232,6 @@ else
   sed -e "s|{{LOG_DIR}}|$LOG_DIR|g" \
       -e "s|{{SERVER_NAME}}|$SERVER_NAME|g" \
       -e "s|{{REPO_OWNER}}|$REPO_OWNER|g" \
-      -e "s|{{REPO_NAME}}|$REPO_NAME_ARG|g" \
       "$TEMPLATE_DIR/ts-engineer.config.json.template" > ts-engineer.config.json
 
   export _CODEMAPS_ENTRIES="$CODEMAPS_ENTRIES"

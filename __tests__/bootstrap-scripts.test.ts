@@ -244,7 +244,6 @@ describe('Config templates', () => {
     expect(content).toContain('{{LOG_DIR}}')
     expect(content).toContain('{{CODEMAPS_ENTRIES}}')
     expect(content).toContain('{{REPO_OWNER}}')
-    expect(content).toContain('{{REPO_NAME}}')
   })
 
   it('CLAUDE.md.template has required placeholders', () => {

@@ -9,12 +9,33 @@
  * 5. Resolve relative codemap paths to absolute
  */
 
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import type { ProjectConfig, CodemapEntry } from "./project-config.js";
 import { deriveLogDir } from "./project-config.js";
 
 const CONFIG_FILENAME = "ts-engineer.config.json";
+
+/**
+ * Auto-detect GitHub repo name from git remote origin URL.
+ * Returns empty string if detection fails.
+ */
+function detectRepoName(cwd: string): string {
+  try {
+    const url = execSync("git remote get-url origin", {
+      cwd,
+      encoding: "utf-8",
+      timeout: 5_000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+    // Match github.com:owner/repo.git or github.com/owner/repo.git
+    const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
+    return match?.[2] ?? "";
+  } catch {
+    return "";
+  }
+}
 
 /**
  * Walk up from startDir to find the monorepo root.
@@ -71,7 +92,12 @@ export function loadProjectConfig(): ProjectConfig {
 
   // Look for config file
   const configPath = path.join(monorepoRoot, CONFIG_FILENAME);
-  if (!existsSync(configPath)) return defaults;
+  if (!existsSync(configPath)) {
+    // Still auto-detect repoName even without config file
+    const detectedRepoName = detectRepoName(monorepoRoot);
+    if (detectedRepoName) defaults.repoName = detectedRepoName;
+    return defaults;
+  }
 
   try {
     const raw = JSON.parse(readFileSync(configPath, "utf-8")) as Partial<ProjectConfig>;
@@ -81,11 +107,15 @@ export function loadProjectConfig(): ProjectConfig {
     const effectiveLogDir = raw.logDir
       ?? (raw.serverName ? deriveLogDir(raw.serverName) : defaults.logDir);
 
+    // Auto-detect repoName from git remote if not in config
+    const effectiveRepoName = raw.repoName || detectRepoName(monorepoRoot);
+
     // Merge — config file values override defaults
     const merged: ProjectConfig = {
       ...defaults,
       ...raw,
       logDir: effectiveLogDir,
+      repoName: effectiveRepoName || undefined,
       // Always use auto-detected paths (config file can't override these)
       monorepoRoot,
       submodulePath,
