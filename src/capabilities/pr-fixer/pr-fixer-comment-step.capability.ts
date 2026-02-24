@@ -1,14 +1,17 @@
 /**
  * Comment step: Post/update fixer comment on PR with per-issue results.
+ *
+ * Posting is done programmatically via execSync('gh ...') in processResult()
+ * to guarantee the hidden state marker is preserved exactly as built.
  */
 
+import { execSync } from 'child_process'
 import type {
   CapabilityDefinition,
   CapabilityContext,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe } from '../../core/utils/index.js'
 import {
   serializeState,
   FIXER_STATE_MARKER,
@@ -16,12 +19,7 @@ import {
   type IssueStatus,
 } from '../../core/utils/pr-comment-state.js'
 import { z } from 'zod'
-import {
-  FixerCommentStepOutputSchema,
-  FIXER_COMMENT_OUTPUT_JSON_SCHEMA,
-} from './pr-fixer.schema.js'
 import type { FixerCommentStepOutput, PrFixerOutput } from './pr-fixer.schema.js'
-import { tryExtractCommentUrl } from '../pr-reviewer/pr-reviewer.helpers.js'
 
 const CommentStepInputSchema = z.object({
   pr_number: z.number(),
@@ -75,68 +73,71 @@ function buildFixerCommentBody(data: CommentStepInput): string {
   return lines.join('\n')
 }
 
-const COMMENT_V1: PromptVersion = {
-  version: 'v1',
+// ---------------------------------------------------------------------------
+// Programmatic GitHub comment posting
+// ---------------------------------------------------------------------------
+
+/**
+ * Find existing fixer comment ID on the PR.
+ */
+function findExistingFixerComment(owner: string, repo: string, prNumber: number): string | null {
+  try {
+    const result = execSync(
+      `gh api repos/${owner}/${repo}/issues/${prNumber}/comments --jq '[.[] | select(.body | contains("<!-- pr-fixer-state:")) | .id] | last'`,
+      { encoding: 'utf-8', timeout: 15_000 },
+    ).trim()
+    if (result && result !== 'null' && /^\d+$/.test(result)) return result
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Post or update a fixer comment and return the comment URL.
+ */
+function postOrUpdateFixerComment(
+  owner: string,
+  repo: string,
+  prNumber: number,
+  commentBody: string,
+): string {
+  const existingId = findExistingFixerComment(owner, repo, prNumber)
+
+  if (existingId) {
+    const result = execSync(
+      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH -f body=@-`,
+      { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
+    )
+    const parsed = JSON.parse(result)
+    return parsed.html_url ?? ''
+  }
+
+  const result = execSync(
+    `gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`,
+    { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
+  ).trim()
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Capability definition (programmatic — no AI agent needed)
+// ---------------------------------------------------------------------------
+
+const COMMENT_V2: PromptVersion = {
+  version: 'v2',
   createdAt: '2026-02-24',
-  description: 'Post/update fixer comment on PR',
+  description: 'Programmatic fixer comment posting — no AI agent needed',
   deprecated: false,
   sunsetDate: undefined,
-  build: (input: unknown) => {
-    const data = input as CommentStepInput
-    const commentBody = buildFixerCommentBody(data)
-
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# Post PR Fixer Comment
-
-Post or update a fixer comment on PR #${data.pr_number} in ${data.repo_owner}/${data.repo_name}.
-
-## Comment Body
-
-\`\`\`
-${commentBody}
-\`\`\`
-
-## Steps
-
-1. Check for existing fixer comment:
-\`\`\`bash
-gh api repos/${data.repo_owner}/${data.repo_name}/issues/${data.pr_number}/comments --jq '[.[] | select(.body | contains("<!-- pr-fixer-state:")) | {id: .id}] | last'
-\`\`\`
-
-2. If found, UPDATE:
-\`\`\`bash
-gh api repos/${data.repo_owner}/${data.repo_name}/issues/comments/<ID> -X PATCH -f body="$(cat <<'COMMENT_EOF'
-${commentBody}
-COMMENT_EOF
-)"
-\`\`\`
-
-3. If not found, CREATE:
-\`\`\`bash
-gh pr comment ${data.pr_number} --repo ${data.repo_owner}/${data.repo_name} --body "$(cat <<'COMMENT_EOF'
-${commentBody}
-COMMENT_EOF
-)"
-\`\`\`
-
-4. Return JSON:
-\`\`\`json
-{
-  "comment_url": "<URL>",
-  "comment_posted": true
-}
-\`\`\`
-
-Begin now.`,
-    }
-  },
+  build: (_input: unknown) => ({
+    systemPrompt: 'You are a no-op assistant. Return the JSON exactly as shown.',
+    userPrompt: 'Return this JSON: {"status":"ready"}',
+  }),
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: COMMENT_V1 }
-const CURRENT_VERSION = 'v1'
-
-const FALLBACK: FixerCommentStepOutput = { comment_url: '', comment_posted: false }
+const PROMPT_VERSIONS: PromptRegistry = { v2: COMMENT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prFixerCommentStepCapability: CapabilityDefinition<
   CommentStepInput,
@@ -152,31 +153,28 @@ export const prFixerCommentStepCapability: CapabilityDefinition<
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
     model: 'haiku',
-    maxTurns: 15,
-    maxBudgetUsd: 0.3,
-    tools: { type: 'preset', preset: 'claude_code' },
-    permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
-    settingSources: ['user', 'project'],
-    outputSchema: FIXER_COMMENT_OUTPUT_JSON_SCHEMA,
+    maxTurns: 1,
+    maxBudgetUsd: 0.01,
   },
   preparePromptInput: (input: CommentStepInput) => input,
   processResult: (
-    _input: CommentStepInput,
-    aiResult: AIQueryResult,
-    _context: CapabilityContext,
+    input: CommentStepInput,
+    _aiResult: AIQueryResult,
+    context: CapabilityContext,
   ): FixerCommentStepOutput => {
-    if (aiResult.structuredOutput) {
-      const validated = FixerCommentStepOutputSchema.safeParse(aiResult.structuredOutput)
-      if (validated.success) return validated.data
-    }
+    const commentBody = buildFixerCommentBody(input)
 
-    // Try extracting URL from content
-    const extractedUrl = tryExtractCommentUrl(aiResult.content)
-    if (extractedUrl) {
-      return { comment_url: extractedUrl, comment_posted: true }
+    try {
+      const commentUrl = postOrUpdateFixerComment(
+        input.repo_owner, input.repo_name, input.pr_number, commentBody,
+      )
+      context.logger.info('Fixer comment posted programmatically', { commentUrl })
+      return { comment_url: commentUrl, comment_posted: true }
+    } catch (error) {
+      context.logger.error('Failed to post fixer comment', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return { comment_url: '', comment_posted: false }
     }
-
-    return parseJsonSafe(aiResult.content, FixerCommentStepOutputSchema, FALLBACK)
   },
 }

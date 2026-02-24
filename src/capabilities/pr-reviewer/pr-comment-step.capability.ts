@@ -1,20 +1,18 @@
+import { execSync } from 'child_process'
 import type {
   CapabilityDefinition,
   CapabilityContext,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseXmlBlock, parseJsonSafe } from '../../core/utils/index.js'
 import {
   serializeState,
   REVIEWER_STATE_MARKER,
   type PrCommentState,
 } from '../../core/utils/pr-comment-state.js'
-import { tryExtractCommentUrl } from './pr-reviewer.helpers.js'
 import {
   CommentStepInputSchema,
   CommentStepOutputSchema,
-  COMMENT_OUTPUT_JSON_SCHEMA,
 } from './pr-reviewer.schema.js'
 import type {
   CommentStepInput,
@@ -101,6 +99,13 @@ function buildStateMarker(data: CommentStepInput): string {
 function buildIssuesDataSection(issues: ReviewIssue[]): string {
   const data = mapIssuesToData(issues)
   return ['### Issues Data', '', '```json', JSON.stringify(data, null, 2), '```'].join('\n')
+}
+
+/**
+ * Build comment body from input. Exported for testing.
+ */
+export function buildCommentBody(data: CommentStepInput): string {
+  return data.issues.length === 0 ? buildApprovalComment(data) : buildFullReportComment(data)
 }
 
 /**
@@ -233,137 +238,79 @@ function buildFullReportComment(data: CommentStepInput): string {
   return lines.join('\n')
 }
 
-const COMMENT_PROMPT_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-14',
-  description: 'Post review summary as GitHub PR comment (deprecated, use v2)',
-  deprecated: true,
-  sunsetDate: '2026-04-01',
-  build: (input: unknown) => {
-    const data = input as CommentStepInput
-    const ctx = data.pr_context
-    const commentBody =
-      data.issues.length === 0 ? buildApprovalComment(data) : buildFullReportComment(data)
+// ---------------------------------------------------------------------------
+// Programmatic GitHub comment posting (replaces AI-driven posting)
+// ---------------------------------------------------------------------------
 
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# Post PR Review Comment
-
-You MUST post a comment on PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}.
-This is MANDATORY — always post the comment regardless of whether issues were found.
-
-## Comment Body
-
-Post EXACTLY this comment body (do not modify it):
-
-\`\`\`
-${commentBody}
-\`\`\`
-
-## Steps
-
-1. **Post the comment** using the gh CLI command below. Use a HEREDOC to preserve formatting:
-
-\`\`\`bash
-gh pr comment ${ctx.pr_number} --repo ${ctx.repo_owner}/${ctx.repo_name} --body "$(cat <<'COMMENT_EOF'
-${commentBody}
-COMMENT_EOF
-)"
-\`\`\`
-
-2. **Capture the comment URL** from the gh command output (it prints the URL of the created comment).
-
-3. **Return JSON result** with the comment URL:
-
-\`\`\`json
-{
-  "comment_url": "<URL from gh output>",
-  "inline_comments_posted": 0,
-  "summary_posted": true
-}
-\`\`\`
-
-IMPORTANT: You MUST run the gh command and return the resulting URL. Do NOT skip posting.
-
-Begin now.`,
-    }
-  },
+/**
+ * Find existing reviewer comment ID on the PR.
+ * Returns comment ID or null if not found.
+ */
+function findExistingReviewerComment(owner: string, repo: string, prNumber: number): string | null {
+  try {
+    const result = execSync(
+      `gh api repos/${owner}/${repo}/issues/${prNumber}/comments --jq '[.[] | select(.body | contains("<!-- pr-review-state:")) | .id] | last'`,
+      { encoding: 'utf-8', timeout: 15_000 },
+    ).trim()
+    if (result && result !== 'null' && /^\d+$/.test(result)) return result
+    return null
+  } catch {
+    return null
+  }
 }
 
-const COMMENT_PROMPT_V2: PromptVersion = {
-  version: 'v2',
+/**
+ * Post or update a PR comment and return the comment URL.
+ */
+function postOrUpdateComment(
+  owner: string,
+  repo: string,
+  prNumber: number,
+  commentBody: string,
+): string {
+  const existingId = findExistingReviewerComment(owner, repo, prNumber)
+
+  if (existingId) {
+    // Update existing comment in place
+    const result = execSync(
+      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH -f body=@-`,
+      { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
+    )
+    const parsed = JSON.parse(result)
+    return parsed.html_url ?? ''
+  }
+
+  // Create new comment
+  const result = execSync(
+    `gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`,
+    { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
+  ).trim()
+  return result
+}
+
+// ---------------------------------------------------------------------------
+// Capability definition (no AI agent — purely programmatic)
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimal prompt that returns immediately. The actual comment posting
+ * happens in processResult() via execSync, guaranteeing the state marker
+ * is preserved exactly as built.
+ */
+const COMMENT_PROMPT_V3: PromptVersion = {
+  version: 'v3',
   createdAt: '2026-02-24',
-  description: 'Post/update review summary as GitHub PR comment with update-in-place',
+  description: 'Programmatic comment posting — no AI agent needed',
   deprecated: false,
   sunsetDate: undefined,
-  build: (input: unknown) => {
-    const data = input as CommentStepInput
-    const ctx = data.pr_context
-    const commentBody =
-      data.issues.length === 0 ? buildApprovalComment(data) : buildFullReportComment(data)
-
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# Post PR Review Comment (Update-in-Place)
-
-You MUST post or update a review comment on PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}.
-This is MANDATORY — always post the comment regardless of whether issues were found.
-
-## Comment Body
-
-Post EXACTLY this comment body (do not modify it):
-
-\`\`\`
-${commentBody}
-\`\`\`
-
-## Steps
-
-1. **Check for existing reviewer comment** to update in place:
-
-\`\`\`bash
-gh api repos/${ctx.repo_owner}/${ctx.repo_name}/issues/${ctx.pr_number}/comments --jq '[.[] | select(.body | contains("<!-- pr-review-state:")) | {id: .id}] | last'
-\`\`\`
-
-2. **If existing comment found** (non-null result with .id), UPDATE it:
-
-\`\`\`bash
-gh api repos/${ctx.repo_owner}/${ctx.repo_name}/issues/comments/<COMMENT_ID> -X PATCH -f body="$(cat <<'COMMENT_EOF'
-${commentBody}
-COMMENT_EOF
-)"
-\`\`\`
-
-3. **If no existing comment found**, CREATE a new one:
-
-\`\`\`bash
-gh pr comment ${ctx.pr_number} --repo ${ctx.repo_owner}/${ctx.repo_name} --body "$(cat <<'COMMENT_EOF'
-${commentBody}
-COMMENT_EOF
-)"
-\`\`\`
-
-4. **Capture the comment URL** from the gh command output.
-
-5. **Return JSON result** with the comment URL:
-
-\`\`\`json
-{
-  "comment_url": "<URL from gh output>",
-  "inline_comments_posted": 0,
-  "summary_posted": true
-}
-\`\`\`
-
-IMPORTANT: You MUST run the gh command and return the resulting URL. Do NOT skip posting.
-
-Begin now.`,
-    }
-  },
+  build: (_input: unknown) => ({
+    systemPrompt: 'You are a no-op assistant. Return the JSON exactly as shown.',
+    userPrompt: 'Return this JSON: {"status":"ready"}',
+  }),
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: COMMENT_PROMPT_V1, v2: COMMENT_PROMPT_V2 }
-const CURRENT_VERSION = 'v2'
+const PROMPT_VERSIONS: PromptRegistry = { v3: COMMENT_PROMPT_V3 }
+const CURRENT_VERSION = 'v3'
 
 export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, CommentStepOutput> = {
   id: 'pr_comment_step',
@@ -375,45 +322,37 @@ export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, Com
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
-    maxTurns: 30,
-    maxBudgetUsd: 1.0,
-    tools: { type: 'preset', preset: 'claude_code' },
-    permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
-    settingSources: ['user', 'project'],
-    outputSchema: COMMENT_OUTPUT_JSON_SCHEMA,
+    model: 'haiku',
+    maxTurns: 1,
+    maxBudgetUsd: 0.01,
   },
   preparePromptInput: (input: CommentStepInput, _context: CapabilityContext) => input,
   processResult: (
-    _input: CommentStepInput,
-    aiResult: AIQueryResult,
-    _context: CapabilityContext,
+    input: CommentStepInput,
+    _aiResult: AIQueryResult,
+    context: CapabilityContext,
   ): CommentStepOutput => {
-    // Strategy 1: SDK structured output
-    if (aiResult.structuredOutput) {
-      const validated = CommentStepOutputSchema.safeParse(aiResult.structuredOutput)
-      if (validated.success && validated.data.comment_url) return validated.data
-    }
+    const ctx = input.pr_context
+    const commentBody =
+      input.issues.length === 0 ? buildApprovalComment(input) : buildFullReportComment(input)
 
-    // Strategy 2: XML block fallback
-    const xmlContent = parseXmlBlock(aiResult.content, 'comment_result')
-    if (xmlContent) {
-      const extractedUrl = tryExtractCommentUrl(aiResult.content)
-      const urlFallback: CommentStepOutput = {
-        comment_url: extractedUrl,
+    try {
+      const commentUrl = postOrUpdateComment(ctx.repo_owner, ctx.repo_name, ctx.pr_number, commentBody)
+      context.logger.info('PR comment posted programmatically', { commentUrl })
+      return {
+        comment_url: commentUrl,
         inline_comments_posted: 0,
-        summary_posted: extractedUrl.length > 0,
+        summary_posted: true,
       }
-      return parseJsonSafe(xmlContent, CommentStepOutputSchema, urlFallback)
-    }
-
-    // Strategy 3: Extract comment URL directly from AI output
-    const extractedUrl = tryExtractCommentUrl(aiResult.content)
-    return {
-      comment_url: extractedUrl,
-      inline_comments_posted: 0,
-      summary_posted: extractedUrl.length > 0,
+    } catch (error) {
+      context.logger.error('Failed to post PR comment', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return {
+        comment_url: '',
+        inline_comments_posted: 0,
+        summary_posted: false,
+      }
     }
   },
 }

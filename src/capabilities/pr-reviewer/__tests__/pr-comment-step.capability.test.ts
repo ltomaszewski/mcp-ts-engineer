@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ReviewIssue, ReviewIssueData, CommentStepInput } from "../pr-reviewer.schema.js";
-import { prCommentStepCapability } from "../pr-comment-step.capability.js";
+import { buildCommentBody } from "../pr-comment-step.capability.js";
 
 const makeCommentStepInput = (
   issues: ReviewIssue[],
@@ -40,23 +40,6 @@ const makeMockIssue = (overrides?: Partial<ReviewIssue>): ReviewIssue => ({
   ...overrides,
 });
 
-/**
- * Extract the comment body from the prompt builder output.
- * The comment body appears in a HEREDOC block inside the userPrompt.
- */
-function getCommentBody(input: CommentStepInput): string {
-  const v1 = prCommentStepCapability.promptRegistry?.v1;
-  if (!v1) throw new Error("v1 prompt not found");
-  const built = v1.build(input);
-  // The comment body is embedded between the first ``` block
-  // Extract the body between "Post EXACTLY this comment body" markers
-  const match = built.userPrompt.match(
-    /Post EXACTLY this comment body \(do not modify it\):\n\n```\n([\s\S]*?)\n```\n\n## Steps/,
-  );
-  if (!match?.[1]) throw new Error("Could not extract comment body from prompt");
-  return match[1];
-}
-
 function extractIssuesDataJson(body: string): ReviewIssueData[] {
   const match = body.match(/### Issues Data\n\n```json\n([\s\S]*?)\n```/);
   if (!match?.[1]) throw new Error("Issues Data section not found in comment body");
@@ -67,7 +50,7 @@ describe("pr-comment-step: Issues Data section", () => {
   describe("approval comment (zero issues)", () => {
     it("includes empty Issues Data section", () => {
       const input = makeCommentStepInput([]);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
 
       expect(body).toContain("### Issues Data");
       expect(body).toContain("```json");
@@ -77,7 +60,7 @@ describe("pr-comment-step: Issues Data section", () => {
 
     it("Issues Data section appears before footer", () => {
       const input = makeCommentStepInput([]);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
 
       const issuesDataIdx = body.indexOf("### Issues Data");
       const footerIdx = body.indexOf("*Automated review by PR Reviewer*");
@@ -85,6 +68,13 @@ describe("pr-comment-step: Issues Data section", () => {
       expect(issuesDataIdx).toBeGreaterThan(-1);
       expect(footerIdx).toBeGreaterThan(-1);
       expect(issuesDataIdx).toBeLessThan(footerIdx);
+    });
+
+    it("includes state marker after footer", () => {
+      const input = makeCommentStepInput([]);
+      const body = buildCommentBody(input);
+
+      expect(body).toContain("<!-- pr-review-state:");
     });
   });
 
@@ -95,7 +85,7 @@ describe("pr-comment-step: Issues Data section", () => {
         makeMockIssue({ severity: "LOW", title: "Minor style" }),
       ];
       const input = makeCommentStepInput(issues);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
 
       const data = extractIssuesDataJson(body);
       expect(data).toHaveLength(2);
@@ -108,7 +98,7 @@ describe("pr-comment-step: Issues Data section", () => {
     it("Issues Data section appears after issue details, before footer", () => {
       const issues = [makeMockIssue()];
       const input = makeCommentStepInput(issues);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
 
       const issueDetailsIdx = body.indexOf("### Issues Requiring Manual Review");
       const issuesDataIdx = body.indexOf("### Issues Data");
@@ -131,7 +121,7 @@ describe("pr-comment-step: Issues Data section", () => {
         auto_fixable: true,
       });
       const input = makeCommentStepInput([issue]);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
       const data = extractIssuesDataJson(body);
 
       expect(data[0]).toEqual({
@@ -149,7 +139,7 @@ describe("pr-comment-step: Issues Data section", () => {
     it("maps null line values correctly", () => {
       const issue = makeMockIssue({ line: undefined });
       const input = makeCommentStepInput([issue]);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
       const data = extractIssuesDataJson(body);
 
       expect(data[0]!.line).toBeNull();
@@ -161,11 +151,24 @@ describe("pr-comment-step: Issues Data section", () => {
         suggestion: undefined,
       });
       const input = makeCommentStepInput([issue]);
-      const body = getCommentBody(input);
+      const body = buildCommentBody(input);
       const data = extractIssuesDataJson(body);
 
       expect(data[0]!.category).toBe("");
       expect(data[0]!.suggestedFix).toBe("");
+    });
+
+    it("includes state marker with issue IDs", () => {
+      const issues = [
+        makeMockIssue({ issue_id: "abc123", title: "Issue 1" }),
+        makeMockIssue({ issue_id: "def456", title: "Issue 2" }),
+      ];
+      const input = makeCommentStepInput(issues);
+      const body = buildCommentBody(input);
+
+      expect(body).toContain("<!-- pr-review-state:");
+      expect(body).toContain('"abc123":"open"');
+      expect(body).toContain('"def456":"open"');
     });
   });
 });
