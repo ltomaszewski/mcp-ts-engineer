@@ -44,6 +44,12 @@ import { prCommitStepCapability } from "./pr-reviewer/pr-commit-step.capability.
 import { prRevertStepCapability } from "./pr-reviewer/pr-revert-step.capability.js";
 import { prCommentStepCapability } from "./pr-reviewer/pr-comment-step.capability.js";
 import { prFixerCapability } from "./pr-fixer/pr-fixer.capability.js";
+import { prFixerClassifyStepCapability } from "./pr-fixer/pr-fixer-classify-step.capability.js";
+import { prFixerDirectFixStepCapability } from "./pr-fixer/pr-fixer-direct-fix-step.capability.js";
+import { prFixerValidateStepCapability } from "./pr-fixer/pr-fixer-validate-step.capability.js";
+import { prFixerCommitStepCapability } from "./pr-fixer/pr-fixer-commit-step.capability.js";
+import { prFixerCommentStepCapability } from "./pr-fixer/pr-fixer-comment-step.capability.js";
+import { prFixerFetchCommentStepCapability } from "./pr-fixer/pr-fixer-fetch-comment-step.capability.js";
 
 /**
  * Register all capabilities with the capability registry.
@@ -109,6 +115,12 @@ export function registerAllCapabilities(registry: CapabilityRegistry): void {
   registry.registerCapability(prRevertStepCapability as CapabilityDefinition);
   registry.registerCapability(prCommentStepCapability as CapabilityDefinition);
 
-  // PR fixer orchestrator (public MCP tool)
+  // PR fixer orchestrator (public MCP tool) + internal sub-capabilities
   registry.registerCapability(prFixerCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerClassifyStepCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerDirectFixStepCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerValidateStepCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerCommitStepCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerCommentStepCapability as CapabilityDefinition);
+  registry.registerCapability(prFixerFetchCommentStepCapability as CapabilityDefinition);
 }

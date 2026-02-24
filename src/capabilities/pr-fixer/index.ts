@@ -1,2 +1,8 @@
-export { prFixerCapability } from "./pr-fixer.capability.js";
-export type { PrFixerInput, PrFixerOutput } from "./pr-fixer.schema.js";
+export { prFixerCapability } from './pr-fixer.capability.js'
+export { prFixerClassifyStepCapability } from './pr-fixer-classify-step.capability.js'
+export { prFixerDirectFixStepCapability } from './pr-fixer-direct-fix-step.capability.js'
+export { prFixerValidateStepCapability } from './pr-fixer-validate-step.capability.js'
+export { prFixerCommitStepCapability } from './pr-fixer-commit-step.capability.js'
+export { prFixerCommentStepCapability } from './pr-fixer-comment-step.capability.js'
+export { prFixerFetchCommentStepCapability } from './pr-fixer-fetch-comment-step.capability.js'
+export type { PrFixerInput, PrFixerOutput } from './pr-fixer.schema.js'

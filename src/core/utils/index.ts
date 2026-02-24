@@ -24,3 +24,12 @@ export {
   type CorrectionResult,
   type PathStatus,
 } from "./spec-path-utils.js";
+export { generateIssueId } from "./issue-id.js";
+export {
+  serializeState,
+  parseState,
+  REVIEWER_STATE_MARKER,
+  FIXER_STATE_MARKER,
+  type IssueStatus,
+  type PrCommentState,
+} from "./pr-comment-state.js";

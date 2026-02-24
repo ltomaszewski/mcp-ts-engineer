@@ -52,6 +52,12 @@ describe("createInitialState", () => {
     const state = createInitialState();
     expect(state.projectContextString).toBe("");
   });
+
+  it("initializes round to 1 and headSha to empty string", () => {
+    const state = createInitialState();
+    expect(state.round).toBe(1);
+    expect(state.headSha).toBe("");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -163,9 +169,14 @@ describe("shouldSkipPhase", () => {
       expect(shouldSkipPhase("commit", baseState, "review-fix")).toBe(true);
     });
 
-    it("does not skip when fixes were applied", () => {
-      const state: ReviewState = { ...baseState, fixesApplied: 2 };
+    it("does not skip when fixes were applied and tests passed", () => {
+      const state: ReviewState = { ...baseState, fixesApplied: 2, testsPassed: true };
       expect(shouldSkipPhase("commit", state, "review-fix")).toBe(false);
+    });
+
+    it("skips when fixes were applied but tests failed", () => {
+      const state: ReviewState = { ...baseState, fixesApplied: 2, testsPassed: false };
+      expect(shouldSkipPhase("commit", state, "review-fix")).toBe(true);
     });
   });
 
@@ -193,6 +204,7 @@ describe("getNextPhase", () => {
         ...baseState,
         autoFixableIssues: [makeIssue("LOW", "t", true)],
         fixesApplied: 1,
+        testsPassed: true,
       };
       const visitedPhases: ReviewPhase[] = ["preflight"];
       let current: ReviewPhase = "preflight";
@@ -228,11 +240,12 @@ describe("getNextPhase", () => {
       expect(phases).not.toContain("commit");
     });
 
-    it("includes fix/cleanup/test/commit when auto-fixable issues exist and fixes applied", () => {
+    it("includes fix/cleanup/test/commit when auto-fixable issues exist, fixes applied, and tests passed", () => {
       const stateWithFixes: ReviewState = {
         ...baseState,
         autoFixableIssues: [makeIssue("LOW", "t", true)],
         fixesApplied: 1,
+        testsPassed: true,
       };
       const phases: ReviewPhase[] = [];
       let current: ReviewPhase = "preflight";
@@ -244,6 +257,24 @@ describe("getNextPhase", () => {
       expect(phases).toContain("cleanup");
       expect(phases).toContain("test");
       expect(phases).toContain("commit");
+    });
+
+    it("skips commit when fixes applied but tests failed", () => {
+      const stateWithFailedTests: ReviewState = {
+        ...baseState,
+        autoFixableIssues: [makeIssue("LOW", "t", true)],
+        fixesApplied: 1,
+        testsPassed: false,
+      };
+      const phases: ReviewPhase[] = [];
+      let current: ReviewPhase = "preflight";
+      while (current !== "done") {
+        current = getNextPhase(current, "review-fix", stateWithFailedTests);
+        phases.push(current);
+      }
+      expect(phases).toContain("fix");
+      expect(phases).toContain("test");
+      expect(phases).not.toContain("commit");
     });
   });
 });

@@ -37,6 +37,8 @@ export const PrReviewerOutputSchema = z.object({
   comment_url: z.string(),
   cost_usd: z.number().min(0),
   worktree_path: z.string().optional(),
+  round: z.number().min(1).optional(),
+  last_reviewed_sha: z.string().optional(),
 })
 
 export type PrReviewerOutput = z.infer<typeof PrReviewerOutputSchema>
@@ -56,10 +58,14 @@ export interface ReviewIssue {
   suggestion?: string
   auto_fixable: boolean
   confidence: number
+  /** Deterministic issue ID (SHA-256 of file_path + title, 12 hex chars). */
+  issue_id?: string
 }
 
 /** Structured issue data for PR comments, consumed by downstream tools (e.g. pr_fixer). */
 export interface ReviewIssueData {
+  /** Deterministic issue ID for cross-round tracking. */
+  id?: string
   file: string
   line: number | null
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
@@ -99,6 +105,7 @@ export const ReviewIssueSchema = z.object({
   suggestion: z.string().optional(),
   auto_fixable: z.boolean().default(false),
   confidence: z.number().min(0).max(100).default(70),
+  issue_id: z.string().optional(),
 }) as z.ZodType<ReviewIssue>
 
 /** PR context structure (used internally).
@@ -317,6 +324,8 @@ export const CommentStepInputSchema = z.object({
   incremental: z.boolean(),
   unfixed_medium_count: z.number().min(0).default(0),
   unfixed_auto_fixable_count: z.number().min(0).default(0),
+  round: z.number().min(1).default(1),
+  head_sha: z.string().default(''),
   cwd: z.string().optional(),
 })
 export type CommentStepInput = z.infer<typeof CommentStepInputSchema>

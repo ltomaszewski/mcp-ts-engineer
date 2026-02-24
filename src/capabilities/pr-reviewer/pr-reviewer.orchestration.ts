@@ -11,6 +11,7 @@
 
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import { getProjectConfig } from '../../config/project-config.js'
+import { generateIssueId } from '../../core/utils/issue-id.js'
 import { loadProjectContext } from './services/project-context-loader.js'
 import { filterReviewableFiles, splitDiffByFile, chunkFiles, getDiffForFiles } from './pr-reviewer.helpers.js'
 import { parseReviewIssuesFromComment } from '../pr-fixer/pr-fixer.helpers.js'
@@ -75,6 +76,10 @@ export interface ReviewState {
   projectContextString: string
   /** Previous issues from prior review runs (for cross-run dedup in incremental mode) */
   previousIssues: ReviewIssue[]
+  /** Review round counter (increments if previous state detected) */
+  round: number
+  /** HEAD SHA at time of review */
+  headSha: string
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +109,8 @@ export function createInitialState(): ReviewState {
     phase: 'preflight',
     projectContextString: '',
     previousIssues: [],
+    round: 1,
+    headSha: '',
   }
 }
 
@@ -161,8 +168,8 @@ export function shouldSkipPhase(phase: ReviewPhase, state: ReviewState, _mode: s
       return state.fixesApplied === 0
 
     case 'commit':
-      // Skip if no fixes were applied
-      return state.fixesApplied === 0
+      // Skip if no fixes were applied OR tests failed
+      return state.fixesApplied === 0 || !state.testsPassed
 
     default:
       return false
@@ -528,13 +535,24 @@ async function executeAggregate(state: ReviewState, context: CapabilityContext):
 }
 
 /**
- * Validate phase: Filter and categorize issues.
+ * Validate phase: Filter and categorize issues, assign deterministic issue IDs.
  */
 async function executeValidate(state: ReviewState, context: CapabilityContext): Promise<void> {
   const result = (await context.invokeCapability('pr_validate_step', {
     issues: state.mergedIssues,
     agent_results: state.agentResults,
   })) as ValidateStepOutput
+
+  // Assign deterministic issue IDs to all validated issues
+  for (const issue of result.issues) {
+    issue.issue_id = generateIssueId(issue.file_path, issue.title)
+  }
+  for (const issue of result.auto_fixable) {
+    issue.issue_id = generateIssueId(issue.file_path, issue.title)
+  }
+  for (const issue of result.manual) {
+    issue.issue_id = generateIssueId(issue.file_path, issue.title)
+  }
 
   state.validatedIssues = result.issues
   state.autoFixableIssues = result.auto_fixable
@@ -648,6 +666,8 @@ async function executeComment(
     incremental: input.incremental,
     unfixed_medium_count: unfixedMediumCount,
     unfixed_auto_fixable_count: unfixedAutoFixableCount,
+    round: state.round,
+    head_sha: state.headSha,
   })) as CommentStepOutput
 
   state.commentUrl = result.comment_url
@@ -725,5 +745,7 @@ export function buildOutput(state: ReviewState): PrReviewerOutput {
     comment_url: state.commentUrl,
     cost_usd: state.budgetSpent,
     worktree_path: state.worktreePath ?? undefined,
+    round: state.round,
+    last_reviewed_sha: state.headSha || undefined,
   }
 }

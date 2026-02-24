@@ -5,6 +5,11 @@ import type {
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseXmlBlock, parseJsonSafe } from '../../core/utils/index.js'
+import {
+  serializeState,
+  REVIEWER_STATE_MARKER,
+  type PrCommentState,
+} from '../../core/utils/pr-comment-state.js'
 import { tryExtractCommentUrl } from './pr-reviewer.helpers.js'
 import {
   CommentStepInputSchema,
@@ -59,6 +64,7 @@ function filterIssuesForReport(issues: ReviewIssue[]): ReviewIssue[] {
  */
 function mapIssuesToData(issues: ReviewIssue[]): ReviewIssueData[] {
   return issues.map((issue) => ({
+    id: issue.issue_id,
     file: issue.file_path,
     line: issue.line ?? null,
     severity: issue.severity,
@@ -68,6 +74,25 @@ function mapIssuesToData(issues: ReviewIssue[]): ReviewIssueData[] {
     suggestedFix: issue.suggestion ?? '',
     autoFixable: issue.auto_fixable,
   }))
+}
+
+/**
+ * Build hidden state marker for cross-round tracking.
+ */
+function buildStateMarker(data: CommentStepInput): string {
+  const issueStates: Record<string, 'open' | 'fixed'> = {}
+  for (const issue of data.issues) {
+    if (issue.issue_id) {
+      issueStates[issue.issue_id] = 'open'
+    }
+  }
+  const state: PrCommentState = {
+    v: 1,
+    round: 1,
+    sha: '',
+    issues: issueStates,
+  }
+  return serializeState(REVIEWER_STATE_MARKER, state)
 }
 
 /**
@@ -95,6 +120,8 @@ function buildApprovalComment(data: CommentStepInput): string {
     buildIssuesDataSection([]),
     '',
     '*Automated review by PR Reviewer*',
+    '',
+    buildStateMarker(data),
   ].join('\n')
 }
 
@@ -201,15 +228,17 @@ function buildFullReportComment(data: CommentStepInput): string {
   lines.push(buildIssuesDataSection(data.issues))
   lines.push('')
   lines.push('*Automated review by PR Reviewer*')
+  lines.push('')
+  lines.push(buildStateMarker(data))
   return lines.join('\n')
 }
 
 const COMMENT_PROMPT_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-14',
-  description: 'Post review summary as GitHub PR comment',
-  deprecated: false,
-  sunsetDate: undefined,
+  description: 'Post review summary as GitHub PR comment (deprecated, use v2)',
+  deprecated: true,
+  sunsetDate: '2026-04-01',
   build: (input: unknown) => {
     const data = input as CommentStepInput
     const ctx = data.pr_context
@@ -261,8 +290,80 @@ Begin now.`,
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: COMMENT_PROMPT_V1 }
-const CURRENT_VERSION = 'v1'
+const COMMENT_PROMPT_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-24',
+  description: 'Post/update review summary as GitHub PR comment with update-in-place',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    const data = input as CommentStepInput
+    const ctx = data.pr_context
+    const commentBody =
+      data.issues.length === 0 ? buildApprovalComment(data) : buildFullReportComment(data)
+
+    return {
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+      userPrompt: `# Post PR Review Comment (Update-in-Place)
+
+You MUST post or update a review comment on PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}.
+This is MANDATORY — always post the comment regardless of whether issues were found.
+
+## Comment Body
+
+Post EXACTLY this comment body (do not modify it):
+
+\`\`\`
+${commentBody}
+\`\`\`
+
+## Steps
+
+1. **Check for existing reviewer comment** to update in place:
+
+\`\`\`bash
+gh api repos/${ctx.repo_owner}/${ctx.repo_name}/issues/${ctx.pr_number}/comments --jq '[.[] | select(.body | contains("<!-- pr-review-state:")) | {id: .id}] | last'
+\`\`\`
+
+2. **If existing comment found** (non-null result with .id), UPDATE it:
+
+\`\`\`bash
+gh api repos/${ctx.repo_owner}/${ctx.repo_name}/issues/comments/<COMMENT_ID> -X PATCH -f body="$(cat <<'COMMENT_EOF'
+${commentBody}
+COMMENT_EOF
+)"
+\`\`\`
+
+3. **If no existing comment found**, CREATE a new one:
+
+\`\`\`bash
+gh pr comment ${ctx.pr_number} --repo ${ctx.repo_owner}/${ctx.repo_name} --body "$(cat <<'COMMENT_EOF'
+${commentBody}
+COMMENT_EOF
+)"
+\`\`\`
+
+4. **Capture the comment URL** from the gh command output.
+
+5. **Return JSON result** with the comment URL:
+
+\`\`\`json
+{
+  "comment_url": "<URL from gh output>",
+  "inline_comments_posted": 0,
+  "summary_posted": true
+}
+\`\`\`
+
+IMPORTANT: You MUST run the gh command and return the resulting URL. Do NOT skip posting.
+
+Begin now.`,
+    }
+  },
+}
+
+const PROMPT_VERSIONS: PromptRegistry = { v1: COMMENT_PROMPT_V1, v2: COMMENT_PROMPT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, CommentStepOutput> = {
   id: 'pr_comment_step',
