@@ -13,10 +13,12 @@ import { parseJsonSafe } from '../../core/utils/index.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
 import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
 import { DIRECT_FIX_PROMPT_V1 } from './prompts/direct-fix.v1.js'
+import { buildDirectFixPromptV2 } from './prompts/direct-fix.v2.js'
 
 const DirectFixStepInputSchema = z.object({
   issues_summary: z.string(),
   worktree_path: z.string(),
+  project_context: z.string().optional(),
 })
 
 type DirectFixStepInput = z.infer<typeof DirectFixStepInputSchema>
@@ -25,8 +27,8 @@ const DIRECT_FIX_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-24',
   description: 'Apply direct mechanical fixes',
-  deprecated: false,
-  sunsetDate: undefined,
+  deprecated: true,
+  sunsetDate: '2026-03-15',
   build: (input: unknown) => {
     const data = input as DirectFixStepInput
     return {
@@ -39,8 +41,27 @@ const DIRECT_FIX_V1: PromptVersion = {
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: DIRECT_FIX_V1 }
-const CURRENT_VERSION = 'v1'
+const DIRECT_FIX_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-24',
+  description: 'Sonnet-optimized direct fixes with XML tags and project context',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    const data = input as DirectFixStepInput
+    return {
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+      userPrompt: buildDirectFixPromptV2(
+        data.issues_summary,
+        data.worktree_path,
+        data.project_context,
+      ),
+    }
+  },
+}
+
+const PROMPT_VERSIONS: PromptRegistry = { v1: DIRECT_FIX_V1, v2: DIRECT_FIX_V2 }
+const CURRENT_VERSION = 'v2'
 
 const FALLBACK: DirectFixStepOutput = {
   fixes_applied: 0,

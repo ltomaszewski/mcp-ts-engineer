@@ -17,19 +17,14 @@ const REVIEW_PROMPT_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-14',
   description: 'Comprehensive multi-category code review',
-  deprecated: false,
-  sunsetDate: undefined,
+  deprecated: true,
+  sunsetDate: '2026-03-15',
   build: (input: unknown) => {
     const data = input as ReviewStepInput
     const ctx = data.pr_context
 
-    // Build project context section if available
     const projectContextSection = data.project_context
-      ? `## Project-Specific Rules & Patterns
-
-${data.project_context}
-
-`
+      ? `## Project-Specific Rules & Patterns\n\n${data.project_context}\n\n`
       : ''
 
     return {
@@ -44,85 +39,78 @@ Worktree: ${data.worktree_path}
 Branch: ${ctx.pr_branch} → ${ctx.base_branch}
 Files Changed: ${ctx.files_changed.length}
 
-${projectContextSection}## Review Categories
-
-Analyze from ALL of these perspectives (skip lint/formatting — handled by daily audit):
-
-### 1. Code Quality
-- TypeScript anti-patterns, incorrect type usage
-- Logic errors, incorrect conditionals
-- Missing error handling in critical paths
-
-### 2. Security
-- Input validation, auth/authz bypass risks
-- Secret handling, injection vulnerabilities
-- Error messages leaking sensitive data
-
-### 3. Architecture
-- SOLID violations, circular dependencies
-- Coupling, cohesion issues
-- Design pattern misuse
-
-### 4. Performance
-- N+1 queries, unnecessary re-renders
-- Memory leaks, large bundles
-- Missing caching opportunities
-
-## Files to Review
-
-${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
-
-## Diff
+${projectContextSection}## Diff
 
 \`\`\`diff
 ${data.diff_content.substring(0, 30000)}
 \`\`\`
 
-## Instructions
+## Files to Review
 
-1. Read each changed file in the worktree at ${data.worktree_path}
-2. Analyze for issues across all categories
-3. For each issue, provide structured output
+${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
 
-## Audit-Handled Categories (DO NOT REPORT)
+Begin review now.`,
+    }
+  },
+}
 
-The following issue categories are handled by the daily audit tool and MUST NOT be reported in PR review:
-- Lint violations (Biome rule violations, formatting issues)
-- Import ordering
-- Unused exports (handled by knip/audit)
-- Test coverage thresholds
-- Vitest/Jest configuration issues
+const REVIEW_PROMPT_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-24',
+  description: 'Sonnet-optimized review with diff-first positioning and XML tags',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    const data = input as ReviewStepInput
+    const ctx = data.pr_context
+
+    const projectRulesSection = data.project_context
+      ? `<project_rules>\n${data.project_context}\n</project_rules>\n`
+      : ''
+
+    return {
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+      userPrompt: `<diff>
+${data.diff_content.substring(0, 30000)}
+</diff>
+
+<context>
+<pr_info>PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}, branch ${ctx.pr_branch} → ${ctx.base_branch}</pr_info>
+<worktree>${data.worktree_path}</worktree>
+${projectRulesSection}<files_changed>
+${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
+</files_changed>
+</context>
+
+<instructions>
+Review from these perspectives (skip lint/formatting — handled by daily audit):
+
+1. **Code Quality**: TypeScript anti-patterns, logic errors, missing error handling
+2. **Security**: Input validation, auth bypass, secret exposure, injection risks
+3. **Architecture**: SOLID violations, circular deps, coupling, design pattern misuse
+4. **Performance**: N+1 queries, memory leaks, unnecessary re-renders, large bundles
+
+Read each changed file in the worktree at ${data.worktree_path} for full context.
+</instructions>
+
+<constraints>
+DO NOT REPORT (handled by daily audit):
+- Lint/Biome violations, formatting, import ordering
+- Unused exports, test coverage thresholds
 - Missing semicolons, trailing commas, whitespace
 
-Focus your review on issues the daily audit CANNOT catch:
-- Logic bugs and incorrect behavior
-- Security vulnerabilities
-- Architectural problems
-- Performance regressions
-- Missing error handling in critical paths
-- Race conditions, data corruption risks
-
-## Auto-Fixable Classification
-
-When setting auto_fixable, be CONSERVATIVE — only mark true for trivial mechanical changes with confidence >= 80.
-
-auto_fixable=true ONLY for:
-- Unused import removal
-- console.log removal
-- Missing return type annotations on simple functions
-- Simple null check additions (e.g., adding \`if (!x) return\`)
+auto_fixable=true ONLY for trivial mechanical changes (confidence >= 80):
+- Unused import removal, console.log removal
+- Missing return type on simple functions
+- Simple null check additions
 - Missing error logging in empty catch blocks
-- Formatting fixes
 
-auto_fixable=false for EVERYTHING ELSE, including:
-- Missing error handling with business logic
-- Enum registration, pagination args
-- Type extraction, architectural refactors
-- Validation logic, rate limiting, security hardening
-- Any change requiring business context understanding
+auto_fixable=false for EVERYTHING ELSE including:
+- Error handling with business logic, type extraction
+- Validation logic, security hardening, architectural refactors
+</constraints>
 
-## Output Format
-
+<output_format>
 Respond with JSON:
 \`\`\`json
 {
@@ -134,24 +122,24 @@ Respond with JSON:
       "title": "Short issue title",
       "file_path": "path/to/file.ts",
       "line": 42,
-      "details": "Detailed explanation of the issue",
-      "suggestion": "How to fix it",
+      "details": "Detailed explanation",
+      "suggestion": "How to fix",
       "auto_fixable": true,
       "confidence": 85
     }
   ]
 }
 \`\`\`
-
 If no issues found, return: { "agent": "multi-review", "issues": [] }
+</output_format>
 
 Begin review now.`,
     }
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: REVIEW_PROMPT_V1 }
-const CURRENT_VERSION = 'v1'
+const PROMPT_VERSIONS: PromptRegistry = { v1: REVIEW_PROMPT_V1, v2: REVIEW_PROMPT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, ReviewStepOutput> = {
   id: 'pr_review_step',

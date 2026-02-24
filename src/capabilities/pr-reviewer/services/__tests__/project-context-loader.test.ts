@@ -176,6 +176,108 @@ describe('loadProjectContext', () => {
     })
   })
 
+  describe('Knowledge base detection and loading', () => {
+    it('detects nestjs-backend-architecture.md from .service.ts files', async () => {
+      const kbDir = path.join(tempDir, '.claude', 'knowledge-base')
+      await fs.mkdir(kbDir, { recursive: true })
+      await fs.writeFile(
+        path.join(kbDir, 'nestjs-backend-architecture.md'),
+        '# NestJS Architecture\n\nUse modular structure',
+      )
+
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, ['src/users/user.service.ts'])
+
+      expect(result.knowledgeBaseLoaded).toContain('nestjs-backend-architecture.md')
+      expect(result.context).toContain('Use modular structure')
+      expect(result.context).toContain('Knowledge Base')
+    })
+
+    it('detects react-native-mobile-architecture.md from .tsx files', async () => {
+      const kbDir = path.join(tempDir, '.claude', 'knowledge-base')
+      await fs.mkdir(kbDir, { recursive: true })
+      await fs.writeFile(
+        path.join(kbDir, 'react-native-mobile-architecture.md'),
+        '# React Native\n\nUse Expo Router',
+      )
+
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, ['src/screens/Home.tsx'])
+
+      expect(result.knowledgeBaseLoaded).toContain('react-native-mobile-architecture.md')
+      expect(result.context).toContain('Use Expo Router')
+    })
+
+    it('detects mcp-server-architecture.md from capabilities paths', async () => {
+      const kbDir = path.join(tempDir, '.claude', 'knowledge-base')
+      await fs.mkdir(kbDir, { recursive: true })
+      await fs.writeFile(
+        path.join(kbDir, 'mcp-server-architecture.md'),
+        '# MCP Architecture\n\nCapability-based design',
+      )
+
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, [
+        'src/capabilities/echo-agent/echo-agent.capability.ts',
+      ])
+
+      expect(result.knowledgeBaseLoaded).toContain('mcp-server-architecture.md')
+      expect(result.context).toContain('Capability-based design')
+    })
+
+    it('returns empty knowledgeBaseLoaded when no files match', async () => {
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, ['README.md'])
+
+      expect(result.knowledgeBaseLoaded).toEqual([])
+    })
+
+    it('loads KB content without truncation', async () => {
+      const kbDir = path.join(tempDir, '.claude', 'knowledge-base')
+      await fs.mkdir(kbDir, { recursive: true })
+      const longContent = `# Architecture\n\n${'X'.repeat(10000)}`
+      await fs.writeFile(path.join(kbDir, 'nestjs-backend-architecture.md'), longContent)
+
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, ['src/app.service.ts'])
+
+      // Full content should be present (no truncation for KB)
+      expect(result.context).toContain('X'.repeat(10000))
+    })
+  })
+
+  describe('Codemap loading', () => {
+    it('loads codemap content from config entries', async () => {
+      const codemapPath = path.join(tempDir, 'architecture.md')
+      await fs.writeFile(codemapPath, '# Architecture Map\n\nKey modules: core, capabilities')
+
+      const config = makeConfig({
+        codemaps: [{ area: 'architecture', path: codemapPath }],
+      })
+      const result = await loadProjectContext(config, [])
+
+      expect(result.codemapsLoaded).toContain('architecture')
+      expect(result.context).toContain('Key modules: core, capabilities')
+      expect(result.context).toContain('Codemaps')
+    })
+
+    it('skips codemap entries with missing files', async () => {
+      const config = makeConfig({
+        codemaps: [{ area: 'missing', path: '/nonexistent/codemap.md' }],
+      })
+      const result = await loadProjectContext(config, [])
+
+      expect(result.codemapsLoaded).toEqual([])
+    })
+
+    it('returns empty codemapsLoaded when no codemaps configured', async () => {
+      const config = makeConfig({ codemaps: [] })
+      const result = await loadProjectContext(config, [])
+
+      expect(result.codemapsLoaded).toEqual([])
+    })
+  })
+
   describe('Review checklist inclusion', () => {
     it('includes reviewChecklist items in context', async () => {
       const config = makeConfig({

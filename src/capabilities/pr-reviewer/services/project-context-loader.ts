@@ -23,6 +23,10 @@ export interface ProjectContextResult {
   skillsLoaded: string[]
   /** List of rule file base names (without .md) that were loaded */
   rulesLoaded: string[]
+  /** List of knowledge-base filenames that were loaded */
+  knowledgeBaseLoaded: string[]
+  /** List of codemap area names that were loaded */
+  codemapsLoaded: string[]
 }
 
 /** Skill detection rule: maps file pattern to skill name */
@@ -32,6 +36,34 @@ interface SkillDetectionRule {
   /** Skill name to load */
   skill: string
 }
+
+/** Knowledge base detection rule: maps file pattern to KB filename */
+interface KnowledgeBaseDetectionRule {
+  /** Returns true if the file path matches this rule */
+  matches: (filePath: string) => boolean
+  /** Knowledge base filename (e.g. 'nestjs-backend-architecture.md') */
+  kbFile: string
+}
+
+const KB_DETECTION_RULES: KnowledgeBaseDetectionRule[] = [
+  {
+    matches: (f) =>
+      f.endsWith('.module.ts') ||
+      f.endsWith('.service.ts') ||
+      f.endsWith('.controller.ts') ||
+      f.endsWith('.resolver.ts'),
+    kbFile: 'nestjs-backend-architecture.md',
+  },
+  {
+    matches: (f) =>
+      f.endsWith('.tsx') || f.includes('react-native') || f.includes('/expo/'),
+    kbFile: 'react-native-mobile-architecture.md',
+  },
+  {
+    matches: (f) => f.includes('/capabilities/') || f.includes('/mcp/'),
+    kbFile: 'mcp-server-architecture.md',
+  },
+]
 
 const SKILL_DETECTION_RULES: SkillDetectionRule[] = [
   {
@@ -88,6 +120,26 @@ function detectSkills(filesChanged: string[]): string[] {
     for (const rule of SKILL_DETECTION_RULES) {
       if (rule.matches(file)) {
         detected.add(rule.skill)
+      }
+    }
+  }
+
+  return Array.from(detected)
+}
+
+/**
+ * Detect relevant knowledge base files from a list of changed file paths.
+ *
+ * @param filesChanged - List of changed file paths
+ * @returns Deduplicated list of KB filenames
+ */
+function detectKnowledgeBase(filesChanged: string[]): string[] {
+  const detected = new Set<string>()
+
+  for (const file of filesChanged) {
+    for (const rule of KB_DETECTION_RULES) {
+      if (rule.matches(file)) {
+        detected.add(rule.kbFile)
       }
     }
   }
@@ -171,6 +223,8 @@ export async function loadProjectContext(
   const sections: string[] = []
   const skillsLoaded: string[] = []
   const rulesLoaded: string[] = []
+  const knowledgeBaseLoaded: string[] = []
+  const codemapsLoaded: string[] = []
 
   // 1. Load CLAUDE.md from monorepo root
   const claudeMdPath = path.join(config.monorepoRoot, 'CLAUDE.md')
@@ -213,7 +267,45 @@ export async function loadProjectContext(
     }
   }
 
-  // 4. Include reviewChecklist if provided
+  // 4. Detect and load relevant knowledge base files (no truncation)
+  const detectedKbFiles = detectKnowledgeBase(filesChanged)
+
+  if (detectedKbFiles.length > 0) {
+    const kbSections: string[] = []
+    const kbDir = path.join(config.monorepoRoot, '.claude', 'knowledge-base')
+
+    for (const kbFile of detectedKbFiles) {
+      const kbContent = await readFileSafe(path.join(kbDir, kbFile))
+      if (kbContent !== null) {
+        knowledgeBaseLoaded.push(kbFile)
+        const kbName = path.basename(kbFile, '.md')
+        kbSections.push(`#### ${kbName}\n\n${kbContent}`)
+      }
+    }
+
+    if (kbSections.length > 0) {
+      sections.push(`### Knowledge Base\n\n${kbSections.join('\n\n')}`)
+    }
+  }
+
+  // 5. Load codemaps from config
+  if (config.codemaps.length > 0) {
+    const codemapSections: string[] = []
+
+    for (const entry of config.codemaps) {
+      const codemapContent = await readFileSafe(entry.path)
+      if (codemapContent !== null) {
+        codemapsLoaded.push(entry.area)
+        codemapSections.push(`#### ${entry.area}\n\n${codemapContent}`)
+      }
+    }
+
+    if (codemapSections.length > 0) {
+      sections.push(`### Codemaps\n\n${codemapSections.join('\n\n')}`)
+    }
+  }
+
+  // 6. Include reviewChecklist if provided
   const checklist = config.reviewChecklist ?? []
   if (checklist.length > 0) {
     const checklistContent = checklist.map((item) => `- ${item}`).join('\n')
@@ -223,5 +315,5 @@ export async function loadProjectContext(
   const context =
     sections.length > 0 ? `## Project-Specific Rules & Patterns\n\n${sections.join('\n\n')}` : ''
 
-  return { context, skillsLoaded, rulesLoaded }
+  return { context, skillsLoaded, rulesLoaded, knowledgeBaseLoaded, codemapsLoaded }
 }

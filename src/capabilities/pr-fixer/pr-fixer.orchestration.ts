@@ -9,6 +9,7 @@
 import { getProjectConfig } from '../../config/project-config.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import { FIXER_STATE_MARKER, parseState } from '../../core/utils/pr-comment-state.js'
+import { loadProjectContext } from '../pr-reviewer/services/project-context-loader.js'
 import { filterUnfixedIssues, parseReviewIssuesFromComment } from './pr-fixer.helpers.js'
 import type {
   ClassifyStepOutput,
@@ -78,6 +79,7 @@ export interface FixerState {
   commentUrl: string
   filesChanged: string[]
   budgetSpent: number
+  projectContextString: string
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +104,7 @@ export function createInitialState(): FixerState {
     commentUrl: '',
     filesChanged: [],
     budgetSpent: 0,
+    projectContextString: '',
   }
 }
 
@@ -344,6 +347,25 @@ async function executeParseState(state: FixerState, context: CapabilityContext):
     status: 'pending' as const,
     method: 'none' as const,
   }))
+
+  // Load project context for informed fixing decisions
+  try {
+    const issueFilePaths = state.issues.map((i) => i.file_path)
+    const projectConfig = getProjectConfig()
+    const projectContext = await loadProjectContext(projectConfig, issueFilePaths)
+    state.projectContextString = projectContext.context
+    context.logger.info('Project context loaded for fixer', {
+      knowledgeBase: projectContext.knowledgeBaseLoaded,
+      codemaps: projectContext.codemapsLoaded,
+      rules: projectContext.rulesLoaded.length,
+      skills: projectContext.skillsLoaded.length,
+    })
+  } catch (err) {
+    context.logger.warn('Failed to load project context for fixer', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+    state.projectContextString = ''
+  }
 }
 
 /**
@@ -362,6 +384,7 @@ async function executeClassify(state: FixerState, context: CapabilityContext): P
   const result = (await context.invokeCapability('pr_fixer_classify_step', {
     issues_summary: issuesSummary,
     issue_ids: state.issues.map((i) => i.issue_id),
+    project_context: state.projectContextString || undefined,
   })) as ClassifyStepOutput
 
   // Apply classifications
@@ -396,6 +419,7 @@ async function executeDirectFix(state: FixerState, context: CapabilityContext): 
   const result = (await context.invokeCapability('pr_fixer_direct_fix_step', {
     issues_summary: issuesSummary,
     worktree_path: state.worktreePath,
+    project_context: state.projectContextString || undefined,
   })) as DirectFixStepOutput
 
   state.directFixOutput = result
@@ -457,6 +481,7 @@ async function executeFixValidation(state: FixerState, context: CapabilityContex
     worktree_path: state.worktreePath,
     error_summary: state.validationErrorSummary,
     files_changed: state.filesChanged,
+    project_context: state.projectContextString || undefined,
   })) as DirectFixStepOutput
 
   // Track new files changed
