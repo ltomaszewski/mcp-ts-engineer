@@ -2,6 +2,8 @@
   "serverName": "{{SERVER_NAME}}",
   "logDir": "{{LOG_DIR}}",
   "commitTag": "{{SERVER_NAME}}",
+  "repoOwner": "{{REPO_OWNER}}",
+  "repoName": "{{REPO_NAME}}",
   "codemaps": [
 {{CODEMAPS_ENTRIES}}
   ],
