@@ -3,13 +3,13 @@
  */
 
 import {
-  createInitialState,
-  shouldSkipPhase,
-  getNextPhase,
   buildOutput,
+  createInitialState,
+  type FixerIssueTracker,
   type FixerPhase,
   type FixerState,
-  type FixerIssueTracker,
+  getNextPhase,
+  shouldSkipPhase,
 } from '../pr-fixer.orchestration.js'
 
 // ---------------------------------------------------------------------------
@@ -297,9 +297,9 @@ describe('buildOutput', () => {
     }
     const output = buildOutput(state)
     expect(output.per_issue).toHaveLength(2)
-    expect(output.per_issue[0]!.issue_id).toBe('a')
-    expect(output.per_issue[0]!.status).toBe('fixed')
-    expect(output.per_issue[1]!.status).toBe('failed')
+    expect(output.per_issue[0]?.issue_id).toBe('a')
+    expect(output.per_issue[0]?.status).toBe('fixed')
+    expect(output.per_issue[1]?.status).toBe('failed')
   })
 
   it('includes round number', () => {

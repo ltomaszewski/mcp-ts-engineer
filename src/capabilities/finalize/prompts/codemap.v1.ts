@@ -1,4 +1,4 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Codemap step prompt for finalize capability.
@@ -6,9 +6,9 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
  */
 
 interface CodemapPromptInput {
-  filesChanged: string[];
-  monorepoRoot: string;
-  cwd?: string;
+  filesChanged: string[]
+  monorepoRoot: string
+  cwd?: string
 }
 
 const buildCodemapUserPrompt = (
@@ -16,8 +16,8 @@ const buildCodemapUserPrompt = (
   monorepoRoot: string,
   cwd?: string,
 ): string => {
-  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Codemap Agent for maintaining architecture documentation.
 
@@ -86,24 +86,24 @@ Important:
 - Keep codemaps focused and concise
 - ALWAYS use the absolute path ${monorepoRoot}/.claude/codemaps/ for reading and writing codemaps
 
-Your goal is to keep architecture documentation current and useful.`;
-};
+Your goal is to keep architecture documentation current and useful.`
+}
 
 export const codemapPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Codemap step: analyzes file changes and updates .claude/codemaps/ architecture documentation",
+    'Codemap step: analyzes file changes and updates .claude/codemaps/ architecture documentation',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { filesChanged, monorepoRoot, cwd } = input as CodemapPromptInput;
+    const { filesChanged, monorepoRoot, cwd } = input as CodemapPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildCodemapUserPrompt(filesChanged, monorepoRoot, cwd),
-    };
+    }
   },
-};
+}

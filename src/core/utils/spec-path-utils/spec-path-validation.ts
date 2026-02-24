@@ -2,8 +2,8 @@
  * Spec path validation and classification.
  */
 
-import { PATH_CLASSIFICATION } from "./spec-path.constants.js";
-import type { ValidationResult, PathStatus } from "./spec-path.types.js";
+import { PATH_CLASSIFICATION } from './spec-path.constants.js'
+import type { PathStatus, ValidationResult } from './spec-path.types.js'
 
 /**
  * Validates spec paths and categorizes them by correctability.
@@ -35,22 +35,19 @@ import type { ValidationResult, PathStatus } from "./spec-path.types.js";
  * // }
  * ```
  */
-export function validateSpecPaths(
-  paths: string[],
-  _target: string
-): ValidationResult {
+export function validateSpecPaths(paths: string[], _target: string): ValidationResult {
   const result: ValidationResult = {
     valid: [],
     correctable: [],
     uncorrectable: [],
-  };
-
-  for (const path of paths) {
-    const status = classifyPath(path);
-    result[status].push(path);
   }
 
-  return result;
+  for (const path of paths) {
+    const status = classifyPath(path)
+    result[status].push(path)
+  }
+
+  return result
 }
 
 /**
@@ -62,7 +59,7 @@ export function validateSpecPaths(
 export function classifyPath(path: string): PathStatus {
   // Valid monorepo paths
   if (PATH_CLASSIFICATION.VALID.test(path)) {
-    return "valid";
+    return 'valid'
   }
 
   // Correctable relative paths
@@ -70,22 +67,19 @@ export function classifyPath(path: string): PathStatus {
     PATH_CLASSIFICATION.CORRECTABLE_SRC.test(path) ||
     PATH_CLASSIFICATION.CORRECTABLE_DOT.test(path)
   ) {
-    return "correctable";
+    return 'correctable'
   }
 
   // Correctable internal directories
   if (PATH_CLASSIFICATION.INTERNAL_DIRS?.test(path)) {
-    return "correctable";
+    return 'correctable'
   }
 
   // Uncorrectable paths
-  if (
-    PATH_CLASSIFICATION.ABSOLUTE.test(path) ||
-    PATH_CLASSIFICATION.PARENT_DIR.test(path)
-  ) {
-    return "uncorrectable";
+  if (PATH_CLASSIFICATION.ABSOLUTE.test(path) || PATH_CLASSIFICATION.PARENT_DIR.test(path)) {
+    return 'uncorrectable'
   }
 
   // Default to uncorrectable for unknown patterns
-  return "uncorrectable";
+  return 'uncorrectable'
 }

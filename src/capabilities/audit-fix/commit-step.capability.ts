@@ -6,42 +6,29 @@
  * but with audit-fix-specific prompt input.
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
-import {
-  CommitStepInputSchema,
-  CommitResultSchema,
-} from "./audit-fix.schema.js";
-import {
-  parseXmlBlock,
-  parseJsonSafe,
-  COMMIT_RESULT_FALLBACK,
-} from "./audit-fix.helpers.js";
-import type {
-  CommitStepInput,
-  CommitResult,
-} from "./audit-fix.schema.js";
-import {
-  auditFixCommitPrompts,
-  AUDIT_FIX_COMMIT_CURRENT_VERSION,
-} from "./prompts/index.js";
+import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
+import { COMMIT_RESULT_FALLBACK, parseJsonSafe, parseXmlBlock } from './audit-fix.helpers.js'
+import type { CommitResult, CommitStepInput } from './audit-fix.schema.js'
+import { CommitResultSchema, CommitStepInputSchema } from './audit-fix.schema.js'
+import { AUDIT_FIX_COMMIT_CURRENT_VERSION, auditFixCommitPrompts } from './prompts/index.js'
 
 // ---------------------------------------------------------------------------
 // JSON Schema for commit structured output
 // ---------------------------------------------------------------------------
 
 const COMMIT_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
-  type: "json_schema",
+  type: 'json_schema',
   schema: {
-    type: "object",
+    type: 'object',
     properties: {
-      committed: { type: "boolean" },
-      commit_sha: { type: ["string", "null"] },
-      commit_message: { type: ["string", "null"] },
-      files_changed: { type: "array", items: { type: "string" } },
+      committed: { type: 'boolean' },
+      commit_sha: { type: ['string', 'null'] },
+      commit_message: { type: ['string', 'null'] },
+      files_changed: { type: 'array', items: { type: 'string' } },
     },
-    required: ["committed", "commit_sha", "commit_message", "files_changed"],
+    required: ['committed', 'commit_sha', 'commit_message', 'files_changed'],
   },
-};
+}
 
 // ---------------------------------------------------------------------------
 // Capability Definition
@@ -56,27 +43,24 @@ const COMMIT_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
  * run git commands. Input is validated via Zod schema and this capability is only
  * invoked through the orchestrator's authenticated channel.
  */
-export const auditFixCommitStepCapability: CapabilityDefinition<
-  CommitStepInput,
-  CommitResult
-> = {
-  id: "audit_fix_commit_step",
-  type: "tool",
-  visibility: "internal",
-  name: "Audit Fix Commit Step (Internal)",
+export const auditFixCommitStepCapability: CapabilityDefinition<CommitStepInput, CommitResult> = {
+  id: 'audit_fix_commit_step',
+  type: 'tool',
+  visibility: 'internal',
+  name: 'Audit Fix Commit Step (Internal)',
   description:
-    "Internal sub-capability: commits per-project audit-fix changes with conventional commit message. Not intended for direct use.",
+    'Internal sub-capability: commits per-project audit-fix changes with conventional commit message. Not intended for direct use.',
   inputSchema: CommitStepInputSchema,
   promptRegistry: auditFixCommitPrompts,
   currentPromptVersion: AUDIT_FIX_COMMIT_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "haiku",
+    model: 'haiku',
     maxTurns: 40,
     maxBudgetUsd: 5.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
     outputSchema: COMMIT_OUTPUT_JSON_SCHEMA,
   },
 
@@ -91,18 +75,18 @@ export const auditFixCommitStepCapability: CapabilityDefinition<
   processResult: (_input: CommitStepInput, aiResult, _context) => {
     // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
     if (aiResult.structuredOutput) {
-      const parsed = CommitResultSchema.safeParse(aiResult.structuredOutput);
+      const parsed = CommitResultSchema.safeParse(aiResult.structuredOutput)
       if (parsed.success) {
-        return parsed.data;
+        return parsed.data
       }
     }
 
     // Strategy 2: Fall back to XML parsing from text content
-    const xmlContent = parseXmlBlock(aiResult.content, "commit_result");
+    const xmlContent = parseXmlBlock(aiResult.content, 'commit_result')
     if (xmlContent) {
-      return parseJsonSafe(xmlContent, CommitResultSchema, COMMIT_RESULT_FALLBACK);
+      return parseJsonSafe(xmlContent, CommitResultSchema, COMMIT_RESULT_FALLBACK)
     }
 
-    return COMMIT_RESULT_FALLBACK;
+    return COMMIT_RESULT_FALLBACK
   },
-};
+}

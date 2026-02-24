@@ -4,18 +4,15 @@
  * Supports single-project mode (targetProject set) or full scan mode.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 interface PlannerPromptInput {
-  targetProject?: string;
-  cwd?: string;
+  targetProject?: string
+  cwd?: string
 }
 
-const buildPlannerUserPrompt = (
-  targetProject?: string,
-  cwd?: string,
-): string => {
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+const buildPlannerUserPrompt = (targetProject?: string, cwd?: string): string => {
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   if (targetProject) {
     return `${cwdContext}You are the Audit Planner. A specific project has been requested for auditing.
@@ -32,7 +29,7 @@ Output the following plan directly — no filesystem scanning needed:
     }
   ]
 }
-</audit_plan>`;
+</audit_plan>`
   }
 
   return `${cwdContext}You are the Audit Planner for a TypeScript monorepo. Your role is to discover which projects need auditing.
@@ -62,24 +59,23 @@ Output your analysis in this format:
 }
 </audit_plan>
 
-Only include projects that have a package.json file. Skip node_modules, dist, build directories.`;
-};
+Only include projects that have a package.json file. Skip node_modules, dist, build directories.`
+}
 
 export const plannerPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-01",
-  description:
-    "Planner: discovers monorepo projects for audit-fix workflow",
+  version: 'v1',
+  createdAt: '2026-02-01',
+  description: 'Planner: discovers monorepo projects for audit-fix workflow',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { targetProject, cwd } = input as PlannerPromptInput;
+    const { targetProject, cwd } = input as PlannerPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildPlannerUserPrompt(targetProject, cwd),
-    };
+    }
   },
-};
+}

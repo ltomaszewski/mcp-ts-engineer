@@ -3,18 +3,20 @@
  * Public MCP tool that coordinates PR review workflow.
  */
 
-import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
-import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
-import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
-import {
-  PrReviewerInputSchema,
-  type PrReviewerInput,
-  type PrReviewerOutput,
-  PR_REVIEWER_OUTPUT_FALLBACK,
-} from './pr-reviewer.schema.js'
-import { PR_REVIEWER_PROMPT_VERSIONS, PR_REVIEWER_CURRENT_VERSION } from './prompts/index.js'
-import { runOrchestration } from './pr-reviewer.orchestration.js'
 import { getProjectConfig } from '../../config/project-config.js'
+import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
+import { runOrchestration } from './pr-reviewer.orchestration.js'
+import {
+  PR_REVIEWER_OUTPUT_FALLBACK,
+  type PrReviewerInput,
+  PrReviewerInputSchema,
+  type PrReviewerOutput,
+} from './pr-reviewer.schema.js'
+import { PR_REVIEWER_CURRENT_VERSION, PR_REVIEWER_PROMPT_VERSIONS } from './prompts/index.js'
 
 /**
  * Main pr_reviewer orchestrator capability.

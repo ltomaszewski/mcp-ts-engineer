@@ -9,17 +9,17 @@
  * All instructions in user prompt.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { getCommitTag } from "../../../config/constants.js";
-import type { ReviewSummary, TddSummary } from "../todo-reviewer.schema.js";
+import { getCommitTag } from '../../../config/constants.js'
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import type { ReviewSummary, TddSummary } from '../todo-reviewer.schema.js'
 
 /** Input shape for the commit step prompt build function. */
 interface CommitPromptInput {
-  specPath: string;
-  reviewSummary: ReviewSummary;
-  tddSummary: TddSummary;
-  sessionId: string;
-  cwd?: string;
+  specPath: string
+  reviewSummary: ReviewSummary
+  tddSummary: TddSummary
+  sessionId: string
+  cwd?: string
 }
 
 const COMMIT_USER_PROMPT_TEMPLATE = (
@@ -77,30 +77,24 @@ Output a <commit_result> XML block with this JSON:
 {"committed":true,"commit_sha":"abc1234","commit_message":"chore(docs): ${getCommitTag()} update feature spec after review\n\nSession-Id: a9ade0318c43c8803a91cf591782e0c6","files_changed":["docs/specs/app/feature.md"]}
 </commit_result>
 </example>
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Agnostic conditional git commit with CommitResult output */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-29",
-  description: "Agnostic conditional git commit of spec changes",
+  version: 'v1',
+  createdAt: '2026-01-29',
+  description: 'Agnostic conditional git commit of spec changes',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, reviewSummary, tddSummary, sessionId } =
-      input as CommitPromptInput;
+    const { specPath, reviewSummary, tddSummary, sessionId } = input as CommitPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: COMMIT_USER_PROMPT_TEMPLATE(
-        specPath,
-        reviewSummary,
-        tddSummary,
-        sessionId,
-      ),
-    };
+      userPrompt: COMMIT_USER_PROMPT_TEMPLATE(specPath, reviewSummary, tddSummary, sessionId),
+    }
   },
-};
+}

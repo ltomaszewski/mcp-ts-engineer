@@ -1,4 +1,4 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Orchestrator prompt for finalize capability.
@@ -6,9 +6,9 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
  */
 
 interface OrchestratorPromptInput {
-  filesChanged: string[];
-  monorepoRoot: string;
-  cwd?: string;
+  filesChanged: string[]
+  monorepoRoot: string
+  cwd?: string
 }
 
 const buildOrchestratorUserPrompt = (
@@ -16,8 +16,8 @@ const buildOrchestratorUserPrompt = (
   monorepoRoot: string,
   cwd?: string,
 ): string => {
-  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Finalize Orchestrator Agent. Your role is to analyze changed files and plan the finalize workflow.
 
@@ -52,24 +52,24 @@ The finalize workflow will execute these steps:
 3. Codemap Step: Update ${monorepoRoot}/.claude/codemaps/ for changed areas (if not skipped)
 4. Commit Step: Commit all cleanup changes
 
-Focus on accurate workspace detection and codemap area identification.`;
-};
+Focus on accurate workspace detection and codemap area identification.`
+}
 
 export const orchestratorPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Orchestrator: analyzes changed files and plans finalize workflow with workspace detection",
+    'Orchestrator: analyzes changed files and plans finalize workflow with workspace detection',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { filesChanged, monorepoRoot, cwd } = input as OrchestratorPromptInput;
+    const { filesChanged, monorepoRoot, cwd } = input as OrchestratorPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildOrchestratorUserPrompt(filesChanged, monorepoRoot, cwd),
-    };
+    }
   },
-};
+}

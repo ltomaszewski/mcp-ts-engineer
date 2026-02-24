@@ -3,16 +3,16 @@
  * Registry tracks available capabilities with full lifecycle management.
  */
 
-import type { ZodSchema } from "zod";
-import type { PromptRegistry } from "../prompt/prompt.types.js";
-import type { AIQueryRequest, AIQueryResult } from "../ai-provider/ai-provider.types.js";
-import type { Session, CapabilityInvocation } from "../session/session.types.js";
+import type { ZodSchema } from 'zod'
+import type { AIQueryRequest, AIQueryResult } from '../ai-provider/ai-provider.types.js'
+import type { PromptRegistry } from '../prompt/prompt.types.js'
+import type { CapabilityInvocation, Session } from '../session/session.types.js'
 
 /** Capability type */
-export type CapabilityType = "tool" | "resource" | "prompt";
+export type CapabilityType = 'tool' | 'resource' | 'prompt'
 
 /** Capability visibility determines MCP exposure */
-export type CapabilityVisibility = "public" | "internal";
+export type CapabilityVisibility = 'public' | 'internal'
 
 /**
  * Context passed to capability handlers with framework integration.
@@ -20,29 +20,34 @@ export type CapabilityVisibility = "public" | "internal";
  */
 export interface CapabilityContext {
   /** Current session */
-  session: Session;
+  session: Session
   /** Current invocation metadata */
-  invocation: CapabilityInvocation;
+  invocation: CapabilityInvocation
   /** Pre-bound logger with session/capability context */
   logger: {
-    info: (message: string, context?: Record<string, unknown>) => void;
-    debug: (message: string, context?: Record<string, unknown>) => void;
-    error: (message: string, context?: Record<string, unknown>) => void;
-    warn: (message: string, context?: Record<string, unknown>) => void;
-  };
+    info: (message: string, context?: Record<string, unknown>) => void
+    debug: (message: string, context?: Record<string, unknown>) => void
+    error: (message: string, context?: Record<string, unknown>) => void
+    warn: (message: string, context?: Record<string, unknown>) => void
+  }
   /** Get current session cost (read-only) */
-  getSessionCost: () => { totalCostUsd: number; totalInputTokens: number; totalOutputTokens: number; totalTurns: number };
+  getSessionCost: () => {
+    totalCostUsd: number
+    totalInputTokens: number
+    totalOutputTokens: number
+    totalTurns: number
+  }
   /** Current prompt version being used */
-  promptVersion: string;
+  promptVersion: string
   /** AI provider name */
-  providerName: string;
+  providerName: string
   /**
    * Invoke another capability within this session (creates child invocation).
    * @param capabilityName - Name of capability to invoke
    * @param input - Input for the capability
    * @returns Result from the invoked capability
    */
-  invokeCapability: (capabilityName: string, input: unknown) => Promise<unknown>;
+  invokeCapability: (capabilityName: string, input: unknown) => Promise<unknown>
 }
 
 /**
@@ -50,23 +55,23 @@ export interface CapabilityContext {
  */
 export interface CapabilityDefinition<TInput = unknown, TOutput = unknown> {
   /** Capability identifier (used for MCP tool name) */
-  id: string;
+  id: string
   /** Capability type */
-  type: CapabilityType;
+  type: CapabilityType
   /** Visibility determines if capability is exposed as MCP tool (default: "public") */
-  visibility?: CapabilityVisibility;
+  visibility?: CapabilityVisibility
   /** Human-readable name */
-  name: string;
+  name: string
   /** Description for LLM */
-  description: string;
+  description: string
   /** Zod schema for input validation */
-  inputSchema: ZodSchema<TInput>;
+  inputSchema: ZodSchema<TInput>
   /** Prompt registry for this capability */
-  promptRegistry: PromptRegistry;
+  promptRegistry: PromptRegistry
   /** Current active prompt version */
-  currentPromptVersion: string;
+  currentPromptVersion: string
   /** Default request options (can be overridden per invocation) */
-  defaultRequestOptions?: Partial<AIQueryRequest>;
+  defaultRequestOptions?: Partial<AIQueryRequest>
   /**
    * Prepare prompt input from validated raw input.
    * Called after input validation, before prompt building.
@@ -75,7 +80,7 @@ export interface CapabilityDefinition<TInput = unknown, TOutput = unknown> {
    * @param context - Capability context
    * @returns Data to pass to prompt's build() function
    */
-  preparePromptInput: (validatedInput: TInput, context: CapabilityContext) => unknown;
+  preparePromptInput: (validatedInput: TInput, context: CapabilityContext) => unknown
   /**
    * Process AI result into final output.
    * Called after AI query completes successfully.
@@ -88,6 +93,6 @@ export interface CapabilityDefinition<TInput = unknown, TOutput = unknown> {
   processResult: (
     validatedInput: TInput,
     aiResult: AIQueryResult,
-    context: CapabilityContext
-  ) => TOutput | Promise<TOutput>;
+    context: CapabilityContext,
+  ) => TOutput | Promise<TOutput>
 }

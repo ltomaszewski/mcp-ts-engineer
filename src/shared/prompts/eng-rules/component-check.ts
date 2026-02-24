@@ -27,4 +27,4 @@ export const COMPONENT_CHECK_RULES = `## Component Duplication Check
 ### NEVER
 - Create a new component when a variant of an existing one suffices
 - Create CustomTextInput, DarkInput, etc. when Input already exists
-- Skip the search step — always verify what exists first`;
+- Skip the search step — always verify what exists first`

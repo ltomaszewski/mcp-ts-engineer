@@ -2,31 +2,30 @@
  * AI Provider module exports.
  */
 
+export {
+  clearProviderRegistry,
+  createAIProvider,
+  getRegisteredProviders,
+  type ProviderConfig,
+  type ProviderFactory,
+  registerProvider,
+} from './ai-provider.factory.js'
 export type {
+  AIContentBlock,
+  AIExecutionTrace,
+  AIHooksConfig,
+  AIModel,
   AIProvider,
   AIQueryRequest,
   AIQueryResult,
-  AIStreamEvent,
-  TokenUsage,
-  AIToolDefinition,
-  AIModel,
-  MCPServerConfig,
-  AIHooksConfig,
-  AISubagentDefinition,
   AISandboxConfig,
-  AIExecutionTrace,
-  AIContentBlock,
+  AIStreamEvent,
+  AISubagentDefinition,
+  AIToolDefinition,
   AIToolResult,
   AITurn,
-  TerminationReason,
+  MCPServerConfig,
   PermissionMode,
-} from "./ai-provider.types.js";
-
-export {
-  registerProvider,
-  createAIProvider,
-  getRegisteredProviders,
-  clearProviderRegistry,
-  type ProviderConfig,
-  type ProviderFactory,
-} from "./ai-provider.factory.js";
+  TerminationReason,
+  TokenUsage,
+} from './ai-provider.types.js'

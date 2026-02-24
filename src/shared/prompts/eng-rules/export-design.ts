@@ -20,4 +20,4 @@ Verify each of these BEFORE proceeding:
 ### Integration with Test-Only Exports Audit
 The test-only exports audit runs: npx knip --production --include exports
 If you follow this export design check, that audit will pass.
-If knip flags an export you believe is correct, verify it has non-test consumers.`;
+If knip flags an export you believe is correct, verify it has non-test consumers.`

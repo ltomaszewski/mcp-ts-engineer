@@ -1,6 +1,6 @@
-import { readFileSync, existsSync, readdirSync } from 'fs'
-import { execSync } from 'child_process'
-import { join } from 'path'
+import { execSync } from 'node:child_process'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const SCRIPTS_DIR = join(process.cwd(), 'scripts')
 const TEMPLATES_DIR = join(process.cwd(), 'templates/config')
@@ -94,9 +94,9 @@ describe('bootstrap.sh specifics', () => {
 
   it('uses consistent PKG_FILE_ENV naming in node fallbacks', () => {
     // No bare PKG_FILE= (without _ENV suffix) passed to node
-    const nodeLines = content.split('\n').filter(
-      (line) => line.includes('node -e') && line.includes('PKG_FILE')
-    )
+    const nodeLines = content
+      .split('\n')
+      .filter((line) => line.includes('node -e') && line.includes('PKG_FILE'))
     for (const line of nodeLines) {
       expect(line).toContain('PKG_FILE_ENV')
     }
@@ -283,7 +283,9 @@ describe('Config templates', () => {
   })
 
   it('contains no extra template files', () => {
-    const actual = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.template')).sort()
+    const actual = readdirSync(TEMPLATES_DIR)
+      .filter((f) => f.endsWith('.template'))
+      .sort()
     expect(actual).toEqual([...EXPECTED_TEMPLATES].sort())
   })
 })

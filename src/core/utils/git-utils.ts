@@ -3,8 +3,8 @@
  * Used by orchestrators to detect actual file changes vs AI-reported changes.
  */
 
-import { execSync } from "node:child_process";
-import { resolve } from "node:path";
+import { execSync } from 'node:child_process'
+import { resolve } from 'node:path'
 
 /**
  * Check if a file has uncommitted changes (staged or unstaged).
@@ -26,29 +26,29 @@ import { resolve } from "node:path";
  * ```
  */
 export function hasUncommittedChanges(filePath: string, cwd?: string): boolean {
-  const workingDir = cwd || process.cwd();
-  const absolutePath = resolve(workingDir, filePath);
+  const workingDir = cwd || process.cwd()
+  const absolutePath = resolve(workingDir, filePath)
 
   try {
     // Check both staged and unstaged changes
     // git diff --quiet exits with 1 if there are changes, 0 if clean
     execSync(`git diff --quiet -- "${absolutePath}"`, {
       cwd: workingDir,
-      stdio: "pipe",
-    });
+      stdio: 'pipe',
+    })
 
     // Also check staged changes
     execSync(`git diff --quiet --cached -- "${absolutePath}"`, {
       cwd: workingDir,
-      stdio: "pipe",
-    });
+      stdio: 'pipe',
+    })
 
     // Both commands succeeded (exit 0) = no changes
-    return false;
-  } catch (error) {
+    return false
+  } catch (_error) {
     // Exit code 1 = changes exist (expected)
     // Any other error is treated as "has changes" to be safe
-    return true;
+    return true
   }
 }
 
@@ -60,18 +60,18 @@ export function hasUncommittedChanges(filePath: string, cwd?: string): boolean {
  * @returns true if the file is tracked, false if untracked or not in a git repo
  */
 export function isFileTracked(filePath: string, cwd?: string): boolean {
-  const workingDir = cwd || process.cwd();
-  const absolutePath = resolve(workingDir, filePath);
+  const workingDir = cwd || process.cwd()
+  const absolutePath = resolve(workingDir, filePath)
 
   try {
     execSync(`git ls-files --error-unmatch "${absolutePath}"`, {
       cwd: workingDir,
-      stdio: "pipe",
-    });
-    return true;
-  } catch (error) {
+      stdio: 'pipe',
+    })
+    return true
+  } catch (_error) {
     // File is untracked or not in a git repo
-    return false;
+    return false
   }
 }
 
@@ -84,18 +84,18 @@ export function isFileTracked(filePath: string, cwd?: string): boolean {
  * @returns true if the file has changes or is new/untracked, false if clean
  */
 export function fileNeedsCommit(filePath: string, cwd?: string): boolean {
-  const workingDir = cwd || process.cwd();
+  const workingDir = cwd || process.cwd()
 
   // Check if file has uncommitted modifications
   if (hasUncommittedChanges(filePath, workingDir)) {
-    return true;
+    return true
   }
 
   // Check if file is untracked (new file not yet added)
   if (!isFileTracked(filePath, workingDir)) {
     // File exists but is not tracked = needs to be added and committed
-    return true;
+    return true
   }
 
-  return false;
+  return false
 }

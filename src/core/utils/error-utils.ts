@@ -7,7 +7,7 @@
  * Maximum depth for error cause chain traversal.
  * Prevents infinite loops from circular cause references.
  */
-const MAX_CAUSE_DEPTH = 10;
+const MAX_CAUSE_DEPTH = 10
 
 /**
  * Extract the full error message including the cause chain.
@@ -27,22 +27,22 @@ const MAX_CAUSE_DEPTH = 10;
  */
 export function extractErrorChain(error: unknown, depth = 0): string {
   if (depth >= MAX_CAUSE_DEPTH) {
-    return "[Error chain too deep]";
+    return '[Error chain too deep]'
   }
 
   if (!(error instanceof Error)) {
-    return String(error);
+    return String(error)
   }
 
-  let message = error.message;
+  let message = error.message
 
   // Append cause if present
   if (error.cause !== undefined && error.cause !== null) {
-    const causeMessage = extractErrorChain(error.cause, depth + 1);
-    message += ` [Caused by: ${causeMessage}]`;
+    const causeMessage = extractErrorChain(error.cause, depth + 1)
+    message += ` [Caused by: ${causeMessage}]`
   }
 
-  return message;
+  return message
 }
 
 /**
@@ -53,22 +53,22 @@ export function extractErrorChain(error: unknown, depth = 0): string {
  * @returns Structured error info object
  */
 export function extractErrorInfo(error: unknown): {
-  message: string;
-  fullMessage: string;
-  type: string;
-  stack?: string;
-  causeChain: string[];
+  message: string
+  fullMessage: string
+  type: string
+  stack?: string
+  causeChain: string[]
 } {
-  const fullMessage = extractErrorChain(error);
-  const causeChain = extractCauseChain(error);
+  const fullMessage = extractErrorChain(error)
+  const causeChain = extractCauseChain(error)
 
   if (!(error instanceof Error)) {
     return {
       message: String(error),
       fullMessage,
-      type: "Error",
+      type: 'Error',
       causeChain,
-    };
+    }
   }
 
   return {
@@ -77,7 +77,7 @@ export function extractErrorInfo(error: unknown): {
     type: error.constructor.name,
     stack: error.stack,
     causeChain,
-  };
+  }
 }
 
 /**
@@ -88,20 +88,20 @@ export function extractErrorInfo(error: unknown): {
  * @returns Array of error messages from outermost to innermost
  */
 export function extractCauseChain(error: unknown): string[] {
-  const chain: string[] = [];
-  let current: unknown = error;
-  let depth = 0;
+  const chain: string[] = []
+  let current: unknown = error
+  let depth = 0
 
   while (current !== undefined && current !== null && depth < MAX_CAUSE_DEPTH) {
     if (current instanceof Error) {
-      chain.push(`${current.constructor.name}: ${current.message}`);
-      current = current.cause;
+      chain.push(`${current.constructor.name}: ${current.message}`)
+      current = current.cause
     } else {
-      chain.push(String(current));
-      break;
+      chain.push(String(current))
+      break
     }
-    depth++;
+    depth++
   }
 
-  return chain;
+  return chain
 }

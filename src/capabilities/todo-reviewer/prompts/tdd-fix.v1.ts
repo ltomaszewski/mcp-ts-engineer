@@ -13,28 +13,25 @@
  * - Remove YAGNI-violating test specifications
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import type { TddScanStepResult } from "../todo-reviewer.schema.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import type { TddScanStepResult } from '../todo-reviewer.schema.js'
 
 /** Input shape for the TDD fix step prompt build function. */
 export interface TddFixPromptInput {
-  specPath: string;
-  scanResult: TddScanStepResult;
-  cwd?: string;
+  specPath: string
+  scanResult: TddScanStepResult
+  cwd?: string
 }
 
 /**
  * System prompt append for TDD fix step.
  * Ensures structured output is provided after modifications.
  */
-const TDD_FIX_SYSTEM_PROMPT_APPEND = `After applying all fixes, provide your assessment in the required structured output format. Summarize what was fixed and what remains.`;
+const TDD_FIX_SYSTEM_PROMPT_APPEND = `After applying all fixes, provide your assessment in the required structured output format. Summarize what was fixed and what remains.`
 
-const TDD_FIX_USER_PROMPT_TEMPLATE = (
-  specPath: string,
-  scanResult: TddScanStepResult,
-): string => {
-  const issuesJson = JSON.stringify(scanResult.issues, null, 2);
-  const issueCount = scanResult.issues.length;
+const TDD_FIX_USER_PROMPT_TEMPLATE = (specPath: string, scanResult: TddScanStepResult): string => {
+  const issuesJson = JSON.stringify(scanResult.issues, null, 2)
+  const issueCount = scanResult.issues.length
 
   return `You are a TDD spec fixer. Apply remediation templates from scan results to fix test specification issues.
 
@@ -186,26 +183,26 @@ Return structured output with:
 - \`issues_remaining\`: Number of issues not fixed (should be 0 for "success")
 - \`spec_modified\`: true if Write tool was used
 - \`fix_summary\`: Concise summary of applied fixes
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: TDD fix with remediation template application */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-05",
+  version: 'v1',
+  createdAt: '2026-02-05',
   description:
-    "TDD fix: applies remediation templates from scan results to spec file. Returns TddFixStepResult via structured output.",
+    'TDD fix: applies remediation templates from scan results to spec file. Returns TddFixStepResult via structured output.',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, scanResult } = input as TddFixPromptInput;
+    const { specPath, scanResult } = input as TddFixPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: TDD_FIX_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: TDD_FIX_USER_PROMPT_TEMPLATE(specPath, scanResult),
-    };
+    }
   },
-};
+}

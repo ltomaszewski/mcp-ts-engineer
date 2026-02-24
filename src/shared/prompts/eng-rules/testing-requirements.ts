@@ -35,4 +35,4 @@ Run AFTER implementation, BEFORE marking task complete:
 ### NEVER Rules
 - Skip testing for "small changes" (small exports still add surface area)
 - Export internal helpers just to test them
-- Leave undocumented test-only exports in barrel files`;
+- Leave undocumented test-only exports in barrel files`

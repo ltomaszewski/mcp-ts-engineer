@@ -2,15 +2,15 @@
  * SessionManager - manages session lifecycle, invocation tracking, and recursion detection.
  */
 
-import crypto from "node:crypto";
-import type { Session, CapabilityInvocation } from "./session.types.js";
-import type { CostEntry } from "../cost/cost.types.js";
+import crypto from 'node:crypto'
 import {
-  SESSION_MAX_DEPTH,
   MAX_INVOCATIONS_PER_SESSION,
   MAX_SESSION_BUDGET_USD,
   MAX_SESSION_DURATION_MS,
-} from "../../config/constants.js";
+  SESSION_MAX_DEPTH,
+} from '../../config/constants.js'
+import type { CostEntry } from '../cost/cost.types.js'
+import type { CapabilityInvocation, Session } from './session.types.js'
 
 /**
  * Internal state for tracking active invocations and their chain.
@@ -18,13 +18,13 @@ import {
  */
 interface InvocationState {
   /** Invocation ID */
-  id: string;
+  id: string
   /** Capability name */
-  capability: string;
+  capability: string
   /** Parent invocation ID (for chain building) */
-  parentId?: string;
+  parentId?: string
   /** Timestamp when invocation started */
-  startedAt: string;
+  startedAt: string
 }
 
 /**
@@ -40,18 +40,18 @@ interface InvocationState {
  */
 export class SessionManager {
   /** Active sessions keyed by session ID */
-  private sessions: Map<string, Session> = new Map();
+  private sessions: Map<string, Session> = new Map()
 
   /** Active invocation chains keyed by session ID */
-  private invocationChains: Map<string, InvocationState[]> = new Map();
+  private invocationChains: Map<string, InvocationState[]> = new Map()
 
   /** Maximum depth for invocation chains */
-  private readonly maxDepth: number;
+  private readonly maxDepth: number
 
   constructor() {
     // Allow SESSION_MAX_DEPTH override from environment
-    const envMaxDepth = process.env.SESSION_MAX_DEPTH;
-    this.maxDepth = envMaxDepth ? parseInt(envMaxDepth, 10) : SESSION_MAX_DEPTH;
+    const envMaxDepth = process.env.SESSION_MAX_DEPTH
+    this.maxDepth = envMaxDepth ? parseInt(envMaxDepth, 10) : SESSION_MAX_DEPTH
   }
 
   /**
@@ -61,23 +61,23 @@ export class SessionManager {
    * @returns Created session
    */
   createSession(rootCapabilityName: string): Session {
-    const sessionId = crypto.randomBytes(16).toString("hex");
+    const sessionId = crypto.randomBytes(16).toString('hex')
 
     const session: Session = {
       id: sessionId,
-      state: "active",
+      state: 'active',
       startedAt: new Date().toISOString(),
       metadata: { rootCapability: rootCapabilityName },
       invocations: [],
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalCost: 0,
-    };
+    }
 
-    this.sessions.set(sessionId, session);
-    this.invocationChains.set(sessionId, []);
+    this.sessions.set(sessionId, session)
+    this.invocationChains.set(sessionId, [])
 
-    return session;
+    return session
   }
 
   /**
@@ -89,74 +89,64 @@ export class SessionManager {
    * @returns Invocation ID
    * @throws Error if session not found, recursion detected, or limits exceeded
    */
-  startInvocation(
-    sessionId: string,
-    capabilityName: string,
-    parentInvocationId?: string
-  ): string {
-    const session = this.sessions.get(sessionId);
+  startInvocation(sessionId: string, capabilityName: string, parentInvocationId?: string): string {
+    const session = this.sessions.get(sessionId)
     if (!session) {
-      throw new Error(`Session ${sessionId} not found`);
+      throw new Error(`Session ${sessionId} not found`)
     }
 
     // Check session state
-    if (session.state !== "active") {
-      throw new Error(`Session ${sessionId} is not active`);
+    if (session.state !== 'active') {
+      throw new Error(`Session ${sessionId} is not active`)
     }
 
     // Check invocation count limit
     if (session.invocations.length >= MAX_INVOCATIONS_PER_SESSION) {
-      throw new Error(
-        `Maximum invocations per session (${MAX_INVOCATIONS_PER_SESSION}) exceeded`
-      );
+      throw new Error(`Maximum invocations per session (${MAX_INVOCATIONS_PER_SESSION}) exceeded`)
     }
 
     // Check budget limit (prevent starting new invocation if it would likely exceed)
     if (session.totalCost >= MAX_SESSION_BUDGET_USD * 0.999) {
       throw new Error(
-        `Session budget limit (${MAX_SESSION_BUDGET_USD} USD) exceeded (current: ${session.totalCost.toFixed(2)})`
-      );
+        `Session budget limit (${MAX_SESSION_BUDGET_USD} USD) exceeded (current: ${session.totalCost.toFixed(2)})`,
+      )
     }
 
     // Check timeout
-    const sessionStartTime = new Date(session.startedAt).getTime();
-    const elapsed = Date.now() - sessionStartTime;
+    const sessionStartTime = new Date(session.startedAt).getTime()
+    const elapsed = Date.now() - sessionStartTime
     if (elapsed > MAX_SESSION_DURATION_MS) {
-      throw new Error(
-        `Session timeout (${MAX_SESSION_DURATION_MS / 60000} minutes) exceeded`
-      );
+      throw new Error(`Session timeout (${MAX_SESSION_DURATION_MS / 60000} minutes) exceeded`)
     }
 
     // Get or initialize invocation chain
-    const chain = this.invocationChains.get(sessionId) || [];
+    const chain = this.invocationChains.get(sessionId) || []
 
     // Check recursion (capability already in chain)
-    const capabilityChain = chain.map((inv) => inv.capability);
+    const capabilityChain = chain.map((inv) => inv.capability)
     if (capabilityChain.includes(capabilityName)) {
-      throw new Error(
-        `Recursion detected: ${capabilityName} is already in the invocation chain`
-      );
+      throw new Error(`Recursion detected: ${capabilityName} is already in the invocation chain`)
     }
 
     // Check depth limit
     if (chain.length >= this.maxDepth) {
-      throw new Error(`Maximum invocation depth (${this.maxDepth}) exceeded`);
+      throw new Error(`Maximum invocation depth (${this.maxDepth}) exceeded`)
     }
 
     // Create invocation
-    const invocationId = crypto.randomBytes(16).toString("hex");
+    const invocationId = crypto.randomBytes(16).toString('hex')
     const invocationState: InvocationState = {
       id: invocationId,
       capability: capabilityName,
       parentId: parentInvocationId,
       startedAt: new Date().toISOString(),
-    };
+    }
 
     // Push to chain
-    chain.push(invocationState);
-    this.invocationChains.set(sessionId, chain);
+    chain.push(invocationState)
+    this.invocationChains.set(sessionId, chain)
 
-    return invocationId;
+    return invocationId
   }
 
   /**
@@ -172,39 +162,37 @@ export class SessionManager {
     sessionId: string,
     invocationId: string,
     output: unknown,
-    costEntry: CostEntry
+    costEntry: CostEntry,
   ): void {
-    const session = this.sessions.get(sessionId);
+    const session = this.sessions.get(sessionId)
     if (!session) {
-      throw new Error(`Session ${sessionId} not found`);
+      throw new Error(`Session ${sessionId} not found`)
     }
 
-    const chain = this.invocationChains.get(sessionId);
+    const chain = this.invocationChains.get(sessionId)
     if (!chain) {
-      throw new Error(`No invocation chain found for session ${sessionId}`);
+      throw new Error(`No invocation chain found for session ${sessionId}`)
     }
 
     // Find and remove invocation from chain
-    const invIndex = chain.findIndex((inv) => inv.id === invocationId);
+    const invIndex = chain.findIndex((inv) => inv.id === invocationId)
     if (invIndex === -1) {
-      throw new Error(
-        `Invocation ${invocationId} not found in active chain`
-      );
+      throw new Error(`Invocation ${invocationId} not found in active chain`)
     }
 
-    const invState = chain[invIndex];
+    const invState = chain[invIndex]
     if (!invState) {
-      throw new Error(`Invocation ${invocationId} state is undefined`);
+      throw new Error(`Invocation ${invocationId} state is undefined`)
     }
 
     // Pop from chain (remove invocation)
-    chain.splice(invIndex, 1);
-    this.invocationChains.set(sessionId, chain);
+    chain.splice(invIndex, 1)
+    this.invocationChains.set(sessionId, chain)
 
     // Create capability invocation record
-    const endTime = new Date();
-    const startTime = new Date(invState.startedAt);
-    const durationMs = endTime.getTime() - startTime.getTime();
+    const endTime = new Date()
+    const startTime = new Date(invState.startedAt)
+    const durationMs = endTime.getTime() - startTime.getTime()
 
     const invocationRecord: CapabilityInvocation = {
       id: invocationId,
@@ -213,17 +201,17 @@ export class SessionManager {
       output,
       timestamp: invState.startedAt,
       durationMs,
-    };
+    }
 
     // Add to session
-    session.invocations.push(invocationRecord);
+    session.invocations.push(invocationRecord)
 
     // Update totals
-    session.totalInputTokens += costEntry.inputTokens;
-    session.totalOutputTokens += costEntry.outputTokens;
-    session.totalCost += costEntry.costUsd;
+    session.totalInputTokens += costEntry.inputTokens
+    session.totalOutputTokens += costEntry.outputTokens
+    session.totalCost += costEntry.costUsd
 
-    this.sessions.set(sessionId, session);
+    this.sessions.set(sessionId, session)
   }
 
   /**
@@ -233,19 +221,19 @@ export class SessionManager {
    * @throws Error if session not found
    */
   closeSession(sessionId: string): void {
-    const session = this.sessions.get(sessionId);
+    const session = this.sessions.get(sessionId)
     if (!session) {
-      throw new Error(`Session ${sessionId} not found`);
+      throw new Error(`Session ${sessionId} not found`)
     }
 
-    if (session.state !== "completed") {
-      session.state = "completed";
-      session.completedAt = new Date().toISOString();
-      this.sessions.set(sessionId, session);
+    if (session.state !== 'completed') {
+      session.state = 'completed'
+      session.completedAt = new Date().toISOString()
+      this.sessions.set(sessionId, session)
     }
 
     // Clear invocation chain
-    this.invocationChains.delete(sessionId);
+    this.invocationChains.delete(sessionId)
   }
 
   /**
@@ -254,13 +242,13 @@ export class SessionManager {
    * @returns Array of closed sessions
    */
   closeAll(): Session[] {
-    const activeSessions = this.getActiveSessions();
+    const activeSessions = this.getActiveSessions()
 
     for (const session of activeSessions) {
-      this.closeSession(session.id);
+      this.closeSession(session.id)
     }
 
-    return activeSessions;
+    return activeSessions
   }
 
   /**
@@ -269,9 +257,7 @@ export class SessionManager {
    * @returns Array of active sessions
    */
   getActiveSessions(): Session[] {
-    return Array.from(this.sessions.values()).filter(
-      (s) => s.state === "active"
-    );
+    return Array.from(this.sessions.values()).filter((s) => s.state === 'active')
   }
 
   /**
@@ -281,7 +267,7 @@ export class SessionManager {
    * @returns Array of all sessions
    */
   getAllSessions(): Session[] {
-    return Array.from(this.sessions.values());
+    return Array.from(this.sessions.values())
   }
 
   /**
@@ -291,7 +277,7 @@ export class SessionManager {
    * @returns Session or undefined if not found
    */
   getSession(sessionId: string): Session | undefined {
-    return this.sessions.get(sessionId);
+    return this.sessions.get(sessionId)
   }
 
   /**
@@ -305,21 +291,21 @@ export class SessionManager {
   propagateChildCost(
     sessionId: string,
     childCost: {
-      costUsd: number;
-      inputTokens: number;
-      outputTokens: number;
-    }
+      costUsd: number
+      inputTokens: number
+      outputTokens: number
+    },
   ): void {
-    const session = this.sessions.get(sessionId);
+    const session = this.sessions.get(sessionId)
     if (!session) {
-      throw new Error(`Session ${sessionId} not found`);
+      throw new Error(`Session ${sessionId} not found`)
     }
 
     // Increment parent session totals
-    session.totalCost += childCost.costUsd;
-    session.totalInputTokens += childCost.inputTokens;
-    session.totalOutputTokens += childCost.outputTokens;
+    session.totalCost += childCost.costUsd
+    session.totalInputTokens += childCost.inputTokens
+    session.totalOutputTokens += childCost.outputTokens
 
-    this.sessions.set(sessionId, session);
+    this.sessions.set(sessionId, session)
   }
 }

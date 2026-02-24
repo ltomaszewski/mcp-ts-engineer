@@ -1,4 +1,4 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Test step prompt for audit-fix capability.
@@ -6,9 +6,9 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
  */
 
 interface TestPromptInput {
-  project_path: string;
-  workspaces: string[];
-  cwd?: string;
+  project_path: string
+  workspaces: string[]
+  cwd?: string
 }
 
 /**
@@ -20,13 +20,9 @@ interface TestPromptInput {
  * @param cwd - Optional working directory
  * @returns Formatted user prompt string
  */
-const buildTestUserPrompt = (
-  projectPath: string,
-  workspaces: string[],
-  cwd?: string
-): string => {
-  const workspacesList = workspaces.map((w) => `  - ${w}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+const buildTestUserPrompt = (projectPath: string, workspaces: string[], cwd?: string): string => {
+  const workspacesList = workspaces.map((w) => `  - ${w}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Test Agent for the audit-fix capability, responsible for running automated tests in project workspaces.
 
@@ -74,24 +70,23 @@ Important guidelines:
 - Be specific about which workspace had which failures
 - If npm test command fails completely, set passed=false and explain in failure_summary
 
-Your goal is to verify that the audit fixes didn't break existing functionality by ensuring all tests pass.`;
-};
+Your goal is to verify that the audit fixes didn't break existing functionality by ensuring all tests pass.`
+}
 
 export const testPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-03",
-  description:
-    "Test step: runs npm test in project workspaces and reports aggregated results",
+  version: 'v1',
+  createdAt: '2026-02-03',
+  description: 'Test step: runs npm test in project workspaces and reports aggregated results',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { project_path, workspaces, cwd } = input as TestPromptInput;
+    const { project_path, workspaces, cwd } = input as TestPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildTestUserPrompt(project_path, workspaces, cwd),
-    };
+    }
   },
-};
+}

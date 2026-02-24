@@ -5,16 +5,16 @@
  * Receives files modified and engineering summary from phase eng step.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { buildReviewContext } from "./review-context.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { buildReviewContext } from './review-context.js'
 
 /** Input shape for the phase audit prompt build function. */
 interface PhaseAuditPromptInput {
-  specPath: string;
-  phaseNumber: number;
-  filesModified: string[];
-  engSummary: string;
-  cwd?: string;
+  specPath: string
+  phaseNumber: number
+  filesModified: string[]
+  engSummary: string
+  cwd?: string
 }
 
 /**
@@ -25,7 +25,7 @@ interface PhaseAuditPromptInput {
 const buildPhaseAuditSystemPromptAppend = (): string =>
   `After completing all tool use, provide a brief text summary of the audit findings. Your structured output will be captured automatically via the output schema.
 
-${buildReviewContext()}`;
+${buildReviewContext()}`
 
 const PHASE_AUDIT_USER_PROMPT_TEMPLATE = (
   specPath: string,
@@ -33,7 +33,7 @@ const PHASE_AUDIT_USER_PROMPT_TEMPLATE = (
   filesModified: string[],
   engSummary: string,
 ): string => {
-  const fileList = filesModified.map((f) => `- ${f}`).join("\n");
+  const fileList = filesModified.map((f) => `- ${f}`).join('\n')
 
   return `You are a code auditor. Verify that Phase ${phaseNumber} implementation matches the spec requirements.
 
@@ -90,24 +90,23 @@ ${engSummary}
 - Wrap the JSON in <phase_audit_result></phase_audit_result> XML tags
 - JSON must have: status ("pass", "warn", or "fail"), issues_found (integer), summary (string)
 - summary should be 1-3 sentences describing audit findings
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Phase audit with spec verification */
 export const phaseAuditPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Phase audit: reads spec, verifies phase N implementation, returns PhaseAuditResult via XML block",
+    'Phase audit: reads spec, verifies phase N implementation, returns PhaseAuditResult via XML block',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, phaseNumber, filesModified, engSummary } =
-      input as PhaseAuditPromptInput;
+    const { specPath, phaseNumber, filesModified, engSummary } = input as PhaseAuditPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: buildPhaseAuditSystemPromptAppend(),
       },
       userPrompt: PHASE_AUDIT_USER_PROMPT_TEMPLATE(
@@ -116,6 +115,6 @@ export const phaseAuditPromptV1: PromptVersion = {
         filesModified,
         engSummary,
       ),
-    };
+    }
   },
-};
+}

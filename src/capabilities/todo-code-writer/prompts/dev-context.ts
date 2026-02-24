@@ -6,4 +6,4 @@
  * moved to shared location for reuse across capabilities.
  */
 
-export { DEV_CONTEXT_APPEND_PROMPT, buildDevContext } from "../../../shared/prompts/dev-context.js";
+export { buildDevContext, DEV_CONTEXT_APPEND_PROMPT } from '../../../shared/prompts/dev-context.js'

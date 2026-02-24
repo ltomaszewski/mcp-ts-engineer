@@ -1,16 +1,16 @@
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseXmlBlock, parseJsonSafe } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import type { FixStepInput, FixStepOutput } from './pr-reviewer.schema.js'
 import {
+  FIX_OUTPUT_JSON_SCHEMA,
   FixStepInputSchema,
   FixStepOutputSchema,
-  FIX_OUTPUT_JSON_SCHEMA,
 } from './pr-reviewer.schema.js'
-import type { FixStepInput, FixStepOutput } from './pr-reviewer.schema.js'
 
 const FIX_PROMPT_V1: PromptVersion = {
   version: 'v1',

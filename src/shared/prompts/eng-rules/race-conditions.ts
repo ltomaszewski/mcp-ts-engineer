@@ -63,4 +63,4 @@ Before marking implementation complete, verify:
 - [ ] Navigation safety: Router.push/replace only after async completes
 - [ ] Debounce applied: User input triggering API calls is debounced
 - [ ] Request versioning: Multiple rapid selections use ref-based versioning
-- [ ] AbortController stored in useRef, NOT useState`;
+- [ ] AbortController stored in useRef, NOT useState`

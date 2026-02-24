@@ -9,13 +9,13 @@
  * 5. Resolve relative codemap paths to absolute
  */
 
-import { execSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
-import path from "node:path";
-import type { ProjectConfig, CodemapEntry } from "./project-config.js";
-import { deriveLogDir } from "./project-config.js";
+import { execSync } from 'node:child_process'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import path from 'node:path'
+import type { CodemapEntry, ProjectConfig } from './project-config.js'
+import { deriveLogDir } from './project-config.js'
 
-const CONFIG_FILENAME = "ts-engineer.config.json";
+const CONFIG_FILENAME = 'ts-engineer.config.json'
 
 /**
  * Auto-detect GitHub repo name from git remote origin URL.
@@ -23,17 +23,17 @@ const CONFIG_FILENAME = "ts-engineer.config.json";
  */
 function detectRepoName(cwd: string): string {
   try {
-    const url = execSync("git remote get-url origin", {
+    const url = execSync('git remote get-url origin', {
       cwd,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5_000,
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim()
     // Match github.com:owner/repo.git or github.com/owner/repo.git
-    const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
-    return match?.[2] ?? "";
+    const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/)
+    return match?.[2] ?? ''
   } catch {
-    return "";
+    return ''
   }
 }
 
@@ -43,25 +43,27 @@ function detectRepoName(cwd: string): string {
  * or by a .git directory as fallback.
  */
 function findMonorepoRoot(startDir: string): string {
-  let dir = startDir;
+  let dir = startDir
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const pkgPath = path.join(dir, "package.json");
+    const pkgPath = path.join(dir, 'package.json')
     if (existsSync(pkgPath)) {
       try {
-        const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-        if (pkg.workspaces) return dir;
-      } catch { /* ignore parse errors */ }
+        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+        if (pkg.workspaces) return dir
+      } catch {
+        /* ignore parse errors */
+      }
     }
     // Fallback: .git directory (not file — submodules use a .git file)
-    const gitPath = path.join(dir, ".git");
-    if (existsSync(gitPath) && statSync(gitPath).isDirectory()) return dir;
+    const gitPath = path.join(dir, '.git')
+    if (existsSync(gitPath) && statSync(gitPath).isDirectory()) return dir
 
-    const parent = path.dirname(dir);
-    if (parent === dir) break; // reached filesystem root
-    dir = parent;
+    const parent = path.dirname(dir)
+    if (parent === dir) break // reached filesystem root
+    dir = parent
   }
-  return startDir; // fallback: use startDir itself
+  return startDir // fallback: use startDir itself
 }
 
 /**
@@ -75,40 +77,40 @@ function findMonorepoRoot(startDir: string): string {
  */
 export function loadProjectConfig(): ProjectConfig {
   // src/config/load-config.ts → packages/mcp-ts-engineer/
-  const submodulePath = path.resolve(import.meta.dirname, "../..");
-  const monorepoRoot = findMonorepoRoot(submodulePath);
+  const submodulePath = path.resolve(import.meta.dirname, '../..')
+  const monorepoRoot = findMonorepoRoot(submodulePath)
 
-  const defaultServerName = "McpTsEngineer";
+  const defaultServerName = 'McpTsEngineer'
   const defaults: ProjectConfig = {
     serverName: defaultServerName,
-    serverVersion: "1.0.0",
+    serverVersion: '1.0.0',
     logDir: deriveLogDir(defaultServerName),
-    commitTag: "[ts-engineer]",
+    commitTag: '[ts-engineer]',
     monorepoRoot,
     submodulePath,
     codemaps: [],
     reviewChecklist: [],
-  };
+  }
 
   // Look for config file
-  const configPath = path.join(monorepoRoot, CONFIG_FILENAME);
+  const configPath = path.join(monorepoRoot, CONFIG_FILENAME)
   if (!existsSync(configPath)) {
     // Still auto-detect repoName even without config file
-    const detectedRepoName = detectRepoName(monorepoRoot);
-    if (detectedRepoName) defaults.repoName = detectedRepoName;
-    return defaults;
+    const detectedRepoName = detectRepoName(monorepoRoot)
+    if (detectedRepoName) defaults.repoName = detectedRepoName
+    return defaults
   }
 
   try {
-    const raw = JSON.parse(readFileSync(configPath, "utf-8")) as Partial<ProjectConfig>;
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as Partial<ProjectConfig>
 
     // Auto-derive logDir from serverName when config has serverName but no logDir.
     // This ensures each project gets isolated logs even without explicit logDir.
-    const effectiveLogDir = raw.logDir
-      ?? (raw.serverName ? deriveLogDir(raw.serverName) : defaults.logDir);
+    const effectiveLogDir =
+      raw.logDir ?? (raw.serverName ? deriveLogDir(raw.serverName) : defaults.logDir)
 
     // Auto-detect repoName from git remote if not in config
-    const effectiveRepoName = raw.repoName || detectRepoName(monorepoRoot);
+    const effectiveRepoName = raw.repoName || detectRepoName(monorepoRoot)
 
     // Merge — config file values override defaults
     const merged: ProjectConfig = {
@@ -119,21 +121,19 @@ export function loadProjectConfig(): ProjectConfig {
       // Always use auto-detected paths (config file can't override these)
       monorepoRoot,
       submodulePath,
-    };
+    }
 
     // Resolve relative codemap paths to absolute
     if (merged.codemaps.length > 0) {
       merged.codemaps = merged.codemaps.map((entry: CodemapEntry) => ({
         area: entry.area,
-        path: path.isAbsolute(entry.path)
-          ? entry.path
-          : path.resolve(monorepoRoot, entry.path),
-      }));
+        path: path.isAbsolute(entry.path) ? entry.path : path.resolve(monorepoRoot, entry.path),
+      }))
     }
 
-    return merged;
+    return merged
   } catch {
     // Config file exists but is malformed — use defaults
-    return defaults;
+    return defaults
   }
 }

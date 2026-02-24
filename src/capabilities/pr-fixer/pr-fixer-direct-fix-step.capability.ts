@@ -2,19 +2,16 @@
  * Direct fix step: Apply mechanical fixes per-issue in the worktree.
  */
 
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseJsonSafe } from '../../core/utils/index.js'
-import { z } from 'zod'
-import {
-  DirectFixStepOutputSchema,
-  DIRECT_FIX_OUTPUT_JSON_SCHEMA,
-} from './pr-fixer.schema.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
+import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
 import { DIRECT_FIX_PROMPT_V1 } from './prompts/direct-fix.v1.js'
 
 const DirectFixStepInputSchema = z.object({
@@ -34,9 +31,10 @@ const DIRECT_FIX_V1: PromptVersion = {
     const data = input as DirectFixStepInput
     return {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: DIRECT_FIX_PROMPT_V1
-        .replace(/{worktree_path}/g, data.worktree_path)
-        .replace('{issues}', data.issues_summary),
+      userPrompt: DIRECT_FIX_PROMPT_V1.replace(/{worktree_path}/g, data.worktree_path).replace(
+        '{issues}',
+        data.issues_summary,
+      ),
     }
   },
 }

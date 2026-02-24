@@ -2,19 +2,16 @@
  * Commit step: Commit and push direct fixes to PR branch.
  */
 
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseJsonSafe } from '../../core/utils/index.js'
-import { z } from 'zod'
-import {
-  FixerCommitStepOutputSchema,
-  FIXER_COMMIT_OUTPUT_JSON_SCHEMA,
-} from './pr-fixer.schema.js'
 import type { FixerCommitStepOutput } from './pr-fixer.schema.js'
+import { FIXER_COMMIT_OUTPUT_JSON_SCHEMA, FixerCommitStepOutputSchema } from './pr-fixer.schema.js'
 
 const CommitStepInputSchema = z.object({
   worktree_path: z.string(),

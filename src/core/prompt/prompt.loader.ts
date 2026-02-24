@@ -3,23 +3,20 @@
  * Manages versioned prompts for capabilities with current version tracking.
  */
 
-import type { PromptVersion, PromptRegistry } from "./prompt.types.js";
-import {
-  PromptVersionNotFoundError,
-  PromptSunsetError,
-} from "../errors.js";
+import { PromptSunsetError, PromptVersionNotFoundError } from '../errors.js'
+import type { PromptRegistry, PromptVersion } from './prompt.types.js'
 
 /** Registry entry with version metadata */
 interface CapabilityPromptRegistry {
-  registry: PromptRegistry;
-  currentVersion: string;
+  registry: PromptRegistry
+  currentVersion: string
 }
 
 /**
  * Loads and manages versioned prompts for capabilities.
  */
 export class PromptLoader {
-  private capabilities: Map<string, CapabilityPromptRegistry> = new Map();
+  private capabilities: Map<string, CapabilityPromptRegistry> = new Map()
 
   /**
    * Register prompts for a capability.
@@ -33,19 +30,19 @@ export class PromptLoader {
   registerCapabilityPrompts(
     capabilityName: string,
     registry: PromptRegistry,
-    currentVersion: string
+    currentVersion: string,
   ): void {
     // Validate current version exists
     if (!registry[currentVersion]) {
       throw new PromptVersionNotFoundError(
-        `Current version "${currentVersion}" not found in registry for capability "${capabilityName}"`
-      );
+        `Current version "${currentVersion}" not found in registry for capability "${capabilityName}"`,
+      )
     }
 
     this.capabilities.set(capabilityName, {
       registry,
       currentVersion,
-    });
+    })
   }
 
   /**
@@ -59,30 +56,28 @@ export class PromptLoader {
    * @throws {PromptSunsetError} If version is past sunset date
    */
   getPrompt(capabilityName: string, version?: string): PromptVersion {
-    const capability = this.capabilities.get(capabilityName);
+    const capability = this.capabilities.get(capabilityName)
     if (!capability) {
-      throw new PromptVersionNotFoundError(
-        `Capability "${capabilityName}" not registered`
-      );
+      throw new PromptVersionNotFoundError(`Capability "${capabilityName}" not registered`)
     }
 
-    const targetVersion = version ?? capability.currentVersion;
-    const prompt = capability.registry[targetVersion];
+    const targetVersion = version ?? capability.currentVersion
+    const prompt = capability.registry[targetVersion]
 
     if (!prompt) {
       throw new PromptVersionNotFoundError(
-        `Version "${targetVersion}" not found for capability "${capabilityName}"`
-      );
+        `Version "${targetVersion}" not found for capability "${capabilityName}"`,
+      )
     }
 
     // Check sunset date
     if (prompt.sunsetDate) {
-      const sunsetDate = new Date(prompt.sunsetDate);
-      const now = new Date();
+      const sunsetDate = new Date(prompt.sunsetDate)
+      const now = new Date()
       if (now > sunsetDate) {
         throw new PromptSunsetError(
-          `Version "${targetVersion}" has been sunset as of ${prompt.sunsetDate}`
-        );
+          `Version "${targetVersion}" has been sunset as of ${prompt.sunsetDate}`,
+        )
       }
     }
 
@@ -90,7 +85,7 @@ export class PromptLoader {
     // using the logger instance. This loader is stateless and doesn't have logger access.
     // The warning is intentionally not logged here to avoid direct console usage.
 
-    return prompt;
+    return prompt
   }
 
   /**
@@ -101,13 +96,11 @@ export class PromptLoader {
    * @throws {PromptVersionNotFoundError} If capability not registered
    */
   getCurrentVersion(capabilityName: string): string {
-    const capability = this.capabilities.get(capabilityName);
+    const capability = this.capabilities.get(capabilityName)
     if (!capability) {
-      throw new PromptVersionNotFoundError(
-        `Capability "${capabilityName}" not registered`
-      );
+      throw new PromptVersionNotFoundError(`Capability "${capabilityName}" not registered`)
     }
-    return capability.currentVersion;
+    return capability.currentVersion
   }
 
   /**
@@ -118,12 +111,10 @@ export class PromptLoader {
    * @throws {PromptVersionNotFoundError} If capability not registered
    */
   listVersions(capabilityName: string): string[] {
-    const capability = this.capabilities.get(capabilityName);
+    const capability = this.capabilities.get(capabilityName)
     if (!capability) {
-      throw new PromptVersionNotFoundError(
-        `Capability "${capabilityName}" not registered`
-      );
+      throw new PromptVersionNotFoundError(`Capability "${capabilityName}" not registered`)
     }
-    return Object.keys(capability.registry);
+    return Object.keys(capability.registry)
   }
 }

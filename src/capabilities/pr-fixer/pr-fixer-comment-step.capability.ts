@@ -5,20 +5,20 @@
  * to guarantee the hidden state marker is preserved exactly as built.
  */
 
-import { execSync } from 'child_process'
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { execSync } from 'node:child_process'
+import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import {
-  serializeState,
   FIXER_STATE_MARKER,
-  type PrCommentState,
   type IssueStatus,
+  type PrCommentState,
+  serializeState,
 } from '../../core/utils/pr-comment-state.js'
-import { z } from 'zod'
 import type { FixerCommentStepOutput, PrFixerOutput } from './pr-fixer.schema.js'
 
 const CommentStepInputSchema = z.object({
@@ -36,17 +36,13 @@ type CommentStepInput = z.infer<typeof CommentStepInputSchema>
  */
 function buildFixerCommentBody(data: CommentStepInput): string {
   const output = data.output as unknown as PrFixerOutput
-  const lines: string[] = [
-    `## PR Fixer — Round ${data.round}`,
-    '',
-  ]
+  const lines: string[] = [`## PR Fixer — Round ${data.round}`, '']
 
   if (output.per_issue.length > 0) {
     lines.push('| Issue | Status | Method |')
     lines.push('|-------|--------|--------|')
     for (const item of output.per_issue) {
-      const statusEmoji =
-        item.status === 'fixed' ? '✅' : item.status === 'skipped' ? '⏭️' : '❌'
+      const statusEmoji = item.status === 'fixed' ? '✅' : item.status === 'skipped' ? '⏭️' : '❌'
       lines.push(`| ${item.title} | ${statusEmoji} ${item.status} | ${item.method} |`)
     }
     lines.push('')
@@ -115,10 +111,11 @@ function postOrUpdateFixerComment(
     return parsed.html_url ?? ''
   }
 
-  const result = execSync(
-    `gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`,
-    { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
-  ).trim()
+  const result = execSync(`gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`, {
+    encoding: 'utf-8',
+    input: commentBody,
+    timeout: 15_000,
+  }).trim()
   return result
 }
 
@@ -168,7 +165,10 @@ export const prFixerCommentStepCapability: CapabilityDefinition<
 
     try {
       const commentUrl = postOrUpdateFixerComment(
-        input.repo_owner, input.repo_name, input.pr_number, commentBody,
+        input.repo_owner,
+        input.repo_name,
+        input.pr_number,
+        commentBody,
       )
       context.logger.info('Fixer comment posted programmatically', { commentUrl })
       return { comment_url: commentUrl, comment_posted: true }

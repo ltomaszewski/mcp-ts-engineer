@@ -5,19 +5,19 @@
  * Uses claude_code preset for full tool access to run git commands.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { getCommitTag } from "../../../config/constants.js";
+import { getCommitTag } from '../../../config/constants.js'
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /** Input shape for the commit prompt build function. */
 interface CommitPromptInput {
-  specPath: string;
-  filesChanged: string[];
-  phaseSummaries: string[];
-  finalAuditSummary: string;
-  sessionId: string;
-  cwd?: string;
-  partialRun?: boolean;
-  failureContext?: string;
+  specPath: string
+  filesChanged: string[]
+  phaseSummaries: string[]
+  finalAuditSummary: string
+  sessionId: string
+  cwd?: string
+  partialRun?: boolean
+  failureContext?: string
 }
 
 /**
@@ -69,7 +69,7 @@ Execution stopped at phase 2 due to build errors.
 Needs investigation before proceeding.
 
 Session-Id: a9ade0318c43c8803a91cf591782e0c6
-</committer_instructions>`;
+</committer_instructions>`
 
 const COMMIT_USER_PROMPT_TEMPLATE = (
   specPath: string,
@@ -83,10 +83,10 @@ const COMMIT_USER_PROMPT_TEMPLATE = (
   const partialRunBlock = partialRun
     ? `\n<partial_run>
 IMPORTANT: This is an INCOMPLETE run. Not all phases completed successfully.
-Failure: ${failureContext ?? "Unknown"}
+Failure: ${failureContext ?? 'Unknown'}
 The commit message MUST start with "[INCOMPLETE]" prefix.
 </partial_run>\n`
-    : "";
+    : ''
 
   return `Create a commit for all implementation changes.
 
@@ -102,7 +102,7 @@ Execute these steps:
 1. Read the spec at <spec_path> to understand what was implemented
 
 2. Review the phase summaries to understand the work done:
-${phaseSummaries.map((s, i) => `   Phase ${i + 1}: ${s}`).join("\n")}
+${phaseSummaries.map((s, i) => `   Phase ${i + 1}: ${s}`).join('\n')}
 
 3. Create a commit message:
    - First line: Short summary following conventional commits format
@@ -134,23 +134,28 @@ ${phaseSummaries.map((s, i) => `   Phase ${i + 1}: ${s}`).join("\n")}
 - Include context in body based on phase summaries
 - Commit ALL files in <files_changed> in a single atomic commit
 - Only mark committed=true if git commit succeeds
-</rules>`;
-};
+</rules>`
+}
 
 /**
  * Commit prompt v1.
  */
 export const commitPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
-  description: "Initial commit prompt for todo-code-writer capability",
+  version: 'v1',
+  createdAt: '2026-01-30',
+  description: 'Initial commit prompt for todo-code-writer capability',
   deprecated: false,
-  build: (input: unknown): { systemPrompt: { type: "preset"; preset: "claude_code"; append: string }; userPrompt: string } => {
-    const typedInput = input as CommitPromptInput;
+  build: (
+    input: unknown,
+  ): {
+    systemPrompt: { type: 'preset'; preset: 'claude_code'; append: string }
+    userPrompt: string
+  } => {
+    const typedInput = input as CommitPromptInput
     return {
       systemPrompt: {
-        type: "preset",
-        preset: "claude_code",
+        type: 'preset',
+        preset: 'claude_code',
         append: COMMIT_SYSTEM_APPEND,
       },
       userPrompt: COMMIT_USER_PROMPT_TEMPLATE(
@@ -162,6 +167,6 @@ export const commitPromptV1: PromptVersion = {
         typedInput.partialRun,
         typedInput.failureContext,
       ),
-    };
+    }
   },
-};
+}

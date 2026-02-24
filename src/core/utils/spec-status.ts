@@ -3,8 +3,8 @@
  * Handles programmatic transitions between spec lifecycle states.
  */
 
-import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 
 /**
  * Update spec status from one state to another.
@@ -36,23 +36,23 @@ export async function updateSpecStatus(
   toStatus: string,
   cwd?: string,
 ): Promise<boolean> {
-  const absolutePath = resolve(cwd || process.cwd(), specPath);
-  const content = await readFile(absolutePath, "utf8");
+  const absolutePath = resolve(cwd || process.cwd(), specPath)
+  const content = await readFile(absolutePath, 'utf8')
 
   // Try bold markdown format first (**Status**: X)
-  const boldPattern = new RegExp(`\\*\\*Status\\*\\*:\\s*${fromStatus}`, "g");
-  let updated = content.replace(boldPattern, `**Status**: ${toStatus}`);
+  const boldPattern = new RegExp(`\\*\\*Status\\*\\*:\\s*${fromStatus}`, 'g')
+  let updated = content.replace(boldPattern, `**Status**: ${toStatus}`)
 
   // Fallback to plain format (Status: X)
   if (updated === content) {
-    const plainPattern = new RegExp(`Status:\\s*${fromStatus}`, "g");
-    updated = content.replace(plainPattern, `Status: ${toStatus}`);
+    const plainPattern = new RegExp(`Status:\\s*${fromStatus}`, 'g')
+    updated = content.replace(plainPattern, `Status: ${toStatus}`)
   }
 
   if (updated !== content) {
-    await writeFile(absolutePath, updated, "utf8");
-    return true;
+    await writeFile(absolutePath, updated, 'utf8')
+    return true
   }
 
-  return false;
+  return false
 }

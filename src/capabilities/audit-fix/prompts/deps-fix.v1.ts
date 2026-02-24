@@ -4,12 +4,12 @@
  * Supports npm workspaces (monorepos) by using --workspace flag.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 interface DepsFixPromptInput {
-  projectPath: string;
-  vulnerabilitiesFound: number;
-  cwd?: string;
+  projectPath: string
+  vulnerabilitiesFound: number
+  cwd?: string
 }
 
 /**
@@ -19,20 +19,20 @@ interface DepsFixPromptInput {
  * and runs post-verification audit to calculate fixed vs remaining vulnerabilities.
  */
 const depsFixPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-04",
-  description: "Deps fix step: npm audit fix with file tracking",
+  version: 'v1',
+  createdAt: '2026-02-04',
+  description: 'Deps fix step: npm audit fix with file tracking',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { projectPath, vulnerabilitiesFound, cwd } = input as DepsFixPromptInput;
-    const rootPath = cwd || ".";
+    const { projectPath, vulnerabilitiesFound, cwd } = input as DepsFixPromptInput
+    const rootPath = cwd || '.'
 
     const userPrompt = `You are executing a dependency security fix for a code quality audit.
 
 <project_path>${projectPath}</project_path>
 <vulnerabilities_found>${vulnerabilitiesFound}</vulnerabilities_found>
-${cwd ? `<cwd>${cwd}</cwd>` : ""}
+${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 <workflow>
 1. Determine if this is a monorepo workspace or standalone project:
@@ -130,18 +130,18 @@ If npm audit fix fails to run:
 - If npm audit fix fails to run, set fix_ran: false
 - Include concise fix summary with counts (e.g., "Fixed 5/10 vulnerabilities, 5 remain")
 - Extract file names from git status output (look for modified files)
-</rules>`;
+</rules>`
 
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append:
-          "REMINDER: After completing the deps fix, you MUST output <deps_fix_result>{...}</deps_fix_result> with your findings.",
+          'REMINDER: After completing the deps fix, you MUST output <deps_fix_result>{...}</deps_fix_result> with your findings.',
       },
       userPrompt,
-    };
+    }
   },
-};
+}
 
-export { depsFixPromptV1 };
+export { depsFixPromptV1 }

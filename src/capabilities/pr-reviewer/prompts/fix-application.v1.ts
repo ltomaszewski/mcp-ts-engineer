@@ -2,13 +2,12 @@
  * Fix application prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const FIX_APPLICATION_USER_PROMPT_TEMPLATE = (
   issue: string,
   filePath: string,
-  fileContent: string
+  fileContent: string,
 ): string => {
   return `# Fix Application Task
 
@@ -47,37 +46,33 @@ Return a JSON object with this structure:
 \`\`\`
 
 After applying the fix, verify it doesn't break TypeScript compilation.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Fix application prompt for automated issue remediation",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Fix application prompt for automated issue remediation',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      issue: string;
-      filePath: string;
-      fileContent: string;
-    };
+      issue: string
+      filePath: string
+      fileContent: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: FIX_APPLICATION_USER_PROMPT_TEMPLATE(
-        data.issue,
-        data.filePath,
-        data.fileContent
-      ),
-    };
+      userPrompt: FIX_APPLICATION_USER_PROMPT_TEMPLATE(data.issue, data.filePath, data.fileContent),
+    }
   },
-};
+}
 
 export const FIX_APPLICATION_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const FIX_APPLICATION_CURRENT_VERSION = "v1";
+export const FIX_APPLICATION_CURRENT_VERSION = 'v1'

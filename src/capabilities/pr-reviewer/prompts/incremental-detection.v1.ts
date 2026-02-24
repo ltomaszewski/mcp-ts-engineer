@@ -2,12 +2,11 @@
  * Incremental review detection prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const INCREMENTAL_DETECTION_USER_PROMPT_TEMPLATE = (
   commits: string[],
-  lastReviewedSha: string
+  lastReviewedSha: string,
 ): string => {
   return `# Incremental Review Detection Task
 
@@ -44,35 +43,32 @@ Return a JSON object with this structure:
 \`\`\`
 
 If last reviewed SHA not found, recommend full review.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Incremental review detection to identify new commits since last review",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Incremental review detection to identify new commits since last review',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      commits: string[];
-      lastReviewedSha: string;
-    };
+      commits: string[]
+      lastReviewedSha: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: INCREMENTAL_DETECTION_USER_PROMPT_TEMPLATE(
-        data.commits,
-        data.lastReviewedSha
-      ),
-    };
+      userPrompt: INCREMENTAL_DETECTION_USER_PROMPT_TEMPLATE(data.commits, data.lastReviewedSha),
+    }
   },
-};
+}
 
 export const INCREMENTAL_DETECTION_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const INCREMENTAL_DETECTION_CURRENT_VERSION = "v1";
+export const INCREMENTAL_DETECTION_CURRENT_VERSION = 'v1'

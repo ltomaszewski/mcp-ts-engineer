@@ -6,6 +6,6 @@
  * and call it with their own ProjectConfig.
  */
 
-import { bootstrap } from "./bootstrap.js";
+import { bootstrap } from './bootstrap.js'
 
-bootstrap();
+bootstrap()

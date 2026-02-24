@@ -4,15 +4,15 @@
  * for a specific project with conventional commit format.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { getCommitTag } from "../../../config/constants.js";
+import { getCommitTag } from '../../../config/constants.js'
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 interface CommitPromptInput {
-  projectPath: string;
-  filesChanged: string[];
-  auditSummary: string;
-  sessionId: string;
-  cwd?: string;
+  projectPath: string
+  filesChanged: string[]
+  auditSummary: string
+  sessionId: string
+  cwd?: string
 }
 
 const buildCommitUserPrompt = (
@@ -22,11 +22,11 @@ const buildCommitUserPrompt = (
   sessionId: string,
   cwd?: string,
 ): string => {
-  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   // Extract scope from project path (e.g., "apps/my-server" -> "server")
-  const scope = projectPath.split("/").pop() || projectPath;
+  const scope = projectPath.split('/').pop() || projectPath
 
   return `You are the Commit Agent for the audit-fix workflow.
 
@@ -80,31 +80,23 @@ Git trailer format:
 - Add the Session-Id trailer: Session-Id: ${sessionId}
 - This trailer enables tracing commits back to their cost report session
 
-Your goal is to create a clean commit that captures audit-fix changes for ${projectPath}.`;
-};
+Your goal is to create a clean commit that captures audit-fix changes for ${projectPath}.`
+}
 
 export const commitPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-01",
-  description:
-    "Commit step: commits audit-fix changes with conventional commit message",
+  version: 'v1',
+  createdAt: '2026-02-01',
+  description: 'Commit step: commits audit-fix changes with conventional commit message',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { projectPath, filesChanged, auditSummary, sessionId, cwd } =
-      input as CommitPromptInput;
+    const { projectPath, filesChanged, auditSummary, sessionId, cwd } = input as CommitPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: buildCommitUserPrompt(
-        projectPath,
-        filesChanged,
-        auditSummary,
-        sessionId,
-        cwd,
-      ),
-    };
+      userPrompt: buildCommitUserPrompt(projectPath, filesChanged, auditSummary, sessionId, cwd),
+    }
   },
-};
+}

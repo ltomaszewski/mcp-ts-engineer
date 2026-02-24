@@ -20,12 +20,12 @@
  * - Affirmative instructions outperform negations
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /** Input shape for the review prompt build function. */
 interface ReviewPromptInput {
-  specPath: string;
-  cwd?: string;
+  specPath: string
+  cwd?: string
 }
 
 /**
@@ -38,7 +38,7 @@ const SYSTEM_PROMPT_APPEND = `<spec_writer_override>
 You are a spec writer generating a complete document. For this task, use the Write tool to create the complete document in a single call. The Write tool is the correct tool because you are generating all content from scratch, not patching an existing file. After writing the document, output a summary XML block as plain text.
 
 After completing all tool use, provide a brief text summary of the work you completed.
-</spec_writer_override>`;
+</spec_writer_override>`
 
 const REVIEW_USER_PROMPT_TEMPLATE = (specPath: string): string => {
   return `You are a spec writer. Read a draft todo spec, research the codebase, then write a COMPLETE implementation-ready spec with all 16 sections populated.
@@ -165,26 +165,26 @@ After writing the complete spec, output a <review_summary> XML block with this J
 {"status":"IN_REVIEW","spec_path":"docs/specs/app/feature.md","target_app":"my-app","corrections_applied":14,"blockers_remaining":0,"warnings":2,"cross_app_status":"N/A","consistency_score":"14/14 (0B, 2W)","key_findings":["Wrote 12 acceptance criteria from codebase analysis","Wrote inter-session data contracts with Zod schemas","Wrote 5 implementation phases with verification commands","Wrote testing strategy with 7 test files","Wrote scope boundary","Wrote 4 design decisions with rationale"],"spec_modified":true}
 </review_summary>
 </example>
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Agnostic spec writer with ReviewSummary output */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-29",
+  version: 'v1',
+  createdAt: '2026-01-29',
   description:
-    "Agnostic spec writer: reads any draft todo, generates all missing content, writes complete 16-section spec",
+    'Agnostic spec writer: reads any draft todo, generates all missing content, writes complete 16-section spec',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath } = input as ReviewPromptInput;
+    const { specPath } = input as ReviewPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: SYSTEM_PROMPT_APPEND,
       },
       userPrompt: REVIEW_USER_PROMPT_TEMPLATE(specPath),
-    };
+    }
   },
-};
+}

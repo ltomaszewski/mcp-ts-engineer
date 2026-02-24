@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  PrFixerInputSchema,
-  PrFixerOutputSchema,
-  PR_FIXER_OUTPUT_FALLBACK,
   ClassifyStepOutputSchema,
   DirectFixStepOutputSchema,
-  FixerValidateStepOutputSchema,
-  FixerCommitStepOutputSchema,
   FixerCommentStepOutputSchema,
+  FixerCommitStepOutputSchema,
+  FixerValidateStepOutputSchema,
+  PR_FIXER_OUTPUT_FALLBACK,
+  PrFixerInputSchema,
+  PrFixerOutputSchema,
 } from '../pr-fixer.schema.js'
 
 // ---------------------------------------------------------------------------
@@ -68,9 +68,7 @@ describe('PrFixerOutputSchema', () => {
       files_changed: ['src/a.ts'],
       cost_usd: 0.75,
       round: 1,
-      per_issue: [
-        { issue_id: 'abc', title: 'Fix A', status: 'fixed', method: 'direct' },
-      ],
+      per_issue: [{ issue_id: 'abc', title: 'Fix A', status: 'fixed', method: 'direct' }],
     })
     expect(result.success).toBe(true)
   })

@@ -2,12 +2,9 @@
  * Result aggregation prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
-const AGGREGATION_USER_PROMPT_TEMPLATE = (
-  agentResults: string[]
-): string => {
+const AGGREGATION_USER_PROMPT_TEMPLATE = (agentResults: string[]): string => {
   return `# Result Aggregation Task
 
 You are aggregating code review results from multiple specialized agents.
@@ -52,33 +49,31 @@ Return a JSON object with this structure:
 \`\`\`
 
 Return only the merged, deduplicated list.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Result aggregation to merge and deduplicate issues from multiple agents",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Result aggregation to merge and deduplicate issues from multiple agents',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      agentResults: string[];
-    };
+      agentResults: string[]
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: AGGREGATION_USER_PROMPT_TEMPLATE(
-        data.agentResults
-      ),
-    };
+      userPrompt: AGGREGATION_USER_PROMPT_TEMPLATE(data.agentResults),
+    }
   },
-};
+}
 
 export const AGGREGATION_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const AGGREGATION_CURRENT_VERSION = "v1";
+export const AGGREGATION_CURRENT_VERSION = 'v1'

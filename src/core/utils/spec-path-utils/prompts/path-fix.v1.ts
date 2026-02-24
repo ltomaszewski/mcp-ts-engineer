@@ -6,22 +6,22 @@
  * Structured output guarantees validated JSON result matching PathFixStepOutput schema.
  */
 
-import type { PromptVersion } from "../../../prompt/prompt.types.js";
+import type { PromptVersion } from '../../../prompt/prompt.types.js'
 
 /** Input shape for the path fix prompt build function. */
 export interface PathFixPromptInput {
-  specPath: string;
-  specContent: string;
-  targetApp: string;
-  uncorrectablePaths: string[];
-  cwd?: string;
+  specPath: string
+  specContent: string
+  targetApp: string
+  uncorrectablePaths: string[]
+  cwd?: string
 }
 
 /**
  * System prompt append for path fix step.
  * Ensures AI provides structured output even with minimal verbosity.
  */
-const PATH_FIX_SYSTEM_PROMPT_APPEND = `You are a path correction specialist for monorepo spec files. Your task is to fix file paths that reference internal directories or incorrect monorepo roots by researching the codebase structure. Use the Read, Glob, and Grep tools to locate files and determine correct paths. Output corrections as structured JSON matching the PathFixStepOutput schema.`;
+const PATH_FIX_SYSTEM_PROMPT_APPEND = `You are a path correction specialist for monorepo spec files. Your task is to fix file paths that reference internal directories or incorrect monorepo roots by researching the codebase structure. Use the Read, Glob, and Grep tools to locate files and determine correct paths. Output corrections as structured JSON matching the PathFixStepOutput schema.`
 
 const PATH_FIX_USER_PROMPT_TEMPLATE = (
   specPath: string,
@@ -29,7 +29,7 @@ const PATH_FIX_USER_PROMPT_TEMPLATE = (
   targetApp: string,
   uncorrectablePaths: string[],
 ): string => {
-  const pathsList = uncorrectablePaths.map((p) => `  - ${p}`).join("\n");
+  const pathsList = uncorrectablePaths.map((p) => `  - ${p}`).join('\n')
 
   return `Fix file paths in a spec document by researching the codebase.
 
@@ -43,7 +43,7 @@ ${pathsList}
 
 <spec_preview>
 ${specContent.slice(0, 1000)}
-${specContent.length > 1000 ? "\n... (truncated for brevity)" : ""}
+${specContent.length > 1000 ? '\n... (truncated for brevity)' : ''}
 </spec_preview>
 
 <workflow>
@@ -87,24 +87,24 @@ Common internal directory patterns:
 - Mark truly uncorrectable paths: If research yields no results, add to remaining_uncorrectable
 </rules>
 
-Output format: Your structured output will be captured automatically via the output schema (PathFixStepOutput).`;
-};
+Output format: Your structured output will be captured automatically via the output schema (PathFixStepOutput).`
+}
 
 /** Version 1: AI-assisted path correction with codebase research */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-05",
+  version: 'v1',
+  createdAt: '2026-02-05',
   description:
-    "AI-assisted path correction: researches codebase to fix uncorrectable paths, returns PathFixStepOutput via structured output",
+    'AI-assisted path correction: researches codebase to fix uncorrectable paths, returns PathFixStepOutput via structured output',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { specPath, specContent, targetApp, uncorrectablePaths, cwd } =
-      input as PathFixPromptInput;
+      input as PathFixPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: PATH_FIX_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: PATH_FIX_USER_PROMPT_TEMPLATE(
@@ -114,6 +114,6 @@ export const v1: PromptVersion = {
         uncorrectablePaths,
       ),
       cwd,
-    };
+    }
   },
-};
+}

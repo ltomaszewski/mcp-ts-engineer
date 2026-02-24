@@ -9,16 +9,16 @@
  * Hook callback function type.
  * Receives tool input parameters and returns a decision on whether to continue or block.
  */
-export type HookCallback = (toolInput: Record<string, unknown>) => HookResult;
+export type HookCallback = (toolInput: Record<string, unknown>) => HookResult
 
 /**
  * Result of a hook callback execution.
  */
 export interface HookResult {
   /** Decision on whether to continue or block the operation */
-  decision: 'continue' | 'block';
+  decision: 'continue' | 'block'
   /** Reason for blocking (only when decision is 'block') */
-  reason?: string;
+  reason?: string
 }
 
 /**
@@ -26,9 +26,9 @@ export interface HookResult {
  */
 export interface HookConfig {
   /** Tool name to match (e.g., 'Write', 'Edit') */
-  matcher: string;
+  matcher: string
   /** Array of hook callbacks to execute */
-  hooks: HookCallback[];
+  hooks: HookCallback[]
 }
 
 /**
@@ -36,7 +36,7 @@ export interface HookConfig {
  */
 export interface HooksCollection {
   /** Hooks to execute before tool use */
-  PreToolUse: HookConfig[];
+  PreToolUse: HookConfig[]
 }
 
 /**
@@ -64,28 +64,28 @@ export interface HooksCollection {
  */
 export function createPathDuplicationBlockerHook(): HookCallback {
   return (toolInput: Record<string, unknown>): HookResult => {
-    const filePath = toolInput.file_path as string | undefined;
+    const filePath = toolInput.file_path as string | undefined
 
     // If no file_path provided, allow operation to continue
     if (!filePath) {
-      return { decision: 'continue' };
+      return { decision: 'continue' }
     }
 
     // Match /segment/segment/ where both segments are identical (case-insensitive)
     // Pattern: /([^/]+)/ captures a path segment, then (?:.*\/)* allows any intermediate paths,
     // then \1\/ matches the same segment again (case-insensitive)
-    const duplicationPattern = /\/([^/]+)\/(?:.*\/)*\1\//i;
-    const match = filePath.match(duplicationPattern);
+    const duplicationPattern = /\/([^/]+)\/(?:.*\/)*\1\//i
+    const match = filePath.match(duplicationPattern)
 
     if (match) {
       return {
         decision: 'block',
         reason: `Path duplication detected: "${match[0]}". Use monorepo-rooted path without duplication.`,
-      };
+      }
     }
 
-    return { decision: 'continue' };
-  };
+    return { decision: 'continue' }
+  }
 }
 
 /**
@@ -102,12 +102,12 @@ export function createPathDuplicationBlockerHook(): HookCallback {
  * ```
  */
 export function buildPathValidationHooks(): HooksCollection {
-  const hook = createPathDuplicationBlockerHook();
+  const hook = createPathDuplicationBlockerHook()
 
   return {
     PreToolUse: [
       { matcher: 'Write', hooks: [hook] },
       { matcher: 'Edit', hooks: [hook] },
     ],
-  };
+  }
 }

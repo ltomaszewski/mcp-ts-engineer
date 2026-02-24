@@ -2,20 +2,19 @@
  * Performance review prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const PERFORMANCE_REVIEW_USER_PROMPT_TEMPLATE = (
   diff: string,
   files: string[],
-  repoName: string
+  repoName: string,
 ): string => {
   return `# Performance Review Task
 
 You are conducting a performance review for repository ${repoName}.
 
 ## Files Changed
-${files.map(f => `- ${f}`).join('\n')}
+${files.map((f) => `- ${f}`).join('\n')}
 
 ## Your Task
 Analyze the following diff and identify performance issues:
@@ -51,37 +50,33 @@ Return a JSON object with this structure:
 \`\`\`
 
 Focus on actionable feedback with clear remediation steps.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Performance review focused on N+1 queries, re-renders, and large bundles",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Performance review focused on N+1 queries, re-renders, and large bundles',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      diff: string;
-      files: string[];
-      repoName: string;
-    };
+      diff: string
+      files: string[]
+      repoName: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: PERFORMANCE_REVIEW_USER_PROMPT_TEMPLATE(
-        data.diff,
-        data.files,
-        data.repoName
-      ),
-    };
+      userPrompt: PERFORMANCE_REVIEW_USER_PROMPT_TEMPLATE(data.diff, data.files, data.repoName),
+    }
   },
-};
+}
 
 export const PERFORMANCE_REVIEW_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const PERFORMANCE_REVIEW_CURRENT_VERSION = "v1";
+export const PERFORMANCE_REVIEW_CURRENT_VERSION = 'v1'

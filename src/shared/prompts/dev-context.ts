@@ -6,21 +6,21 @@
  * DEV_CONTEXT_APPEND_PROMPT is kept as a backward-compatible default.
  */
 
-import { getProjectConfig, type ProjectConfig } from "../../config/project-config.js";
+import { getProjectConfig, type ProjectConfig } from '../../config/project-config.js'
 
 /**
  * Build the codemap table from config entries.
  */
-function buildCodemapTable(codemaps: ProjectConfig["codemaps"]): string {
-  if (codemaps.length === 0) return "";
-  const rows = codemaps.map((c) => `| ${c.area} | \`${c.path}\` |`).join("\n");
+function buildCodemapTable(codemaps: ProjectConfig['codemaps']): string {
+  if (codemaps.length === 0) return ''
+  const rows = codemaps.map((c) => `| ${c.area} | \`${c.path}\` |`).join('\n')
   return `## Quick Navigation (Codemaps)
 
 | Area | Codemap |
 |------|---------|
 ${rows}
 
----`;
+---`
 }
 
 /**
@@ -28,8 +28,8 @@ ${rows}
  * Uses absolute paths for codemaps so agents can find them regardless of cwd.
  */
 export function buildDevContext(config?: ProjectConfig): string {
-  const cfg = config ?? getProjectConfig();
-  const codemapSection = buildCodemapTable(cfg.codemaps);
+  const cfg = config ?? getProjectConfig()
+  const codemapSection = buildCodemapTable(cfg.codemaps)
 
   return `# Development Context
 
@@ -75,11 +75,11 @@ ${codemapSection}
 - Coding without reading existing patterns
 - Skipping tests
 - Large commits with multiple concerns
-- Ignoring type errors`;
+- Ignoring type errors`
 }
 
 /**
  * Default development context (backward compatibility).
  * Uses the current ProjectConfig at call time.
  */
-export const DEV_CONTEXT_APPEND_PROMPT = buildDevContext();
+export const DEV_CONTEXT_APPEND_PROMPT = buildDevContext()

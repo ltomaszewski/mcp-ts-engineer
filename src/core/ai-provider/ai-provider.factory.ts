@@ -3,25 +3,25 @@
  * Allows registration and creation of different AI provider implementations.
  */
 
-import type { AIProvider } from "./ai-provider.types.js";
-import { ConfigError } from "../errors.js";
+import { ConfigError } from '../errors.js'
+import type { AIProvider } from './ai-provider.types.js'
 
 /** Configuration for creating an AI provider */
 export interface ProviderConfig {
   /** Provider name (e.g., "claude", "openai") */
-  name: string;
+  name: string
   /** Provider-specific options */
-  options?: Record<string, unknown>;
+  options?: Record<string, unknown>
 }
 
 /** Factory function for creating provider instances */
-export type ProviderFactory = (options?: Record<string, unknown>) => AIProvider;
+export type ProviderFactory = (options?: Record<string, unknown>) => AIProvider
 
 /** Global provider registry */
-const providerRegistry = new Map<string, ProviderFactory>();
+const providerRegistry = new Map<string, ProviderFactory>()
 
 /** Valid provider name pattern */
-const PROVIDER_NAME_PATTERN = /^[a-z0-9_-]+$/;
+const PROVIDER_NAME_PATTERN = /^[a-z0-9_-]+$/
 
 /**
  * Register a provider factory.
@@ -37,18 +37,14 @@ const PROVIDER_NAME_PATTERN = /^[a-z0-9_-]+$/;
  */
 export function registerProvider(name: string, factory: ProviderFactory): void {
   if (!PROVIDER_NAME_PATTERN.test(name)) {
-    throw new ConfigError(
-      `Invalid provider name: ${name}. Must match ${PROVIDER_NAME_PATTERN}`
-    );
+    throw new ConfigError(`Invalid provider name: ${name}. Must match ${PROVIDER_NAME_PATTERN}`)
   }
 
   if (providerRegistry.has(name)) {
-    throw new ConfigError(
-      `Provider "${name}" is already registered`
-    );
+    throw new ConfigError(`Provider "${name}" is already registered`)
   }
 
-  providerRegistry.set(name, factory);
+  providerRegistry.set(name, factory)
 }
 
 /**
@@ -67,15 +63,15 @@ export function registerProvider(name: string, factory: ProviderFactory): void {
  * ```
  */
 export function createAIProvider(config: ProviderConfig): AIProvider {
-  const factory = providerRegistry.get(config.name);
+  const factory = providerRegistry.get(config.name)
 
   if (!factory) {
     throw new ConfigError(
-      `Provider "${config.name}" not found. Available: ${Array.from(providerRegistry.keys()).join(", ")}`
-    );
+      `Provider "${config.name}" not found. Available: ${Array.from(providerRegistry.keys()).join(', ')}`,
+    )
   }
 
-  return factory(config.options);
+  return factory(config.options)
 }
 
 /**
@@ -85,7 +81,7 @@ export function createAIProvider(config: ProviderConfig): AIProvider {
  * @internal Test utility
  */
 export function getRegisteredProviders(): string[] {
-  return Array.from(providerRegistry.keys());
+  return Array.from(providerRegistry.keys())
 }
 
 /**
@@ -94,5 +90,5 @@ export function getRegisteredProviders(): string[] {
  * @internal Test utility only
  */
 export function clearProviderRegistry(): void {
-  providerRegistry.clear();
+  providerRegistry.clear()
 }

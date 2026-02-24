@@ -18,11 +18,8 @@
  * // Returns null
  * ```
  */
-export function parseXmlBlock(
-  content: string,
-  tagName: string,
-): string | null {
-  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`);
-  const match = content.match(regex);
-  return match?.[1]?.trim() ?? null;
+export function parseXmlBlock(content: string, tagName: string): string | null {
+  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`)
+  const match = content.match(regex)
+  return match?.[1]?.trim() ?? null
 }

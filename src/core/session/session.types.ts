@@ -4,52 +4,52 @@
  */
 
 /** Session state */
-export type SessionState = "active" | "completed" | "error";
+export type SessionState = 'active' | 'completed' | 'error'
 
 /** Capability invocation record within a session */
 export interface CapabilityInvocation {
   /** Unique invocation ID */
-  id: string;
+  id: string
   /** Capability name (tool/resource/prompt) */
-  capability: string;
+  capability: string
   /** Input parameters */
-  input: Record<string, unknown>;
+  input: Record<string, unknown>
   /** Output/result */
-  output?: unknown;
+  output?: unknown
   /** Error if invocation failed */
-  error?: string;
+  error?: string
   /** Timestamp of invocation */
-  timestamp: string;
+  timestamp: string
   /** Duration in milliseconds */
-  durationMs?: number;
+  durationMs?: number
   /** Child session ID (when this invocation spawned a child session) */
-  childSessionId?: string;
+  childSessionId?: string
   /** Child session cost in USD */
-  childCostUsd?: number;
+  childCostUsd?: number
   /** Child session turns (agentic iterations) */
-  childTurns?: number;
+  childTurns?: number
 }
 
 /** Session tracking user interactions and AI turns */
 export interface Session {
   /** Unique session identifier */
-  id: string;
+  id: string
   /** Session state */
-  state: SessionState;
+  state: SessionState
   /** When session started */
-  startedAt: string;
+  startedAt: string
   /** When session ended */
-  completedAt?: string;
+  completedAt?: string
   /** User ID or identifier (optional) */
-  userId?: string;
+  userId?: string
   /** Arbitrary metadata */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown>
   /** Capability invocations in this session */
-  invocations: CapabilityInvocation[];
+  invocations: CapabilityInvocation[]
   /** Total input tokens across all invocations */
-  totalInputTokens: number;
+  totalInputTokens: number
   /** Total output tokens across all invocations */
-  totalOutputTokens: number;
+  totalOutputTokens: number
   /** Total cost in USD */
-  totalCost: number;
+  totalCost: number
 }

@@ -6,4 +6,4 @@
  * moved to shared location for reuse across capabilities.
  */
 
-export { RACE_CONDITIONS_RULES } from "../../../../shared/prompts/eng-rules/race-conditions.js";
+export { RACE_CONDITIONS_RULES } from '../../../../shared/prompts/eng-rules/race-conditions.js'

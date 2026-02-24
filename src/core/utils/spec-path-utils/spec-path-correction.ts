@@ -2,10 +2,10 @@
  * Spec path correction to monorepo format.
  */
 
-import { PATH_CLASSIFICATION } from "./spec-path.constants.js";
-import type { CorrectionResult } from "./spec-path.types.js";
-import { extractFilePaths } from "./spec-path-extraction.js";
-import { validateSpecPaths } from "./spec-path-validation.js";
+import { PATH_CLASSIFICATION } from './spec-path.constants.js'
+import type { CorrectionResult } from './spec-path.types.js'
+import { extractFilePaths } from './spec-path-extraction.js'
+import { validateSpecPaths } from './spec-path-validation.js'
 
 /**
  * Corrects spec paths to valid monorepo format.
@@ -44,26 +44,20 @@ import { validateSpecPaths } from "./spec-path-validation.js";
  * // }
  * ```
  */
-export function correctSpecPaths(
-  content: string,
-  target: string
-): CorrectionResult {
-  const extractedPaths = extractFilePaths(content);
-  const validation = validateSpecPaths(extractedPaths, target);
+export function correctSpecPaths(content: string, target: string): CorrectionResult {
+  const extractedPaths = extractFilePaths(content)
+  const validation = validateSpecPaths(extractedPaths, target)
 
-  let correctedContent = content;
-  const corrections: Array<{ original: string; corrected: string }> = [];
+  let correctedContent = content
+  const corrections: Array<{ original: string; corrected: string }> = []
 
   // Correct each correctable path
   for (const path of validation.correctable) {
-    const corrected = correctPath(path, target);
+    const corrected = correctPath(path, target)
     if (corrected !== path) {
       // Replace all occurrences of the original path
-      correctedContent = correctedContent.replace(
-        new RegExp(escapeRegExp(path), "g"),
-        corrected
-      );
-      corrections.push({ original: path, corrected });
+      correctedContent = correctedContent.replace(new RegExp(escapeRegExp(path), 'g'), corrected)
+      corrections.push({ original: path, corrected })
     }
   }
 
@@ -71,7 +65,7 @@ export function correctSpecPaths(
     correctedContent,
     corrections,
     uncorrectable: validation.uncorrectable,
-  };
+  }
 }
 
 /**
@@ -84,20 +78,20 @@ export function correctSpecPaths(
 export function correctPath(path: string, target: string): string {
   // src/foo.ts → apps/{target}/src/foo.ts
   if (PATH_CLASSIFICATION.CORRECTABLE_SRC.test(path)) {
-    return `apps/${target}/${path}`;
+    return `apps/${target}/${path}`
   }
 
   // ./foo.ts → apps/{target}/foo.ts
   if (PATH_CLASSIFICATION.CORRECTABLE_DOT.test(path)) {
-    return `apps/${target}/${path.slice(2)}`;
+    return `apps/${target}/${path.slice(2)}`
   }
 
   // Prefix internal dirs: core/... → apps/{target}/src/core/...
   if (PATH_CLASSIFICATION.INTERNAL_DIRS?.test(path)) {
-    return `apps/${target}/src/${path}`;
+    return `apps/${target}/src/${path}`
   }
 
-  return path;
+  return path
 }
 
 /**
@@ -107,5 +101,5 @@ export function correctPath(path: string, target: string): string {
  * @returns Escaped string safe for use in RegExp
  */
 export function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

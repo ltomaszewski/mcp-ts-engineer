@@ -6,9 +6,9 @@
 /** Codemap reference for quick navigation prompts */
 export interface CodemapEntry {
   /** Area label (e.g. "Monorepo", "Server") */
-  area: string;
+  area: string
   /** Absolute path to codemap markdown file */
-  path: string;
+  path: string
 }
 
 /**
@@ -17,25 +17,25 @@ export interface CodemapEntry {
  */
 export interface ProjectConfig {
   /** MCP server display name (e.g. "MyTsEngineer") */
-  serverName: string;
+  serverName: string
   /** MCP server version */
-  serverVersion: string;
+  serverVersion: string
   /** Log directory path (supports ~/). Override via LOG_DIR env var. */
-  logDir: string;
+  logDir: string
   /** Git commit tag prefix (e.g. "[ts-engineer]") */
-  commitTag: string;
+  commitTag: string
   /** Absolute path to the consuming monorepo root */
-  monorepoRoot: string;
+  monorepoRoot: string
   /** Absolute path to this submodule (where .claude/ lives) */
-  submodulePath: string;
+  submodulePath: string
   /** Codemap entries for agent prompts (absolute paths) */
-  codemaps: CodemapEntry[];
+  codemaps: CodemapEntry[]
   /** Extra review checklist items for the audit/review prompts */
-  reviewChecklist?: string[];
+  reviewChecklist?: string[]
   /** GitHub repo owner for PR-related capabilities (e.g. "myorg") */
-  repoOwner?: string;
+  repoOwner?: string
   /** GitHub repo name for PR-related capabilities (e.g. "my-mono") */
-  repoName?: string;
+  repoName?: string
 }
 
 /**
@@ -49,10 +49,10 @@ export interface ProjectConfig {
  */
 export function deriveLogDir(serverName: string): string {
   const kebab = serverName
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
-  return `~/.claude/${kebab}/logs/`;
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+  return `~/.claude/${kebab}/logs/`
 }
 
 /**
@@ -60,23 +60,23 @@ export function deriveLogDir(serverName: string): string {
  * Consuming apps SHOULD call initProjectConfig() with their own config.
  */
 const DEFAULT_CONFIG: ProjectConfig = {
-  serverName: "McpTsEngineer",
-  serverVersion: "1.0.0",
-  logDir: deriveLogDir("McpTsEngineer"),
-  commitTag: "[ts-engineer]",
+  serverName: 'McpTsEngineer',
+  serverVersion: '1.0.0',
+  logDir: deriveLogDir('McpTsEngineer'),
+  commitTag: '[ts-engineer]',
   monorepoRoot: process.cwd(),
   submodulePath: process.cwd(),
   codemaps: [],
   reviewChecklist: [],
-};
+}
 
-let _config: ProjectConfig = { ...DEFAULT_CONFIG };
+let _config: ProjectConfig = { ...DEFAULT_CONFIG }
 
 /**
  * Initialize the project configuration. Call once at startup before createServer().
  */
 export function initProjectConfig(config: ProjectConfig): void {
-  _config = config;
+  _config = config
 }
 
 /**
@@ -84,5 +84,5 @@ export function initProjectConfig(config: ProjectConfig): void {
  * Returns defaults if initProjectConfig() was never called.
  */
 export function getProjectConfig(): ProjectConfig {
-  return _config;
+  return _config
 }

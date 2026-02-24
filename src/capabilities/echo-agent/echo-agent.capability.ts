@@ -3,10 +3,10 @@
  * Provides a simple MCP tool that sends prompts to Claude via Agent SDK.
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
-import type { EchoAgentInput, EchoAgentOutput } from "./echo-agent.schema.js";
-import { EchoAgentInputSchema } from "./echo-agent.schema.js";
-import { PROMPT_VERSIONS, CURRENT_VERSION } from "./prompts/index.js";
+import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
+import type { EchoAgentInput, EchoAgentOutput } from './echo-agent.schema.js'
+import { EchoAgentInputSchema } from './echo-agent.schema.js'
+import { CURRENT_VERSION, PROMPT_VERSIONS } from './prompts/index.js'
 
 /**
  * Echo agent capability definition.
@@ -22,24 +22,24 @@ import { PROMPT_VERSIONS, CURRENT_VERSION } from "./prompts/index.js";
  * Before adding production capabilities, change to `permissionMode: "acceptEdits"` or `"default"`.
  */
 export const echoAgentCapability: CapabilityDefinition<EchoAgentInput, EchoAgentOutput> = {
-  id: "echo_agent",
-  type: "tool",
-  name: "Echo Agent",
+  id: 'echo_agent',
+  type: 'tool',
+  name: 'Echo Agent',
   description:
-    "Simple proof-of-concept tool that uses Claude Agent SDK to process a prompt. " +
+    'Simple proof-of-concept tool that uses Claude Agent SDK to process a prompt. ' +
     "Returns Claude's response along with cost and turn metrics. " +
-    "Useful for testing SDK integration.",
+    'Useful for testing SDK integration.',
   inputSchema: EchoAgentInputSchema,
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "haiku",
+    model: 'haiku',
     maxTurns: 50,
-    maxBudgetUsd: 3.00,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    maxBudgetUsd: 3.0,
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
   },
 
   /**
@@ -69,4 +69,4 @@ export const echoAgentCapability: CapabilityDefinition<EchoAgentInput, EchoAgent
     cost_usd: aiResult.costUsd,
     turns: aiResult.turns,
   }),
-};
+}

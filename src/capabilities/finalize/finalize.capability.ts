@@ -3,36 +3,31 @@
  * Main public capability that chains audit → test → codemap → commit steps.
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
-import type { CapabilityContext } from "../../core/capability-registry/capability-registry.types.js";
-import type { AIQueryResult } from "../../core/ai-provider/ai-provider.types.js";
-import { updateSpecStatus } from "../../core/utils/index.js";
-import { getProjectConfig } from "../../config/project-config.js";
-import {
-  FinalizeInputSchema,
-  FinalizeOutputSchema,
-  FinalizePlanSchema,
-} from "./finalize.schema.js";
+import { getProjectConfig } from '../../config/project-config.js'
+import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type {
-  FinalizeInput,
-  FinalizeOutput,
-  AuditResult,
-  TestResult,
-  CodemapResult,
-  ReadmeResult,
-  FinalizeCommitResult,
-  FinalizePlan,
-} from "./finalize.schema.js";
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
+import { updateSpecStatus } from '../../core/utils/index.js'
 import {
-  orchestratorPrompts,
-  ORCHESTRATOR_CURRENT_VERSION,
-} from "./prompts/index.js";
-import {
-  parseXmlBlock,
-  parseJsonSafe,
   detectWorkspaces,
   FINALIZE_PLAN_FALLBACK,
-} from "./finalize.helpers.js";
+  parseJsonSafe,
+  parseXmlBlock,
+} from './finalize.helpers.js'
+import type {
+  AuditResult,
+  CodemapResult,
+  FinalizeCommitResult,
+  FinalizeInput,
+  FinalizeOutput,
+  FinalizePlan,
+  ReadmeResult,
+  TestResult,
+} from './finalize.schema.js'
+import { FinalizeInputSchema, FinalizePlanSchema } from './finalize.schema.js'
+import { ORCHESTRATOR_CURRENT_VERSION, orchestratorPrompts } from './prompts/index.js'
 
 // ---------------------------------------------------------------------------
 // Orchestration helpers
@@ -43,11 +38,11 @@ import {
  * Uses Zod schema validation to ensure type safety.
  */
 function parseFinalizePlanFromAiContent(content: string): FinalizePlan {
-  const planXml = parseXmlBlock(content, "finalize_plan");
+  const planXml = parseXmlBlock(content, 'finalize_plan')
   if (planXml) {
-    return parseJsonSafe(planXml, FinalizePlanSchema, FINALIZE_PLAN_FALLBACK);
+    return parseJsonSafe(planXml, FinalizePlanSchema, FINALIZE_PLAN_FALLBACK)
   }
-  return FINALIZE_PLAN_FALLBACK;
+  return FINALIZE_PLAN_FALLBACK
 }
 
 /**
@@ -57,10 +52,10 @@ async function invokeAuditStep(
   input: FinalizeInput,
   context: CapabilityContext,
 ): Promise<AuditResult> {
-  return (await context.invokeCapability("finalize_audit_step", {
+  return (await context.invokeCapability('finalize_audit_step', {
     files_changed: input.files_changed,
     cwd: input.cwd,
-  })) as AuditResult;
+  })) as AuditResult
 }
 
 /**
@@ -76,14 +71,14 @@ async function invokeTestStep(
     return {
       passed: true,
       workspaces_tested: [],
-      summary: "No workspaces detected to test",
-    };
+      summary: 'No workspaces detected to test',
+    }
   }
 
-  return (await context.invokeCapability("finalize_test_step", {
+  return (await context.invokeCapability('finalize_test_step', {
     workspaces,
     cwd,
-  })) as TestResult;
+  })) as TestResult
 }
 
 /**
@@ -94,10 +89,10 @@ async function invokeCodemapStep(
   input: FinalizeInput,
   context: CapabilityContext,
 ): Promise<CodemapResult | null> {
-  return (await context.invokeCapability("finalize_codemap_step", {
+  return (await context.invokeCapability('finalize_codemap_step', {
     files_changed: input.files_changed,
     cwd: input.cwd,
-  })) as CodemapResult;
+  })) as CodemapResult
 }
 
 /**
@@ -108,10 +103,10 @@ async function invokeReadmeStep(
   input: FinalizeInput,
   context: CapabilityContext,
 ): Promise<ReadmeResult | null> {
-  return (await context.invokeCapability("finalize_readme_step", {
+  return (await context.invokeCapability('finalize_readme_step', {
     files_changed: input.files_changed,
     cwd: input.cwd,
-  })) as ReadmeResult;
+  })) as ReadmeResult
 }
 
 /**
@@ -125,13 +120,13 @@ async function invokeCommitStep(
   cwd: string | undefined,
   context: CapabilityContext,
 ): Promise<FinalizeCommitResult> {
-  return (await context.invokeCapability("finalize_commit_step", {
+  return (await context.invokeCapability('finalize_commit_step', {
     audit_summary: auditSummary,
     codemap_summary: codemapSummary,
     readme_summary: readmeSummary,
     files_affected: filesAffected,
     cwd,
-  })) as FinalizeCommitResult;
+  })) as FinalizeCommitResult
 }
 
 /**
@@ -145,10 +140,7 @@ function buildOutput(
   commitResult: FinalizeCommitResult,
 ): FinalizeOutput {
   // Determine overall status
-  const status =
-    auditResult.tsc_passed && (testResult?.passed ?? true)
-      ? "success"
-      : "failed";
+  const status = auditResult.tsc_passed && (testResult?.passed ?? true) ? 'success' : 'failed'
 
   return {
     status,
@@ -156,14 +148,14 @@ function buildOutput(
     audit_fixes_applied: auditResult.fixes_applied,
     audit_summary: auditResult.summary,
     tests_passed: testResult?.passed ?? null,
-    tests_summary: testResult?.summary ?? "Tests skipped",
+    tests_summary: testResult?.summary ?? 'Tests skipped',
     codemaps_updated: codemapResult?.updated ?? null,
-    codemaps_summary: codemapResult?.summary ?? "Codemaps skipped",
+    codemaps_summary: codemapResult?.summary ?? 'Codemaps skipped',
     readmes_updated: readmeResult?.updated ?? null,
-    readmes_summary: readmeResult?.summary ?? "READMEs skipped",
+    readmes_summary: readmeResult?.summary ?? 'READMEs skipped',
     commit_sha: commitResult.commit_sha,
     commit_message: commitResult.commit_message,
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -185,27 +177,24 @@ function buildOutput(
  * to chain internal sub-capabilities. Input is validated via Zod schema and all
  * sub-capabilities use their own input validation.
  */
-export const finalizeCapability: CapabilityDefinition<
-  FinalizeInput,
-  FinalizeOutput
-> = {
-  id: "finalize",
-  type: "tool",
-  visibility: "public",
-  name: "Finalize",
+export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOutput> = {
+  id: 'finalize',
+  type: 'tool',
+  visibility: 'public',
+  name: 'Finalize',
   description:
-    "Post-implementation cleanup: runs code audit with auto-fix on modified files, executes tests on affected workspaces, updates codemaps if files changed significantly, and commits all cleanup changes. Use this after any code changes to ensure quality and documentation are up to date.",
+    'Post-implementation cleanup: runs code audit with auto-fix on modified files, executes tests on affected workspaces, updates codemaps if files changed significantly, and commits all cleanup changes. Use this after any code changes to ensure quality and documentation are up to date.',
   inputSchema: FinalizeInputSchema,
   promptRegistry: orchestratorPrompts,
   currentPromptVersion: ORCHESTRATOR_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "sonnet",
+    model: 'sonnet',
     maxTurns: 50,
     maxBudgetUsd: 3.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
   },
 
   preparePromptInput: (input: FinalizeInput, _context) => ({
@@ -220,36 +209,37 @@ export const finalizeCapability: CapabilityDefinition<
     context: CapabilityContext,
   ): Promise<FinalizeOutput> => {
     // Parse finalize plan from orchestrator AI response
-    const finalizePlan = parseFinalizePlanFromAiContent(aiResult.content);
+    const finalizePlan = parseFinalizePlanFromAiContent(aiResult.content)
 
     // If no workspaces detected from plan, fall back to detectWorkspaces helper
-    const workspaces = finalizePlan.workspaces.length > 0
-      ? finalizePlan.workspaces
-      : detectWorkspaces(input.files_changed);
+    const workspaces =
+      finalizePlan.workspaces.length > 0
+        ? finalizePlan.workspaces
+        : detectWorkspaces(input.files_changed)
 
     // Step 1: Audit
-    const auditResult = await invokeAuditStep(input, context);
+    const auditResult = await invokeAuditStep(input, context)
 
     // Step 2: Test (conditional)
-    let testResult: TestResult | null = null;
+    let testResult: TestResult | null = null
     if (!input.skip_tests) {
-      testResult = await invokeTestStep(workspaces, input.cwd, context);
+      testResult = await invokeTestStep(workspaces, input.cwd, context)
     }
 
     // Step 3: Codemap (conditional)
-    let codemapResult: CodemapResult | null = null;
+    let codemapResult: CodemapResult | null = null
     if (!input.skip_codemaps) {
-      codemapResult = await invokeCodemapStep(input, context);
+      codemapResult = await invokeCodemapStep(input, context)
     }
 
     // Step 3.5: README (conditional)
-    let readmeResult: ReadmeResult | null = null;
+    let readmeResult: ReadmeResult | null = null
     if (!input.skip_readmes) {
       try {
-        readmeResult = await invokeReadmeStep(input, context);
+        readmeResult = await invokeReadmeStep(input, context)
       } catch (error) {
-        context.logger.warn("README step failed, continuing", { error });
-        readmeResult = null;
+        context.logger.warn('README step failed, continuing', { error })
+        readmeResult = null
       }
     }
 
@@ -258,36 +248,35 @@ export const finalizeCapability: CapabilityDefinition<
       ...input.files_changed,
       ...(codemapResult?.codemaps_changed ?? []),
       ...(readmeResult?.readmes_changed ?? []),
-    ];
+    ]
     if (input.spec_path && auditResult.tsc_passed && (testResult?.passed ?? true)) {
       try {
-        const specUpdated = await updateSpecStatus(input.spec_path, "READY", "IMPLEMENTED", input.cwd);
+        const specUpdated = await updateSpecStatus(
+          input.spec_path,
+          'READY',
+          'IMPLEMENTED',
+          input.cwd,
+        )
         if (specUpdated) {
-          filesAffected.push(input.spec_path);
+          filesAffected.push(input.spec_path)
         }
       } catch (error) {
         // Non-fatal: log warning, continue with commit
-        context.logger.warn(`Failed to update spec status: ${error}`);
+        context.logger.warn(`Failed to update spec status: ${error}`)
       }
     }
 
     // Step 4: Commit
     const commitResult = await invokeCommitStep(
       auditResult.summary,
-      codemapResult?.summary ?? "No codemap changes",
-      readmeResult?.summary ?? "No README changes",
+      codemapResult?.summary ?? 'No codemap changes',
+      readmeResult?.summary ?? 'No README changes',
       filesAffected,
       input.cwd,
       context,
-    );
+    )
 
     // Build and return final output
-    return buildOutput(
-      auditResult,
-      testResult,
-      codemapResult,
-      readmeResult,
-      commitResult,
-    );
+    return buildOutput(auditResult, testResult, codemapResult, readmeResult, commitResult)
   },
-};
+}

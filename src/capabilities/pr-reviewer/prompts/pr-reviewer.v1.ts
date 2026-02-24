@@ -2,8 +2,7 @@
  * PR reviewer main prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const PR_REVIEWER_USER_PROMPT_TEMPLATE = (
   prNumber: number,
@@ -13,7 +12,7 @@ const PR_REVIEWER_USER_PROMPT_TEMPLATE = (
   baseBranch: string,
   filesChanged: number,
   mode: string,
-  diffContent: string
+  diffContent: string,
 ): string => {
   return `# PR Review Task
 
@@ -56,30 +55,30 @@ Return a JSON object with this structure:
 \`\`\`
 
 Focus on actionable feedback with clear remediation steps.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "PR code review with multi-category analysis",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'PR code review with multi-category analysis',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      prNumber: number;
-      repoOwner: string;
-      repoName: string;
-      prBranch: string;
-      baseBranch: string;
-      filesChanged: number;
-      mode: string;
-      diffContent: string;
-    };
+      prNumber: number
+      repoOwner: string
+      repoName: string
+      prBranch: string
+      baseBranch: string
+      filesChanged: number
+      mode: string
+      diffContent: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: PR_REVIEWER_USER_PROMPT_TEMPLATE(
         data.prNumber,
@@ -89,14 +88,14 @@ const v1: PromptVersion = {
         data.baseBranch,
         data.filesChanged,
         data.mode,
-        data.diffContent
+        data.diffContent,
       ),
-    };
+    }
   },
-};
+}
 
 export const PR_REVIEWER_PROMPT_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const PR_REVIEWER_CURRENT_VERSION = "v1";
+export const PR_REVIEWER_CURRENT_VERSION = 'v1'

@@ -6,4 +6,4 @@
  * moved to shared location for reuse across capabilities.
  */
 
-export { TESTING_REQUIREMENTS_RULES } from "../../../../shared/prompts/eng-rules/testing-requirements.js";
+export { TESTING_REQUIREMENTS_RULES } from '../../../../shared/prompts/eng-rules/testing-requirements.js'

@@ -4,37 +4,36 @@
  * Created: 2026-02-04
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { buildReviewContext } from "../../../shared/prompts/review-context.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { buildReviewContext } from '../../../shared/prompts/review-context.js'
 
 interface LintFixPromptInput {
-  projectPath: string;
-  lintReport: string;
-  filesWithLintErrors: string[];
-  cwd?: string;
+  projectPath: string
+  lintReport: string
+  filesWithLintErrors: string[]
+  cwd?: string
 }
 
 const lintFixPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-04",
-  description: "Lint fix: dedicated eng session to fix ONLY lint issues",
+  version: 'v1',
+  createdAt: '2026-02-04',
+  description: 'Lint fix: dedicated eng session to fix ONLY lint issues',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { projectPath, lintReport, filesWithLintErrors, cwd } =
-      input as LintFixPromptInput;
+    const { projectPath, lintReport, filesWithLintErrors, cwd } = input as LintFixPromptInput
 
     const userPrompt = `You are fixing lint errors in a code quality audit.
 
 <project_path>${projectPath}</project_path>
-${cwd ? `<cwd>${cwd}</cwd>` : ""}
+${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 <lint_report>
 ${lintReport}
 </lint_report>
 
 <files_with_lint_errors>
-${filesWithLintErrors.join("\n")}
+${filesWithLintErrors.join('\n')}
 </files_with_lint_errors>
 
 <task>
@@ -92,19 +91,19 @@ If you could not fix the issues:
 - Keep changes minimal — fix lint issues, nothing more
 - Do NOT introduce new lint violations
 - If unsure about a fix, skip it and note it in the summary
-</rules>`;
+</rules>`
 
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append:
-          "REMINDER: After fixing lint errors, you MUST output <lint_fix_result>{...}</lint_fix_result> with your findings.\n\n" +
+          'REMINDER: After fixing lint errors, you MUST output <lint_fix_result>{...}</lint_fix_result> with your findings.\n\n' +
           buildReviewContext(),
       },
       userPrompt,
-    };
+    }
   },
-};
+}
 
-export { lintFixPromptV1 };
+export { lintFixPromptV1 }

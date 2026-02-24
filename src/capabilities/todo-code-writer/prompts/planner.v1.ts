@@ -6,25 +6,22 @@
  * Outputs PhasePlan JSON with sequential phases.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /** Input shape for the planner prompt build function. */
 interface PlannerPromptInput {
-  specPath: string;
-  maxPhases: number;
-  cwd?: string;
+  specPath: string
+  maxPhases: number
+  cwd?: string
 }
 
 /**
  * System prompt append for planner step.
  * Ensures text output after tool use.
  */
-const PLANNER_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of the implementation plan. Your structured output will be captured automatically via the output schema.`;
+const PLANNER_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of the implementation plan. Your structured output will be captured automatically via the output schema.`
 
-const PLANNER_USER_PROMPT_TEMPLATE = (
-  specPath: string,
-  maxPhases: number,
-): string => {
+const PLANNER_USER_PROMPT_TEMPLATE = (specPath: string, maxPhases: number): string => {
   return `You are a technical lead planning implementation phases for a feature spec.
 
 <spec_path>${specPath}</spec_path>
@@ -91,26 +88,26 @@ const PLANNER_USER_PROMPT_TEMPLATE = (
 - phase_number starts at 1 and increments sequentially
 - dependencies is an array of strings (phase numbers or "none")
 - action is either "CREATE" or "MODIFY"
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Planner for splitting spec into phases */
 export const plannerPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Planner: reads spec, splits into sequential phases, returns PhasePlan via XML block",
+    'Planner: reads spec, splits into sequential phases, returns PhasePlan via XML block',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, maxPhases } = input as PlannerPromptInput;
+    const { specPath, maxPhases } = input as PlannerPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: PLANNER_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: PLANNER_USER_PROMPT_TEMPLATE(specPath, maxPhases),
-    };
+    }
   },
-};
+}

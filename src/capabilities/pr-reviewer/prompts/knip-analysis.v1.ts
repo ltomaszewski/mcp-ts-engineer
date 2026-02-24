@@ -2,13 +2,9 @@
  * Knip dead code analysis prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
-const KNIP_ANALYSIS_USER_PROMPT_TEMPLATE = (
-  knipOutput: string,
-  worktreePath: string
-): string => {
+const KNIP_ANALYSIS_USER_PROMPT_TEMPLATE = (knipOutput: string, worktreePath: string): string => {
   return `# Knip Dead Code Analysis Task
 
 You are analyzing dead code detection results from Knip.
@@ -60,35 +56,32 @@ Return a JSON object with this structure:
 \`\`\`
 
 Focus on high-confidence safe removals.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Knip analysis to identify safe dead code removals",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Knip analysis to identify safe dead code removals',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      knipOutput: string;
-      worktreePath: string;
-    };
+      knipOutput: string
+      worktreePath: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: KNIP_ANALYSIS_USER_PROMPT_TEMPLATE(
-        data.knipOutput,
-        data.worktreePath
-      ),
-    };
+      userPrompt: KNIP_ANALYSIS_USER_PROMPT_TEMPLATE(data.knipOutput, data.worktreePath),
+    }
   },
-};
+}
 
 export const KNIP_ANALYSIS_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const KNIP_ANALYSIS_CURRENT_VERSION = "v1";
+export const KNIP_ANALYSIS_CURRENT_VERSION = 'v1'

@@ -6,4 +6,4 @@
  * moved to shared location for reuse across capabilities.
  */
 
-export { EXPORT_DESIGN_RULES } from "../../../../shared/prompts/eng-rules/export-design.js";
+export { EXPORT_DESIGN_RULES } from '../../../../shared/prompts/eng-rules/export-design.js'

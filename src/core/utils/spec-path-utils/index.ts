@@ -2,41 +2,36 @@
  * Spec path utilities - extraction, validation, and correction.
  */
 
-// Types
+// Constants (exported for testing)
+export {
+  ABBREVIATIONS_BLACKLIST,
+  CODE_PATTERN_PREFIXES,
+  IGNORE_PATTERNS,
+  PATH_CLASSIFICATION,
+  PATH_PATTERNS,
+  VALID_EXTENSIONS,
+} from './spec-path.constants.js'
 export type {
-  ValidationResult,
-  CorrectionResult,
-  PathStatus,
-} from "./spec-path.types.js";
-
+  PathFixStepInput,
+  PathFixStepOutput,
+} from './spec-path.schema.js'
 // Path fix schemas and types
 export {
   PathFixStepInputSchema,
   PathFixStepOutputSchema,
-} from "./spec-path.schema.js";
+} from './spec-path.schema.js'
+// Types
 export type {
-  PathFixStepInput,
-  PathFixStepOutput,
-} from "./spec-path.schema.js";
-
-// Extraction
-export { extractFilePaths, isValidPath, isLikelyFilePath } from "./spec-path-extraction.js";
-
-// Validation
-export { validateSpecPaths, classifyPath } from "./spec-path-validation.js";
-
+  CorrectionResult,
+  PathStatus,
+  ValidationResult,
+} from './spec-path.types.js'
 // Correction
-export { correctSpecPaths, correctPath, escapeRegExp } from "./spec-path-correction.js";
+export { correctPath, correctSpecPaths, escapeRegExp } from './spec-path-correction.js'
+// Extraction
+export { extractFilePaths, isLikelyFilePath, isValidPath } from './spec-path-extraction.js'
 
 // Orchestration
-export { validateAndCorrectSpecPaths } from "./spec-path-orchestration.js";
-
-// Constants (exported for testing)
-export {
-  PATH_PATTERNS,
-  IGNORE_PATTERNS,
-  VALID_EXTENSIONS,
-  ABBREVIATIONS_BLACKLIST,
-  CODE_PATTERN_PREFIXES,
-  PATH_CLASSIFICATION,
-} from "./spec-path.constants.js";
+export { validateAndCorrectSpecPaths } from './spec-path-orchestration.js'
+// Validation
+export { classifyPath, validateSpecPaths } from './spec-path-validation.js'

@@ -5,26 +5,23 @@
  * Verifies cross-file consistency and integration.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /** Input shape for the final audit prompt build function. */
 interface FinalAuditPromptInput {
-  specPath: string;
-  allModifiedFiles: string[];
-  cwd?: string;
+  specPath: string
+  allModifiedFiles: string[]
+  cwd?: string
 }
 
 /**
  * System prompt append for final audit step.
  * Ensures text output after tool use.
  */
-const FINAL_AUDIT_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of the final audit findings. Your structured output will be captured automatically via the output schema.`;
+const FINAL_AUDIT_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of the final audit findings. Your structured output will be captured automatically via the output schema.`
 
-const FINAL_AUDIT_USER_PROMPT_TEMPLATE = (
-  specPath: string,
-  allModifiedFiles: string[],
-): string => {
-  const fileList = allModifiedFiles.map((f) => `- ${f}`).join("\n");
+const FINAL_AUDIT_USER_PROMPT_TEMPLATE = (specPath: string, allModifiedFiles: string[]): string => {
+  const fileList = allModifiedFiles.map((f) => `- ${f}`).join('\n')
 
   return `You are a code auditor performing a final repository-wide audit.
 
@@ -80,26 +77,26 @@ ${fileList}
 - Wrap the JSON in <final_audit_result></final_audit_result> XML tags
 - JSON must have: status ("pass", "warn", or "fail"), issues_found (integer), summary (string)
 - summary should be 1-3 sentences describing final audit findings
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Final audit with cross-file verification */
 export const finalAuditPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Final audit: reads spec, verifies cross-file integration, returns FinalAuditResult via XML block",
+    'Final audit: reads spec, verifies cross-file integration, returns FinalAuditResult via XML block',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, allModifiedFiles } = input as FinalAuditPromptInput;
+    const { specPath, allModifiedFiles } = input as FinalAuditPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: FINAL_AUDIT_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: FINAL_AUDIT_USER_PROMPT_TEMPLATE(specPath, allModifiedFiles),
-    };
+    }
   },
-};
+}

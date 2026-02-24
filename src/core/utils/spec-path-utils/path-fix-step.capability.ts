@@ -9,68 +9,54 @@
  * Path correction is a straightforward task requiring codebase search and pattern matching.
  */
 
-import type { CapabilityDefinition } from "../../capability-registry/capability-registry.types.js";
-import {
-  PathFixStepInputSchema,
-  PathFixStepOutputSchema,
-} from "./spec-path.schema.js";
-import type {
-  PathFixStepInput,
-  PathFixStepOutput,
-} from "./spec-path.schema.js";
-import {
-  PATH_FIX_PROMPT_VERSIONS,
-  PATH_FIX_CURRENT_VERSION,
-} from "./prompts/index.js";
-import { parseXmlBlock, parseJsonSafe } from "../index.js";
+import type { CapabilityDefinition } from '../../capability-registry/capability-registry.types.js'
+import { parseJsonSafe, parseXmlBlock } from '../index.js'
+import { PATH_FIX_CURRENT_VERSION, PATH_FIX_PROMPT_VERSIONS } from './prompts/index.js'
+import type { PathFixStepInput, PathFixStepOutput } from './spec-path.schema.js'
+import { PathFixStepInputSchema, PathFixStepOutputSchema } from './spec-path.schema.js'
 
 /**
  * JSON Schema for PathFixStepOutput structured output.
  * Matches PathFixStepOutputSchema but in JSON Schema format for the SDK's outputFormat.
  */
 const PATH_FIX_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
-  type: "json_schema",
+  type: 'json_schema',
   schema: {
-    type: "object",
+    type: 'object',
     properties: {
-      status: { type: "string", enum: ["SUCCESS", "PARTIAL", "FAILED"] },
+      status: { type: 'string', enum: ['SUCCESS', 'PARTIAL', 'FAILED'] },
       corrections: {
-        type: "array",
+        type: 'array',
         items: {
-          type: "object",
+          type: 'object',
           properties: {
-            original: { type: "string" },
-            corrected: { type: "string" },
-            confidence: { type: "string", enum: ["high", "medium", "low"] },
+            original: { type: 'string' },
+            corrected: { type: 'string' },
+            confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
           },
-          required: ["original", "corrected", "confidence"],
+          required: ['original', 'corrected', 'confidence'],
         },
       },
       remaining_uncorrectable: {
-        type: "array",
-        items: { type: "string" },
+        type: 'array',
+        items: { type: 'string' },
       },
-      corrected_content: { type: "string" },
+      corrected_content: { type: 'string' },
     },
-    required: [
-      "status",
-      "corrections",
-      "remaining_uncorrectable",
-      "corrected_content",
-    ],
+    required: ['status', 'corrections', 'remaining_uncorrectable', 'corrected_content'],
   },
-};
+}
 
 /**
  * Fallback PathFixStepOutput returned when AI output cannot be parsed.
  * Indicates complete failure of the path correction attempt.
  */
 const PATH_FIX_FALLBACK: PathFixStepOutput = {
-  status: "FAILED",
+  status: 'FAILED',
   corrections: [],
   remaining_uncorrectable: [],
-  corrected_content: "",
-};
+  corrected_content: '',
+}
 
 /**
  * Internal sub-capability for AI-assisted path correction.
@@ -81,27 +67,24 @@ const PATH_FIX_FALLBACK: PathFixStepOutput = {
  * the codebase (Glob, Grep, Read). Input is validated via Zod schema and this capability
  * is only invoked through authenticated orchestration functions.
  */
-export const pathFixStepCapability: CapabilityDefinition<
-  PathFixStepInput,
-  PathFixStepOutput
-> = {
-  id: "todo_path_fix_step",
-  type: "tool",
-  visibility: "internal",
-  name: "Todo Path Fix Step (Internal)",
+export const pathFixStepCapability: CapabilityDefinition<PathFixStepInput, PathFixStepOutput> = {
+  id: 'todo_path_fix_step',
+  type: 'tool',
+  visibility: 'internal',
+  name: 'Todo Path Fix Step (Internal)',
   description:
-    "Internal sub-capability: AI-assisted path correction for spec files. Not intended for direct use.",
+    'Internal sub-capability: AI-assisted path correction for spec files. Not intended for direct use.',
   inputSchema: PathFixStepInputSchema,
   promptRegistry: PATH_FIX_PROMPT_VERSIONS,
   currentPromptVersion: PATH_FIX_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "haiku",
+    model: 'haiku',
     maxTurns: 20,
     maxBudgetUsd: 0.5,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
     outputSchema: PATH_FIX_OUTPUT_JSON_SCHEMA,
   },
 
@@ -116,24 +99,22 @@ export const pathFixStepCapability: CapabilityDefinition<
   processResult: (_input: PathFixStepInput, aiResult, _context) => {
     // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
     if (aiResult.structuredOutput) {
-      const parsed = PathFixStepOutputSchema.safeParse(
-        aiResult.structuredOutput
-      );
+      const parsed = PathFixStepOutputSchema.safeParse(aiResult.structuredOutput)
       if (parsed.success) {
-        return parsed.data;
+        return parsed.data
       }
     }
 
     // Strategy 2: Fall back to XML parsing from text content
-    const xmlContent = parseXmlBlock(aiResult.content, "path_fix");
+    const xmlContent = parseXmlBlock(aiResult.content, 'path_fix')
     const fallback = {
       ...PATH_FIX_FALLBACK,
       corrected_content: aiResult.content.slice(0, 500),
-    };
+    }
     if (xmlContent) {
-      return parseJsonSafe(xmlContent, PathFixStepOutputSchema, fallback);
+      return parseJsonSafe(xmlContent, PathFixStepOutputSchema, fallback)
     }
 
-    return fallback;
+    return fallback
   },
-};
+}

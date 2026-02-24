@@ -2,14 +2,14 @@
  * Fetch comment step: Retrieve the latest pr_reviewer comment from a PR.
  */
 
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseJsonSafe } from '../../core/utils/index.js'
-import { z } from 'zod'
 
 const FetchCommentStepInputSchema = z.object({
   pr_number: z.number(),

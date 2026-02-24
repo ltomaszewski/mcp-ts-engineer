@@ -2,10 +2,10 @@
  * Prompt management module exports.
  */
 
+export { PromptLoader } from './prompt.loader.js'
 export type {
-  PromptVersion,
+  BuiltPrompt,
   PromptConfig,
   PromptRegistry,
-  BuiltPrompt,
-} from "./prompt.types.js";
-export { PromptLoader } from "./prompt.loader.js";
+  PromptVersion,
+} from './prompt.types.js'

@@ -1,25 +1,22 @@
-import { execSync } from 'child_process'
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { execSync } from 'node:child_process'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import {
-  serializeState,
-  REVIEWER_STATE_MARKER,
   type PrCommentState,
+  REVIEWER_STATE_MARKER,
+  serializeState,
 } from '../../core/utils/pr-comment-state.js'
-import {
-  CommentStepInputSchema,
-  CommentStepOutputSchema,
-} from './pr-reviewer.schema.js'
 import type {
   CommentStepInput,
   CommentStepOutput,
   ReviewIssue,
   ReviewIssueData,
 } from './pr-reviewer.schema.js'
+import { CommentStepInputSchema } from './pr-reviewer.schema.js'
 
 /** Maximum total issues to report in a PR comment. */
 const MAX_REPORTED_ISSUES = 7
@@ -282,10 +279,11 @@ function postOrUpdateComment(
   }
 
   // Create new comment
-  const result = execSync(
-    `gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`,
-    { encoding: 'utf-8', input: commentBody, timeout: 15_000 },
-  ).trim()
+  const result = execSync(`gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`, {
+    encoding: 'utf-8',
+    input: commentBody,
+    timeout: 15_000,
+  }).trim()
   return result
 }
 
@@ -338,7 +336,12 @@ export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, Com
       input.issues.length === 0 ? buildApprovalComment(input) : buildFullReportComment(input)
 
     try {
-      const commentUrl = postOrUpdateComment(ctx.repo_owner, ctx.repo_name, ctx.pr_number, commentBody)
+      const commentUrl = postOrUpdateComment(
+        ctx.repo_owner,
+        ctx.repo_name,
+        ctx.pr_number,
+        commentBody,
+      )
       context.logger.info('PR comment posted programmatically', { commentUrl })
       return {
         comment_url: commentUrl,

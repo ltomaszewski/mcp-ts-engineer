@@ -5,23 +5,19 @@
  * @internal Exported for unit testing
  */
 
-import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
-import {
-  parseState,
-  FIXER_STATE_MARKER,
-} from '../../core/utils/pr-comment-state.js'
 import { getProjectConfig } from '../../config/project-config.js'
-import type { ReviewIssueData } from '../pr-reviewer/pr-reviewer.schema.js'
-import { parseReviewIssuesFromComment, filterUnfixedIssues } from './pr-fixer.helpers.js'
+import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { FIXER_STATE_MARKER, parseState } from '../../core/utils/pr-comment-state.js'
+import { filterUnfixedIssues, parseReviewIssuesFromComment } from './pr-fixer.helpers.js'
 import type {
-  PrFixerInput,
-  PrFixerOutput,
   ClassifyStepOutput,
   DirectFixStepOutput,
-  FixerValidateStepOutput,
-  FixerCommitStepOutput,
   FixerCommentStepOutput,
+  FixerCommitStepOutput,
   FixerIssueResult,
+  FixerValidateStepOutput,
+  PrFixerInput,
+  PrFixerOutput,
 } from './pr-fixer.schema.js'
 
 // ---------------------------------------------------------------------------
@@ -146,9 +142,7 @@ export function buildOutput(state: FixerState): PrFixerOutput {
   const directFixes = state.issues.filter(
     (i) => i.status === 'fixed' && i.method === 'direct',
   ).length
-  const specFixes = state.issues.filter(
-    (i) => i.status === 'fixed' && i.method === 'spec',
-  ).length
+  const specFixes = state.issues.filter((i) => i.status === 'fixed' && i.method === 'spec').length
 
   // Issues that were actually attempted (not skipped)
   const attempted = state.issues.filter((i) => i.status !== 'skipped').length

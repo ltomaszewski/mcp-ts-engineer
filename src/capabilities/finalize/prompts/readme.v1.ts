@@ -3,14 +3,14 @@
  * Analyzes code changes and updates project README files conservatively.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Input shape for readme prompt build function.
  */
 interface ReadmePromptInput {
-  filesChanged: string[];
-  cwd?: string;
+  filesChanged: string[]
+  cwd?: string
 }
 
 /**
@@ -61,42 +61,41 @@ Output a <readme_result> XML block with JSON matching this schema:
   "readmes_changed": string[],     // array of README file paths updated
   "summary": string                // what was updated or why no updates
 }
-`;
+`
 
 /**
  * Build user prompt with variable data (filesChanged list, cwd).
  */
 function buildReadmeUserPrompt(input: ReadmePromptInput): string {
-  const filesChangedList = input.filesChanged.map((f) => `- ${f}`).join("\n");
-  const cwdInfo = input.cwd ? `\nWorking directory: ${input.cwd}` : "";
+  const filesChangedList = input.filesChanged.map((f) => `- ${f}`).join('\n')
+  const cwdInfo = input.cwd ? `\nWorking directory: ${input.cwd}` : ''
 
   return `Analyze these changed files and update project READMEs if documented features changed:
 
 ${filesChangedList}${cwdInfo}
 
-Follow the decision criteria and workflow. Output <readme_result> JSON block.`;
+Follow the decision criteria and workflow. Output <readme_result> JSON block.`
 }
 
 /**
  * README prompt version 1 - system prompt append pattern with Haiku model.
  */
 export const readmePromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-07",
-  description:
-    "README step: analyzes code changes and updates project README files conservatively",
+  version: 'v1',
+  createdAt: '2026-02-07',
+  description: 'README step: analyzes code changes and updates project README files conservatively',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { filesChanged, cwd } = input as ReadmePromptInput;
+    const { filesChanged, cwd } = input as ReadmePromptInput
 
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: README_WORKFLOW,
       },
       userPrompt: buildReadmeUserPrompt({ filesChanged, cwd }),
-    };
+    }
   },
-};
+}

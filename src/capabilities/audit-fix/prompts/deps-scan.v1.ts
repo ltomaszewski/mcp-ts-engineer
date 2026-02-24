@@ -4,11 +4,11 @@
  * Supports npm workspaces (monorepos) by checking for root package-lock.json.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 interface DepsScanPromptInput {
-  projectPath: string;
-  cwd?: string;
+  projectPath: string
+  cwd?: string
 }
 
 /**
@@ -18,19 +18,19 @@ interface DepsScanPromptInput {
  * executes npm audit --json, and parses severity breakdown.
  */
 const depsScanPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-04",
-  description: "Deps scan step: npm audit with vulnerability severity breakdown",
+  version: 'v1',
+  createdAt: '2026-02-04',
+  description: 'Deps scan step: npm audit with vulnerability severity breakdown',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { projectPath, cwd } = input as DepsScanPromptInput;
-    const rootPath = cwd || ".";
+    const { projectPath, cwd } = input as DepsScanPromptInput
+    const rootPath = cwd || '.'
 
     const userPrompt = `You are executing a dependency security scan for a code quality audit.
 
 <project_path>${projectPath}</project_path>
-${cwd ? `<cwd>${cwd}</cwd>` : ""}
+${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 <workflow>
 1. FIRST, check if package-lock.json exists at MONOREPO ROOT:
@@ -125,18 +125,18 @@ If package-lock.json is missing in both locations or npm audit fails:
 - If npm audit fails to run (command not found, corrupted lock file), set audit_ran: false
 - Include the FULL npm audit JSON output in audit_json field (escape quotes properly)
 - Total vulnerabilities = critical + high + moderate + low
-</rules>`;
+</rules>`
 
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append:
-          "REMINDER: After completing the deps scan, you MUST output <deps_scan_result>{...}</deps_scan_result> with your findings.",
+          'REMINDER: After completing the deps scan, you MUST output <deps_scan_result>{...}</deps_scan_result> with your findings.',
       },
       userPrompt,
-    };
+    }
   },
-};
+}
 
-export { depsScanPromptV1 };
+export { depsScanPromptV1 }

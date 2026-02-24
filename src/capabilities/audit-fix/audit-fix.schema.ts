@@ -3,7 +3,7 @@
  * Defines input/output contracts for the orchestrator and internal steps.
  */
 
-import { z } from "zod";
+import { z } from 'zod'
 
 // ========================
 // Input Schemas
@@ -23,15 +23,15 @@ export const AuditFixInputSchema = z.object({
   skip_tests: z.boolean().optional(),
   spec_path: z.string().optional(),
 }) as z.ZodType<{
-  project?: string;
-  max_iteration_per_project: number;
-  max_total_cap: number;
-  cwd?: string;
-  skip_tests?: boolean;
-  spec_path?: string;
-}>;
+  project?: string
+  max_iteration_per_project: number
+  max_total_cap: number
+  cwd?: string
+  skip_tests?: boolean
+  spec_path?: string
+}>
 
-export type AuditFixInput = z.infer<typeof AuditFixInputSchema>;
+export type AuditFixInput = z.infer<typeof AuditFixInputSchema>
 
 /**
  * AuditPlan schema - extracted from planner AI planning session.
@@ -43,23 +43,23 @@ export const AuditPlanSchema = z.object({
       path: z.string(),
       reason: z.string(),
       priority: z.number().int().min(1),
-    })
+    }),
   ),
-});
+})
 
-export type AuditPlan = z.infer<typeof AuditPlanSchema>;
+export type AuditPlan = z.infer<typeof AuditPlanSchema>
 
 /**
  * TestStepInput schema - input for test step sub-capability.
  * Contains project path, workspaces to test, and optional working directory.
  */
 export const TestStepInputSchema = z.object({
-  project_path: z.string().min(1, "project_path is required"),
-  workspaces: z.array(z.string().min(1)).min(1, "At least one workspace required"),
+  project_path: z.string().min(1, 'project_path is required'),
+  workspaces: z.array(z.string().min(1)).min(1, 'At least one workspace required'),
   cwd: z.string().optional(),
-});
+})
 
-export type TestStepInput = z.infer<typeof TestStepInputSchema>;
+export type TestStepInput = z.infer<typeof TestStepInputSchema>
 
 /**
  * TestResult schema - output from test step.
@@ -71,9 +71,9 @@ export const TestResultSchema = z.object({
   tests_failed: z.number().int().nonnegative(),
   failure_summary: z.string(),
   workspaces_tested: z.array(z.string()),
-});
+})
 
-export type TestResult = z.infer<typeof TestResultSchema>;
+export type TestResult = z.infer<typeof TestResultSchema>
 
 // ========================
 // Inter-Session Data Contracts
@@ -86,27 +86,27 @@ export type TestResult = z.infer<typeof TestResultSchema>;
  * TypeScript validation result, summary, and files with issues.
  */
 export const AuditStepResultSchema = z.object({
-  status: z.enum(["pass", "warn", "fail"]),
+  status: z.enum(['pass', 'warn', 'fail']),
   fixes_applied: z.number().int().nonnegative(),
   issues_remaining: z.number().int().nonnegative(),
   tsc_passed: z.boolean(),
   summary: z.string(),
   files_with_issues: z.array(z.string()),
-});
+})
 
-export type AuditStepResult = z.infer<typeof AuditStepResultSchema>;
+export type AuditStepResult = z.infer<typeof AuditStepResultSchema>
 
 /**
  * EngFixResult schema - output from eng-step.
  * Contains fix status, list of files modified, and summary.
  */
 export const EngFixResultSchema = z.object({
-  status: z.enum(["success", "failed"]),
+  status: z.enum(['success', 'failed']),
   files_modified: z.array(z.string()),
   summary: z.string(),
-});
+})
 
-export type EngFixResult = z.infer<typeof EngFixResultSchema>;
+export type EngFixResult = z.infer<typeof EngFixResultSchema>
 
 /**
  * CommitResult schema - output from commit step.
@@ -117,9 +117,9 @@ export const CommitResultSchema = z.object({
   commit_sha: z.string().nullable(),
   commit_message: z.string().nullable(),
   files_changed: z.array(z.string()),
-});
+})
 
-export type CommitResult = z.infer<typeof CommitResultSchema>;
+export type CommitResult = z.infer<typeof CommitResultSchema>
 
 /**
  * ProjectResult schema - aggregated result for a single project.
@@ -130,14 +130,14 @@ export const ProjectResultSchema = z.object({
   project_path: z.string(),
   iterations: z.number().int().nonnegative(),
   total_fixes: z.number().int().nonnegative(),
-  final_audit_status: z.enum(["pass", "warn", "fail"]),
+  final_audit_status: z.enum(['pass', 'warn', 'fail']),
   files_modified: z.array(z.string()),
   commit_sha: z.string().nullable(),
   summary: z.string(),
   tests_passed: z.boolean().nullable().optional(),
-});
+})
 
-export type ProjectResult = z.infer<typeof ProjectResultSchema>;
+export type ProjectResult = z.infer<typeof ProjectResultSchema>
 
 // ========================
 // Sub-Capability Input Schemas
@@ -150,9 +150,9 @@ export type ProjectResult = z.infer<typeof ProjectResultSchema>;
 export const AuditStepInputSchema = z.object({
   project_path: z.string(),
   cwd: z.string().optional(),
-});
+})
 
-export type AuditStepInput = z.infer<typeof AuditStepInputSchema>;
+export type AuditStepInput = z.infer<typeof AuditStepInputSchema>
 
 /**
  * EngStepInput schema - input for eng-step sub-capability.
@@ -168,9 +168,9 @@ export const EngStepInputSchema = z.object({
   cwd: z.string().optional(),
   test_failure_summary: z.string().optional(),
   spec_path: z.string().optional(),
-});
+})
 
-export type EngStepInput = z.infer<typeof EngStepInputSchema>;
+export type EngStepInput = z.infer<typeof EngStepInputSchema>
 
 /**
  * CommitStepInput schema - input for commit sub-capability.
@@ -181,9 +181,9 @@ export const CommitStepInputSchema = z.object({
   files_changed: z.array(z.string()),
   audit_summary: z.string(),
   cwd: z.string().optional(),
-});
+})
 
-export type CommitStepInput = z.infer<typeof CommitStepInputSchema>;
+export type CommitStepInput = z.infer<typeof CommitStepInputSchema>
 
 // ========================
 // Output Schema
@@ -195,7 +195,7 @@ export type CommitStepInput = z.infer<typeof CommitStepInputSchema>;
  * total iterations, per-project results, summary, and optional session ID.
  */
 export const AuditFixOutputSchema = z.object({
-  status: z.enum(["success", "partial", "failed"]),
+  status: z.enum(['success', 'partial', 'failed']),
   projects_audited: z.number().int().nonnegative(),
   total_iterations: z.number().int().nonnegative(),
   project_results: z.array(ProjectResultSchema),
@@ -203,10 +203,10 @@ export const AuditFixOutputSchema = z.object({
   session_id: z
     .string()
     .optional()
-    .describe("Unique session identifier for this invocation (injected by framework)"),
-});
+    .describe('Unique session identifier for this invocation (injected by framework)'),
+})
 
-export type AuditFixOutput = z.infer<typeof AuditFixOutputSchema>;
+export type AuditFixOutput = z.infer<typeof AuditFixOutputSchema>
 
 // ========================
 // Lint Step Schemas
@@ -217,11 +217,11 @@ export type AuditFixOutput = z.infer<typeof AuditFixOutputSchema>;
  * Contains project path to scan and optional working directory.
  */
 export const LintScanInputSchema = z.object({
-  project_path: z.string().min(1, "project_path is required"),
+  project_path: z.string().min(1, 'project_path is required'),
   cwd: z.string().optional(),
-});
+})
 
-export type LintScanInput = z.infer<typeof LintScanInputSchema>;
+export type LintScanInput = z.infer<typeof LintScanInputSchema>
 
 /**
  * LintScanResult schema - output from lint scan step.
@@ -235,9 +235,9 @@ export const LintScanResultSchema = z.object({
   warning_count: z.number().int().nonnegative(),
   lint_report: z.string(),
   files_with_lint_errors: z.array(z.string()),
-});
+})
 
-export type LintScanResult = z.infer<typeof LintScanResultSchema>;
+export type LintScanResult = z.infer<typeof LintScanResultSchema>
 
 /**
  * LintFixInput schema - input for lint fix sub-capability.
@@ -248,21 +248,21 @@ export const LintFixInputSchema = z.object({
   lint_report: z.string(),
   files_with_lint_errors: z.array(z.string()),
   cwd: z.string().optional(),
-});
+})
 
-export type LintFixInput = z.infer<typeof LintFixInputSchema>;
+export type LintFixInput = z.infer<typeof LintFixInputSchema>
 
 /**
  * LintFixResult schema - output from lint fix step.
  * Contains fix status, files modified, and summary.
  */
 export const LintFixResultSchema = z.object({
-  status: z.enum(["success", "failed"]),
+  status: z.enum(['success', 'failed']),
   files_modified: z.array(z.string()),
   summary: z.string(),
-});
+})
 
-export type LintFixResult = z.infer<typeof LintFixResultSchema>;
+export type LintFixResult = z.infer<typeof LintFixResultSchema>
 
 // ========================
 // Deps Step Schemas
@@ -277,20 +277,20 @@ export const VulnerabilitiesBySeveritySchema = z.object({
   high: z.number().int().nonnegative(),
   moderate: z.number().int().nonnegative(),
   low: z.number().int().nonnegative(),
-});
+})
 
-export type VulnerabilitiesBySeverity = z.infer<typeof VulnerabilitiesBySeveritySchema>;
+export type VulnerabilitiesBySeverity = z.infer<typeof VulnerabilitiesBySeveritySchema>
 
 /**
  * DepsScanStepInput schema - input for deps scan sub-capability.
  * Contains project path to scan and optional working directory.
  */
 export const DepsScanStepInputSchema = z.object({
-  project_path: z.string().min(1, "project_path is required"),
+  project_path: z.string().min(1, 'project_path is required'),
   cwd: z.string().optional(),
-});
+})
 
-export type DepsScanStepInput = z.infer<typeof DepsScanStepInputSchema>;
+export type DepsScanStepInput = z.infer<typeof DepsScanStepInputSchema>
 
 /**
  * DepsScanStepResult schema - output from deps scan step.
@@ -301,21 +301,21 @@ export const DepsScanStepResultSchema = z.object({
   vulnerabilities_found: z.number().int().nonnegative(),
   vulnerabilities_by_severity: VulnerabilitiesBySeveritySchema,
   audit_json: z.string(),
-});
+})
 
-export type DepsScanStepResult = z.infer<typeof DepsScanStepResultSchema>;
+export type DepsScanStepResult = z.infer<typeof DepsScanStepResultSchema>
 
 /**
  * DepsFixStepInput schema - input for deps fix sub-capability.
  * Contains project path, vulnerabilities count from scan, and optional working directory.
  */
 export const DepsFixStepInputSchema = z.object({
-  project_path: z.string().min(1, "project_path is required"),
+  project_path: z.string().min(1, 'project_path is required'),
   vulnerabilities_found: z.number().int().nonnegative(),
   cwd: z.string().optional(),
-});
+})
 
-export type DepsFixStepInput = z.infer<typeof DepsFixStepInputSchema>;
+export type DepsFixStepInput = z.infer<typeof DepsFixStepInputSchema>
 
 /**
  * DepsFixStepResult schema - output from deps fix step.
@@ -328,6 +328,6 @@ export const DepsFixStepResultSchema = z.object({
   vulnerabilities_remaining: z.number().int().nonnegative(),
   files_modified: z.array(z.string()),
   fix_summary: z.string(),
-});
+})
 
-export type DepsFixStepResult = z.infer<typeof DepsFixStepResultSchema>;
+export type DepsFixStepResult = z.infer<typeof DepsFixStepResultSchema>

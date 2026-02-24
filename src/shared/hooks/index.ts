@@ -4,10 +4,10 @@
  * Exports hook factories for path validation and other common hook patterns.
  */
 
-export { buildPathValidationHooks } from './path-validation-hooks.js';
 export type {
   HookCallback,
-  HookResult,
   HookConfig,
+  HookResult,
   HooksCollection,
-} from './path-validation-hooks.js';
+} from './path-validation-hooks.js'
+export { buildPathValidationHooks } from './path-validation-hooks.js'

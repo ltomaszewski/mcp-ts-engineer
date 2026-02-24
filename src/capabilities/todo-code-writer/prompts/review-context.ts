@@ -6,4 +6,7 @@
  * moved to shared location for reuse across capabilities.
  */
 
-export { REVIEW_CONTEXT_APPEND_PROMPT, buildReviewContext } from "../../../shared/prompts/review-context.js";
+export {
+  buildReviewContext,
+  REVIEW_CONTEXT_APPEND_PROMPT,
+} from '../../../shared/prompts/review-context.js'

@@ -1,9 +1,9 @@
 import {
-  serializeState,
-  parseState,
-  REVIEWER_STATE_MARKER,
   FIXER_STATE_MARKER,
   type PrCommentState,
+  parseState,
+  REVIEWER_STATE_MARKER,
+  serializeState,
 } from '../pr-comment-state.js'
 
 describe('serializeState', () => {

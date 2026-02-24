@@ -6,24 +6,11 @@
  * project-level READMEs (apps/*, packages/*) with Edit tool to preserve formatting.
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
-import {
-  ReadmeStepInputSchema,
-  ReadmeResultSchema,
-} from "./finalize.schema.js";
-import {
-  parseXmlBlock,
-  parseJsonSafe,
-  README_RESULT_FALLBACK,
-} from "./finalize.helpers.js";
-import type {
-  ReadmeStepInput,
-  ReadmeResult,
-} from "./finalize.schema.js";
-import {
-  readmePrompts,
-  README_CURRENT_VERSION,
-} from "./prompts/index.js";
+import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
+import { parseJsonSafe, parseXmlBlock, README_RESULT_FALLBACK } from './finalize.helpers.js'
+import type { ReadmeResult, ReadmeStepInput } from './finalize.schema.js'
+import { ReadmeResultSchema, ReadmeStepInputSchema } from './finalize.schema.js'
+import { README_CURRENT_VERSION, readmePrompts } from './prompts/index.js'
 
 /**
  * Internal sub-capability for updating project README files.
@@ -35,27 +22,24 @@ import {
  * via Zod schema and this capability is only invoked through the orchestrator's
  * authenticated channel.
  */
-export const finalizeReadmeStepCapability: CapabilityDefinition<
-  ReadmeStepInput,
-  ReadmeResult
-> = {
-  id: "finalize_readme_step",
-  type: "tool",
-  visibility: "internal",
-  name: "Finalize README Step (Internal)",
+export const finalizeReadmeStepCapability: CapabilityDefinition<ReadmeStepInput, ReadmeResult> = {
+  id: 'finalize_readme_step',
+  type: 'tool',
+  visibility: 'internal',
+  name: 'Finalize README Step (Internal)',
   description:
-    "Internal sub-capability: updates project README.md files based on documented feature changes. Not intended for direct use.",
+    'Internal sub-capability: updates project README.md files based on documented feature changes. Not intended for direct use.',
   inputSchema: ReadmeStepInputSchema,
   promptRegistry: readmePrompts,
   currentPromptVersion: README_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "haiku",
+    model: 'haiku',
     maxTurns: 30,
     maxBudgetUsd: 1.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
   },
 
   preparePromptInput: (input: ReadmeStepInput, _context) => ({
@@ -65,16 +49,16 @@ export const finalizeReadmeStepCapability: CapabilityDefinition<
 
   processResult: (_input: ReadmeStepInput, aiResult, _context) => {
     // Parse <readme_result> XML block from AI response
-    const xmlContent = parseXmlBlock(aiResult.content, "readme_result");
+    const xmlContent = parseXmlBlock(aiResult.content, 'readme_result')
     const fallback = {
       ...README_RESULT_FALLBACK,
       summary: aiResult.content.slice(0, 2000),
-    };
-
-    if (xmlContent) {
-      return parseJsonSafe(xmlContent, ReadmeResultSchema, fallback);
     }
 
-    return fallback;
+    if (xmlContent) {
+      return parseJsonSafe(xmlContent, ReadmeResultSchema, fallback)
+    }
+
+    return fallback
   },
-};
+}

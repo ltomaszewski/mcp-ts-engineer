@@ -6,34 +6,34 @@
  * Originally from: src/capabilities/todo-code-writer/workspace-detector.ts
  */
 
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 /** Technology tags recognized by the prompt system. */
 export type TechnologyTag =
-  | "react-native"
-  | "react"
-  | "nestjs"
-  | "expo"
-  | "tanstack-query"
-  | "zustand";
+  | 'react-native'
+  | 'react'
+  | 'nestjs'
+  | 'expo'
+  | 'tanstack-query'
+  | 'zustand'
 
 /** Mapping from dependency name to technology tag. */
 const DEPENDENCY_TECHNOLOGY_MAP: Record<string, TechnologyTag> = {
-  "react-native": "react-native",
-  react: "react",
-  "@nestjs/core": "nestjs",
-  expo: "expo",
-  "@tanstack/react-query": "tanstack-query",
-  zustand: "zustand",
-};
+  'react-native': 'react-native',
+  react: 'react',
+  '@nestjs/core': 'nestjs',
+  expo: 'expo',
+  '@tanstack/react-query': 'tanstack-query',
+  zustand: 'zustand',
+}
 
 /** Result of workspace detection. */
 export interface WorkspaceDetectionResult {
   /** High-level technology tags (e.g., "react-native", "nestjs"). */
-  technologies: string[];
+  technologies: string[]
   /** Raw dependency names found in package.json (both deps and devDeps). */
-  dependencies: string[];
+  dependencies: string[]
 }
 
 /**
@@ -43,54 +43,51 @@ export interface WorkspaceDetectionResult {
  * @returns Detection result with technologies and raw dependencies; empty arrays on any error
  */
 export function detectWorkspace(cwd: string | undefined): WorkspaceDetectionResult {
-  const empty: WorkspaceDetectionResult = { technologies: [], dependencies: [] };
+  const empty: WorkspaceDetectionResult = { technologies: [], dependencies: [] }
 
   if (!cwd) {
-    return empty;
+    return empty
   }
 
-  let content: string;
+  let content: string
   try {
-    content = readFileSync(join(cwd, "package.json"), "utf-8");
+    content = readFileSync(join(cwd, 'package.json'), 'utf-8')
   } catch {
-    return empty;
+    return empty
   }
 
-  let parsed: Record<string, unknown>;
+  let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(content) as Record<string, unknown>;
+    parsed = JSON.parse(content) as Record<string, unknown>
   } catch {
-    return empty;
+    return empty
   }
 
-  const deps = parsed.dependencies as Record<string, string> | undefined;
-  const devDeps = parsed.devDependencies as Record<string, string> | undefined;
+  const deps = parsed.dependencies as Record<string, string> | undefined
+  const devDeps = parsed.devDependencies as Record<string, string> | undefined
 
-  const allDepNames = [
-    ...Object.keys(deps || {}),
-    ...Object.keys(devDeps || {}),
-  ];
-  const uniqueDeps = [...new Set(allDepNames)];
+  const allDepNames = [...Object.keys(deps || {}), ...Object.keys(devDeps || {})]
+  const uniqueDeps = [...new Set(allDepNames)]
 
-  const technologies = new Set<string>();
-  const hasReactNative = uniqueDeps.includes("react-native");
+  const technologies = new Set<string>()
+  const hasReactNative = uniqueDeps.includes('react-native')
 
   for (const dep of uniqueDeps) {
-    const tech = DEPENDENCY_TECHNOLOGY_MAP[dep];
+    const tech = DEPENDENCY_TECHNOLOGY_MAP[dep]
     if (tech) {
       // If react-native is present, skip the standalone "react" tag
       // (react-native implies react)
-      if (tech === "react" && hasReactNative) {
-        continue;
+      if (tech === 'react' && hasReactNative) {
+        continue
       }
-      technologies.add(tech);
+      technologies.add(tech)
     }
   }
 
   return {
     technologies: [...technologies],
     dependencies: uniqueDeps,
-  };
+  }
 }
 
 /**
@@ -98,5 +95,5 @@ export function detectWorkspace(cwd: string | undefined): WorkspaceDetectionResu
  * @deprecated Use detectWorkspace() instead for full detection.
  */
 export function detectWorkspaceTechnologies(cwd: string | undefined): string[] {
-  return detectWorkspace(cwd).technologies;
+  return detectWorkspace(cwd).technologies
 }

@@ -2,19 +2,16 @@
  * Classify step: Categorize review issues as direct/spec-required/skip.
  */
 
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
+import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseJsonSafe } from '../../core/utils/index.js'
-import { z } from 'zod'
-import {
-  ClassifyStepOutputSchema,
-  CLASSIFY_OUTPUT_JSON_SCHEMA,
-} from './pr-fixer.schema.js'
 import type { ClassifyStepOutput } from './pr-fixer.schema.js'
+import { CLASSIFY_OUTPUT_JSON_SCHEMA, ClassifyStepOutputSchema } from './pr-fixer.schema.js'
 import { CLASSIFY_PROMPT_V1 } from './prompts/classify.v1.js'
 
 const ClassifyStepInputSchema = z.object({

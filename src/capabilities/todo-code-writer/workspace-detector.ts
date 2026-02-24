@@ -11,4 +11,4 @@ export {
   detectWorkspaceTechnologies,
   type TechnologyTag,
   type WorkspaceDetectionResult,
-} from "../../shared/workspace-detector.js";
+} from '../../shared/workspace-detector.js'

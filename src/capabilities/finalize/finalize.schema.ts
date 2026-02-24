@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 // ========================
 // Input Schemas
@@ -11,22 +11,25 @@ import { z } from "zod";
  * skip_codemaps (optional boolean, default false).
  */
 export const FinalizeInputSchema = z.object({
-  files_changed: z.array(z.string()).min(1, "files_changed must contain at least one file"),
+  files_changed: z.array(z.string()).min(1, 'files_changed must contain at least one file'),
   cwd: z.string().optional(),
   skip_tests: z.boolean().default(false),
   skip_codemaps: z.boolean().default(false),
   skip_readmes: z.boolean().default(false),
-  spec_path: z.string().optional().describe("Path to the spec file to mark as IMPLEMENTED after successful finalization"),
+  spec_path: z
+    .string()
+    .optional()
+    .describe('Path to the spec file to mark as IMPLEMENTED after successful finalization'),
 }) as z.ZodType<{
-  files_changed: string[];
-  cwd?: string;
-  skip_tests: boolean;
-  skip_codemaps: boolean;
-  skip_readmes: boolean;
-  spec_path?: string;
-}>;
+  files_changed: string[]
+  cwd?: string
+  skip_tests: boolean
+  skip_codemaps: boolean
+  skip_readmes: boolean
+  spec_path?: string
+}>
 
-export type FinalizeInput = z.infer<typeof FinalizeInputSchema>;
+export type FinalizeInput = z.infer<typeof FinalizeInputSchema>
 
 /**
  * FinalizePlan schema - extracted from orchestrator AI planning session.
@@ -35,9 +38,9 @@ export type FinalizeInput = z.infer<typeof FinalizeInputSchema>;
 export const FinalizePlanSchema = z.object({
   workspaces: z.array(z.string()),
   codemap_areas: z.array(z.string()),
-});
+})
 
-export type FinalizePlan = z.infer<typeof FinalizePlanSchema>;
+export type FinalizePlan = z.infer<typeof FinalizePlanSchema>
 
 // ========================
 // Inter-Session Data Contracts
@@ -49,14 +52,14 @@ export type FinalizePlan = z.infer<typeof FinalizePlanSchema>;
  * TypeScript validation result, and summary.
  */
 export const AuditResultSchema = z.object({
-  status: z.enum(["pass", "warn", "fail"]),
+  status: z.enum(['pass', 'warn', 'fail']),
   fixes_applied: z.number().int().nonnegative(),
   issues_remaining: z.number().int().nonnegative(),
   tsc_passed: z.boolean(),
   summary: z.string(),
-});
+})
 
-export type AuditResult = z.infer<typeof AuditResultSchema>;
+export type AuditResult = z.infer<typeof AuditResultSchema>
 
 /**
  * TestResult schema - output from test step.
@@ -66,9 +69,9 @@ export const TestResultSchema = z.object({
   passed: z.boolean(),
   workspaces_tested: z.array(z.string()),
   summary: z.string(),
-});
+})
 
-export type TestResult = z.infer<typeof TestResultSchema>;
+export type TestResult = z.infer<typeof TestResultSchema>
 
 /**
  * CodemapResult schema - output from codemap step.
@@ -78,9 +81,9 @@ export const CodemapResultSchema = z.object({
   updated: z.boolean(),
   codemaps_changed: z.array(z.string()),
   summary: z.string(),
-});
+})
 
-export type CodemapResult = z.infer<typeof CodemapResultSchema>;
+export type CodemapResult = z.infer<typeof CodemapResultSchema>
 
 /**
  * ReadmeResult schema - output from readme step.
@@ -90,9 +93,9 @@ export const ReadmeResultSchema = z.object({
   updated: z.boolean(),
   readmes_changed: z.array(z.string()),
   summary: z.string(),
-});
+})
 
-export type ReadmeResult = z.infer<typeof ReadmeResultSchema>;
+export type ReadmeResult = z.infer<typeof ReadmeResultSchema>
 
 /**
  * FinalizeCommitResult schema - output from commit step.
@@ -103,9 +106,9 @@ export const FinalizeCommitResultSchema = z.object({
   commit_sha: z.string().nullable(),
   commit_message: z.string().nullable(),
   files_committed: z.array(z.string()),
-});
+})
 
-export type FinalizeCommitResult = z.infer<typeof FinalizeCommitResultSchema>;
+export type FinalizeCommitResult = z.infer<typeof FinalizeCommitResultSchema>
 
 // ========================
 // Sub-Capability Input Schemas
@@ -118,9 +121,9 @@ export type FinalizeCommitResult = z.infer<typeof FinalizeCommitResultSchema>;
 export const AuditStepInputSchema = z.object({
   files_changed: z.array(z.string()).min(1),
   cwd: z.string().optional(),
-});
+})
 
-export type AuditStepInput = z.infer<typeof AuditStepInputSchema>;
+export type AuditStepInput = z.infer<typeof AuditStepInputSchema>
 
 /**
  * TestStepInput schema - input for test sub-capability.
@@ -129,9 +132,9 @@ export type AuditStepInput = z.infer<typeof AuditStepInputSchema>;
 export const TestStepInputSchema = z.object({
   workspaces: z.array(z.string()).min(1),
   cwd: z.string().optional(),
-});
+})
 
-export type TestStepInput = z.infer<typeof TestStepInputSchema>;
+export type TestStepInput = z.infer<typeof TestStepInputSchema>
 
 /**
  * CodemapStepInput schema - input for codemap sub-capability.
@@ -140,9 +143,9 @@ export type TestStepInput = z.infer<typeof TestStepInputSchema>;
 export const CodemapStepInputSchema = z.object({
   files_changed: z.array(z.string()).min(1),
   cwd: z.string().optional(),
-});
+})
 
-export type CodemapStepInput = z.infer<typeof CodemapStepInputSchema>;
+export type CodemapStepInput = z.infer<typeof CodemapStepInputSchema>
 
 /**
  * ReadmeStepInput schema - input for readme sub-capability.
@@ -151,9 +154,9 @@ export type CodemapStepInput = z.infer<typeof CodemapStepInputSchema>;
 export const ReadmeStepInputSchema = z.object({
   files_changed: z.array(z.string()).min(1),
   cwd: z.string().optional(),
-});
+})
 
-export type ReadmeStepInput = z.infer<typeof ReadmeStepInputSchema>;
+export type ReadmeStepInput = z.infer<typeof ReadmeStepInputSchema>
 
 /**
  * CommitStepInput schema - input for commit sub-capability.
@@ -165,9 +168,9 @@ export const CommitStepInputSchema = z.object({
   readme_summary: z.string().optional(),
   files_affected: z.array(z.string()),
   cwd: z.string().optional(),
-});
+})
 
-export type CommitStepInput = z.infer<typeof CommitStepInputSchema>;
+export type CommitStepInput = z.infer<typeof CommitStepInputSchema>
 
 // ========================
 // Output Schema
@@ -179,8 +182,8 @@ export type CommitStepInput = z.infer<typeof CommitStepInputSchema>;
  * tests_passed and codemaps_updated are nullable (null if skipped).
  */
 export const FinalizeOutputSchema = z.object({
-  status: z.enum(["success", "failed"]),
-  audit_status: z.enum(["pass", "warn", "fail"]),
+  status: z.enum(['success', 'failed']),
+  audit_status: z.enum(['pass', 'warn', 'fail']),
   audit_fixes_applied: z.number().int().nonnegative(),
   audit_summary: z.string(),
   tests_passed: z.boolean().nullable(),
@@ -191,7 +194,10 @@ export const FinalizeOutputSchema = z.object({
   readmes_summary: z.string(),
   commit_sha: z.string().nullable(),
   commit_message: z.string().nullable(),
-  session_id: z.string().optional().describe("Unique session identifier for this invocation (injected by framework)"),
-});
+  session_id: z
+    .string()
+    .optional()
+    .describe('Unique session identifier for this invocation (injected by framework)'),
+})
 
-export type FinalizeOutput = z.infer<typeof FinalizeOutputSchema>;
+export type FinalizeOutput = z.infer<typeof FinalizeOutputSchema>

@@ -6,16 +6,16 @@
  * Uses embedded spec instructions for TDD implementation.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import type { PhasePlan } from "../todo-code-writer.schema.js";
-import { buildDevContext } from "./dev-context.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import type { PhasePlan } from '../todo-code-writer.schema.js'
+import { buildDevContext } from './dev-context.js'
 
 /** Input shape for the phase engineering prompt build function. */
 interface PhaseEngPromptInput {
-  specPath: string;
-  phasePlan: PhasePlan;
-  currentPhaseNumber: number;
-  cwd?: string;
+  specPath: string
+  phasePlan: PhasePlan
+  currentPhaseNumber: number
+  cwd?: string
 }
 
 /**
@@ -26,24 +26,22 @@ interface PhaseEngPromptInput {
 const buildPhaseEngSystemPromptAppend = (): string =>
   `After completing all tool use, provide a brief text summary of the implementation work. Your structured output will be captured automatically via the output schema.
 
-${buildDevContext()}`;
+${buildDevContext()}`
 
 const PHASE_ENG_USER_PROMPT_TEMPLATE = (
   specPath: string,
   phasePlan: PhasePlan,
   currentPhaseNumber: number,
 ): string => {
-  const currentPhase = phasePlan.phases.find(
-    (p) => p.phase_number === currentPhaseNumber,
-  );
+  const currentPhase = phasePlan.phases.find((p) => p.phase_number === currentPhaseNumber)
 
   if (!currentPhase) {
-    return `Error: Phase ${currentPhaseNumber} not found in phase plan.`;
+    return `Error: Phase ${currentPhaseNumber} not found in phase plan.`
   }
 
   const fileList = currentPhase.files
     .map((f) => `- ${f.action}: ${f.path} — ${f.purpose}`)
-    .join("\n");
+    .join('\n')
 
   return `You are a senior engineer implementing Phase ${currentPhaseNumber} of a feature spec.
 
@@ -95,31 +93,26 @@ ${fileList}
 - JSON must have: status ("success" or "failed"), files_modified (array of strings), summary (string)
 - files_modified should list ACTUAL files you created or modified during implementation
 - summary should be 1-3 sentences describing what was implemented
-</output_format>`;
-};
+</output_format>`
+}
 
 /** Version 1: Phase engineering with embedded spec instructions */
 export const phaseEngPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Phase engineering: reads spec, implements phase N with TDD, returns PhaseEngResult via XML block",
+    'Phase engineering: reads spec, implements phase N with TDD, returns PhaseEngResult via XML block',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, phasePlan, currentPhaseNumber } =
-      input as PhaseEngPromptInput;
+    const { specPath, phasePlan, currentPhaseNumber } = input as PhaseEngPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: buildPhaseEngSystemPromptAppend(),
       },
-      userPrompt: PHASE_ENG_USER_PROMPT_TEMPLATE(
-        specPath,
-        phasePlan,
-        currentPhaseNumber,
-      ),
-    };
+      userPrompt: PHASE_ENG_USER_PROMPT_TEMPLATE(specPath, phasePlan, currentPhaseNumber),
+    }
   },
-};
+}

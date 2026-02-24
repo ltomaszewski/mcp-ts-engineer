@@ -9,28 +9,25 @@
  * @internal Exported for unit testing and capability reuse
  */
 
-import type { CapabilityContext } from "../../core/capability-registry/capability-registry.types.js";
-import type { AIQueryResult } from "../../core/ai-provider/ai-provider.types.js";
+import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { fileNeedsCommit } from '../../core/utils/index.js'
 import {
-  ReviewSummarySchema,
-  TddSummarySchema,
-} from "./todo-reviewer.schema.js";
-import type {
-  TodoReviewerInput,
-  TodoReviewerOutput,
-  ReviewSummary,
-  TddSummary,
-  CommitResult,
-  TddScanStepResult,
-  TddFixStepResult,
-} from "./todo-reviewer.schema.js";
-import {
-  parseXmlBlock,
   parseJsonSafe,
+  parseXmlBlock,
   REVIEW_SUMMARY_FALLBACK,
   TDD_SUMMARY_FALLBACK,
-} from "./todo-reviewer.helpers.js";
-import { fileNeedsCommit } from "../../core/utils/index.js";
+} from './todo-reviewer.helpers.js'
+import type {
+  CommitResult,
+  ReviewSummary,
+  TddFixStepResult,
+  TddScanStepResult,
+  TddSummary,
+  TodoReviewerInput,
+  TodoReviewerOutput,
+} from './todo-reviewer.schema.js'
+import { ReviewSummarySchema, TddSummarySchema } from './todo-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
 // Mutable state passed between orchestration helpers
@@ -38,17 +35,17 @@ import { fileNeedsCommit } from "../../core/utils/index.js";
 
 /** Internal state accumulated across iterations. */
 export interface IterationState {
-  reviewSummary: ReviewSummary;
-  tddSummary: TddSummary;
-  tddScanResult: TddScanStepResult | null;
-  tddFixResult: TddFixStepResult | null;
-  reviewReport: string;
-  tddReport: string;
-  iterationsCompleted: number;
+  reviewSummary: ReviewSummary
+  tddSummary: TddSummary
+  tddScanResult: TddScanStepResult | null
+  tddFixResult: TddFixStepResult | null
+  reviewReport: string
+  tddReport: string
+  iterationsCompleted: number
   /** Whether spec had changes after last iteration (verified via git diff) */
-  specHasChanges: boolean;
+  specHasChanges: boolean
   /** Whether loop exited early due to no changes */
-  exitedEarly: boolean;
+  exitedEarly: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -58,26 +55,23 @@ export interface IterationState {
 /**
  * Parse the initial review summary from the AI query response.
  */
-export function parseReviewFromAiContent(
-  content: string,
-  specPath: string,
-): ReviewSummary {
-  const reviewXml = parseXmlBlock(content, "review_summary");
+export function parseReviewFromAiContent(content: string, specPath: string): ReviewSummary {
+  const reviewXml = parseXmlBlock(content, 'review_summary')
   if (reviewXml) {
     return parseJsonSafe(reviewXml, ReviewSummarySchema, {
       ...REVIEW_SUMMARY_FALLBACK,
       spec_path: specPath,
-    });
+    })
   }
-  return { ...REVIEW_SUMMARY_FALLBACK, spec_path: specPath };
+  return { ...REVIEW_SUMMARY_FALLBACK, spec_path: specPath }
 }
 
 /**
  * Validate a raw TDD result against the schema, returning fallback on failure.
  */
 export function validateTddResult(raw: unknown): TddSummary {
-  const parsed = TddSummarySchema.safeParse(raw);
-  return parsed.success ? parsed.data : TDD_SUMMARY_FALLBACK;
+  const parsed = TddSummarySchema.safeParse(raw)
+  return parsed.success ? parsed.data : TDD_SUMMARY_FALLBACK
 }
 
 /**
@@ -94,43 +88,36 @@ export function determineStatus(
   reviewSummary: ReviewSummary,
   tddSummary: TddSummary,
   tddScanResult?: TddScanStepResult | null,
-): "success" | "failed" {
+): 'success' | 'failed' {
   // Legacy TDD validation check
   const tddIsIndeterminate =
-    !tddSummary.details ||
-    tddSummary.details === "Failed to parse TDD validation output";
-  const legacyTddBlocks =
-    tddSummary.status === "FAIL" && !tddIsIndeterminate;
+    !tddSummary.details || tddSummary.details === 'Failed to parse TDD validation output'
+  const legacyTddBlocks = tddSummary.status === 'FAIL' && !tddIsIndeterminate
 
   // New TDD scan check (prioritize scan result if available)
-  const scanBlocks = tddScanResult ? tddScanResult.status === "FAIL" : false;
+  const scanBlocks = tddScanResult ? tddScanResult.status === 'FAIL' : false
 
-  const reviewOk = reviewSummary.status === "READY" || reviewSummary.status === "IN_REVIEW";
-  return reviewOk && !legacyTddBlocks && !scanBlocks
-    ? "success"
-    : "failed";
+  const reviewOk = reviewSummary.status === 'READY' || reviewSummary.status === 'IN_REVIEW'
+  return reviewOk && !legacyTddBlocks && !scanBlocks ? 'success' : 'failed'
 }
 
 /**
  * Assemble the final TodoReviewerOutput from accumulated state.
  */
-export function buildOutput(
-  state: IterationState,
-  commitResult: CommitResult,
-): TodoReviewerOutput {
+export function buildOutput(state: IterationState, commitResult: CommitResult): TodoReviewerOutput {
   // Include scan/fix details in TDD report if available
-  let enhancedTddReport = state.tddReport;
+  let enhancedTddReport = state.tddReport
   if (state.tddScanResult) {
-    enhancedTddReport += `\n\n--- TDD Scan Summary ---\n`;
-    enhancedTddReport += `Status: ${state.tddScanResult.status}\n`;
-    enhancedTddReport += `Scope: ${state.tddScanResult.scope_analysis.tests_in_scope}/${state.tddScanResult.scope_analysis.tests_defined} in scope\n`;
-    enhancedTddReport += `Coverage: ${state.tddScanResult.coverage_analysis.fr_ec_with_tests}/${state.tddScanResult.coverage_analysis.fr_ec_total} FR/EC with tests\n`;
-    enhancedTddReport += `Issues: ${state.tddScanResult.issues.length} found\n`;
+    enhancedTddReport += `\n\n--- TDD Scan Summary ---\n`
+    enhancedTddReport += `Status: ${state.tddScanResult.status}\n`
+    enhancedTddReport += `Scope: ${state.tddScanResult.scope_analysis.tests_in_scope}/${state.tddScanResult.scope_analysis.tests_defined} in scope\n`
+    enhancedTddReport += `Coverage: ${state.tddScanResult.coverage_analysis.fr_ec_with_tests}/${state.tddScanResult.coverage_analysis.fr_ec_total} FR/EC with tests\n`
+    enhancedTddReport += `Issues: ${state.tddScanResult.issues.length} found\n`
     if (state.tddFixResult) {
-      enhancedTddReport += `\n--- TDD Fix Summary ---\n`;
-      enhancedTddReport += `Status: ${state.tddFixResult.status}\n`;
-      enhancedTddReport += `Fixed: ${state.tddFixResult.issues_fixed}/${state.tddScanResult.issues.length}\n`;
-      enhancedTddReport += state.tddFixResult.fix_summary;
+      enhancedTddReport += `\n--- TDD Fix Summary ---\n`
+      enhancedTddReport += `Status: ${state.tddFixResult.status}\n`
+      enhancedTddReport += `Fixed: ${state.tddFixResult.issues_fixed}/${state.tddScanResult.issues.length}\n`
+      enhancedTddReport += state.tddFixResult.fix_summary
     }
   }
 
@@ -142,7 +129,7 @@ export function buildOutput(
     commit_sha: commitResult?.commit_sha ?? null,
     commit_message: commitResult?.commit_message ?? null,
     files_changed: commitResult?.files_changed ?? [],
-  };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -158,16 +145,15 @@ export function applyNestedReviewResult(
   iteration: number,
   state: IterationState,
 ): void {
-  if (!reviewResult || typeof reviewResult !== "object") {
-    return;
+  if (!reviewResult || typeof reviewResult !== 'object') {
+    return
   }
-  const nestedReport =
-    "review_report" in reviewResult ? String(reviewResult.review_report) : "";
-  const nestedXml = parseXmlBlock(nestedReport, "review_summary");
+  const nestedReport = 'review_report' in reviewResult ? String(reviewResult.review_report) : ''
+  const nestedXml = parseXmlBlock(nestedReport, 'review_summary')
   if (nestedXml) {
-    state.reviewSummary = parseJsonSafe(nestedXml, ReviewSummarySchema, state.reviewSummary);
+    state.reviewSummary = parseJsonSafe(nestedXml, ReviewSummarySchema, state.reviewSummary)
   }
-  state.reviewReport += `\n\n--- Iteration ${iteration} ---\n${nestedReport.slice(0, 3000)}`;
+  state.reviewReport += `\n\n--- Iteration ${iteration} ---\n${nestedReport.slice(0, 3000)}`
 }
 
 /**
@@ -191,43 +177,43 @@ export async function runAdditionalIterations(
   for (let i = 2; i <= input.iterations; i++) {
     // Check if spec has uncommitted changes before this iteration
     // If no changes from previous iteration, exit early (spec is stable)
-    const hasChangesBefore = fileNeedsCommit(input.spec_path, input.cwd);
+    const hasChangesBefore = fileNeedsCommit(input.spec_path, input.cwd)
     if (!hasChangesBefore && i > 2) {
       // No changes after previous iteration = spec stabilized, exit early
-      state.exitedEarly = true;
-      state.reviewReport += `\n\n--- Iteration ${i} skipped: spec stabilized (no changes) ---`;
-      break;
+      state.exitedEarly = true
+      state.reviewReport += `\n\n--- Iteration ${i} skipped: spec stabilized (no changes) ---`
+      break
     }
 
-    const reviewResult = (await context.invokeCapability("todo_reviewer", {
+    const reviewResult = (await context.invokeCapability('todo_reviewer', {
       spec_path: input.spec_path,
       model: input.model,
       iterations: 1,
       cwd: input.cwd,
-    })) as TodoReviewerOutput;
+    })) as TodoReviewerOutput
 
-    applyNestedReviewResult(reviewResult, i, state);
+    applyNestedReviewResult(reviewResult, i, state)
 
     // TDD scan step (NEW - comprehensive validation with Opus)
-    const scanResult = (await context.invokeCapability("todo_tdd_scan_step", {
+    const scanResult = (await context.invokeCapability('todo_tdd_scan_step', {
       spec_path: input.spec_path,
       review_summary: state.reviewSummary,
       cwd: input.cwd,
-    })) as TddScanStepResult;
+    })) as TddScanStepResult
 
-    state.tddScanResult = scanResult;
+    state.tddScanResult = scanResult
 
     // TDD fix step (CONDITIONAL - only if scan found blocking issues)
     if (scanResult.needs_fix) {
-      const fixResult = (await context.invokeCapability("todo_tdd_fix_step", {
+      const fixResult = (await context.invokeCapability('todo_tdd_fix_step', {
         spec_path: input.spec_path,
         scan_result: scanResult,
         cwd: input.cwd,
-      })) as TddFixStepResult;
+      })) as TddFixStepResult
 
-      state.tddFixResult = fixResult;
+      state.tddFixResult = fixResult
     } else {
-      state.tddFixResult = null;
+      state.tddFixResult = null
     }
 
     // Update legacy tddSummary for backward compatibility
@@ -236,17 +222,17 @@ export async function runAdditionalIterations(
       details: scanResult.details,
       issues_found: scanResult.issues.length,
       spec_modified: scanResult.spec_modified || state.tddFixResult?.spec_modified || false,
-    };
-
-    state.tddReport += `\n\n--- Iteration ${i} ---\n${scanResult.details}`;
-    if (state.tddFixResult) {
-      state.tddReport += `\nFix applied: ${state.tddFixResult.fix_summary}`;
     }
 
-    state.iterationsCompleted = i;
+    state.tddReport += `\n\n--- Iteration ${i} ---\n${scanResult.details}`
+    if (state.tddFixResult) {
+      state.tddReport += `\nFix applied: ${state.tddFixResult.fix_summary}`
+    }
+
+    state.iterationsCompleted = i
 
     // Update change status after this iteration
-    state.specHasChanges = fileNeedsCommit(input.spec_path, input.cwd);
+    state.specHasChanges = fileNeedsCommit(input.spec_path, input.cwd)
   }
 }
 
@@ -258,12 +244,12 @@ export async function invokeCommitStep(
   state: IterationState,
   context: CapabilityContext,
 ): Promise<CommitResult> {
-  return (await context.invokeCapability("todo_commit_step", {
+  return (await context.invokeCapability('todo_commit_step', {
     spec_path: input.spec_path,
     review_summary: state.reviewSummary,
     tdd_summary: state.tddSummary,
     cwd: input.cwd,
-  })) as CommitResult;
+  })) as CommitResult
 }
 
 // ---------------------------------------------------------------------------
@@ -291,5 +277,5 @@ export function createInitialState(
     iterationsCompleted: 1,
     specHasChanges: hasChangesAfterIter1,
     exitedEarly: false,
-  };
+  }
 }

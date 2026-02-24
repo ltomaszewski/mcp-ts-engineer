@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from 'fs'
-import { execSync } from 'child_process'
-import { join } from 'path'
+import { execSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const SCRIPTS_DIR = join(process.cwd(), 'scripts')
 const APPS_TEMPLATES_DIR = join(process.cwd(), 'templates/apps')
@@ -188,7 +188,9 @@ describe('App template directories', () => {
   })
 
   it('nestjs-server has vitest.config.ts.template', () => {
-    expect(existsSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/vitest.config.ts.template'))).toBe(true)
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/vitest.config.ts.template'))).toBe(
+      true,
+    )
   })
 
   it('mcp-server has vitest.config.ts.template', () => {
@@ -200,16 +202,26 @@ describe('App template directories', () => {
   })
 
   it('nestjs-server has health.resolver.ts.template for GraphQL Query root', () => {
-    expect(existsSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.resolver.ts.template'))).toBe(true)
+    expect(
+      existsSync(
+        join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.resolver.ts.template'),
+      ),
+    ).toBe(true)
   })
 
   it('nestjs-server health module registers HealthResolver', () => {
-    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.module.ts.template'), 'utf-8')
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'nestjs-server/src/modules/health/health.module.ts.template'),
+      'utf-8',
+    )
     expect(content).toContain('HealthResolver')
   })
 
   it('nestjs-server includes @graphql-yoga/nestjs dependency', () => {
-    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'nestjs-server/package.json.template'), 'utf-8')
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'nestjs-server/package.json.template'),
+      'utf-8',
+    )
     expect(content).toContain('@graphql-yoga/nestjs')
   })
 

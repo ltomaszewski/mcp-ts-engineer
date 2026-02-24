@@ -9,42 +9,29 @@
  * after tool calls" — structured output guarantees data even when text is empty.
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
-import {
-  TddValidateStepInputSchema,
-  TddSummarySchema,
-} from "./todo-reviewer.schema.js";
-import {
-  parseXmlBlock,
-  parseJsonSafe,
-  TDD_SUMMARY_FALLBACK,
-} from "./todo-reviewer.helpers.js";
-import type {
-  TddValidateStepInput,
-  TddSummary,
-} from "./todo-reviewer.schema.js";
-import {
-  TDD_VALIDATE_PROMPT_VERSIONS,
-  TDD_VALIDATE_CURRENT_VERSION,
-} from "./prompts/index.js";
+import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
+import { TDD_VALIDATE_CURRENT_VERSION, TDD_VALIDATE_PROMPT_VERSIONS } from './prompts/index.js'
+import { parseJsonSafe, parseXmlBlock, TDD_SUMMARY_FALLBACK } from './todo-reviewer.helpers.js'
+import type { TddSummary, TddValidateStepInput } from './todo-reviewer.schema.js'
+import { TddSummarySchema, TddValidateStepInputSchema } from './todo-reviewer.schema.js'
 
 /**
  * JSON Schema for TDD structured output.
  * Matches TddSummarySchema but in JSON Schema format for the SDK's outputFormat.
  */
 const TDD_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
-  type: "json_schema",
+  type: 'json_schema',
   schema: {
-    type: "object",
+    type: 'object',
     properties: {
-      status: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
-      details: { type: "string" },
-      issues_found: { type: "number" },
-      spec_modified: { type: "boolean" },
+      status: { type: 'string', enum: ['PASS', 'FAIL', 'WARN'] },
+      details: { type: 'string' },
+      issues_found: { type: 'number' },
+      spec_modified: { type: 'boolean' },
     },
-    required: ["status", "details", "issues_found", "spec_modified"],
+    required: ['status', 'details', 'issues_found', 'spec_modified'],
   },
-};
+}
 
 /**
  * Internal sub-capability for TDD validation (Session 2).
@@ -55,27 +42,24 @@ const TDD_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
  * spec files and validate TDD coverage. Input is validated via Zod schema and this
  * capability is only invoked through the orchestrator's authenticated channel.
  */
-export const tddValidateStepCapability: CapabilityDefinition<
-  TddValidateStepInput,
-  TddSummary
-> = {
-  id: "todo_tdd_validate_step",
-  type: "tool",
-  visibility: "internal",
-  name: "Todo TDD Validate Step (Internal)",
+export const tddValidateStepCapability: CapabilityDefinition<TddValidateStepInput, TddSummary> = {
+  id: 'todo_tdd_validate_step',
+  type: 'tool',
+  visibility: 'internal',
+  name: 'Todo TDD Validate Step (Internal)',
   description:
-    "Internal sub-capability: validates TDD coverage of a spec file with review context. Not intended for direct use.",
+    'Internal sub-capability: validates TDD coverage of a spec file with review context. Not intended for direct use.',
   inputSchema: TddValidateStepInputSchema,
   promptRegistry: TDD_VALIDATE_PROMPT_VERSIONS,
   currentPromptVersion: TDD_VALIDATE_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "sonnet",
+    model: 'sonnet',
     maxTurns: 40,
     maxBudgetUsd: 2.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
     outputSchema: TDD_OUTPUT_JSON_SCHEMA,
   },
 
@@ -88,19 +72,19 @@ export const tddValidateStepCapability: CapabilityDefinition<
   processResult: (_input: TddValidateStepInput, aiResult, _context) => {
     // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
     if (aiResult.structuredOutput) {
-      const parsed = TddSummarySchema.safeParse(aiResult.structuredOutput);
+      const parsed = TddSummarySchema.safeParse(aiResult.structuredOutput)
       if (parsed.success) {
-        return parsed.data;
+        return parsed.data
       }
     }
 
     // Strategy 2: Fall back to XML parsing from text content
-    const xmlContent = parseXmlBlock(aiResult.content, "tdd_summary");
-    const fallback = { ...TDD_SUMMARY_FALLBACK, details: aiResult.content.slice(0, 2000) };
+    const xmlContent = parseXmlBlock(aiResult.content, 'tdd_summary')
+    const fallback = { ...TDD_SUMMARY_FALLBACK, details: aiResult.content.slice(0, 2000) }
     if (xmlContent) {
-      return parseJsonSafe(xmlContent, TddSummarySchema, fallback);
+      return parseJsonSafe(xmlContent, TddSummarySchema, fallback)
     }
 
-    return fallback;
+    return fallback
   },
-};
+}

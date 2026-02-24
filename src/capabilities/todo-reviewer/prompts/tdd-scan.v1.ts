@@ -13,26 +13,23 @@
  * - Proportionality: test count vs FR/EC count ratio
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import type { ReviewSummary } from "../todo-reviewer.schema.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import type { ReviewSummary } from '../todo-reviewer.schema.js'
 
 /** Input shape for the TDD scan step prompt build function. */
 export interface TddScanPromptInput {
-  specPath: string;
-  reviewSummary: ReviewSummary;
-  cwd?: string;
+  specPath: string
+  reviewSummary: ReviewSummary
+  cwd?: string
 }
 
 /**
  * System prompt append for TDD scan step.
  * Ensures structured output is provided after tool use.
  */
-const TDD_SCAN_SYSTEM_PROMPT_APPEND = `After completing all analysis, provide your assessment in the required structured output format. Include all findings in the structured output even if you summarize them in text.`;
+const TDD_SCAN_SYSTEM_PROMPT_APPEND = `After completing all analysis, provide your assessment in the required structured output format. Include all findings in the structured output even if you summarize them in text.`
 
-const TDD_SCAN_USER_PROMPT_TEMPLATE = (
-  specPath: string,
-  reviewSummary: ReviewSummary,
-): string => {
+const TDD_SCAN_USER_PROMPT_TEMPLATE = (specPath: string, reviewSummary: ReviewSummary): string => {
   return `You are a comprehensive TDD validator using deep reasoning to ensure test specifications are adequate, properly scoped, and implementation-ready.
 
 <spec_path>${specPath}</spec_path>
@@ -206,26 +203,26 @@ Return structured output with:
 - Missing coverage target (but tests exist)
 - Test count > 3× FR/EC count
 - Minor traceability gaps
-</decision_criteria>`;
-};
+</decision_criteria>`
+}
 
 /** Version 1: Comprehensive TDD scan with Opus-level reasoning */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-05",
+  version: 'v1',
+  createdAt: '2026-02-05',
   description:
-    "Comprehensive TDD scan: scope boundary, YAGNI, bidirectional traceability, proportionality checks. Returns TddScanStepResult via structured output.",
+    'Comprehensive TDD scan: scope boundary, YAGNI, bidirectional traceability, proportionality checks. Returns TddScanStepResult via structured output.',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, reviewSummary } = input as TddScanPromptInput;
+    const { specPath, reviewSummary } = input as TddScanPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: TDD_SCAN_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: TDD_SCAN_USER_PROMPT_TEMPLATE(specPath, reviewSummary),
-    };
+    }
   },
-};
+}

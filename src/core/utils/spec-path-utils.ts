@@ -4,13 +4,13 @@
  */
 
 export {
-  // Types
-  type ValidationResult,
   type CorrectionResult,
-  type PathStatus,
+  correctSpecPaths,
   // Functions
   extractFilePaths,
-  validateSpecPaths,
-  correctSpecPaths,
+  type PathStatus,
+  // Types
+  type ValidationResult,
   validateAndCorrectSpecPaths,
-} from "./spec-path-utils/index.js";
+  validateSpecPaths,
+} from './spec-path-utils/index.js'

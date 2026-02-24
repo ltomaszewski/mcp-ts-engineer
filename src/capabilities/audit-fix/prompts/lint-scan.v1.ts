@@ -3,11 +3,11 @@
  * Instructs agent to detect and run npm run lint in project.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 interface LintScanPromptInput {
-  projectPath: string;
-  cwd?: string;
+  projectPath: string
+  cwd?: string
 }
 
 /**
@@ -18,18 +18,18 @@ interface LintScanPromptInput {
  * error/warning counts and file paths with errors.
  */
 const lintScanPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-04",
-  description: "Lint scan: detect and run npm run lint in project",
+  version: 'v1',
+  createdAt: '2026-02-04',
+  description: 'Lint scan: detect and run npm run lint in project',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { projectPath, cwd } = input as LintScanPromptInput;
+    const { projectPath, cwd } = input as LintScanPromptInput
 
     const userPrompt = `You are executing a lint scan for a code quality audit.
 
 <project_path>${projectPath}</project_path>
-${cwd ? `<cwd>${cwd}</cwd>` : ""}
+${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 <workflow>
 1. Read the project's package.json file (located in project root)
@@ -93,18 +93,18 @@ If no lint script is available:
 - If lint command fails to run (not found, etc.), set lint_available: false
 - Include the FULL lint output in lint_report for debugging
 - Set lint_passed: true only when error_count is 0
-</rules>`;
+</rules>`
 
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append:
-          "REMINDER: After completing the lint scan, you MUST output <lint_scan_result>{...}</lint_scan_result> with your findings.",
+          'REMINDER: After completing the lint scan, you MUST output <lint_scan_result>{...}</lint_scan_result> with your findings.',
       },
       userPrompt,
-    };
+    }
   },
-};
+}
 
-export { lintScanPromptV1 };
+export { lintScanPromptV1 }

@@ -3,7 +3,7 @@
  * Wraps JSON.parse() with error handling and schema validation.
  */
 
-import type { ZodSchema } from "zod";
+import type { ZodSchema } from 'zod'
 
 /**
  * Safely parse JSON with Zod schema validation.
@@ -23,21 +23,17 @@ import type { ZodSchema } from "zod";
  * // Returns { id: '' }
  * ```
  */
-export function parseJsonSafe<T>(
-  text: string,
-  schema: ZodSchema<T>,
-  fallback: T
-): T {
+export function parseJsonSafe<T>(text: string, schema: ZodSchema<T>, fallback: T): T {
   try {
-    const parsed = JSON.parse(text) as unknown;
-    const result = schema.safeParse(parsed);
+    const parsed = JSON.parse(text) as unknown
+    const result = schema.safeParse(parsed)
 
     if (!result.success) {
-      return fallback;
+      return fallback
     }
 
-    return result.data;
+    return result.data
   } catch {
-    return fallback;
+    return fallback
   }
 }

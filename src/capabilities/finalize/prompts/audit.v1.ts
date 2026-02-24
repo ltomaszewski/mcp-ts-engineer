@@ -1,4 +1,4 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Audit step prompt for finalize capability.
@@ -6,13 +6,13 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
  */
 
 interface AuditPromptInput {
-  filesChanged: string[];
-  cwd?: string;
+  filesChanged: string[]
+  cwd?: string
 }
 
 const buildAuditUserPrompt = (filesChanged: string[], cwd?: string): string => {
-  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const filesChangedList = filesChanged.map((f) => `  - ${f}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Audit Agent for code quality verification and auto-fixing.
 
@@ -59,24 +59,24 @@ Status guidance:
 - "warn": Some issues auto-fixed, tsc passes, but minor issues remain
 - "fail": Critical issues remain or tsc fails
 
-Be thorough but practical. Focus on actionable fixes that improve code quality.`;
-};
+Be thorough but practical. Focus on actionable fixes that improve code quality.`
+}
 
 export const auditPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
+  version: 'v1',
+  createdAt: '2026-01-30',
   description:
-    "Audit step: scans files for code quality issues, applies auto-fixes, verifies with tsc",
+    'Audit step: scans files for code quality issues, applies auto-fixes, verifies with tsc',
   deprecated: true,
-  sunsetDate: "2026-03-01",
+  sunsetDate: '2026-03-01',
   build: (input: unknown) => {
-    const { filesChanged, cwd } = input as AuditPromptInput;
+    const { filesChanged, cwd } = input as AuditPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildAuditUserPrompt(filesChanged, cwd),
-    };
+    }
   },
-};
+}

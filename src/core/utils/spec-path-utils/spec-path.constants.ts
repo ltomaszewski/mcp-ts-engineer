@@ -4,8 +4,7 @@
 
 export const PATH_PATTERNS = {
   /** Matches paths in fenced code blocks (```...```) */
-  FENCED_CODE_BLOCK:
-    /```(?:typescript|javascript|ts|js|tsx|jsx)?\s*\n(?:.*\n)*?```/gi,
+  FENCED_CODE_BLOCK: /```(?:typescript|javascript|ts|js|tsx|jsx)?\s*\n(?:.*\n)*?```/gi,
   /** Matches // comments in code blocks */
   CODE_COMMENT: /\/\/\s*([^\n]+)/g,
   /** Matches inline code (`...`) */
@@ -14,7 +13,7 @@ export const PATH_PATTERNS = {
   TABLE_ROW: /^\|([^|]+\|)+$/gm,
   /** Matches file paths with extensions */
   FILE_PATH: /([a-zA-Z0-9@._/-]+\.[a-zA-Z]{1,4}(?:x)?)/g,
-};
+}
 
 export const IGNORE_PATTERNS = {
   /** URL protocols to ignore */
@@ -25,29 +24,29 @@ export const IGNORE_PATTERNS = {
   NPM_SIMPLE: /^[a-z0-9-]+$/i,
   /** node_modules paths */
   NODE_MODULES: /node_modules/,
-};
+}
 
 /** Valid file extensions for path extraction */
 export const VALID_EXTENSIONS = [
-  "ts",
-  "tsx",
-  "js",
-  "jsx",
-  "json",
-  "md",
-  "yaml",
-  "yml",
-  "css",
-  "html",
-  "sh",
-  "py",
-];
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'json',
+  'md',
+  'yaml',
+  'yml',
+  'css',
+  'html',
+  'sh',
+  'py',
+]
 
 /** Common abbreviations that should not be extracted as paths */
-export const ABBREVIATIONS_BLACKLIST = ["e.g", "i.e", "etc", "vs"];
+export const ABBREVIATIONS_BLACKLIST = ['e.g', 'i.e', 'etc', 'vs']
 
 /** Code pattern prefixes that indicate non-path content */
-export const CODE_PATTERN_PREFIXES = ["this."];
+export const CODE_PATTERN_PREFIXES = ['this.']
 
 export const PATH_CLASSIFICATION = {
   /** Valid monorepo paths (including docs/ and .claude/) */
@@ -62,4 +61,4 @@ export const PATH_CLASSIFICATION = {
   ABSOLUTE: /^\//,
   /** Uncorrectable parent directory references */
   PARENT_DIR: /^\.\.\//,
-};
+}

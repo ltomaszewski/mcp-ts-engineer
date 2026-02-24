@@ -2,12 +2,9 @@
  * Inline PR comment formatting prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
-const INLINE_COMMENT_FORMAT_USER_PROMPT_TEMPLATE = (
-  issue: string
-): string => {
+const INLINE_COMMENT_FORMAT_USER_PROMPT_TEMPLATE = (issue: string): string => {
   return `# Inline PR Comment Formatting Task
 
 You are formatting a code review issue as a GitHub inline review comment.
@@ -36,33 +33,31 @@ Return a JSON object with this structure:
 \`\`\`
 
 Keep comments concise and actionable.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Format code review issues as GitHub inline PR comments",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Format code review issues as GitHub inline PR comments',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      issue: string;
-    };
+      issue: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: INLINE_COMMENT_FORMAT_USER_PROMPT_TEMPLATE(
-        data.issue
-      ),
-    };
+      userPrompt: INLINE_COMMENT_FORMAT_USER_PROMPT_TEMPLATE(data.issue),
+    }
   },
-};
+}
 
 export const INLINE_COMMENT_FORMAT_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const INLINE_COMMENT_FORMAT_CURRENT_VERSION = "v1";
+export const INLINE_COMMENT_FORMAT_CURRENT_VERSION = 'v1'

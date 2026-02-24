@@ -8,11 +8,11 @@
 /** Parameters for building audit user prompt. */
 export interface AuditWorkflowParams {
   /** Specific files to audit (file-scoped mode). */
-  filesChanged?: string[];
+  filesChanged?: string[]
   /** Project path for project-wide audit (scan mode). */
-  projectPath?: string;
+  projectPath?: string
   /** Working directory context. */
-  cwd?: string;
+  cwd?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -389,7 +389,7 @@ setItems([...items, item]);
 // AFTER
 setItems(prev => [...prev, item]);
 \`\`\`
-`.trim();
+`.trim()
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -402,32 +402,31 @@ setItems(prev => [...prev, item]);
  * @returns User prompt string with embedded workflow
  */
 export function buildAuditUserPrompt(params: AuditWorkflowParams): string {
-  const { filesChanged, projectPath, cwd } = params;
+  const { filesChanged, projectPath, cwd } = params
 
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   // Determine mode: file-scoped (filesChanged) or project-scoped (projectPath)
-  const isFileScopedMode =
-    filesChanged && filesChanged.length > 0;
+  const isFileScopedMode = filesChanged && filesChanged.length > 0
 
-  let scopeSection: string;
+  let scopeSection: string
 
   if (isFileScopedMode) {
-    const filesChangedList = filesChanged!.map((f) => `  - ${f}`).join("\n");
+    const filesChangedList = filesChanged?.map((f) => `  - ${f}`).join('\n')
     scopeSection = `Files to audit:
 ${filesChangedList}
 
 ## Scope
 
-Only audit the files listed above. Do NOT expand scope to unrelated files.`;
+Only audit the files listed above. Do NOT expand scope to unrelated files.`
   } else {
     // Project-scoped mode
-    const projectPathValue = projectPath || cwd || ".";
+    const projectPathValue = projectPath || cwd || '.'
     scopeSection = `## Scope
 
 Scan all TypeScript files in project: ${projectPathValue}
 
-Run a comprehensive project-wide audit.`;
+Run a comprehensive project-wide audit.`
   }
 
   return `${cwdContext}${scopeSection}
@@ -462,5 +461,5 @@ Status guidance:
 
 ---
 
-${AUDIT_WORKFLOW}`;
+${AUDIT_WORKFLOW}`
 }

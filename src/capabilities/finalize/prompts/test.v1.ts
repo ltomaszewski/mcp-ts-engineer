@@ -1,4 +1,4 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Test step prompt for finalize capability.
@@ -6,13 +6,13 @@ import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
  */
 
 interface TestPromptInput {
-  workspaces: string[];
-  cwd?: string;
+  workspaces: string[]
+  cwd?: string
 }
 
 const buildTestUserPrompt = (workspaces: string[], cwd?: string): string => {
-  const workspacesList = workspaces.map((w) => `  - ${w}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const workspacesList = workspaces.map((w) => `  - ${w}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Test Agent for running automated tests in affected workspaces.
 
@@ -52,24 +52,23 @@ Important:
 - Include test count and duration in summary if available
 - Be clear about which workspace had failures
 
-Your goal is to verify that the code changes didn't break existing functionality.`;
-};
+Your goal is to verify that the code changes didn't break existing functionality.`
+}
 
 export const testPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
-  description:
-    "Test step: runs npm test in affected workspaces and reports results",
+  version: 'v1',
+  createdAt: '2026-01-30',
+  description: 'Test step: runs npm test in affected workspaces and reports results',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { workspaces, cwd } = input as TestPromptInput;
+    const { workspaces, cwd } = input as TestPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildTestUserPrompt(workspaces, cwd),
-    };
+    }
   },
-};
+}

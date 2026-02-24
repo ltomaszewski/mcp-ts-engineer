@@ -197,7 +197,13 @@ export const DIRECT_FIX_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
       issues_failed_ids: { type: 'array', items: { type: 'string' } },
       files_changed: { type: 'array', items: { type: 'string' } },
     },
-    required: ['fixes_applied', 'fixes_failed', 'issues_fixed', 'issues_failed_ids', 'files_changed'],
+    required: [
+      'fixes_applied',
+      'fixes_failed',
+      'issues_fixed',
+      'issues_failed_ids',
+      'files_changed',
+    ],
   },
 }
 

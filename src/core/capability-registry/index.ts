@@ -2,9 +2,9 @@
  * Capability registry module exports.
  */
 
-export { CapabilityRegistry } from "./capability-registry.js";
+export { CapabilityRegistry } from './capability-registry.js'
 export type {
-  CapabilityDefinition,
   CapabilityContext,
+  CapabilityDefinition,
   CapabilityType,
-} from "./capability-registry.types.js";
+} from './capability-registry.types.js'

@@ -7,11 +7,11 @@
  */
 export interface ValidationResult {
   /** Paths that are already in correct monorepo format (apps/* or packages/*) */
-  valid: string[];
+  valid: string[]
   /** Paths that can be automatically corrected (src/* or ./*) */
-  correctable: string[];
+  correctable: string[]
   /** Paths that cannot be corrected (absolute paths, ../ references) */
-  uncorrectable: string[];
+  uncorrectable: string[]
 }
 
 /**
@@ -19,14 +19,14 @@ export interface ValidationResult {
  */
 export interface CorrectionResult {
   /** Content with corrected paths */
-  correctedContent: string;
+  correctedContent: string
   /** List of corrections made */
-  corrections: Array<{ original: string; corrected: string }>;
+  corrections: Array<{ original: string; corrected: string }>
   /** Paths that could not be corrected */
-  uncorrectable: string[];
+  uncorrectable: string[]
 }
 
 /**
  * Path status classification.
  */
-export type PathStatus = "valid" | "correctable" | "uncorrectable";
+export type PathStatus = 'valid' | 'correctable' | 'uncorrectable'

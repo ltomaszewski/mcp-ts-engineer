@@ -3,45 +3,41 @@
  * Verifies detection still works after moving from capability-specific location.
  */
 
-import {
-  detectWorkspace,
-  detectWorkspaceTechnologies,
-  type TechnologyTag,
-} from "../workspace-detector.js";
+import { detectWorkspace, detectWorkspaceTechnologies } from '../workspace-detector.js'
 
-describe("detectWorkspace (shared)", () => {
-  it("reads package.json and returns technologies", () => {
+describe('detectWorkspace (shared)', () => {
+  it('reads package.json and returns technologies', () => {
     // Using the current package.json path as test data
     const result = detectWorkspace(
-      "/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer",
-    );
+      '/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer',
+    )
 
-    expect(result.technologies).toBeInstanceOf(Array);
-    expect(result.dependencies).toBeInstanceOf(Array);
+    expect(result.technologies).toBeInstanceOf(Array)
+    expect(result.dependencies).toBeInstanceOf(Array)
     // Should detect @modelcontextprotocol/sdk and zod
-    expect(result.dependencies).toContain("zod");
-    expect(result.dependencies).toContain("@modelcontextprotocol/sdk");
-  });
+    expect(result.dependencies).toContain('zod')
+    expect(result.dependencies).toContain('@modelcontextprotocol/sdk')
+  })
 
-  it("returns empty for missing cwd", () => {
-    const result = detectWorkspace(undefined);
+  it('returns empty for missing cwd', () => {
+    const result = detectWorkspace(undefined)
 
-    expect(result.technologies).toEqual([]);
-    expect(result.dependencies).toEqual([]);
-  });
+    expect(result.technologies).toEqual([])
+    expect(result.dependencies).toEqual([])
+  })
 
-  it("returns empty for invalid JSON", () => {
-    const result = detectWorkspace("/nonexistent/path");
+  it('returns empty for invalid JSON', () => {
+    const result = detectWorkspace('/nonexistent/path')
 
-    expect(result.technologies).toEqual([]);
-    expect(result.dependencies).toEqual([]);
-  });
+    expect(result.technologies).toEqual([])
+    expect(result.dependencies).toEqual([])
+  })
 
-  it("detectWorkspaceTechnologies returns array", () => {
+  it('detectWorkspaceTechnologies returns array', () => {
     const result = detectWorkspaceTechnologies(
-      "/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer",
-    );
+      '/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer',
+    )
 
-    expect(result).toBeInstanceOf(Array);
-  });
-});
+    expect(result).toBeInstanceOf(Array)
+  })
+})

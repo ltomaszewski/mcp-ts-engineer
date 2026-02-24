@@ -2,12 +2,11 @@
  * Test failure analysis prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const TEST_FAILURE_ANALYSIS_USER_PROMPT_TEMPLATE = (
   testOutput: string,
-  recentChanges: string
+  recentChanges: string,
 ): string => {
   return `# Test Failure Analysis Task
 
@@ -53,35 +52,32 @@ Return a JSON object with this structure:
 \`\`\`
 
 Focus on actionable recommendations.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Test failure analysis to identify which fix caused test breakage",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Test failure analysis to identify which fix caused test breakage',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      testOutput: string;
-      recentChanges: string;
-    };
+      testOutput: string
+      recentChanges: string
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
-      userPrompt: TEST_FAILURE_ANALYSIS_USER_PROMPT_TEMPLATE(
-        data.testOutput,
-        data.recentChanges
-      ),
-    };
+      userPrompt: TEST_FAILURE_ANALYSIS_USER_PROMPT_TEMPLATE(data.testOutput, data.recentChanges),
+    }
   },
-};
+}
 
 export const TEST_FAILURE_ANALYSIS_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const TEST_FAILURE_ANALYSIS_CURRENT_VERSION = "v1";
+export const TEST_FAILURE_ANALYSIS_CURRENT_VERSION = 'v1'

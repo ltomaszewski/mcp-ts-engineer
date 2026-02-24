@@ -6,24 +6,15 @@
  * following the format: chore(<scope>): finalize audit fixes and codemap updates
  */
 
-import type { CapabilityDefinition } from "../../core/capability-registry/capability-registry.types.js";
+import type { CapabilityDefinition } from '../../core/capability-registry/capability-registry.types.js'
 import {
-  CommitStepInputSchema,
-  FinalizeCommitResultSchema,
-} from "./finalize.schema.js";
-import {
-  parseXmlBlock,
-  parseJsonSafe,
   FINALIZE_COMMIT_RESULT_FALLBACK,
-} from "./finalize.helpers.js";
-import type {
-  CommitStepInput,
-  FinalizeCommitResult,
-} from "./finalize.schema.js";
-import {
-  commitPrompts,
-  COMMIT_CURRENT_VERSION,
-} from "./prompts/index.js";
+  parseJsonSafe,
+  parseXmlBlock,
+} from './finalize.helpers.js'
+import type { CommitStepInput, FinalizeCommitResult } from './finalize.schema.js'
+import { CommitStepInputSchema, FinalizeCommitResultSchema } from './finalize.schema.js'
+import { COMMIT_CURRENT_VERSION, commitPrompts } from './prompts/index.js'
 
 /**
  * Internal sub-capability for committing finalization changes.
@@ -38,29 +29,29 @@ export const finalizeCommitStepCapability: CapabilityDefinition<
   CommitStepInput,
   FinalizeCommitResult
 > = {
-  id: "finalize_commit_step",
-  type: "tool",
-  visibility: "internal",
-  name: "Finalize Commit Step (Internal)",
+  id: 'finalize_commit_step',
+  type: 'tool',
+  visibility: 'internal',
+  name: 'Finalize Commit Step (Internal)',
   description:
-    "Internal sub-capability: commits cleanup changes (audit fixes and codemap updates) with descriptive message. Not intended for direct use.",
+    'Internal sub-capability: commits cleanup changes (audit fixes and codemap updates) with descriptive message. Not intended for direct use.',
   inputSchema: CommitStepInputSchema,
   promptRegistry: commitPrompts,
   currentPromptVersion: COMMIT_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: "haiku",
+    model: 'haiku',
     maxTurns: 40,
     maxBudgetUsd: 5.0,
-    tools: { type: "preset", preset: "claude_code" },
-    permissionMode: "bypassPermissions",
+    tools: { type: 'preset', preset: 'claude_code' },
+    permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
-    settingSources: ["user", "project"],
+    settingSources: ['user', 'project'],
   },
 
   preparePromptInput: (input: CommitStepInput, context) => ({
     auditSummary: input.audit_summary,
     codemapSummary: input.codemap_summary,
-    readmeSummary: input.readme_summary ?? "No README changes",
+    readmeSummary: input.readme_summary ?? 'No README changes',
     filesAffected: input.files_affected,
     sessionId: context.session.id,
     cwd: input.cwd,
@@ -68,15 +59,15 @@ export const finalizeCommitStepCapability: CapabilityDefinition<
 
   processResult: (_input: CommitStepInput, aiResult, _context) => {
     // Parse <finalize_commit_result> XML block from AI response
-    const xmlContent = parseXmlBlock(aiResult.content, "finalize_commit_result");
+    const xmlContent = parseXmlBlock(aiResult.content, 'finalize_commit_result')
     const fallback = {
       ...FINALIZE_COMMIT_RESULT_FALLBACK,
-    };
-
-    if (xmlContent) {
-      return parseJsonSafe(xmlContent, FinalizeCommitResultSchema, fallback);
     }
 
-    return fallback;
+    if (xmlContent) {
+      return parseJsonSafe(xmlContent, FinalizeCommitResultSchema, fallback)
+    }
+
+    return fallback
   },
-};
+}

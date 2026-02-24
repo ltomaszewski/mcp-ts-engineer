@@ -3,9 +3,9 @@
  * Extracted from invocation-handler.ts for better modularity.
  */
 
-import crypto from "node:crypto";
-import type { CostSummary } from "../cost/cost.types.js";
-import { ValidationError, AIProviderError, TimeoutError, CapabilityError } from "../errors.js";
+import crypto from 'node:crypto'
+import type { CostSummary } from '../cost/cost.types.js'
+import { AIProviderError, CapabilityError, TimeoutError, ValidationError } from '../errors.js'
 
 /**
  * Generate spec hash for correlation.
@@ -14,11 +14,11 @@ import { ValidationError, AIProviderError, TimeoutError, CapabilityError } from 
  * @internal Test utility only
  */
 export function generateSpecHash(input: unknown): string | undefined {
-  const specPath = (input as Record<string, unknown>)?.spec_path;
-  if (typeof specPath === "string") {
-    return crypto.createHash("sha256").update(specPath).digest("hex").slice(0, 16);
+  const specPath = (input as Record<string, unknown>)?.spec_path
+  if (typeof specPath === 'string') {
+    return crypto.createHash('sha256').update(specPath).digest('hex').slice(0, 16)
   }
-  return undefined;
+  return undefined
 }
 
 /**
@@ -28,20 +28,20 @@ export function generateSpecHash(input: unknown): string | undefined {
  * @internal Test utility only
  */
 export function sanitizeInput(input: unknown): Record<string, unknown> | undefined {
-  if (!input || typeof input !== "object") return undefined;
-  const sanitized: Record<string, unknown> = {};
-  const sensitiveKeys = ["token", "secret", "password", "key", "auth"];
+  if (!input || typeof input !== 'object') return undefined
+  const sanitized: Record<string, unknown> = {}
+  const sensitiveKeys = ['token', 'secret', 'password', 'key', 'auth']
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
     if (sensitiveKeys.some((k) => key.toLowerCase().includes(k))) {
-      continue; // Skip sensitive keys
+      continue // Skip sensitive keys
     }
-    if (typeof value === "string" && value.length > 500) {
-      sanitized[key] = value.slice(0, 500) + "...[truncated]";
+    if (typeof value === 'string' && value.length > 500) {
+      sanitized[key] = `${value.slice(0, 500)}...[truncated]`
     } else {
-      sanitized[key] = value;
+      sanitized[key] = value
     }
   }
-  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined
 }
 
 /**
@@ -51,15 +51,15 @@ export function sanitizeInput(input: unknown): Record<string, unknown> | undefin
  * @internal Test utility only
  */
 export function categorizeError(error: unknown): string {
-  if (error instanceof ValidationError) return "validation";
-  if (error instanceof AIProviderError) return "ai_error";
-  if (error instanceof TimeoutError) return "timeout";
+  if (error instanceof ValidationError) return 'validation'
+  if (error instanceof AIProviderError) return 'ai_error'
+  if (error instanceof TimeoutError) return 'timeout'
   if (error instanceof CapabilityError) {
-    const msg = (error.message || "").toLowerCase();
-    if (msg.includes("halted") || msg.includes("tests failed")) return "halted";
-    return "capability";
+    const msg = (error.message || '').toLowerCase()
+    if (msg.includes('halted') || msg.includes('tests failed')) return 'halted'
+    return 'capability'
   }
-  return "unknown";
+  return 'unknown'
 }
 
 /**
@@ -69,6 +69,6 @@ export function categorizeError(error: unknown): string {
  * @internal Test utility only
  */
 export function extractModelFromCostSummary(costSummary: CostSummary): string {
-  const models = Object.keys(costSummary.byModel);
-  return models[0] || "unknown";
+  const models = Object.keys(costSummary.byModel)
+  return models[0] || 'unknown'
 }

@@ -5,52 +5,49 @@
  * Originally from: src/capabilities/todo-code-writer/prompts/phase-audit.v2.ts
  */
 
-import { buildReviewContext } from "./review-context.js";
-import {
-  SKILL_LOADING_RULES,
-  resolveSkillsFromTechnologies,
-} from "./eng-rules/index.js";
+import { resolveSkillsFromTechnologies, SKILL_LOADING_RULES } from './eng-rules/index.js'
+import { buildReviewContext } from './review-context.js'
 
 /** Built prompt result. */
 export interface BuiltPrompt {
   systemPrompt: {
-    type: "preset";
-    preset: "claude_code";
-    append?: string;
-  };
-  userPrompt: string;
+    type: 'preset'
+    preset: 'claude_code'
+    append?: string
+  }
+  userPrompt: string
 }
 
 /** Spec mode: auditing a specific phase implementation */
 interface SpecModeInput {
-  mode: "spec";
-  specPath: string;
-  phaseNumber: number;
-  filesModified: string[];
-  engSummary: string;
-  detectedTechnologies?: string[];
-  detectedDependencies?: string[];
-  cwd?: string;
+  mode: 'spec'
+  specPath: string
+  phaseNumber: number
+  filesModified: string[]
+  engSummary: string
+  detectedTechnologies?: string[]
+  detectedDependencies?: string[]
+  cwd?: string
   // Scan-mode fields ignored in spec mode
-  projectPath?: string;
+  projectPath?: string
 }
 
 /** Scan mode: project-wide audit without spec */
 interface ScanModeInput {
-  mode: "scan";
-  projectPath: string;
-  detectedTechnologies?: string[];
-  detectedDependencies?: string[];
-  cwd?: string;
+  mode: 'scan'
+  projectPath: string
+  detectedTechnologies?: string[]
+  detectedDependencies?: string[]
+  cwd?: string
   // Spec-mode fields ignored in scan mode
-  specPath?: string;
-  phaseNumber?: number;
-  filesModified?: string[];
-  engSummary?: string;
+  specPath?: string
+  phaseNumber?: number
+  filesModified?: string[]
+  engSummary?: string
 }
 
 /** Union type for audit prompt input */
-export type AuditPromptInput = SpecModeInput | ScanModeInput;
+export type AuditPromptInput = SpecModeInput | ScanModeInput
 
 /**
  * System prompt append for audit step.
@@ -60,7 +57,7 @@ export type AuditPromptInput = SpecModeInput | ScanModeInput;
 const buildPhaseAuditV2SystemPromptAppend = (): string =>
   `After completing all tool use, provide a brief text summary of the audit findings. Your structured output will be captured automatically via the output schema.
 
-${buildReviewContext()}`;
+${buildReviewContext()}`
 
 /**
  * Builds the skill loading section with the resolved list of skills to invoke.
@@ -69,16 +66,13 @@ const buildSkillLoadingSection = (
   detectedTechnologies: string[],
   detectedDependencies?: string[],
 ): string => {
-  const skills = resolveSkillsFromTechnologies(
-    detectedTechnologies,
-    detectedDependencies,
-  );
+  const skills = resolveSkillsFromTechnologies(detectedTechnologies, detectedDependencies)
 
   if (skills.length === 0) {
-    return "";
+    return ''
   }
 
-  const skillList = skills.map((s) => `  - ${s}`).join("\n");
+  const skillList = skills.map((s) => `  - ${s}`).join('\n')
 
   return `<skill_loading>
 ${SKILL_LOADING_RULES}
@@ -86,8 +80,8 @@ ${SKILL_LOADING_RULES}
 ### Skills to Load
 Invoke each of these skills using the Skill tool BEFORE reviewing code:
 ${skillList}
-</skill_loading>`;
-};
+</skill_loading>`
+}
 
 /**
  * Builds spec mode user prompt.
@@ -100,16 +94,13 @@ const buildSpecModeUserPrompt = (input: SpecModeInput): string => {
     engSummary,
     detectedTechnologies,
     detectedDependencies,
-  } = input;
+  } = input
 
-  const fileList = filesModified.map((f) => `- ${f}`).join("\n");
-  const technologies = detectedTechnologies || [];
+  const fileList = filesModified.map((f) => `- ${f}`).join('\n')
+  const technologies = detectedTechnologies || []
 
   // Build skill loading section
-  const skillLoadingSection = buildSkillLoadingSection(
-    technologies,
-    detectedDependencies,
-  );
+  const skillLoadingSection = buildSkillLoadingSection(technologies, detectedDependencies)
 
   return `You are a code auditor. Verify that Phase ${phaseNumber} implementation matches the spec requirements.
 
@@ -171,25 +162,18 @@ ${skillLoadingSection}
 - Wrap the JSON in <phase_audit_result></phase_audit_result> XML tags
 - JSON must have: status ("pass", "warn", or "fail"), issues_found (integer), summary (string)
 - summary should be 1-3 sentences describing audit findings
-</output_format>`;
-};
+</output_format>`
+}
 
 /**
  * Builds scan mode user prompt.
  */
 const buildScanModeUserPrompt = (input: ScanModeInput): string => {
-  const {
-    projectPath,
-    detectedTechnologies,
-    detectedDependencies,
-  } = input;
+  const { projectPath, detectedTechnologies, detectedDependencies } = input
 
-  const technologies = detectedTechnologies || [];
+  const technologies = detectedTechnologies || []
 
-  const skillLoadingSection = buildSkillLoadingSection(
-    technologies,
-    detectedDependencies,
-  );
+  const skillLoadingSection = buildSkillLoadingSection(technologies, detectedDependencies)
 
   return `You are a code auditor conducting a project-wide quality scan.
 
@@ -235,8 +219,8 @@ ${skillLoadingSection}
 <output_format>
 - Wrap JSON in <scan_result></scan_result> XML tags
 - JSON must have: status ("pass", "warn", or "fail"), issues_found (integer), summary (string)
-</output_format>`;
-};
+</output_format>`
+}
 
 /**
  * Builds audit prompt with mode discriminator.
@@ -246,16 +230,14 @@ ${skillLoadingSection}
  */
 export function buildAuditPromptV2(input: AuditPromptInput): BuiltPrompt {
   const userPrompt =
-    input.mode === "spec"
-      ? buildSpecModeUserPrompt(input)
-      : buildScanModeUserPrompt(input);
+    input.mode === 'spec' ? buildSpecModeUserPrompt(input) : buildScanModeUserPrompt(input)
 
   return {
     systemPrompt: {
-      type: "preset",
-      preset: "claude_code",
+      type: 'preset',
+      preset: 'claude_code',
       append: buildPhaseAuditV2SystemPromptAppend(),
     },
     userPrompt,
-  };
+  }
 }

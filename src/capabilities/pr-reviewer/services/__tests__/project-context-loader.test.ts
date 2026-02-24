@@ -3,191 +3,197 @@
  * Validates context assembly from CLAUDE.md, rules, skills, and review checklist.
  */
 
-import { loadProjectContext } from "../project-context-loader.js";
-import type { ProjectContextResult } from "../project-context-loader.js";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import type { ProjectConfig } from "../../../../config/project-config.js";
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import type { ProjectConfig } from '../../../../config/project-config.js'
+import type { ProjectContextResult } from '../project-context-loader.js'
+import { loadProjectContext } from '../project-context-loader.js'
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
   return {
-    serverName: "TestServer",
-    serverVersion: "1.0.0",
-    logDir: "~/.claude/test/logs/",
-    commitTag: "[test]",
-    monorepoRoot: "/nonexistent",
-    submodulePath: "/nonexistent",
+    serverName: 'TestServer',
+    serverVersion: '1.0.0',
+    logDir: '~/.claude/test/logs/',
+    commitTag: '[test]',
+    monorepoRoot: '/nonexistent',
+    submodulePath: '/nonexistent',
     codemaps: [],
     reviewChecklist: [],
     ...overrides,
-  };
+  }
 }
 
-describe("loadProjectContext", () => {
-  let tempDir: string;
+describe('loadProjectContext', () => {
+  let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-ctx-test-"));
-  });
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'project-ctx-test-'))
+  })
 
   afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
-  });
+    await fs.rm(tempDir, { recursive: true, force: true })
+  })
 
-  describe("CLAUDE.md loading", () => {
-    it("includes CLAUDE.md content in context when file exists", async () => {
-      const claudeContent = "# My Project\n\nDO: keep apps independent\nDON'T: add deps to root";
-      await fs.writeFile(path.join(tempDir, "CLAUDE.md"), claudeContent);
+  describe('CLAUDE.md loading', () => {
+    it('includes CLAUDE.md content in context when file exists', async () => {
+      const claudeContent = "# My Project\n\nDO: keep apps independent\nDON'T: add deps to root"
+      await fs.writeFile(path.join(tempDir, 'CLAUDE.md'), claudeContent)
 
-      const config = makeConfig({ monorepoRoot: tempDir });
-      const result: ProjectContextResult = await loadProjectContext(config, []);
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result: ProjectContextResult = await loadProjectContext(config, [])
 
-      expect(result.context).toContain("CLAUDE.md");
-      expect(result.context).toContain("keep apps independent");
-    });
+      expect(result.context).toContain('CLAUDE.md')
+      expect(result.context).toContain('keep apps independent')
+    })
 
-    it("omits CLAUDE.md section when file is missing", async () => {
-      const config = makeConfig({ monorepoRoot: tempDir });
-      const result = await loadProjectContext(config, []);
+    it('omits CLAUDE.md section when file is missing', async () => {
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, [])
 
       // Should not throw, should just skip CLAUDE.md section
-      expect(result.context).toBeDefined();
-      expect(typeof result.context).toBe("string");
-    });
-  });
+      expect(result.context).toBeDefined()
+      expect(typeof result.context).toBe('string')
+    })
+  })
 
-  describe("Rules loading", () => {
-    it("includes rule files from .claude/rules/*.md", async () => {
-      const rulesDir = path.join(tempDir, ".claude", "rules");
-      await fs.mkdir(rulesDir, { recursive: true });
-      await fs.writeFile(path.join(rulesDir, "coding-style.md"), "# Coding Style\n\nUse immutable patterns");
-      await fs.writeFile(path.join(rulesDir, "testing.md"), "# Testing\n\nWrite tests first");
+  describe('Rules loading', () => {
+    it('includes rule files from .claude/rules/*.md', async () => {
+      const rulesDir = path.join(tempDir, '.claude', 'rules')
+      await fs.mkdir(rulesDir, { recursive: true })
+      await fs.writeFile(
+        path.join(rulesDir, 'coding-style.md'),
+        '# Coding Style\n\nUse immutable patterns',
+      )
+      await fs.writeFile(path.join(rulesDir, 'testing.md'), '# Testing\n\nWrite tests first')
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, []);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, [])
 
-      expect(result.rulesLoaded).toContain("coding-style");
-      expect(result.rulesLoaded).toContain("testing");
-      expect(result.context).toContain("Use immutable patterns");
-      expect(result.context).toContain("Write tests first");
-    });
+      expect(result.rulesLoaded).toContain('coding-style')
+      expect(result.rulesLoaded).toContain('testing')
+      expect(result.context).toContain('Use immutable patterns')
+      expect(result.context).toContain('Write tests first')
+    })
 
-    it("returns empty rulesLoaded when rules dir is missing", async () => {
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, []);
+    it('returns empty rulesLoaded when rules dir is missing', async () => {
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, [])
 
-      expect(result.rulesLoaded).toEqual([]);
-    });
-  });
+      expect(result.rulesLoaded).toEqual([])
+    })
+  })
 
-  describe("Skill detection by file extension", () => {
-    it("detects nestjs-core from .service.ts extension", async () => {
-      const skillsDir = path.join(tempDir, ".claude", "skills", "nestjs-core");
-      await fs.mkdir(skillsDir, { recursive: true });
-      await fs.writeFile(path.join(skillsDir, "SKILL.md"), "# NestJS Core\n\nUse dependency injection");
+  describe('Skill detection by file extension', () => {
+    it('detects nestjs-core from .service.ts extension', async () => {
+      const skillsDir = path.join(tempDir, '.claude', 'skills', 'nestjs-core')
+      await fs.mkdir(skillsDir, { recursive: true })
+      await fs.writeFile(
+        path.join(skillsDir, 'SKILL.md'),
+        '# NestJS Core\n\nUse dependency injection',
+      )
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, ["src/users/user.service.ts"]);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, ['src/users/user.service.ts'])
 
-      expect(result.skillsLoaded).toContain("nestjs-core");
-      expect(result.context).toContain("Use dependency injection");
-    });
+      expect(result.skillsLoaded).toContain('nestjs-core')
+      expect(result.context).toContain('Use dependency injection')
+    })
 
-    it("detects typescript-clean-code for any .ts file", async () => {
-      const skillsDir = path.join(tempDir, ".claude", "skills", "typescript-clean-code");
-      await fs.mkdir(skillsDir, { recursive: true });
-      await fs.writeFile(path.join(skillsDir, "SKILL.md"), "# TypeScript\n\nAvoid any type");
+    it('detects typescript-clean-code for any .ts file', async () => {
+      const skillsDir = path.join(tempDir, '.claude', 'skills', 'typescript-clean-code')
+      await fs.mkdir(skillsDir, { recursive: true })
+      await fs.writeFile(path.join(skillsDir, 'SKILL.md'), '# TypeScript\n\nAvoid any type')
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, ["src/utils/helper.ts"]);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, ['src/utils/helper.ts'])
 
-      expect(result.skillsLoaded).toContain("typescript-clean-code");
-      expect(result.context).toContain("Avoid any type");
-    });
+      expect(result.skillsLoaded).toContain('typescript-clean-code')
+      expect(result.context).toContain('Avoid any type')
+    })
 
-    it("detects nestjs-graphql from .resolver.ts extension", async () => {
-      const skillsDir = path.join(tempDir, ".claude", "skills", "nestjs-graphql");
-      await fs.mkdir(skillsDir, { recursive: true });
-      await fs.writeFile(path.join(skillsDir, "SKILL.md"), "# GraphQL\n\nUse DataLoader");
+    it('detects nestjs-graphql from .resolver.ts extension', async () => {
+      const skillsDir = path.join(tempDir, '.claude', 'skills', 'nestjs-graphql')
+      await fs.mkdir(skillsDir, { recursive: true })
+      await fs.writeFile(path.join(skillsDir, 'SKILL.md'), '# GraphQL\n\nUse DataLoader')
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, ["src/api/post.resolver.ts"]);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, ['src/api/post.resolver.ts'])
 
-      expect(result.skillsLoaded).toContain("nestjs-graphql");
-    });
-  });
+      expect(result.skillsLoaded).toContain('nestjs-graphql')
+    })
+  })
 
-  describe("Skill detection by path pattern", () => {
-    it("detects nestjs-auth from auth path", async () => {
-      const skillsDir = path.join(tempDir, ".claude", "skills", "nestjs-auth");
-      await fs.mkdir(skillsDir, { recursive: true });
-      await fs.writeFile(path.join(skillsDir, "SKILL.md"), "# Auth\n\nUse JWT guards");
+  describe('Skill detection by path pattern', () => {
+    it('detects nestjs-auth from auth path', async () => {
+      const skillsDir = path.join(tempDir, '.claude', 'skills', 'nestjs-auth')
+      await fs.mkdir(skillsDir, { recursive: true })
+      await fs.writeFile(path.join(skillsDir, 'SKILL.md'), '# Auth\n\nUse JWT guards')
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, ["src/auth/auth.module.ts"]);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, ['src/auth/auth.module.ts'])
 
-      expect(result.skillsLoaded).toContain("nestjs-auth");
-    });
+      expect(result.skillsLoaded).toContain('nestjs-auth')
+    })
 
-    it("detects nestjs-mongoose from mongoose paths", async () => {
-      const skillsDir = path.join(tempDir, ".claude", "skills", "nestjs-mongoose");
-      await fs.mkdir(skillsDir, { recursive: true });
-      await fs.writeFile(path.join(skillsDir, "SKILL.md"), "# Mongoose\n\nUse repository pattern");
+    it('detects nestjs-mongoose from mongoose paths', async () => {
+      const skillsDir = path.join(tempDir, '.claude', 'skills', 'nestjs-mongoose')
+      await fs.mkdir(skillsDir, { recursive: true })
+      await fs.writeFile(path.join(skillsDir, 'SKILL.md'), '# Mongoose\n\nUse repository pattern')
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, ["src/users/user.schema.ts"]);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, ['src/users/user.schema.ts'])
 
-      expect(result.skillsLoaded).toContain("nestjs-mongoose");
-    });
-  });
+      expect(result.skillsLoaded).toContain('nestjs-mongoose')
+    })
+  })
 
-  describe("Content truncation", () => {
-    it("truncates CLAUDE.md content to ~4000 chars", async () => {
-      const longContent = "A".repeat(10000);
-      await fs.writeFile(path.join(tempDir, "CLAUDE.md"), longContent);
+  describe('Content truncation', () => {
+    it('truncates CLAUDE.md content to ~4000 chars', async () => {
+      const longContent = 'A'.repeat(10000)
+      await fs.writeFile(path.join(tempDir, 'CLAUDE.md'), longContent)
 
-      const config = makeConfig({ monorepoRoot: tempDir });
-      const result = await loadProjectContext(config, []);
+      const config = makeConfig({ monorepoRoot: tempDir })
+      const result = await loadProjectContext(config, [])
 
       // The context shouldn't contain the full 10000-char content
-      expect(result.context.length).toBeLessThan(10000 + 500); // allow some overhead for headers
-    });
+      expect(result.context.length).toBeLessThan(10000 + 500) // allow some overhead for headers
+    })
 
-    it("truncates rule files to ~1500 chars each", async () => {
-      const rulesDir = path.join(tempDir, ".claude", "rules");
-      await fs.mkdir(rulesDir, { recursive: true });
-      const longRule = "# Rule\n" + "B".repeat(5000);
-      await fs.writeFile(path.join(rulesDir, "big-rule.md"), longRule);
+    it('truncates rule files to ~1500 chars each', async () => {
+      const rulesDir = path.join(tempDir, '.claude', 'rules')
+      await fs.mkdir(rulesDir, { recursive: true })
+      const longRule = `# Rule\n${'B'.repeat(5000)}`
+      await fs.writeFile(path.join(rulesDir, 'big-rule.md'), longRule)
 
-      const config = makeConfig({ submodulePath: tempDir });
-      const result = await loadProjectContext(config, []);
+      const config = makeConfig({ submodulePath: tempDir })
+      const result = await loadProjectContext(config, [])
 
       // The context length for a single rule should be truncated
       // Each rule truncated to ~1500 so "B".repeat(5000) should not be fully present
-      const ruleOccurrences = (result.context.match(/B{100}/g) || []).length;
-      expect(ruleOccurrences).toBeLessThan(30); // 5000 B's would be ~50 100-char chunks; truncated would be ~15
-    });
-  });
+      const ruleOccurrences = (result.context.match(/B{100}/g) || []).length
+      expect(ruleOccurrences).toBeLessThan(30) // 5000 B's would be ~50 100-char chunks; truncated would be ~15
+    })
+  })
 
-  describe("Review checklist inclusion", () => {
-    it("includes reviewChecklist items in context", async () => {
+  describe('Review checklist inclusion', () => {
+    it('includes reviewChecklist items in context', async () => {
       const config = makeConfig({
         monorepoRoot: tempDir,
-        reviewChecklist: ["Check pagination on all list endpoints", "Validate enum registration"],
-      });
+        reviewChecklist: ['Check pagination on all list endpoints', 'Validate enum registration'],
+      })
 
-      const result = await loadProjectContext(config, []);
+      const result = await loadProjectContext(config, [])
 
-      expect(result.context).toContain("Check pagination on all list endpoints");
-      expect(result.context).toContain("Validate enum registration");
-    });
+      expect(result.context).toContain('Check pagination on all list endpoints')
+      expect(result.context).toContain('Validate enum registration')
+    })
 
-    it("omits checklist section when reviewChecklist is empty", async () => {
-      const config = makeConfig({ reviewChecklist: [] });
-      const result = await loadProjectContext(config, []);
+    it('omits checklist section when reviewChecklist is empty', async () => {
+      const config = makeConfig({ reviewChecklist: [] })
+      const result = await loadProjectContext(config, [])
 
-      expect(result.context).not.toContain("Review Checklist");
-    });
-  });
-});
+      expect(result.context).not.toContain('Review Checklist')
+    })
+  })
+})

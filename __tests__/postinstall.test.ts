@@ -1,5 +1,5 @@
-import { readFileSync, statSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 
 describe('Postinstall patch', () => {
   const scriptPath = join(process.cwd(), 'scripts/patch-sdk-cache.sh')

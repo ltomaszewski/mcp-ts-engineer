@@ -2,14 +2,13 @@
  * Summary PR comment formatting prompt template (v1).
  */
 
-import type { PromptRegistry } from "../../../core/prompt/prompt.types.js";
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
+import type { PromptRegistry, PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 const SUMMARY_COMMENT_FORMAT_USER_PROMPT_TEMPLATE = (
   issues: string[],
   fixCount: number,
   costUsd: number,
-  confidence: number
+  confidence: number,
 ): string => {
   return `# Summary PR Comment Formatting Task
 
@@ -42,39 +41,39 @@ Return a JSON object with this structure:
 \`\`\`
 
 Keep the summary concise and actionable.
-`;
-};
+`
+}
 
 const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-02-14",
-  description: "Format code review summary as GitHub PR comment",
+  version: 'v1',
+  createdAt: '2026-02-14',
+  description: 'Format code review summary as GitHub PR comment',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as {
-      issues: string[];
-      fixCount: number;
-      costUsd: number;
-      confidence: number;
-    };
+      issues: string[]
+      fixCount: number
+      costUsd: number
+      confidence: number
+    }
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: SUMMARY_COMMENT_FORMAT_USER_PROMPT_TEMPLATE(
         data.issues,
         data.fixCount,
         data.costUsd,
-        data.confidence
+        data.confidence,
       ),
-    };
+    }
   },
-};
+}
 
 export const SUMMARY_COMMENT_FORMAT_VERSIONS: PromptRegistry = {
   v1,
-};
+}
 
-export const SUMMARY_COMMENT_FORMAT_CURRENT_VERSION = "v1";
+export const SUMMARY_COMMENT_FORMAT_CURRENT_VERSION = 'v1'

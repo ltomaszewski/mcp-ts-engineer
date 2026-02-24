@@ -2,13 +2,13 @@
  * Confidence adjuster service - adjusts confidence scores based on historical accuracy.
  */
 
-import { FeedbackLogger } from "./feedback-logger.js";
+import type { FeedbackLogger } from './feedback-logger.js'
 
 export class ConfidenceAdjuster {
-  private feedbackLogger: FeedbackLogger;
+  private feedbackLogger: FeedbackLogger
 
   constructor(feedbackLogger: FeedbackLogger) {
-    this.feedbackLogger = feedbackLogger;
+    this.feedbackLogger = feedbackLogger
   }
 
   /**
@@ -19,37 +19,32 @@ export class ConfidenceAdjuster {
    * @param baseConfidence - Base confidence from agent
    * @returns Adjusted confidence score (0-100)
    */
-  async adjustConfidence(
-    issueType: string,
-    baseConfidence: number
-  ): Promise<number> {
-    const history = await this.feedbackLogger.readAll();
+  async adjustConfidence(issueType: string, baseConfidence: number): Promise<number> {
+    const history = await this.feedbackLogger.readAll()
 
     // Filter to issues of this type
     const relevantHistory = history.filter((entry) =>
-      entry.issue_title.toLowerCase().includes(issueType.toLowerCase())
-    );
+      entry.issue_title.toLowerCase().includes(issueType.toLowerCase()),
+    )
 
     // Need at least 5 samples
     if (relevantHistory.length < 5) {
-      return baseConfidence;
+      return baseConfidence
     }
 
     // Calculate accuracy rate
-    const successfulFixes = relevantHistory.filter(
-      (entry) => entry.outcome === "success"
-    ).length;
-    const accuracyRate = successfulFixes / relevantHistory.length;
+    const successfulFixes = relevantHistory.filter((entry) => entry.outcome === 'success').length
+    const accuracyRate = successfulFixes / relevantHistory.length
 
     // Apply adjustment
-    let adjusted = baseConfidence;
+    let adjusted = baseConfidence
     if (accuracyRate > 0.8) {
-      adjusted += 10;
+      adjusted += 10
     } else if (accuracyRate < 0.5) {
-      adjusted -= 20;
+      adjusted -= 20
     }
 
     // Clamp to 0-100
-    return Math.max(0, Math.min(100, adjusted));
+    return Math.max(0, Math.min(100, adjusted))
   }
 }

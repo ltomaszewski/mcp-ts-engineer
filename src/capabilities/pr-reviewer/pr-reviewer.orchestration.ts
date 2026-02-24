@@ -9,29 +9,34 @@
  * @internal Exported for unit testing and capability reuse
  */
 
-import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import { getProjectConfig } from '../../config/project-config.js'
+import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import { generateIssueId } from '../../core/utils/issue-id.js'
-import { loadProjectContext } from './services/project-context-loader.js'
-import { filterReviewableFiles, splitDiffByFile, chunkFiles, getDiffForFiles } from './pr-reviewer.helpers.js'
 import { parseReviewIssuesFromComment } from '../pr-fixer/pr-fixer.helpers.js'
-import { ReviewIssueSchema } from './pr-reviewer.schema.js'
+import {
+  chunkFiles,
+  filterReviewableFiles,
+  getDiffForFiles,
+  splitDiffByFile,
+} from './pr-reviewer.helpers.js'
 import type {
+  AggregateStepOutput,
+  CleanupStepOutput,
+  CommentStepOutput,
+  CommitStepOutput,
+  ContextStepOutput,
+  FixStepOutput,
+  PrContext,
+  PreflightStepOutput,
   PrReviewerInput,
   PrReviewerOutput,
   ReviewIssue,
-  PrContext,
-  PreflightStepOutput,
-  ContextStepOutput,
   ReviewStepOutput,
-  AggregateStepOutput,
-  ValidateStepOutput,
-  FixStepOutput,
-  CleanupStepOutput,
   TestStepOutput,
-  CommitStepOutput,
-  CommentStepOutput,
+  ValidateStepOutput,
 } from './pr-reviewer.schema.js'
+import { ReviewIssueSchema } from './pr-reviewer.schema.js'
+import { loadProjectContext } from './services/project-context-loader.js'
 
 // ---------------------------------------------------------------------------
 // Review phases
@@ -386,7 +391,7 @@ async function executePreflight(
  */
 async function fetchPreviousReviewComment(
   prContext: PrContext,
-  context: CapabilityContext,
+  _context: CapabilityContext,
 ): Promise<string | null> {
   try {
     const { execSync } = await import('node:child_process')

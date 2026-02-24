@@ -5,19 +5,15 @@
  * - Tier 2: Spec pipeline for complex architectural changes (future)
  */
 
-import type {
-  CapabilityDefinition,
-  CapabilityContext,
-} from '../../core/capability-registry/capability-registry.types.js'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
+import type {
+  CapabilityContext,
+  CapabilityDefinition,
+} from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import {
-  PrFixerInputSchema,
-  PrFixerOutputSchema,
-  PR_FIXER_OUTPUT_FALLBACK,
-} from './pr-fixer.schema.js'
-import type { PrFixerInput, PrFixerOutput } from './pr-fixer.schema.js'
 import { runFixerOrchestration } from './pr-fixer.orchestration.js'
+import type { PrFixerInput, PrFixerOutput } from './pr-fixer.schema.js'
+import { PR_FIXER_OUTPUT_FALLBACK, PrFixerInputSchema } from './pr-fixer.schema.js'
 
 /**
  * Stub prompt — the real work is done by sub-capabilities via the orchestration loop.

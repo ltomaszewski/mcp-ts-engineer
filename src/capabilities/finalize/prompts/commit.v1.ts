@@ -1,5 +1,5 @@
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import { getCommitTag } from "../../../config/constants.js";
+import { getCommitTag } from '../../../config/constants.js'
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 
 /**
  * Commit step prompt for finalize capability.
@@ -7,11 +7,11 @@ import { getCommitTag } from "../../../config/constants.js";
  */
 
 interface CommitPromptInput {
-  auditSummary: string;
-  codemapSummary: string;
-  filesAffected: string[];
-  sessionId: string;
-  cwd?: string;
+  auditSummary: string
+  codemapSummary: string
+  filesAffected: string[]
+  sessionId: string
+  cwd?: string
 }
 
 const buildCommitUserPrompt = (
@@ -21,8 +21,8 @@ const buildCommitUserPrompt = (
   sessionId: string,
   cwd?: string,
 ): string => {
-  const filesAffectedList = filesAffected.map((f) => `  - ${f}`).join("\n");
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : "";
+  const filesAffectedList = filesAffected.map((f) => `  - ${f}`).join('\n')
+  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   return `You are the Commit Agent for finalizing cleanup changes.
 
@@ -78,23 +78,22 @@ Git trailer format:
 - Add the Session-Id trailer: Session-Id: ${sessionId}
 - This trailer enables tracing commits back to their cost report session
 
-Your goal is to create a clean, descriptive commit that captures all finalization changes.`;
-};
+Your goal is to create a clean, descriptive commit that captures all finalization changes.`
+}
 
 export const commitPromptV1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-30",
-  description:
-    "Commit step: commits cleanup changes with descriptive conventional commit message",
+  version: 'v1',
+  createdAt: '2026-01-30',
+  description: 'Commit step: commits cleanup changes with descriptive conventional commit message',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { auditSummary, codemapSummary, filesAffected, sessionId, cwd } =
-      input as CommitPromptInput;
+      input as CommitPromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
       },
       userPrompt: buildCommitUserPrompt(
         auditSummary,
@@ -103,6 +102,6 @@ export const commitPromptV1: PromptVersion = {
         sessionId,
         cwd,
       ),
-    };
+    }
   },
-};
+}

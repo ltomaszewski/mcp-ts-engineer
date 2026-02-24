@@ -2,10 +2,9 @@
  * Session module exports.
  */
 
+export { SessionManager } from './session.manager.js'
 export type {
+  CapabilityInvocation,
   Session,
   SessionState,
-  CapabilityInvocation,
-} from "./session.types.js";
-
-export { SessionManager } from "./session.manager.js";
+} from './session.types.js'

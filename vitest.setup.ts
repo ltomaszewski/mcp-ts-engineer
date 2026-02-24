@@ -4,4 +4,4 @@
  * Timeout and mock restore are configured in vitest.config.ts.
  */
 
-export {};
+export {}

@@ -13,26 +13,23 @@
  * summaries after tool calls" — append + structured output solve this.
  */
 
-import type { PromptVersion } from "../../../core/prompt/prompt.types.js";
-import type { ReviewSummary } from "../todo-reviewer.schema.js";
+import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import type { ReviewSummary } from '../todo-reviewer.schema.js'
 
 /** Input shape for the TDD validate step prompt build function. */
 interface TddValidatePromptInput {
-  specPath: string;
-  reviewSummary: ReviewSummary;
-  cwd?: string;
+  specPath: string
+  reviewSummary: ReviewSummary
+  cwd?: string
 }
 
 /**
  * System prompt append for TDD step.
  * Claude 4.5 skips verbal summaries after tool use — this ensures text output.
  */
-const TDD_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of your findings. Your structured output will be captured automatically via the output schema.`;
+const TDD_SYSTEM_PROMPT_APPEND = `After completing all tool use, provide a brief text summary of your findings. Your structured output will be captured automatically via the output schema.`
 
-const TDD_USER_PROMPT_TEMPLATE = (
-  specPath: string,
-  reviewSummary: ReviewSummary,
-): string => {
+const TDD_USER_PROMPT_TEMPLATE = (specPath: string, reviewSummary: ReviewSummary): string => {
   return `You are a TDD validator. Read a spec file and check if its testing strategy is adequate.
 
 <spec_path>${specPath}</spec_path>
@@ -64,26 +61,26 @@ const TDD_USER_PROMPT_TEMPLATE = (
 - PASS: All changed files have test files listed, coverage >= 80%, acceptance criteria mapped
 - FAIL: Missing test files for changed source files, no coverage target, no testing section
 - WARN: Coverage exactly 80%, fewer than 2 error scenarios, minor gaps
-</decision_criteria>`;
-};
+</decision_criteria>`
+}
 
 /** Version 1: Agnostic TDD validator with structured output */
 export const v1: PromptVersion = {
-  version: "v1",
-  createdAt: "2026-01-29",
+  version: 'v1',
+  createdAt: '2026-01-29',
   description:
-    "Agnostic TDD validator: reads spec, validates test coverage, returns TddSummary via structured output",
+    'Agnostic TDD validator: reads spec, validates test coverage, returns TddSummary via structured output',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { specPath, reviewSummary } = input as TddValidatePromptInput;
+    const { specPath, reviewSummary } = input as TddValidatePromptInput
     return {
       systemPrompt: {
-        type: "preset" as const,
-        preset: "claude_code" as const,
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
         append: TDD_SYSTEM_PROMPT_APPEND,
       },
       userPrompt: TDD_USER_PROMPT_TEMPLATE(specPath, reviewSummary),
-    };
+    }
   },
-};
+}
