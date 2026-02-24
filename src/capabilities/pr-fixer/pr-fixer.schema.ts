@@ -92,6 +92,7 @@ export type DirectFixStepOutput = z.infer<typeof DirectFixStepOutputSchema>
 export const FixerValidateStepOutputSchema = z.object({
   tsc_passed: z.boolean(),
   tests_passed: z.boolean(),
+  error_summary: z.string().optional(),
 })
 
 export type FixerValidateStepOutput = z.infer<typeof FixerValidateStepOutputSchema>
@@ -214,6 +215,7 @@ export const FIXER_VALIDATE_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
     properties: {
       tsc_passed: { type: 'boolean' },
       tests_passed: { type: 'boolean' },
+      error_summary: { type: 'string' },
     },
     required: ['tsc_passed', 'tests_passed'],
   },

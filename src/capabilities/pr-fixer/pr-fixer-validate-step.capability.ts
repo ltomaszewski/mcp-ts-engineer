@@ -122,9 +122,12 @@ Return JSON:
 \`\`\`json
 {
   "tsc_passed": true,
-  "tests_passed": true
+  "tests_passed": true,
+  "error_summary": "Optional: if tsc or tests failed, include the relevant error messages here (last 30 lines of each failing command output). Leave empty or omit if all passed."
 }
 \`\`\`
+
+**IMPORTANT**: If tsc or tests fail, you MUST include the error output in \`error_summary\` so subsequent fix steps can use it. Include the failing test names, assertion errors, and tsc error messages.
 
 Begin validation now.`,
     }

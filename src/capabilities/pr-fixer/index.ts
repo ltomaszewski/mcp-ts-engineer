@@ -5,4 +5,5 @@ export { prFixerCommentStepCapability } from './pr-fixer-comment-step.capability
 export { prFixerCommitStepCapability } from './pr-fixer-commit-step.capability.js'
 export { prFixerDirectFixStepCapability } from './pr-fixer-direct-fix-step.capability.js'
 export { prFixerFetchCommentStepCapability } from './pr-fixer-fetch-comment-step.capability.js'
+export { prFixerFixValidationStepCapability } from './pr-fixer-fix-validation-step.capability.js'
 export { prFixerValidateStepCapability } from './pr-fixer-validate-step.capability.js'

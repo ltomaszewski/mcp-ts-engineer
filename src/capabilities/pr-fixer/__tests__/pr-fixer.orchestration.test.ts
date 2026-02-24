@@ -9,6 +9,7 @@ import {
   type FixerPhase,
   type FixerState,
   getNextPhase,
+  MAX_VALIDATION_FIX_ROUNDS,
   shouldSkipPhase,
 } from '../pr-fixer.orchestration.js'
 
@@ -43,6 +44,8 @@ describe('createInitialState', () => {
     expect(state.issues).toEqual([])
     expect(state.directFixOutput).toBeNull()
     expect(state.validationPassed).toBe(false)
+    expect(state.validationErrorSummary).toBe('')
+    expect(state.validationFixRound).toBe(0)
     expect(state.commitSha).toBeNull()
     expect(state.filesChanged).toEqual([])
     expect(state.budgetSpent).toBe(0)
@@ -105,6 +108,48 @@ describe('shouldSkipPhase', () => {
         },
       }
       expect(shouldSkipPhase('validate', state)).toBe(false)
+    })
+  })
+
+  describe('fix_validation phase', () => {
+    it('skips when validation passed', () => {
+      const state: FixerState = {
+        ...baseState,
+        validationPassed: true,
+        validationErrorSummary: 'some error',
+        validationFixRound: 0,
+      }
+      expect(shouldSkipPhase('fix_validation', state)).toBe(true)
+    })
+
+    it('skips when no error summary', () => {
+      const state: FixerState = {
+        ...baseState,
+        validationPassed: false,
+        validationErrorSummary: '',
+        validationFixRound: 0,
+      }
+      expect(shouldSkipPhase('fix_validation', state)).toBe(true)
+    })
+
+    it('skips when max retries reached', () => {
+      const state: FixerState = {
+        ...baseState,
+        validationPassed: false,
+        validationErrorSummary: 'test failed',
+        validationFixRound: MAX_VALIDATION_FIX_ROUNDS,
+      }
+      expect(shouldSkipPhase('fix_validation', state)).toBe(true)
+    })
+
+    it('does not skip when validation failed with errors and retries available', () => {
+      const state: FixerState = {
+        ...baseState,
+        validationPassed: false,
+        validationErrorSummary: 'test failed: expected 0 but got 2',
+        validationFixRound: 0,
+      }
+      expect(shouldSkipPhase('fix_validation', state)).toBe(false)
     })
   })
 
@@ -193,6 +238,49 @@ describe('getNextPhase', () => {
     expect(phases).toContain('commit')
     expect(phases).toContain('comment')
     expect(phases).toContain('done')
+    // fix_validation should be skipped because validation passed
+    expect(phases).not.toContain('fix_validation')
+  })
+
+  it('includes fix_validation when validation failed with errors', () => {
+    const state: FixerState = {
+      ...baseState,
+      issues: [makeTracker({ classification: 'direct' })],
+      directFixOutput: {
+        fixes_applied: 1,
+        fixes_failed: 0,
+        issues_fixed: ['a'],
+        issues_failed_ids: [],
+        files_changed: ['src/a.ts'],
+      },
+      validationPassed: false,
+      validationErrorSummary: 'test failed',
+      validationFixRound: 0,
+    }
+
+    const nextAfterValidate = getNextPhase('validate', state)
+    expect(nextAfterValidate).toBe('fix_validation')
+  })
+
+  it('skips fix_validation when max rounds reached', () => {
+    const state: FixerState = {
+      ...baseState,
+      issues: [makeTracker({ classification: 'direct' })],
+      directFixOutput: {
+        fixes_applied: 1,
+        fixes_failed: 0,
+        issues_fixed: ['a'],
+        issues_failed_ids: [],
+        files_changed: ['src/a.ts'],
+      },
+      validationPassed: false,
+      validationErrorSummary: 'test failed',
+      validationFixRound: MAX_VALIDATION_FIX_ROUNDS,
+    }
+
+    const nextAfterValidate = getNextPhase('validate', state)
+    // Should skip fix_validation AND commit (validation failed), go to comment
+    expect(nextAfterValidate).toBe('comment')
   })
 
   it('skips direct_fix/validate/commit when no direct issues', () => {
@@ -210,6 +298,7 @@ describe('getNextPhase', () => {
 
     expect(phases).not.toContain('direct_fix')
     expect(phases).not.toContain('validate')
+    expect(phases).not.toContain('fix_validation')
     expect(phases).not.toContain('commit')
     expect(phases).toContain('comment')
   })

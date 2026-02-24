@@ -1,6 +1,7 @@
 /**
  * Orchestration state machine for pr_fixer capability.
  * Two-tier fix strategy: direct fixes (Tier 1) and spec pipeline (Tier 2).
+ * Includes iterative validation fix loop (up to MAX_VALIDATION_FIX_ROUNDS).
  *
  * @internal Exported for unit testing
  */
@@ -21,6 +22,12 @@ import type {
 } from './pr-fixer.schema.js'
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+export const MAX_VALIDATION_FIX_ROUNDS = 2
+
+// ---------------------------------------------------------------------------
 // Fixer phases
 // ---------------------------------------------------------------------------
 
@@ -29,6 +36,7 @@ export type FixerPhase =
   | 'classify'
   | 'direct_fix'
   | 'validate'
+  | 'fix_validation'
   | 'commit'
   | 'comment'
   | 'done'
@@ -64,6 +72,8 @@ export interface FixerState {
   issues: FixerIssueTracker[]
   directFixOutput: DirectFixStepOutput | null
   validationPassed: boolean
+  validationErrorSummary: string
+  validationFixRound: number
   commitSha: string | null
   commentUrl: string
   filesChanged: string[]
@@ -86,6 +96,8 @@ export function createInitialState(): FixerState {
     issues: [],
     directFixOutput: null,
     validationPassed: false,
+    validationErrorSummary: '',
+    validationFixRound: 0,
     commitSha: null,
     commentUrl: '',
     filesChanged: [],
@@ -100,6 +112,14 @@ export function shouldSkipPhase(phase: FixerPhase, state: FixerState): boolean {
 
     case 'validate':
       return !state.directFixOutput || state.directFixOutput.fixes_applied === 0
+
+    case 'fix_validation':
+      // Skip if validation passed, no errors to fix, or max retries reached
+      return (
+        state.validationPassed ||
+        !state.validationErrorSummary ||
+        state.validationFixRound >= MAX_VALIDATION_FIX_ROUNDS
+      )
 
     case 'commit':
       return (
@@ -119,6 +139,7 @@ export function getNextPhase(current: FixerPhase, state: FixerState): FixerPhase
     'classify',
     'direct_fix',
     'validate',
+    'fix_validation',
     'commit',
     'comment',
     'done',
@@ -249,6 +270,9 @@ async function executePhase(state: FixerState, context: CapabilityContext): Prom
       break
     case 'validate':
       await executeValidate(state, context)
+      break
+    case 'fix_validation':
+      await executeFixValidation(state, context)
       break
     case 'commit':
       await executeCommit(state, context)
@@ -396,6 +420,7 @@ async function executeDirectFix(state: FixerState, context: CapabilityContext): 
 
 /**
  * Validate phase: Run tsc + tests.
+ * Stores error_summary for fix_validation phase if validation fails.
  */
 async function executeValidate(state: FixerState, context: CapabilityContext): Promise<void> {
   const result = (await context.invokeCapability('pr_fixer_validate_step', {
@@ -404,16 +429,64 @@ async function executeValidate(state: FixerState, context: CapabilityContext): P
   })) as FixerValidateStepOutput
 
   state.validationPassed = result.tsc_passed && result.tests_passed
+  state.validationErrorSummary = result.error_summary || ''
 
-  // If validation failed, mark all direct-fixed issues as failed
   if (!state.validationPassed) {
-    context.logger.warn('Validation failed, reverting direct fixes')
-    for (const tracker of state.issues) {
-      if (tracker.status === 'fixed' && tracker.method === 'direct') {
-        tracker.status = 'failed'
-      }
-    }
+    context.logger.warn('Validation failed', {
+      tsc_passed: result.tsc_passed,
+      tests_passed: result.tests_passed,
+      validationFixRound: state.validationFixRound,
+      maxRounds: MAX_VALIDATION_FIX_ROUNDS,
+      hasErrorSummary: !!result.error_summary,
+    })
   }
+}
+
+/**
+ * Fix validation phase: Fix tsc/test/lint failures introduced by direct fixes.
+ * After fixing, loops back to validate by resetting phase.
+ */
+async function executeFixValidation(state: FixerState, context: CapabilityContext): Promise<void> {
+  state.validationFixRound++
+  context.logger.info('Attempting to fix validation errors', {
+    round: state.validationFixRound,
+    maxRounds: MAX_VALIDATION_FIX_ROUNDS,
+  })
+
+  const result = (await context.invokeCapability('pr_fixer_fix_validation_step', {
+    worktree_path: state.worktreePath,
+    error_summary: state.validationErrorSummary,
+    files_changed: state.filesChanged,
+  })) as DirectFixStepOutput
+
+  // Track new files changed
+  state.filesChanged = [...new Set([...state.filesChanged, ...result.files_changed])]
+
+  if (result.files_changed.length === 0) {
+    context.logger.warn('Fix validation made no changes, giving up')
+    // Mark direct-fixed issues as failed since validation can't be fixed
+    markDirectFixedAsFailed(state)
+    return
+  }
+
+  // Re-validate after fix attempt
+  const validateResult = (await context.invokeCapability('pr_fixer_validate_step', {
+    worktree_path: state.worktreePath,
+    files_changed: state.filesChanged,
+  })) as FixerValidateStepOutput
+
+  state.validationPassed = validateResult.tsc_passed && validateResult.tests_passed
+  state.validationErrorSummary = validateResult.error_summary || ''
+
+  if (state.validationPassed) {
+    context.logger.info('Validation passed after fix round', { round: state.validationFixRound })
+    // Restore direct-fixed issues that were previously working
+    restoreDirectFixed(state)
+  } else if (state.validationFixRound >= MAX_VALIDATION_FIX_ROUNDS) {
+    context.logger.warn('Max validation fix rounds reached, giving up')
+    markDirectFixedAsFailed(state)
+  }
+  // Otherwise, getNextPhase will loop back to fix_validation if conditions met
 }
 
 /**
@@ -451,6 +524,28 @@ async function executeComment(state: FixerState, context: CapabilityContext): Pr
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function markDirectFixedAsFailed(state: FixerState): void {
+  for (const tracker of state.issues) {
+    if (tracker.status === 'fixed' && tracker.method === 'direct') {
+      tracker.status = 'failed'
+    }
+  }
+}
+
+function restoreDirectFixed(state: FixerState): void {
+  // Issues that were marked 'fixed' by direct_fix but then set to 'failed'
+  // by a previous validation failure — restore them since validation now passes
+  for (const tracker of state.issues) {
+    if (tracker.status === 'failed' && tracker.method === 'direct') {
+      // Check if the direct fix step originally marked this as fixed
+      const wasFixed = state.directFixOutput?.issues_fixed.includes(tracker.issue_id)
+      if (wasFixed) {
+        tracker.status = 'fixed'
+      }
+    }
+  }
+}
 
 async function fetchReviewerComment(
   state: FixerState,

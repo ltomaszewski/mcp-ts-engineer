@@ -27,6 +27,7 @@ import { prFixerCommentStepCapability } from './pr-fixer/pr-fixer-comment-step.c
 import { prFixerCommitStepCapability } from './pr-fixer/pr-fixer-commit-step.capability.js'
 import { prFixerDirectFixStepCapability } from './pr-fixer/pr-fixer-direct-fix-step.capability.js'
 import { prFixerFetchCommentStepCapability } from './pr-fixer/pr-fixer-fetch-comment-step.capability.js'
+import { prFixerFixValidationStepCapability } from './pr-fixer/pr-fixer-fix-validation-step.capability.js'
 import { prFixerValidateStepCapability } from './pr-fixer/pr-fixer-validate-step.capability.js'
 import { prAggregateStepCapability } from './pr-reviewer/pr-aggregate-step.capability.js'
 import { prCleanupStepCapability } from './pr-reviewer/pr-cleanup-step.capability.js'
@@ -123,4 +124,5 @@ export function registerAllCapabilities(registry: CapabilityRegistry): void {
   registry.registerCapability(prFixerCommitStepCapability as CapabilityDefinition)
   registry.registerCapability(prFixerCommentStepCapability as CapabilityDefinition)
   registry.registerCapability(prFixerFetchCommentStepCapability as CapabilityDefinition)
+  registry.registerCapability(prFixerFixValidationStepCapability as CapabilityDefinition)
 }
