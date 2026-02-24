@@ -4,8 +4,8 @@
  * @internal Shared across step capabilities for JSON parsing and common operations.
  */
 
-import { PrContextSchema } from "./pr-reviewer.schema.js";
-import type { PrContext } from "./pr-reviewer.schema.js";
+import type { PrContext } from './pr-reviewer.schema.js'
+import { PrContextSchema } from './pr-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
 // File filtering, diff splitting, and chunking helpers
@@ -22,15 +22,14 @@ const NON_REVIEWABLE_PATTERNS = [
   /(?:^|\/)coverage\//,
   /(?:^|\/)node_modules\//,
   /\.snap$/,
-] as const;
+  /(?:^|\/)packages\/mcp-ts-engineer\//,
+] as const
 
 /**
  * Filter out files that aren't worth reviewing (docs, build artifacts, etc.).
  */
 export function filterReviewableFiles(files: string[]): string[] {
-  return files.filter(
-    (f) => !NON_REVIEWABLE_PATTERNS.some((pattern) => pattern.test(f)),
-  );
+  return files.filter((f) => !NON_REVIEWABLE_PATTERNS.some((pattern) => pattern.test(f)))
 }
 
 /**
@@ -40,33 +39,33 @@ export function filterReviewableFiles(files: string[]): string[] {
  * @returns Map of filePath → diff content for that file
  */
 export function splitDiffByFile(fullDiff: string): Map<string, string> {
-  const result = new Map<string, string>();
-  if (!fullDiff) return result;
+  const result = new Map<string, string>()
+  if (!fullDiff) return result
 
-  const parts = fullDiff.split(/^(?=diff --git )/m);
+  const parts = fullDiff.split(/^(?=diff --git )/m)
 
   for (const part of parts) {
-    if (!part.trim()) continue;
+    if (!part.trim()) continue
 
     // Extract file path from "diff --git a/path b/path"
-    const headerMatch = part.match(/^diff --git a\/.+ b\/(.+)/);
+    const headerMatch = part.match(/^diff --git a\/.+ b\/(.+)/)
     if (headerMatch?.[1]) {
-      result.set(headerMatch[1], part);
+      result.set(headerMatch[1], part)
     }
   }
 
-  return result;
+  return result
 }
 
 /**
  * Split a file list into groups of at most `maxFilesPerChunk`.
  */
 export function chunkFiles(files: string[], maxFilesPerChunk = 10): string[][] {
-  const chunks: string[][] = [];
+  const chunks: string[][] = []
   for (let i = 0; i < files.length; i += maxFilesPerChunk) {
-    chunks.push(files.slice(i, i + maxFilesPerChunk));
+    chunks.push(files.slice(i, i + maxFilesPerChunk))
   }
-  return chunks;
+  return chunks
 }
 
 /**
@@ -77,19 +76,19 @@ export function getDiffForFiles(
   files: string[],
   maxChars = 30000,
 ): string {
-  let combined = "";
+  let combined = ''
   for (const file of files) {
-    const section = diffByFile.get(file);
+    const section = diffByFile.get(file)
     if (section) {
       if (combined.length + section.length > maxChars) {
         // Add as much as fits
-        combined += section.substring(0, maxChars - combined.length);
-        break;
+        combined += section.substring(0, maxChars - combined.length)
+        break
       }
-      combined += section;
+      combined += section
     }
   }
-  return combined;
+  return combined
 }
 
 /**
@@ -102,11 +101,11 @@ export function getDiffForFiles(
 export function tryParseJson<T>(content: string): T | null {
   try {
     // Try to extract JSON from markdown code block first
-    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : content;
-    return JSON.parse(jsonStr) as T;
+    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/)
+    const jsonStr = jsonMatch ? jsonMatch[1] : content
+    return JSON.parse(jsonStr) as T
   } catch {
-    return null;
+    return null
   }
 }
 
@@ -119,9 +118,9 @@ export function tryParseJson<T>(content: string): T | null {
  * (e.g. missing pr_number, repo_owner, pr_branch, base_branch).
  */
 export function sanitizePrContext(raw: unknown): PrContext | null {
-  if (!raw || typeof raw !== "object") return null;
-  const result = PrContextSchema.safeParse(raw);
-  return result.success ? result.data : null;
+  if (!raw || typeof raw !== 'object') return null
+  const result = PrContextSchema.safeParse(raw)
+  return result.success ? result.data : null
 }
 
 /**
@@ -132,8 +131,6 @@ export function sanitizePrContext(raw: unknown): PrContext | null {
  * @returns Comment URL or empty string if not found
  */
 export function tryExtractCommentUrl(content: string): string {
-  const urlMatch = content.match(
-    /https:\/\/github\.com\/[^\s"'`)]+#issuecomment-\d+/
-  );
-  return urlMatch ? urlMatch[0] : "";
+  const urlMatch = content.match(/https:\/\/github\.com\/[^\s"'`)]+#issuecomment-\d+/)
+  return urlMatch ? urlMatch[0] : ''
 }
