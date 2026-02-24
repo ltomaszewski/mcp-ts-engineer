@@ -7,6 +7,91 @@
 import { PrContextSchema } from "./pr-reviewer.schema.js";
 import type { PrContext } from "./pr-reviewer.schema.js";
 
+// ---------------------------------------------------------------------------
+// File filtering, diff splitting, and chunking helpers
+// ---------------------------------------------------------------------------
+
+/** Patterns for files that should be excluded from code review. */
+const NON_REVIEWABLE_PATTERNS = [
+  /\.md$/,
+  /\.map$/,
+  /\.d\.ts$/,
+  /\.lock$/,
+  /(?:^|\/)dist\//,
+  /(?:^|\/)build\//,
+  /(?:^|\/)coverage\//,
+  /(?:^|\/)node_modules\//,
+  /\.snap$/,
+] as const;
+
+/**
+ * Filter out files that aren't worth reviewing (docs, build artifacts, etc.).
+ */
+export function filterReviewableFiles(files: string[]): string[] {
+  return files.filter(
+    (f) => !NON_REVIEWABLE_PATTERNS.some((pattern) => pattern.test(f)),
+  );
+}
+
+/**
+ * Parse a unified diff into per-file sections.
+ * Splits on `diff --git a/... b/...` boundaries.
+ *
+ * @returns Map of filePath → diff content for that file
+ */
+export function splitDiffByFile(fullDiff: string): Map<string, string> {
+  const result = new Map<string, string>();
+  if (!fullDiff) return result;
+
+  const parts = fullDiff.split(/^(?=diff --git )/m);
+
+  for (const part of parts) {
+    if (!part.trim()) continue;
+
+    // Extract file path from "diff --git a/path b/path"
+    const headerMatch = part.match(/^diff --git a\/.+ b\/(.+)/);
+    if (headerMatch?.[1]) {
+      result.set(headerMatch[1], part);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Split a file list into groups of at most `maxFilesPerChunk`.
+ */
+export function chunkFiles(files: string[], maxFilesPerChunk = 10): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < files.length; i += maxFilesPerChunk) {
+    chunks.push(files.slice(i, i + maxFilesPerChunk));
+  }
+  return chunks;
+}
+
+/**
+ * Concatenate diff sections for a set of files, truncated to maxChars.
+ */
+export function getDiffForFiles(
+  diffByFile: Map<string, string>,
+  files: string[],
+  maxChars = 30000,
+): string {
+  let combined = "";
+  for (const file of files) {
+    const section = diffByFile.get(file);
+    if (section) {
+      if (combined.length + section.length > maxChars) {
+        // Add as much as fits
+        combined += section.substring(0, maxChars - combined.length);
+        break;
+      }
+      combined += section;
+    }
+  }
+  return combined;
+}
+
 /**
  * Try to parse JSON from AI result content.
  * Handles both raw JSON and markdown-fenced JSON blocks.

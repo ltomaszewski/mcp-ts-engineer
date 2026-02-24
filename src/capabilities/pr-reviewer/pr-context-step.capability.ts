@@ -38,7 +38,7 @@ ${ctx.last_reviewed_sha ? `Incremental review from SHA: ${ctx.last_reviewed_sha}
    ${
      ctx.last_reviewed_sha
        ? `- Get incremental diff: \`git diff ${ctx.last_reviewed_sha}..HEAD\``
-       : `- Get full diff: \`git diff ${ctx.base_branch}...${ctx.pr_branch}\``
+       : `- Get full diff: \`gh pr diff ${ctx.pr_number}\``
    }
 
 3. **Catalog Files Changed**

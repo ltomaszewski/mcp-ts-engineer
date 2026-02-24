@@ -59,7 +59,7 @@ export const LOCK_JITTER_MS = 25;
 export const MAX_TURNS = 100;
 export const MAX_QUERY_BUDGET_USD = 5.0;
 export const MAX_TIMEOUT_MS = 600000; // 10 minutes
-export const MAX_PROMPT_LENGTH = 50000;
+export const MAX_PROMPT_LENGTH = 100000;
 export const MAX_SYSTEM_PROMPT_LENGTH = 50000;
 
 /** Shutdown cost aggregation waits */

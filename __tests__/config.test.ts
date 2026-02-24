@@ -199,10 +199,10 @@ describe("CONFIG", () => {
       expect(MAX_TIMEOUT_MS).toBe(600000);
     });
 
-    it("MAX_PROMPT_LENGTH is defined and equals 50000", () => {
+    it("MAX_PROMPT_LENGTH is defined and equals 100000", () => {
       expect(MAX_PROMPT_LENGTH).toBeDefined();
       expect(typeof MAX_PROMPT_LENGTH).toBe("number");
-      expect(MAX_PROMPT_LENGTH).toBe(50000);
+      expect(MAX_PROMPT_LENGTH).toBe(100000);
     });
 
     it("MAX_SYSTEM_PROMPT_LENGTH is defined and equals 50000", () => {

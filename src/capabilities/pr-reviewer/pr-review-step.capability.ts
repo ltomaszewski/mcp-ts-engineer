@@ -75,7 +75,7 @@ ${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
 ## Diff
 
 \`\`\`diff
-${data.diff_content.substring(0, 50000)}
+${data.diff_content.substring(0, 30000)}
 \`\`\`
 
 ## Instructions
