@@ -52,9 +52,24 @@ ${data.issues
    - Keep only issues with confidence >= 70
    - Discard likely false positives
 
-3. **Classify** (be LIBERAL with auto_fixable — prefer true when in doubt):
-   - auto_fixable=true: Linting, formatting, simple refactors, missing error handling (add try/catch + logger), enum registration, missing pagination args, type extraction (inline to named), missing null checks, console.log removal, unused imports, silent/empty catch blocks
-   - auto_fixable=false: ONLY for logic changes, architectural decisions, new feature requirements, complex algorithm changes
+3. **Classify** (be CONSERVATIVE with auto_fixable — only trivial mechanical changes):
+   - auto_fixable=true ONLY for these trivial patterns:
+     * Unused import removal
+     * Missing return type annotations on simple functions
+     * console.log removal
+     * Simple null check additions (e.g., adding \`if (!x) return\`)
+     * Formatting fixes (whitespace, semicolons)
+     * Missing error logging in empty catch blocks
+   - auto_fixable=false for EVERYTHING ELSE, including:
+     * Missing pagination arguments on resolvers
+     * Architectural refactors or restructuring
+     * New validation logic or type system changes
+     * Adding error handling with business logic (try/catch + custom error types)
+     * Rate limiting, security hardening
+     * Enum registration changes
+     * Type extraction (inline to named)
+     * Any change requiring understanding of business context
+   - Only set auto_fixable=true when confidence >= 80
 
 ## Output Format
 

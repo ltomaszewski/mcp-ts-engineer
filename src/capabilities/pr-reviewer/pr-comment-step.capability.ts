@@ -18,6 +18,42 @@ import type {
   ReviewIssueData,
 } from './pr-reviewer.schema.js'
 
+/** Maximum total issues to report in a PR comment. */
+const MAX_REPORTED_ISSUES = 7
+
+/** Maximum MEDIUM-severity issues to include (beyond this, only CRITICAL/HIGH). */
+const MAX_MEDIUM_ISSUES = 3
+
+/** Severity sort order (highest first). */
+const SEVERITY_ORDER: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
+
+/**
+ * Filter and cap issues for reporting: suppress LOW, limit MEDIUM to 3, cap total at 7.
+ * Returns issues sorted by severity (highest first).
+ */
+function filterIssuesForReport(issues: ReviewIssue[]): ReviewIssue[] {
+  // Suppress LOW severity by default
+  const nonLow = issues.filter((i) => i.severity !== 'LOW')
+
+  // Sort by severity (highest first)
+  const sorted = [...nonLow].sort(
+    (a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
+  )
+
+  // Cap MEDIUM issues at MAX_MEDIUM_ISSUES
+  let mediumCount = 0
+  const capped = sorted.filter((issue) => {
+    if (issue.severity === 'MEDIUM') {
+      mediumCount++
+      return mediumCount <= MAX_MEDIUM_ISSUES
+    }
+    return true
+  })
+
+  // Cap total at MAX_REPORTED_ISSUES
+  return capped.slice(0, MAX_REPORTED_ISSUES)
+}
+
 /**
  * Map internal ReviewIssue to the public ReviewIssueData schema.
  */
@@ -84,7 +120,11 @@ function buildFullReportComment(data: CommentStepInput): string {
   const highIssues = data.issues.filter((i) => i.severity === 'HIGH')
   const mediumIssues = data.issues.filter((i) => i.severity === 'MEDIUM')
   const lowIssues = data.issues.filter((i) => i.severity === 'LOW')
-  const manualIssues = data.issues.filter((i) => !i.auto_fixable)
+
+  // Apply severity filtering for display (cap at 7, suppress LOW, limit MEDIUM)
+  const reportedIssues = filterIssuesForReport(data.issues)
+  const manualIssues = reportedIssues.filter((i) => !i.auto_fixable)
+  const suppressedCount = data.issues.length - reportedIssues.length
 
   const hasCriticalOrHigh = criticalIssues.length > 0 || highIssues.length > 0
   const unfixedAutoFixableCount = data.unfixed_auto_fixable_count ?? 0
@@ -150,6 +190,14 @@ function buildFullReportComment(data: CommentStepInput): string {
     )
   }
 
+  if (suppressedCount > 0) {
+    lines.push(
+      `*${suppressedCount} lower-priority issue(s) suppressed. See Issues Data below for full list.*`,
+      '',
+    )
+  }
+
+  // Issues Data includes ALL issues (unfiltered) for downstream tools like pr_fixer
   lines.push(buildIssuesDataSection(data.issues))
   lines.push('')
   lines.push('*Automated review by PR Reviewer*')

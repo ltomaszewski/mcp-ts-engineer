@@ -13,6 +13,8 @@ import type { CapabilityContext } from '../../core/capability-registry/capabilit
 import { getProjectConfig } from '../../config/project-config.js'
 import { loadProjectContext } from './services/project-context-loader.js'
 import { filterReviewableFiles, splitDiffByFile, chunkFiles, getDiffForFiles } from './pr-reviewer.helpers.js'
+import { parseReviewIssuesFromComment } from '../pr-fixer/pr-fixer.helpers.js'
+import { ReviewIssueSchema } from './pr-reviewer.schema.js'
 import type {
   PrReviewerInput,
   PrReviewerOutput,
@@ -69,6 +71,8 @@ export interface ReviewState {
   phase: ReviewPhase
   /** Project-specific context string assembled by ProjectContextLoader for prompt injection */
   projectContextString: string
+  /** Previous issues from prior review runs (for cross-run dedup in incremental mode) */
+  previousIssues: ReviewIssue[]
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +100,7 @@ export function createInitialState(): ReviewState {
     budgetSpent: 0,
     phase: 'preflight',
     projectContextString: '',
+    previousIssues: [],
   }
 }
 
@@ -346,6 +351,66 @@ async function executePreflight(
   }
 
   state.prContext = result.pr_context
+
+  // In incremental mode, load previous issues from last review comment for cross-run dedup
+  if (input.incremental && state.prContext) {
+    try {
+      const previousComment = await fetchPreviousReviewComment(state.prContext, context)
+      if (previousComment) {
+        const issueData = parseReviewIssuesFromComment(previousComment)
+        state.previousIssues = convertIssueDataToReviewIssues(issueData)
+        context.logger.info('Loaded previous review issues for incremental dedup', {
+          count: state.previousIssues.length,
+        })
+      }
+    } catch (error) {
+      context.logger.warn('Failed to load previous review issues', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+}
+
+/**
+ * Fetch the latest pr_reviewer comment from a PR using gh CLI.
+ */
+async function fetchPreviousReviewComment(
+  prContext: PrContext,
+  context: CapabilityContext,
+): Promise<string | null> {
+  try {
+    const { execSync } = await import('node:child_process')
+    const cmd = `gh pr view ${prContext.pr_number} --repo ${prContext.repo_owner}/${prContext.repo_name} --json comments --jq '.comments | map(select(.body | contains("Issues Data"))) | last | .body'`
+    const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000 }).trim()
+    return output || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Convert ReviewIssueData (from PR comments) to ReviewIssue (internal schema).
+ * Used to populate previousIssues for cross-run deduplication.
+ */
+function convertIssueDataToReviewIssues(
+  issueData: ReturnType<typeof parseReviewIssuesFromComment>,
+): ReviewIssue[] {
+  const results: ReviewIssue[] = []
+  for (const d of issueData) {
+    const parsed = ReviewIssueSchema.safeParse({
+      severity: d.severity,
+      category: d.category || undefined,
+      title: d.title,
+      file_path: d.file,
+      line: d.line ?? undefined,
+      details: d.description,
+      suggestion: d.suggestedFix || undefined,
+      auto_fixable: d.autoFixable,
+      confidence: 70,
+    })
+    if (parsed.success) results.push(parsed.data)
+  }
+  return results
 }
 
 /**
@@ -449,6 +514,7 @@ async function executeReview(
 async function executeAggregate(state: ReviewState, context: CapabilityContext): Promise<void> {
   const result = (await context.invokeCapability('pr_aggregate_step', {
     agent_results: state.agentResults,
+    previous_issues: state.previousIssues.length > 0 ? state.previousIssues : undefined,
   })) as AggregateStepOutput
 
   state.mergedIssues = result.issues

@@ -18,13 +18,16 @@ You are conducting a code quality review for repository ${repoName}.
 ${files.map(f => `- ${f}`).join('\n')}
 
 ## Your Task
-Analyze the following diff and identify code quality issues:
-1. **Biome violations**: Formatting, linting errors according to Biome rules
-2. **TypeScript anti-patterns**: Missing types, \`any\` usage, type assertions
-3. **Unused variables/imports**: Dead code, unused parameters
-4. **Code duplication**: Repeated logic that should be extracted
-5. **Complexity**: Functions >50 lines, nesting >3 levels
-6. **Naming conventions**: Non-descriptive names, inconsistent patterns
+Analyze the following diff and identify code quality issues that automated linting CANNOT catch.
+DO NOT report: Biome/lint violations, formatting, import ordering, unused imports — these are handled by the daily audit tool.
+
+Focus on:
+1. **Logic errors**: Incorrect conditionals, off-by-one, wrong comparisons
+2. **TypeScript anti-patterns**: Unsafe \`any\` usage, incorrect type assertions, missing type guards
+3. **Code duplication**: Repeated logic that should be extracted
+4. **Complexity**: Functions >50 lines, nesting >3 levels, hard-to-follow control flow
+5. **Missing error handling**: Unhandled promise rejections, missing try/catch in critical paths
+6. **API contract violations**: Wrong return types, missing required fields
 
 ## Diff
 \`\`\`diff

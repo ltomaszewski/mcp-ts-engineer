@@ -191,6 +191,8 @@ export type ReviewStepOutput = z.infer<typeof ReviewStepOutputSchema>
 /** Aggregate step input. */
 export const AggregateStepInputSchema = z.object({
   agent_results: z.array(ReviewStepOutputSchema),
+  /** Previous review issues from prior runs (for cross-run deduplication). */
+  previous_issues: z.array(ReviewIssueSchema).optional(),
 })
 export type AggregateStepInput = z.infer<typeof AggregateStepInputSchema>
 

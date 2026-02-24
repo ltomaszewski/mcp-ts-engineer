@@ -40,6 +40,31 @@ export function filterUnfixedIssues(issues: ReviewIssueData[]): ReviewIssueData[
 }
 
 /**
+ * Determine if an issue requires the full spec pipeline (complex) vs direct inline fix (simple).
+ * Complex issues: architecture/design, multi-file refactors, new feature requirements.
+ * Simple issues: everything else (code fixes, error handling, type changes).
+ */
+export function isComplexIssue(issue: ReviewIssueData): boolean {
+  const complexCategories = ['architecture']
+  const complexKeywords = [
+    'redesign',
+    'refactor architecture',
+    'restructure',
+    'new module',
+    'new service',
+    'design pattern',
+    'dependency injection',
+    'circular dependency',
+  ]
+
+  if (complexCategories.includes(issue.category)) return true
+
+  const lowerTitle = issue.title.toLowerCase()
+  const lowerDesc = issue.description.toLowerCase()
+  return complexKeywords.some((kw) => lowerTitle.includes(kw) || lowerDesc.includes(kw))
+}
+
+/**
  * Generate a spec file path for PR review fixes.
  */
 export function buildSpecPath(project: string, prNumber: number): string {

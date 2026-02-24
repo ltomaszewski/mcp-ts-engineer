@@ -3,6 +3,7 @@ import type { ReviewIssueData } from "../../pr-reviewer/pr-reviewer.schema.js";
 import {
   parseReviewIssuesFromComment,
   filterManualIssues,
+  isComplexIssue,
   generateSpecContent,
   buildSpecPath,
 } from "../pr-fixer.helpers.js";
@@ -255,5 +256,52 @@ describe("generateSpecContent", () => {
     expect(content).toContain("## Verification");
     expect(content).toContain("`npm run build`");
     expect(content).toContain("`npm test`");
+  });
+});
+
+describe("isComplexIssue", () => {
+  it("returns true for architecture category", () => {
+    const issue = makeMockIssueData({ category: "architecture" });
+    expect(isComplexIssue(issue)).toBe(true);
+  });
+
+  it("returns true for title containing redesign keyword", () => {
+    const issue = makeMockIssueData({ title: "Redesign auth flow", category: "security" });
+    expect(isComplexIssue(issue)).toBe(true);
+  });
+
+  it("returns true for description containing circular dependency", () => {
+    const issue = makeMockIssueData({
+      description: "There is a circular dependency between modules",
+      category: "code-quality",
+    });
+    expect(isComplexIssue(issue)).toBe(true);
+  });
+
+  it("returns false for simple code quality issue", () => {
+    const issue = makeMockIssueData({
+      title: "Missing null check",
+      description: "Add null check before accessing property",
+      category: "code-quality",
+    });
+    expect(isComplexIssue(issue)).toBe(false);
+  });
+
+  it("returns false for security issue without complex keywords", () => {
+    const issue = makeMockIssueData({
+      title: "Missing input validation",
+      description: "Add zod validation for user input",
+      category: "security",
+    });
+    expect(isComplexIssue(issue)).toBe(false);
+  });
+
+  it("returns false for performance issue", () => {
+    const issue = makeMockIssueData({
+      title: "N+1 query",
+      description: "Use batch loading instead of individual queries",
+      category: "performance",
+    });
+    expect(isComplexIssue(issue)).toBe(false);
   });
 });

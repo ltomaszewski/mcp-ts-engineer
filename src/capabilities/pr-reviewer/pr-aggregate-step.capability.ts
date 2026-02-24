@@ -17,13 +17,27 @@ const AGGREGATE_PROMPT_V1: PromptVersion = {
   sunsetDate: undefined,
   build: (input: unknown) => {
     const data = input as AggregateStepInput;
+
+    // Build cross-run dedup section if previous issues are provided
+    const previousIssuesSection = data.previous_issues && data.previous_issues.length > 0
+      ? `## Previously Reported Issues (DO NOT re-report)
+
+The following issues were already reported in a previous review. Do NOT include them in your output unless the underlying code has fundamentally changed:
+
+${data.previous_issues.map((i) => `- [${i.severity}] ${i.file_path}:${i.line ?? "?"} - ${i.title}`).join("\n")}
+
+If a new issue matches a previous issue (same file + similar title), EXCLUDE it from the output.
+
+`
+      : '';
+
     return {
       systemPrompt: { type: "preset" as const, preset: "claude_code" as const },
       userPrompt: `# Aggregate Review Issues
 
 You are aggregating review results from ${data.agent_results.length} review pass(es).
 
-## Agent Results
+${previousIssuesSection}## Agent Results
 
 ${data.agent_results
   .map(
@@ -45,6 +59,7 @@ ${result.issues.map((i) => `- [${i.severity}] ${i.file_path}:${i.line ?? "?"} - 
    - Combine details
    - Boost confidence by +15 for consensus
 4. **Preserve metadata**: category, auto_fixable, suggestion
+5. **Exclude previously reported issues** (see above if applicable)
 
 ## Output Format
 

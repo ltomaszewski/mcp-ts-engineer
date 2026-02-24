@@ -22,7 +22,7 @@ import type { PrFixerInput, PrFixerOutput } from './pr-fixer.schema.js'
 const PR_FIXER_PROMPT_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-22',
-  description: 'PR fixer orchestration prompt',
+  description: 'PR fixer orchestration prompt — lightweight direct fixes',
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
@@ -30,13 +30,15 @@ const PR_FIXER_PROMPT_V1: PromptVersion = {
 
     return {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# PR Fixer Pipeline
+      userPrompt: `# PR Fixer — Lightweight Direct Fix Pipeline
 
-You must fix the manual review issues found by pr_reviewer on PR #${data.prNumber} in ${data.repoOwner}/${data.repoName}.
+You must fix the review issues found by pr_reviewer on PR #${data.prNumber} in ${data.repoOwner}/${data.repoName}.
+
+IMPORTANT: Use DIRECT inline fixes. Do NOT use the spec pipeline (todo_reviewer/todo_code_writer) — it is too expensive for PR fixes.
 
 ## Pipeline Steps
 
-Execute these steps IN ORDER. Do NOT skip any step.
+Execute these steps IN ORDER.
 
 ### Step 1: Fetch the latest pr_reviewer comment
 Run: \`gh pr view ${data.prNumber} --repo ${data.repoOwner}/${data.repoName} --json comments --jq '.comments | map(select(.body | contains("Issues Data"))) | last | .body'\`
@@ -46,64 +48,60 @@ If no comment with "Issues Data" is found, return:
 {"status": "nothing_to_fix", "issues_input": 0, "issues_resolved": 0, "spec_path": "", "files_changed": [], "cost_usd": 0}
 \`\`\`
 
-### Step 2: Parse the Issues Data JSON block
-Extract the JSON array from the \`### Issues Data\` section. Filter to all issues with severity other than LOW. Since the reviewer always attempts auto-fixes, any remaining issue is unfixed regardless of its original autoFixable classification.
+### Step 2: Parse and classify issues
+Extract the JSON array from the \`### Issues Data\` section. Filter to issues with severity CRITICAL, HIGH, or MEDIUM only.
 
-If no unfixed issues found, return:
-\`\`\`json
-{"status": "nothing_to_fix", "issues_input": 0, "issues_resolved": 0, "spec_path": "", "files_changed": [], "cost_usd": 0}
-\`\`\`
+If no issues found, return nothing_to_fix.
 
-### Step 3: Generate a todo spec
-Create a markdown spec file at \`docs/specs/mcp-ts-engineer/todo/YYYY-MM-DD-pr-${data.prNumber}-review-fixes.md\` (use today's date).
+Classify each issue:
+- **Simple** (direct fix): Code changes, error handling, type fixes, null checks, missing validation — anything that can be fixed by editing 1-2 files
+- **Complex** (skip): Architecture redesigns, new modules, dependency injection restructuring, circular dependency resolution
 
-The spec must include:
-- **Status**: DRAFT header
-- Context from the review findings
-- Each issue as an implementation step with: file, line, severity, description, suggested fix
-- Acceptance criteria per issue
-- TDD test cases
-- Verification section (build + test commands)
+Only attempt to fix **simple** issues. Cap at maximum 5 issues to fix.
 
-### Step 4: Run todo_reviewer
-Use the MCP tool \`todo_reviewer\` with \`spec_path\` set to the spec file path and \`iterations=3\`.
-Wait for it to complete. If it returns BLOCKED, stop and return failed status.
+### Step 3: Apply direct fixes
+For each simple issue (up to 5):
+1. Read the affected file
+2. Understand the issue and suggested fix
+3. Apply the fix directly by editing the file
+4. Verify the fix doesn't break the file (check for syntax errors)
 
-### Step 5: Run todo_code_writer
-Use the MCP tool \`todo_code_writer\` with \`spec_path\` set to the spec file path and \`max_phases=5\`.
-Wait for it to complete. Track all files changed.
+Track all files changed.
 
-### Step 6: Run finalize
-Use the MCP tool \`finalize\` with:
-- \`files_changed\`: list of all modified files from step 5
-- \`spec_path\`: the spec file path
+### Step 4: Verify fixes
+Run these checks in the repository:
+1. \`npm run type-check\` (or \`npx tsc --noEmit\`) — must pass
+2. \`npm test\` — all tests must pass
 
-### Step 7: Push to PR branch
-Get the PR branch name: \`gh pr view ${data.prNumber} --repo ${data.repoOwner}/${data.repoName} --json headRefName --jq .headRefName\`
-Push the commits: \`git push origin <branch-name>\`
+If tests fail, revert the problematic fix and continue with remaining fixes.
 
-### Step 8: Re-run pr_reviewer
-Use the MCP tool \`pr_reviewer\` with \`pr="${data.prNumber}"\`.
-Compare the new issue count with the original to determine resolution.
+### Step 5: Commit and push
+If any fixes were applied:
+1. Stage changed files: \`git add <files>\`
+2. Commit: \`git commit -m "fix: apply <N> fixes from PR review"\`
+3. Get PR branch: \`gh pr view ${data.prNumber} --repo ${data.repoOwner}/${data.repoName} --json headRefName --jq .headRefName\`
+4. Push: \`git push origin <branch-name>\`
 
-### Step 9: Return result
+Do NOT re-run pr_reviewer after pushing. The fixes will be verified in the next review cycle if requested.
+
+### Step 6: Return result
 Return a JSON object:
 \`\`\`json
 {
   "status": "success" or "partial" or "failed",
-  "issues_input": <number of manual issues from step 2>,
-  "issues_resolved": <issues_input - remaining manual issues after step 8>,
-  "spec_path": "<path to spec file>",
+  "issues_input": <total issues from step 2>,
+  "issues_resolved": <number of issues successfully fixed>,
+  "spec_path": "",
   "files_changed": ["<list of changed files>"],
   "cost_usd": 0
 }
 \`\`\`
 
-- "success" = all manual issues resolved
-- "partial" = some but not all resolved
-- "failed" = pipeline failed
+- "success" = all simple issues resolved
+- "partial" = some but not all resolved (complex issues skipped)
+- "failed" = pipeline error
 
-IMPORTANT: Execute each step sequentially. Do NOT parallelize. Report progress after each step.
+IMPORTANT: Execute each step sequentially. Keep fixes focused and minimal.
 
 Begin now.`,
     }
@@ -119,15 +117,16 @@ export const prFixerCapability: CapabilityDefinition<PrFixerInput, PrFixerOutput
   visibility: 'public',
   name: 'PR Fixer',
   description:
-    'Resolves manual pr_reviewer findings by generating a todo spec and running the spec pipeline ' +
-    '(review -> implement -> finalize). Pushes fixes to the PR branch and re-runs review to verify.',
+    'Resolves manual pr_reviewer findings by applying direct inline fixes. ' +
+    'Classifies issues as simple (direct fix) or complex (skip). ' +
+    'Pushes fixes to the PR branch. Does NOT re-run review automatically.',
   inputSchema: PrFixerInputSchema,
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
     model: 'sonnet',
-    maxTurns: 200,
-    maxBudgetUsd: 20.0,
+    maxTurns: 80,
+    maxBudgetUsd: 5.0,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

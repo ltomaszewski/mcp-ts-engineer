@@ -46,12 +46,12 @@ Files Changed: ${ctx.files_changed.length}
 
 ${projectContextSection}## Review Categories
 
-Analyze from ALL of these perspectives:
+Analyze from ALL of these perspectives (skip lint/formatting — handled by daily audit):
 
 ### 1. Code Quality
-- Biome/lint violations, TypeScript anti-patterns
-- Unused variables, dead code
-- Naming conventions, readability
+- TypeScript anti-patterns, incorrect type usage
+- Logic errors, incorrect conditionals
+- Missing error handling in critical paths
 
 ### 2. Security
 - Input validation, auth/authz bypass risks
@@ -84,25 +84,42 @@ ${data.diff_content.substring(0, 30000)}
 2. Analyze for issues across all categories
 3. For each issue, provide structured output
 
+## Audit-Handled Categories (DO NOT REPORT)
+
+The following issue categories are handled by the daily audit tool and MUST NOT be reported in PR review:
+- Lint violations (Biome rule violations, formatting issues)
+- Import ordering
+- Unused exports (handled by knip/audit)
+- Test coverage thresholds
+- Vitest/Jest configuration issues
+- Missing semicolons, trailing commas, whitespace
+
+Focus your review on issues the daily audit CANNOT catch:
+- Logic bugs and incorrect behavior
+- Security vulnerabilities
+- Architectural problems
+- Performance regressions
+- Missing error handling in critical paths
+- Race conditions, data corruption risks
+
 ## Auto-Fixable Classification
 
-When setting auto_fixable, be LIBERAL — prefer true when in doubt. The following patterns MUST be classified as auto_fixable=true:
-- Missing error handling (add try/catch + logger)
-- Enum registration (GraphQL enum exposed as String)
-- Missing pagination args on resolvers
-- Type extraction (inline type to named type)
-- Simple refactors (extract function, rename)
-- Missing null checks
-- console.log removal
-- Unused imports removal
-- Silent/empty catch blocks (add error logging)
-- Missing return type annotations
+When setting auto_fixable, be CONSERVATIVE — only mark true for trivial mechanical changes with confidence >= 80.
 
-Only classify as auto_fixable=false for:
-- Architectural redesign
-- Business logic changes
-- New feature requirements
-- Complex algorithm changes
+auto_fixable=true ONLY for:
+- Unused import removal
+- console.log removal
+- Missing return type annotations on simple functions
+- Simple null check additions (e.g., adding \`if (!x) return\`)
+- Missing error logging in empty catch blocks
+- Formatting fixes
+
+auto_fixable=false for EVERYTHING ELSE, including:
+- Missing error handling with business logic
+- Enum registration, pagination args
+- Type extraction, architectural refactors
+- Validation logic, rate limiting, security hardening
+- Any change requiring business context understanding
 
 ## Output Format
 
