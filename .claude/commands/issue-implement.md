@@ -34,6 +34,8 @@ git status --porcelain  # Must be clean (error if dirty)
 - gh not auth → Error: `Run gh auth login first`
 - Dirty tree → Error: `Commit or stash changes first`
 
+**Note:** Steps 7 (Review-Fix Loop) combines the former Steps 7 (PR Review) and 8 (PR Fix Loop) into a single iterative step. The pipeline is now 7 steps.
+
 ---
 
 ## Constraints
@@ -53,7 +55,7 @@ git status --porcelain  # Must be clean (error if dirty)
 - Close issue if any step fails
 - Retry automatically
 - Add labels before Step 1 succeeds
-- Loop more than `MAX_FIX_LOOPS` (3) times in Step 8
+- Loop more than `MAX_REVIEW_FIX_LOOPS` (3) times in Step 7
 
 ---
 
@@ -75,7 +77,7 @@ Empty → `Usage: /issue-implement <number>`
 
 | Variable | Source | Used In |
 |----------|--------|---------|
-| `ORIGINAL_DIR` | Prerequisites | After Step 7/8 (return) |
+| `ORIGINAL_DIR` | Prerequisites | After Step 7 (return) |
 | `ISSUE_NUMBER` | Step 1 | All steps |
 | `ISSUE_URL` | Step 1 | Output |
 | `SPEC_PATH` | Step 1 | Steps 2-5 |
@@ -91,27 +93,22 @@ Empty → `Usage: /issue-implement <number>`
 | `FILE_COUNT` | Step 4 | Output |
 | `PR_URL` | Step 6 | Output |
 | `PR_NUMBER` | Step 6 | Steps 7-8 |
-| `REVIEW_ISSUES` | Step 7 | Output |
-| `REVIEW_FIXED` | Step 7 | Output |
-| `REVIEW_CRITICAL` | Step 7 | Step 8 |
-| `REVIEW_HIGH` | Step 7 | Step 8 |
+| `MAX_REVIEW_FIX_LOOPS` | Constant (3) | Step 7 |
+| `LOOP_COUNT` | Step 7 | Output |
+| `LOOP_STATUS` | Step 7 | Output |
 | `REVIEW_COMMENT_URL` | Step 7 | Output |
-| `NEEDS_FIX_LOOP` | Step 7 | Step 8 |
-| `MAX_FIX_LOOPS` | Constant (3) | Step 8 |
-| `FIX_LOOP_COUNT` | Step 8 | Output |
-| `FIX_LOOP_STATUS` | Step 8 | Output |
-| `TOTAL_ISSUES_FIXED` | Step 8 | Output |
+| `TOTAL_ISSUES_FIXED` | Step 7 | Output |
 
 ---
 
 ## Pipeline
 
 ```
-Import → Worktree → Review → Implement → Finalize → Push & PR → PR Review → PR Fix Loop
-   ↓         ↓         ↓          ↓           ↓          ↓          ↓          ↓
-+label    comment   comment    comment    comment      PR+      comment    -label
-comment  (+blocked) (+blocked) (+blocked) (+blocked)  comment  (+blocked)  comment
-                                                                  ↻ (max 3)
+Import → Worktree → Review → Implement → Finalize → Push & PR → Review-Fix Loop
+   ↓         ↓         ↓          ↓           ↓          ↓             ↓
++label    comment   comment    comment    comment      PR+          -label
+comment  (+blocked) (+blocked) (+blocked) (+blocked)  comment       comment
+                                                              (reviewer→fixer) ↻ max 3
 ```
 
 ---
@@ -120,7 +117,7 @@ comment  (+blocked) (+blocked) (+blocked) (+blocked)  comment  (+blocked)  comme
 
 | Label | Applied | Removed |
 |-------|---------|---------|
-| `in-progress` | After Step 1 | After Step 7/8 |
+| `in-progress` | After Step 1 | After Step 7 |
 | `blocked` | On failure | Manual |
 
 ---
@@ -168,15 +165,14 @@ Project: \`$PROJECT\`
 | Implement | ⏳ |
 | Finalize | ⏳ |
 | Push & PR | ⏳ |
-| PR Review | ⏳ |
-| PR Fix    | ⏳ |
+| Review-Fix Loop | ⏳ |
 EOF
 )"
 ```
 
 **Console:**
 ```
-✓ Step 1/8: Imported #$ISSUE_NUMBER — $ISSUE_TITLE
+✓ Step 1/7: Imported #$ISSUE_NUMBER — $ISSUE_TITLE
   Spec: $SPEC_PATH
 ```
 
@@ -255,7 +251,7 @@ cd "$WORKTREE_PATH"
 **On success:**
 ```bash
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 2/8: Worktree**
+📊 **Step 2/7: Worktree**
 
 ✅ Created worktree at \`$WORKTREE_PATH\`
 Branch: \`$BRANCH_NAME\`
@@ -263,13 +259,13 @@ EOF
 )"
 ```
 
-**Console:** `✓ Step 2/8: Worktree at $WORKTREE_PATH`
+**Console:** `✓ Step 2/7: Worktree at $WORKTREE_PATH`
 
 **On failure:**
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "blocked"
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 2/8: Worktree setup failed**
+❌ **Step 2/7: Worktree setup failed**
 
 \`\`\`
 $ERROR
@@ -286,7 +282,7 @@ EOF
 )"
 ```
 
-**Console:** `✗ Step 2/8: Failed` → STOP
+**Console:** `✗ Step 2/7: Failed` → STOP
 
 ---
 
@@ -299,20 +295,20 @@ mcp__ts-engineer__todo_reviewer spec_path="$SPEC_PATH" iterations=3 cwd="$WORKTR
 **On READY:**
 ```bash
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 3/8: Review**
+📊 **Step 3/7: Review**
 
 ✅ READY — $ITERATION_COUNT iterations
 EOF
 )"
 ```
 
-**Console:** `✓ Step 3/8: Review passed`
+**Console:** `✓ Step 3/7: Review passed`
 
 **On BLOCKED:**
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "blocked"
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 3/8: Review BLOCKED**
+❌ **Step 3/7: Review BLOCKED**
 
 $BLOCKER_LIST
 
@@ -321,7 +317,7 @@ EOF
 )"
 ```
 
-**Console:** `✗ Step 3/8: BLOCKED` → STOP
+**Console:** `✗ Step 3/7: BLOCKED` → STOP
 
 ---
 
@@ -336,20 +332,20 @@ mcp__ts-engineer__todo_code_writer spec_path="$SPEC_PATH" max_phases=5 cwd="$WOR
 **On success:**
 ```bash
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 4/8: Implementation**
+📊 **Step 4/7: Implementation**
 
 ✅ Complete — $PHASE_COUNT phases, $FILE_COUNT files
 EOF
 )"
 ```
 
-**Console:** `✓ Step 4/8: $PHASE_COUNT phases, $FILE_COUNT files`
+**Console:** `✓ Step 4/7: $PHASE_COUNT phases, $FILE_COUNT files`
 
 **On failure:**
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "blocked"
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 4/8: Implementation failed**
+❌ **Step 4/7: Implementation failed**
 
 \`\`\`
 $ERROR
@@ -360,7 +356,7 @@ EOF
 )"
 ```
 
-**Console:** `✗ Step 4/8: Failed` → STOP
+**Console:** `✗ Step 4/7: Failed` → STOP
 
 ---
 
@@ -373,20 +369,20 @@ mcp__ts-engineer__finalize files_changed=$FILES_JSON spec_path="$SPEC_PATH" cwd=
 **On success:**
 ```bash
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 5/8: Finalization**
+📊 **Step 5/7: Finalization**
 
 ✅ Audit passed, tests passed, spec marked IMPLEMENTED
 EOF
 )"
 ```
 
-**Console:** `✓ Step 5/8: Finalized`
+**Console:** `✓ Step 5/7: Finalized`
 
 **On failure:**
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "blocked"
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 5/8: Finalization failed**
+❌ **Step 5/7: Finalization failed**
 
 \`\`\`
 $ERROR
@@ -397,7 +393,7 @@ EOF
 )"
 ```
 
-**Console:** `✗ Step 5/8: Failed` → STOP
+**Console:** `✗ Step 5/7: Failed` → STOP
 
 ---
 
@@ -459,13 +455,13 @@ PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
 gh issue comment $ISSUE_NUMBER --body "PR ready for review: $PR_URL"
 ```
 
-**Console:** `✓ Step 6/8: PR created at $PR_URL`
+**Console:** `✓ Step 6/7: PR created at $PR_URL`
 
 **On push failure:**
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "blocked"
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 6/8: Push failed**
+❌ **Step 6/7: Push failed**
 
 \`\`\`
 $ERROR
@@ -490,132 +486,123 @@ echo "  Create PR manually: gh pr create --head $BRANCH_NAME"
 
 ---
 
-### Step 7: PR Review
+### Step 7: Review-Fix Loop
 
-```
-mcp__ts-engineer__pr_reviewer pr="$PR_NUMBER" mode="review-fix"
-```
-
-**Parse output:**
-- `REVIEW_ISSUES` — total issues found (`issues_found`)
-- `REVIEW_FIXED` — issues auto-fixed (`issues_fixed`)
-- `REVIEW_CRITICAL` — critical count (`critical_count`)
-- `REVIEW_HIGH` — high count (`high_count`)
-- `REVIEW_COMMENT_URL` — review comment URL (`comment_url`)
-
-**Determine fix loop:**
-```bash
-NEEDS_FIX_LOOP=false
-if [ "$REVIEW_CRITICAL" -gt 0 ] || [ "$REVIEW_HIGH" -gt 0 ]; then
-  NEEDS_FIX_LOOP=true
-fi
-```
-
-**On success:**
-```bash
-gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 7/8: PR Review**
-
-✅ Review complete — $REVIEW_ISSUES issues found, $REVIEW_FIXED auto-fixed
-Critical: $REVIEW_CRITICAL | High: $REVIEW_HIGH
-Comment: $REVIEW_COMMENT_URL
-$(if [ "$NEEDS_FIX_LOOP" = "true" ]; then echo "⏳ Entering fix loop..."; else echo "✅ No critical/high issues — skipping fix loop"; fi)
-EOF
-)"
-```
-
-**Console:** `✓ Step 7/8: Review — $REVIEW_ISSUES issues, $REVIEW_FIXED fixed`
-
-**On failure:**
-```bash
-gh issue edit $ISSUE_NUMBER --add-label "blocked"
-gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-❌ **Step 7/8: PR Review failed**
-
-\`\`\`
-$ERROR
-\`\`\`
-
-**Recovery:** Remove \`blocked\` label and re-run. Steps 7-8 always run fresh since they assess current PR state.
-EOF
-)"
-```
-
-**Console:** `✗ Step 7/8: Failed` → STOP
-
----
-
-### Step 8: PR Fix Loop
-
-**Only entered if** `NEEDS_FIX_LOOP` is true. Otherwise skip to cleanup.
+Combined review → fix → re-review loop. Ensures pr_reviewer always posts the final status comment.
 
 ```bash
-MAX_FIX_LOOPS=3
-FIX_LOOP_COUNT=0
+MAX_REVIEW_FIX_LOOPS=3
+LOOP_COUNT=0
 TOTAL_ISSUES_FIXED=0
-FIX_LOOP_STATUS="skipped"
+LOOP_STATUS="pending"
+REVIEW_COMMENT_URL=""
 ```
 
 **Loop:**
 ```
-while NEEDS_FIX_LOOP == true AND FIX_LOOP_COUNT < MAX_FIX_LOOPS:
+while LOOP_COUNT < MAX_REVIEW_FIX_LOOPS:
 
+    LOOP_COUNT++
+
+    ## 7a. Review
+    mcp__ts-engineer__pr_reviewer pr="$PR_NUMBER" mode="review-fix"
+
+    Parse output:
+    - REVIEW_ISSUES — total issues found (issues_found)
+    - REVIEW_CRITICAL — critical count (critical_count)
+    - REVIEW_HIGH — high count (high_count)
+    - REVIEW_COMMENT_URL — review comment URL (comment_url)
+
+    ## 7b. Check if approved
+    if REVIEW_CRITICAL == 0 AND REVIEW_HIGH == 0:
+      LOOP_STATUS="approved"
+      break
+
+    ## 7c. Fix
     mcp__ts-engineer__pr_fixer pr="$PR_NUMBER" cwd="$WORKTREE_PATH"
 
-    FIX_LOOP_COUNT++
     TOTAL_ISSUES_FIXED += FIXER_RESULT.issues_resolved
 
     Parse FIXER_RESULT.status:
-      "success"        → FIX_LOOP_STATUS="success",        break (all resolved)
-      "nothing_to_fix" → FIX_LOOP_STATUS="nothing_to_fix", break (clean)
-      "failed"         → FIX_LOOP_STATUS="failed",         break (give up)
-      "partial"        → FIX_LOOP_STATUS="partial",        continue (try again)
+      "success"        → continue (re-review to verify)
+      "nothing_to_fix" → LOOP_STATUS="nothing_to_fix", break
+      "failed"         → LOOP_STATUS="failed",         break
+      "partial"        → continue (re-review remaining)
 
-    Comment on issue per iteration:
+    ## 7d. Comment on issue per iteration
     gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-    🔄 **Step 8/8: Fix loop iteration $FIX_LOOP_COUNT/$MAX_FIX_LOOPS**
+    🔄 **Step 7: Review-Fix iteration $LOOP_COUNT/$MAX_REVIEW_FIX_LOOPS**
 
-    Status: $FIXER_STATUS
-    Issues resolved this iteration: $FIXER_RESULT.issues_resolved
-    Total fixed so far: $TOTAL_ISSUES_FIXED
+    Review: $REVIEW_ISSUES issues (Critical: $REVIEW_CRITICAL, High: $REVIEW_HIGH)
+    Fixer: $FIXER_RESULT.issues_resolved resolved this iteration
+    Total fixed: $TOTAL_ISSUES_FIXED
     EOF
     )"
 ```
 
-**After loop exits — quality gate summary:**
+**After loop exits — final review:**
+
+If loop exited via max iterations or fixer failure (not "approved"), run one final review to post accurate status:
+```
+if LOOP_STATUS != "approved":
+    mcp__ts-engineer__pr_reviewer pr="$PR_NUMBER" mode="review-fix"
+    Parse REVIEW_COMMENT_URL from result
+
+    if REVIEW_CRITICAL == 0 AND REVIEW_HIGH == 0:
+      LOOP_STATUS="approved"
+    else:
+      LOOP_STATUS="changes_requested"
+```
+
+**Quality gate summary:**
 ```bash
 gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
-📊 **Step 8/8: PR Fix Loop**
+📊 **Step 7: Review-Fix Loop**
 
-$(if [ "$FIX_LOOP_STATUS" = "success" ] || [ "$FIX_LOOP_STATUS" = "nothing_to_fix" ]; then
-  echo "✅ All issues resolved"
-elif [ "$FIX_LOOP_STATUS" = "skipped" ]; then
-  echo "⏭️ Skipped — no critical/high issues"
-elif [ "$FIX_LOOP_STATUS" = "partial" ]; then
-  echo "⚠️ Max iterations reached ($MAX_FIX_LOOPS) — some issues remain"
+$(if [ "$LOOP_STATUS" = "approved" ]; then
+  echo "✅ PR approved — no critical/high issues"
+elif [ "$LOOP_STATUS" = "changes_requested" ]; then
+  echo "⚠️ Changes requested — issues remain after $MAX_REVIEW_FIX_LOOPS iterations"
+elif [ "$LOOP_STATUS" = "nothing_to_fix" ]; then
+  echo "⏭️ Nothing to fix"
 else
   echo "❌ Fix loop failed"
 fi)
 
-Iterations: $FIX_LOOP_COUNT/$MAX_FIX_LOOPS
+Iterations: $LOOP_COUNT/$MAX_REVIEW_FIX_LOOPS
 Total issues fixed: $TOTAL_ISSUES_FIXED
+Review comment: $REVIEW_COMMENT_URL
 EOF
 )"
 ```
 
 **Console:**
-- Success: `✓ Step 8/8: All issues resolved ($TOTAL_ISSUES_FIXED fixed in $FIX_LOOP_COUNT iterations)`
-- Skipped: `✓ Step 8/8: Skipped (no critical/high issues)`
-- Partial: `⚠ Step 8/8: $TOTAL_ISSUES_FIXED fixed but some remain after $MAX_FIX_LOOPS iterations`
-- Failed: `✗ Step 8/8: Fix loop failed`
+- Approved: `✓ Step 7: PR approved ($TOTAL_ISSUES_FIXED fixed in $LOOP_COUNT iterations)`
+- Changes requested: `⚠ Step 7: $TOTAL_ISSUES_FIXED fixed but issues remain after $LOOP_COUNT iterations`
+- Failed: `✗ Step 7: Fix loop failed`
 
-**Note:** `pr_fixer` already re-runs `pr_reviewer` internally, so no separate review call is needed between iterations.
+**On reviewer failure:**
+```bash
+gh issue edit $ISSUE_NUMBER --add-label "blocked"
+gh issue comment $ISSUE_NUMBER --body "$(cat <<EOF
+❌ **Step 7: Review-Fix failed**
+
+\`\`\`
+$ERROR
+\`\`\`
+
+**Recovery:** Remove \`blocked\` label and re-run. Step 7 always runs fresh since it assesses current PR state.
+EOF
+)"
+```
+
+**Console:** `✗ Step 7: Failed` → STOP
 
 ---
 
 ### Cleanup: Deferred Actions
 
-**After Steps 7-8 complete (or Step 7 if no loop needed):**
+**After Step 7 completes:**
 
 **Remove in-progress label:**
 ```bash
@@ -642,7 +629,7 @@ Pipeline detects existing spec, worktree, and branch. Reuses them and continues.
 - Existing branch + worktree → Reuses both, skips creation
 - Existing branch, no worktree → Creates worktree, runs setup
 - Existing PR → Force-pushes updates to same PR
-- Steps 7-8 always run fresh since they assess current PR state
+- Step 7 always runs fresh since it assesses current PR state
 
 ---
 
@@ -665,8 +652,7 @@ PR:        $PR_URL
   ✓ Implement   → $PHASE_COUNT phases, $FILE_COUNT files
   ✓ Finalize    → Passed
   ✓ Push & PR   → Ready for review
-  ✓ PR Review   → $REVIEW_ISSUES issues, $REVIEW_FIXED fixed
-  ✓ PR Fix      → $TOTAL_ISSUES_FIXED fixed in $FIX_LOOP_COUNT iterations
+  ✓ Review-Fix  → $LOOP_STATUS ($TOTAL_ISSUES_FIXED fixed in $LOOP_COUNT iterations)
 
 Worktree kept at $WORKTREE_PATH for fixes if needed.
 
@@ -689,9 +675,8 @@ Worktree kept at $WORKTREE_PATH for fixes if needed.
 | 5 | Finalization | audit_fix, test | +blocked |
 | 6 | Push failed | Manual push | +blocked |
 | 6 | PR creation | Create manually (push OK) | Warning only |
-| 7 | PR Review failed | Remove `blocked`, re-run | +blocked |
-| 8 | Fix loop failed | Manual review, remove `blocked` | +blocked |
-| 8 | Max iterations | Review remaining issues manually | Warning |
+| 7 | Review-Fix failed | Remove `blocked`, re-run | +blocked |
+| 7 | Max iterations | Review remaining issues manually | Warning |
 
 ---
 

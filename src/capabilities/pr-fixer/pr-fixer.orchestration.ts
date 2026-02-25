@@ -251,6 +251,8 @@ export async function runFixerOrchestration(
     })
   }
 
+  await ensureCommentPosted(state, context)
+
   return buildOutput(state)
 }
 
@@ -518,10 +520,12 @@ async function executeFixValidation(state: FixerState, context: CapabilityContex
  * Commit phase: Commit and push fixes.
  */
 async function executeCommit(state: FixerState, context: CapabilityContext): Promise<void> {
+  const fixedIssues = state.issues.filter((i) => i.status === 'fixed')
   const result = (await context.invokeCapability('pr_fixer_commit_step', {
     worktree_path: state.worktreePath,
     pr_branch: state.prBranch,
     fixes_applied: state.directFixOutput?.fixes_applied ?? 0,
+    issue_titles: fixedIssues.map((i) => i.title),
   })) as FixerCommitStepOutput
 
   if (result.committed && result.commit_sha) {
@@ -549,6 +553,22 @@ async function executeComment(state: FixerState, context: CapabilityContext): Pr
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Ensure fixer comment is posted even after budget/error exit.
+ */
+async function ensureCommentPosted(state: FixerState, context: CapabilityContext): Promise<void> {
+  if (state.commentUrl || state.prNumber <= 0 || !state.repoOwner || !state.repoName) return
+
+  try {
+    await executeComment(state, context)
+  } catch (commentError) {
+    context.logger.warn('Failed to post fixer comment after error', {
+      error: commentError instanceof Error ? commentError.message : String(commentError),
+      prNumber: state.prNumber,
+    })
+  }
+}
 
 function markDirectFixedAsFailed(state: FixerState): void {
   for (const tracker of state.issues) {
