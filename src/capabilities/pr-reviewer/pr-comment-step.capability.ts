@@ -1,10 +1,10 @@
-import { execSync } from 'node:child_process'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type {
   CapabilityContext,
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
+import { postOrUpdateComment } from '../../core/utils/github-comment.js'
 import {
   type PrCommentState,
   REVIEWER_STATE_MARKER,
@@ -236,58 +236,6 @@ function buildFullReportComment(data: CommentStepInput): string {
 }
 
 // ---------------------------------------------------------------------------
-// Programmatic GitHub comment posting (replaces AI-driven posting)
-// ---------------------------------------------------------------------------
-
-/**
- * Find existing reviewer comment ID on the PR.
- * Returns comment ID or null if not found.
- */
-function findExistingReviewerComment(owner: string, repo: string, prNumber: number): string | null {
-  try {
-    const result = execSync(
-      `gh api repos/${owner}/${repo}/issues/${prNumber}/comments --jq '[.[] | select(.body | contains("<!-- pr-review-state:")) | .id] | last'`,
-      { encoding: 'utf-8', timeout: 15_000 },
-    ).trim()
-    if (result && result !== 'null' && /^\d+$/.test(result)) return result
-    return null
-  } catch {
-    return null
-  }
-}
-
-/**
- * Post or update a PR comment and return the comment URL.
- */
-function postOrUpdateComment(
-  owner: string,
-  repo: string,
-  prNumber: number,
-  commentBody: string,
-): string {
-  const existingId = findExistingReviewerComment(owner, repo, prNumber)
-
-  if (existingId) {
-    // Update existing comment in place — use --input with JSON to preserve HTML comments
-    const jsonPayload = JSON.stringify({ body: commentBody })
-    const result = execSync(
-      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH --input -`,
-      { encoding: 'utf-8', input: jsonPayload, timeout: 15_000 },
-    )
-    const parsed = JSON.parse(result)
-    return parsed.html_url ?? ''
-  }
-
-  // Create new comment
-  const result = execSync(`gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`, {
-    encoding: 'utf-8',
-    input: commentBody,
-    timeout: 15_000,
-  }).trim()
-  return result
-}
-
-// ---------------------------------------------------------------------------
 // Capability definition (no AI agent — purely programmatic)
 // ---------------------------------------------------------------------------
 
@@ -341,6 +289,7 @@ export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, Com
         ctx.repo_name,
         ctx.pr_number,
         commentBody,
+        '<!-- pr-review-state:',
       )
       context.logger.info('PR comment posted programmatically', { commentUrl })
       return {

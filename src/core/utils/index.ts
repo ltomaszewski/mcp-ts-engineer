@@ -7,6 +7,7 @@ export {
   extractErrorChain,
   extractErrorInfo,
 } from './error-utils.js'
+export { findCommentByMarker, postOrUpdateComment } from './github-comment.js'
 export {
   fileNeedsCommit,
   hasUncommittedChanges,

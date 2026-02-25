@@ -5,7 +5,6 @@
  * to guarantee the hidden state marker is preserved exactly as built.
  */
 
-import { execSync } from 'node:child_process'
 import { z } from 'zod'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type {
@@ -13,6 +12,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
+import { postOrUpdateComment } from '../../core/utils/github-comment.js'
 import {
   FIXER_STATE_MARKER,
   type IssueStatus,
@@ -70,56 +70,6 @@ function buildFixerCommentBody(data: CommentStepInput): string {
 }
 
 // ---------------------------------------------------------------------------
-// Programmatic GitHub comment posting
-// ---------------------------------------------------------------------------
-
-/**
- * Find existing fixer comment ID on the PR.
- */
-function findExistingFixerComment(owner: string, repo: string, prNumber: number): string | null {
-  try {
-    const result = execSync(
-      `gh api repos/${owner}/${repo}/issues/${prNumber}/comments --jq '[.[] | select(.body | contains("<!-- pr-fixer-state:")) | .id] | last'`,
-      { encoding: 'utf-8', timeout: 15_000 },
-    ).trim()
-    if (result && result !== 'null' && /^\d+$/.test(result)) return result
-    return null
-  } catch {
-    return null
-  }
-}
-
-/**
- * Post or update a fixer comment and return the comment URL.
- */
-function postOrUpdateFixerComment(
-  owner: string,
-  repo: string,
-  prNumber: number,
-  commentBody: string,
-): string {
-  const existingId = findExistingFixerComment(owner, repo, prNumber)
-
-  if (existingId) {
-    // Use --input with JSON to preserve HTML comments in body
-    const jsonPayload = JSON.stringify({ body: commentBody })
-    const result = execSync(
-      `gh api repos/${owner}/${repo}/issues/comments/${existingId} -X PATCH --input -`,
-      { encoding: 'utf-8', input: jsonPayload, timeout: 15_000 },
-    )
-    const parsed = JSON.parse(result)
-    return parsed.html_url ?? ''
-  }
-
-  const result = execSync(`gh pr comment ${prNumber} --repo ${owner}/${repo} --body-file -`, {
-    encoding: 'utf-8',
-    input: commentBody,
-    timeout: 15_000,
-  }).trim()
-  return result
-}
-
-// ---------------------------------------------------------------------------
 // Capability definition (programmatic — no AI agent needed)
 // ---------------------------------------------------------------------------
 
@@ -154,6 +104,8 @@ export const prFixerCommentStepCapability: CapabilityDefinition<
     model: 'haiku',
     maxTurns: 1,
     maxBudgetUsd: 0.01,
+    permissionMode: 'bypassPermissions',
+    allowDangerouslySkipPermissions: true,
   },
   preparePromptInput: (input: CommentStepInput) => input,
   processResult: (
@@ -164,11 +116,12 @@ export const prFixerCommentStepCapability: CapabilityDefinition<
     const commentBody = buildFixerCommentBody(input)
 
     try {
-      const commentUrl = postOrUpdateFixerComment(
+      const commentUrl = postOrUpdateComment(
         input.repo_owner,
         input.repo_name,
         input.pr_number,
         commentBody,
+        '<!-- pr-fixer-state:',
       )
       context.logger.info('Fixer comment posted programmatically', { commentUrl })
       return { comment_url: commentUrl, comment_posted: true }
