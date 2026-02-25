@@ -62,8 +62,8 @@ const v1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-14',
   description: 'PR code review with multi-category analysis',
-  deprecated: false,
-  sunsetDate: undefined,
+  deprecated: true,
+  sunsetDate: '2026-03-15',
   build: (input: unknown) => {
     const data = input as {
       prNumber: number
@@ -94,8 +94,29 @@ const v1: PromptVersion = {
   },
 }
 
-export const PR_REVIEWER_PROMPT_VERSIONS: PromptRegistry = {
-  v1,
+const v2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-25',
+  description:
+    'PR reviewer orchestrator v2 — reflects v2 prompts in internal step capabilities ' +
+    '(review-step, classify, direct-fix, fix-validation)',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    // Stub prompt — orchestration delegates to step sub-capabilities
+    return {
+      systemPrompt: {
+        type: 'preset' as const,
+        preset: 'claude_code' as const,
+      },
+      userPrompt: 'This capability uses orchestration. No direct AI call needed.',
+    }
+  },
 }
 
-export const PR_REVIEWER_CURRENT_VERSION = 'v1'
+export const PR_REVIEWER_PROMPT_VERSIONS: PromptRegistry = {
+  v1,
+  v2,
+}
+
+export const PR_REVIEWER_CURRENT_VERSION = 'v2'

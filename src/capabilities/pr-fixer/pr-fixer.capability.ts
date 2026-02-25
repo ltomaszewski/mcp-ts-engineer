@@ -23,6 +23,20 @@ const STUB_PROMPT_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-24',
   description: 'PR fixer orchestration (stub — delegates to sub-capabilities)',
+  deprecated: true,
+  sunsetDate: '2026-03-15',
+  build: () => ({
+    systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+    userPrompt: 'This capability uses orchestration. No direct AI call needed.',
+  }),
+}
+
+const STUB_PROMPT_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-25',
+  description:
+    'PR fixer orchestrator v2 — reflects v2 prompts in internal step capabilities ' +
+    '(classify, direct-fix, fix-validation)',
   deprecated: false,
   sunsetDate: undefined,
   build: () => ({
@@ -31,8 +45,8 @@ const STUB_PROMPT_V1: PromptVersion = {
   }),
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: STUB_PROMPT_V1 }
-const CURRENT_VERSION = 'v1'
+const PROMPT_VERSIONS: PromptRegistry = { v1: STUB_PROMPT_V1, v2: STUB_PROMPT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prFixerCapability: CapabilityDefinition<PrFixerInput, PrFixerOutput> = {
   id: 'pr_fixer',
