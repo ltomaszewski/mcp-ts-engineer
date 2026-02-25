@@ -12,12 +12,33 @@ import {
   CommitStepOutputSchema,
 } from './pr-reviewer.schema.js'
 
+/**
+ * Build a descriptive multi-line commit message from fixed issue titles.
+ * Truncates each title to 72 chars and lists up to 10.
+ * Exported for testing.
+ */
+export function buildCommitMessage(fixesApplied: number, issuesFixed: string[]): string {
+  const subject = `fix(pr-review): resolve ${fixesApplied} review finding${fixesApplied === 1 ? '' : 's'}`
+
+  if (issuesFixed.length === 0) return subject
+
+  const maxListed = 10
+  const listed = issuesFixed.slice(0, maxListed)
+  const lines = listed.map((t) => `- ${t.length > 72 ? `${t.slice(0, 69)}...` : t}`)
+
+  if (issuesFixed.length > maxListed) {
+    lines.push(`- ...and ${issuesFixed.length - maxListed} more`)
+  }
+
+  return `${subject}\n\n${lines.join('\n')}`
+}
+
 const COMMIT_PROMPT_V1: PromptVersion = {
   version: 'v1',
   createdAt: '2026-02-14',
   description: 'Commit and push fixes to PR branch',
-  deprecated: false,
-  sunsetDate: undefined,
+  deprecated: true,
+  sunsetDate: '2026-04-01',
   build: (input: unknown) => {
     const data = input as CommitStepInput
     return {
@@ -70,8 +91,70 @@ Begin commit now.`,
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: COMMIT_PROMPT_V1 }
-const CURRENT_VERSION = 'v1'
+const COMMIT_PROMPT_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-02-25',
+  description: 'Commit with descriptive multi-line message listing fixed issues',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    const data = input as CommitStepInput
+    const commitMsg = buildCommitMessage(data.fixes_applied, data.issues_fixed)
+
+    return {
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+      userPrompt: `# Commit and Push Fixes
+
+You are committing ${data.fixes_applied} fixes to the PR branch.
+
+Worktree: ${data.worktree_path}
+Branch: ${data.pr_branch}
+
+## Tasks
+
+1. **Check for changes**:
+   \`\`\`bash
+   cd ${data.worktree_path}
+   git status
+   git diff --stat
+   \`\`\`
+
+2. **Stage and commit** (if changes exist):
+   \`\`\`bash
+   cd ${data.worktree_path} && git add -A && git commit -m "$(cat <<'COMMITMSG'
+${commitMsg}
+COMMITMSG
+)"
+   \`\`\`
+
+3. **Push to remote**:
+   \`\`\`bash
+   git push origin ${data.pr_branch}
+   \`\`\`
+
+4. **Get commit SHA**:
+   \`\`\`bash
+   git rev-parse HEAD
+   \`\`\`
+
+## Output Format
+
+Respond with JSON:
+\`\`\`json
+{
+  "committed": true,
+  "pushed": true,
+  "commit_sha": "abc123..."
+}
+\`\`\`
+
+Begin commit now.`,
+    }
+  },
+}
+
+const PROMPT_VERSIONS: PromptRegistry = { v1: COMMIT_PROMPT_V1, v2: COMMIT_PROMPT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prCommitStepCapability: CapabilityDefinition<CommitStepInput, CommitStepOutput> = {
   id: 'pr_commit_step',

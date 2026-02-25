@@ -46,6 +46,43 @@ function extractIssuesDataJson(body: string): ReviewIssueData[] {
   return JSON.parse(match[1]) as ReviewIssueData[]
 }
 
+describe('pr-comment-step: Auto-Fixed Issues detail', () => {
+  it('lists fixed issue titles as bullet points', () => {
+    const input = makeCommentStepInput(
+      [makeMockIssue({ auto_fixable: true })],
+      { fixes_applied: 2, issues_fixed: ['Title A', 'Title B'] },
+    )
+    const body = buildCommentBody(input)
+
+    expect(body).toContain('### Auto-Fixed Issues')
+    expect(body).toContain('- ✅ Title A')
+    expect(body).toContain('- ✅ Title B')
+    expect(body).not.toContain('issue(s) were automatically fixed and committed')
+  })
+
+  it('falls back to count when issues_fixed is empty', () => {
+    const input = makeCommentStepInput(
+      [makeMockIssue({ auto_fixable: true })],
+      { fixes_applied: 2, issues_fixed: [] },
+    )
+    const body = buildCommentBody(input)
+
+    expect(body).toContain('### Auto-Fixed Issues')
+    expect(body).toContain('2 issue(s) were automatically fixed and committed.')
+  })
+
+  it('falls back to count when issues_fixed is undefined (backward compat)', () => {
+    const input = makeCommentStepInput(
+      [makeMockIssue({ auto_fixable: true })],
+      { fixes_applied: 3 },
+    )
+    const body = buildCommentBody(input)
+
+    expect(body).toContain('### Auto-Fixed Issues')
+    expect(body).toContain('3 issue(s) were automatically fixed and committed.')
+  })
+})
+
 describe('pr-comment-step: Issues Data section', () => {
   describe('approval comment (zero issues)', () => {
     it('includes empty Issues Data section', () => {

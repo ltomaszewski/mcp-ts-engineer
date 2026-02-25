@@ -635,6 +635,7 @@ async function executeCommit(state: ReviewState, context: CapabilityContext): Pr
     worktree_path: state.worktreePath,
     pr_branch: state.prContext.pr_branch,
     fixes_applied: state.fixesApplied,
+    issues_fixed: state.issuesFixed,
   })) as CommitStepOutput
 
   if (result.committed && result.commit_sha) {
@@ -666,6 +667,7 @@ async function executeComment(
     pr_context: state.prContext,
     issues: state.validatedIssues,
     fixes_applied: state.fixesApplied,
+    issues_fixed: state.issuesFixed,
     cost_usd: state.budgetSpent,
     mode: input.mode,
     incremental: input.incremental,

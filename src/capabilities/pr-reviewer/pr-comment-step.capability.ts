@@ -211,12 +211,16 @@ function buildFullReportComment(data: CommentStepInput): string {
   }
 
   if (data.fixes_applied > 0) {
-    lines.push(
-      `### Auto-Fixed Issues`,
-      '',
-      `${data.fixes_applied} issue(s) were automatically fixed and committed.`,
-      '',
-    )
+    lines.push('### Auto-Fixed Issues', '')
+    const fixedTitles = data.issues_fixed ?? []
+    if (fixedTitles.length > 0) {
+      for (const title of fixedTitles) {
+        lines.push(`- ✅ ${title}`)
+      }
+      lines.push('')
+    } else {
+      lines.push(`${data.fixes_applied} issue(s) were automatically fixed and committed.`, '')
+    }
   }
 
   if (suppressedCount > 0) {

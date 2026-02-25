@@ -287,6 +287,7 @@ export const CommitStepInputSchema = z.object({
   worktree_path: z.string(),
   pr_branch: z.string(),
   fixes_applied: z.number(),
+  issues_fixed: z.array(z.string()).default([]),
   cwd: z.string().optional(),
 })
 export type CommitStepInput = z.infer<typeof CommitStepInputSchema>
@@ -319,6 +320,7 @@ export const CommentStepInputSchema = z.object({
   pr_context: PrContextSchema,
   issues: z.array(ReviewIssueSchema),
   fixes_applied: z.number(),
+  issues_fixed: z.array(z.string()).default([]),
   cost_usd: z.number(),
   mode: z.enum(['review-fix']),
   incremental: z.boolean(),

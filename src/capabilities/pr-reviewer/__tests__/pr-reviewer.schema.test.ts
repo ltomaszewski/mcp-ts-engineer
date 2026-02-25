@@ -9,6 +9,8 @@ import {
   CLEANUP_OUTPUT_JSON_SCHEMA,
   COMMENT_OUTPUT_JSON_SCHEMA,
   COMMIT_OUTPUT_JSON_SCHEMA,
+  CommentStepInputSchema,
+  CommitStepInputSchema,
   CONTEXT_OUTPUT_JSON_SCHEMA,
   FIX_OUTPUT_JSON_SCHEMA,
   PREFLIGHT_OUTPUT_JSON_SCHEMA,
@@ -440,6 +442,73 @@ describe('AggregateStepInputSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agent_results[0].issues[0].category).toBe('code-quality')
+    }
+  })
+})
+
+describe('CommitStepInputSchema', () => {
+  it('accepts issues_fixed array', () => {
+    const result = CommitStepInputSchema.safeParse({
+      worktree_path: '/tmp/wt',
+      pr_branch: 'feat/test',
+      fixes_applied: 2,
+      issues_fixed: ['Fix A', 'Fix B'],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.issues_fixed).toEqual(['Fix A', 'Fix B'])
+    }
+  })
+
+  it('defaults issues_fixed to empty array when omitted', () => {
+    const result = CommitStepInputSchema.safeParse({
+      worktree_path: '/tmp/wt',
+      pr_branch: 'feat/test',
+      fixes_applied: 0,
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.issues_fixed).toEqual([])
+    }
+  })
+})
+
+describe('CommentStepInputSchema', () => {
+  const baseCommentInput = {
+    pr_context: {
+      pr_number: 1,
+      repo_owner: 'owner',
+      repo_name: 'repo',
+      pr_branch: 'feat/x',
+      base_branch: 'main',
+      files_changed: [],
+      diff_content: '',
+      is_draft: false,
+      is_closed: false,
+    },
+    issues: [],
+    fixes_applied: 0,
+    cost_usd: 0.01,
+    mode: 'review-fix' as const,
+    incremental: false,
+  }
+
+  it('accepts issues_fixed array', () => {
+    const result = CommentStepInputSchema.safeParse({
+      ...baseCommentInput,
+      issues_fixed: ['Title A', 'Title B'],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.issues_fixed).toEqual(['Title A', 'Title B'])
+    }
+  })
+
+  it('defaults issues_fixed to empty array when omitted', () => {
+    const result = CommentStepInputSchema.safeParse(baseCommentInput)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.issues_fixed).toEqual([])
     }
   })
 })
