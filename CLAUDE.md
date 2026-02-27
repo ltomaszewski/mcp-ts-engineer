@@ -209,15 +209,40 @@ templates/apps/
 │   ├── src/main.ts.template
 │   ├── src/app.module.ts.template
 │   └── src/modules/health/           # Health check module with tests
-└── mcp-server/          # MCP server template
+├── mcp-server/          # MCP server template
+│   ├── package.json.template
+│   ├── tsconfig.json.template
+│   ├── vitest.config.ts.template
+│   ├── vitest.setup.ts.template
+│   ├── biome.json.template            # Excludes build/
+│   ├── src/index.ts.template          # stdio entry point
+│   ├── src/server.ts.template         # McpServer factory
+│   └── src/capabilities/echo/         # Echo tool with tests
+└── next-app/            # Next.js frontend template
     ├── package.json.template
     ├── tsconfig.json.template
+    ├── next.config.ts.template
+    ├── postcss.config.mjs.template
     ├── vitest.config.ts.template
     ├── vitest.setup.ts.template
-    ├── biome.json.template            # Excludes build/
-    ├── src/index.ts.template          # stdio entry point
-    ├── src/server.ts.template         # McpServer factory
-    └── src/capabilities/echo/         # Echo tool with tests
+    ├── biome.json.template            # Excludes .next/
+    ├── components.json.template       # shadcn/ui config
+    ├── env.example.template           # → .env.example (dot-prefix auto-added)
+    ├── nvmrc.template                 # Node.js version 22
+    ├── src/app/layout.tsx.template
+    ├── src/app/page.tsx.template
+    ├── src/app/loading.tsx.template
+    ├── src/app/not-found.tsx.template
+    ├── src/app/globals.css.template
+    ├── src/features/health/           # Health check feature with TanStack Query
+    ├── src/lib/api-client.ts.template # Fetch wrapper for backend
+    ├── src/lib/query-client.ts.template # TanStack Query config
+    ├── src/lib/utils.ts.template
+    ├── src/components/ui/.gitkeep    # shadcn/ui components
+    ├── src/hooks/.gitkeep
+    ├── src/stores/.gitkeep
+    ├── src/types/.gitkeep
+    └── public/.gitkeep
 ```
 
 ### Usage
@@ -232,6 +257,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
 /create-app expo-app my-mobile
 /create-app nestjs-server my-api
 /create-app mcp-server my-agent
+/create-app next-app my-web
 ```
 
 ### Script Flow (`create-app.sh`)
