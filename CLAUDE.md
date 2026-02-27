@@ -259,11 +259,13 @@ Defined in `templates/apps/registry.json`:
 | `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
 | `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth |
 | `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
+| `next-app` | Next.js Web App | Vitest (`jsdom`) | Next.js 15, React 19, TanStack Query, Better Auth, shadcn/ui, Tailwind v4 |
 
 **Test runner rationale**:
 - **expo-app + Jest**: `jest-expo` provides 100+ native module mocks. `vitest-react-native` is still experimental.
 - **nestjs-server + Vitest**: `unplugin-swc` is officially recommended by NestJS. 3-4x faster than Jest.
 - **mcp-server + Vitest**: Standard ESM setup, no special plugins needed.
+- **next-app + Vitest**: Official Next.js recommendation. `@vitejs/plugin-react` for JSX, `vite-tsconfig-paths` for `@/` aliases, jsdom environment.
 
 ### Template Placeholders
 
@@ -284,21 +286,22 @@ Each app gets a minimal `biome.json` with **only** app-specific file exclusions.
 - `expo-app`: excludes `.expo/`, `ios/`, `android/`
 - `nestjs-server`: excludes `dist/`
 - `mcp-server`: excludes `build/`
+- `next-app`: excludes `.next/`
 
 ### Per-App Scripts (Consistent Across Types)
 
-| Script | expo-app | nestjs-server | mcp-server |
-|---|---|---|---|
-| `dev` | `expo start` | `tsx watch src/main.ts` | `tsx src/index.ts` |
-| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` |
-| `start` | — | `node dist/main.js` | `node build/index.js` |
-| `test` | `jest` | `vitest run` | `vitest run` |
-| `test:watch` | `jest --watch` | `vitest` | `vitest` |
-| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` |
-| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
-| `lint` | `biome check .` | `biome check .` | `biome check .` |
-| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
-| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` |
+| Script | expo-app | nestjs-server | mcp-server | next-app |
+|---|---|---|---|---|
+| `dev` | `expo start` | `tsx watch src/main.ts` | `tsx src/index.ts` | `next dev --turbopack` |
+| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` | `next build` |
+| `start` | — | `node dist/main.js` | `node build/index.js` | `next start -p PORT` |
+| `test` | `jest` | `vitest run` | `vitest run` | `vitest run` |
+| `test:watch` | `jest --watch` | `vitest` | `vitest` | `vitest` |
+| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` | `vitest run --coverage` |
+| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
+| `lint` | `biome check .` | `biome check .` | `biome check .` | `biome check .` |
+| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
+| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` | `rm -rf .next` |
 
 ### Adding a New App Type
 

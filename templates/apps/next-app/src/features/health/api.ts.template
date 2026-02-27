@@ -1,0 +1,14 @@
+import { apiFetch } from "@/lib/api-client";
+
+export interface HealthResponse {
+  status: string;
+  timestamp: string;
+}
+
+export async function fetchHealth(): Promise<HealthResponse> {
+  try {
+    return await apiFetch<HealthResponse>("/health");
+  } catch {
+    return { status: "unreachable", timestamp: new Date().toISOString() };
+  }
+}

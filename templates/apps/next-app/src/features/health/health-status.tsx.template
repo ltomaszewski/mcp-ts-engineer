@@ -1,0 +1,37 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { fetchHealth, type HealthResponse } from "./api";
+
+interface HealthStatusProps {
+  initialData: HealthResponse;
+}
+
+export function HealthStatus({ initialData }: HealthStatusProps) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["health"],
+    queryFn: fetchHealth,
+    initialData,
+    refetchInterval: 30_000,
+  });
+
+  if (isLoading) {
+    return <p className="text-muted-foreground">Checking backend...</p>;
+  }
+
+  const isHealthy = data?.status === "ok";
+
+  return (
+    <div className="rounded-lg border p-6 text-center">
+      <p className="text-sm text-muted-foreground">Backend Status</p>
+      <p
+        className={`mt-2 text-2xl font-semibold ${isHealthy ? "text-green-600" : "text-red-500"}`}
+      >
+        {data?.status ?? "unknown"}
+      </p>
+      {data?.timestamp && (
+        <p className="mt-1 text-xs text-muted-foreground">{data.timestamp}</p>
+      )}
+    </div>
+  );
+}

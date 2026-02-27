@@ -138,11 +138,12 @@ describe('App template registry', () => {
     expect(() => JSON.parse(content)).not.toThrow()
   })
 
-  it('contains all three app types', () => {
+  it('contains all four app types', () => {
     const registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf-8'))
     expect(registry.appTypes).toHaveProperty('expo-app')
     expect(registry.appTypes).toHaveProperty('nestjs-server')
     expect(registry.appTypes).toHaveProperty('mcp-server')
+    expect(registry.appTypes).toHaveProperty('next-app')
   })
 
   it('each app type has label and description', () => {
@@ -158,7 +159,7 @@ describe('App template registry', () => {
 })
 
 describe('App template directories', () => {
-  const APP_TYPES = ['expo-app', 'nestjs-server', 'mcp-server'] as const
+  const APP_TYPES = ['expo-app', 'nestjs-server', 'mcp-server', 'next-app'] as const
 
   describe.each(APP_TYPES)('%s', (appType) => {
     const templateDir = join(APPS_TEMPLATES_DIR, appType)
@@ -238,6 +239,61 @@ describe('App template directories', () => {
 
   it('mcp-server has src/server.ts.template', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'mcp-server/src/server.ts.template'))).toBe(true)
+  })
+
+  it('next-app has vitest.config.ts.template', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/vitest.config.ts.template'))).toBe(true)
+  })
+
+  it('next-app has next.config.ts.template', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/next.config.ts.template'))).toBe(true)
+  })
+
+  it('next-app has src/app/layout.tsx.template', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/src/app/layout.tsx.template'))).toBe(true)
+  })
+
+  it('next-app has postcss.config.mjs.template', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/postcss.config.mjs.template'))).toBe(true)
+  })
+
+  it('next-app has components.json.template for shadcn/ui', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/components.json.template'))).toBe(true)
+  })
+
+  it('next-app has health check feature files', () => {
+    expect(
+      existsSync(join(APPS_TEMPLATES_DIR, 'next-app/src/features/health/api.ts.template')),
+    ).toBe(true)
+    expect(
+      existsSync(
+        join(APPS_TEMPLATES_DIR, 'next-app/src/features/health/health-status.tsx.template'),
+      ),
+    ).toBe(true)
+    expect(
+      existsSync(
+        join(
+          APPS_TEMPLATES_DIR,
+          'next-app/src/features/health/__tests__/health-status.test.tsx.template',
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('next-app biome.json excludes .next', () => {
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'next-app/biome.json.template'),
+      'utf-8',
+    )
+    expect(content).toContain('.next')
+  })
+
+  it('next-app uses Tailwind v4 PostCSS plugin', () => {
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'next-app/postcss.config.mjs.template'),
+      'utf-8',
+    )
+    expect(content).toContain('@tailwindcss/postcss')
   })
 })
 

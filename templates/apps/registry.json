@@ -11,6 +11,10 @@
     "mcp-server": {
       "label": "MCP Server (Claude Agent SDK)",
       "description": "MCP server with Claude Agent SDK, ESM, Vitest"
+    },
+    "next-app": {
+      "label": "Next.js Web App",
+      "description": "Next.js 15, React 19, TanStack Query, Better Auth, shadcn/ui, Tailwind v4"
     }
   }
 }
