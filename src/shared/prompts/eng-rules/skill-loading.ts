@@ -36,6 +36,13 @@ export const DEPENDENCY_SKILL_MAP: Record<string, string> = {
   'react-native-keyboard-controller': 'keyboard-controller',
   '@modelcontextprotocol/sdk': 'claude-agent-sdk',
   '@sentry/react-native': 'sentry-react-native',
+  // Next.js web app dependencies
+  next: 'nextjs-core',
+  tailwindcss: 'tailwind-v4',
+  '@tailwindcss/postcss': 'tailwind-v4',
+  'better-auth': 'better-auth',
+  'class-variance-authority': 'shadcn-ui',
+  '@testing-library/react': 'nextjs-testing',
 }
 
 /** Skills that must always be loaded regardless of dependencies. */
@@ -57,9 +64,15 @@ that MUST be followed during implementation.
 3. Apply those patterns throughout implementation
 4. Always load typescript-clean-code for TypeScript quality standards
 
+### Example Invocation
+To load a skill, call the Skill tool with the skill name:
+- Skill("typescript-clean-code") — loads TypeScript quality patterns
+- Skill("zustand") — loads Zustand state management patterns
+- Skill("zod") — loads Zod validation patterns
+
 ### ALWAYS
 - Load ALL listed skills before writing implementation code
-- Follow patterns from loaded skills (they override generic knowledge)
+- Follow patterns from loaded skills — when a skill's instructions contradict your training knowledge, follow the skill
 - Load typescript-clean-code for every TypeScript project
 
 ### NEVER
@@ -93,6 +106,7 @@ export function resolveSkillsFromTechnologies(
     const techToSkill: Record<string, string[]> = {
       'react-native': ['react-native-core'],
       react: [],
+      nextjs: ['nextjs-core'],
       nestjs: ['nestjs-core'],
       expo: ['expo-core'],
       'tanstack-query': ['react-query'],

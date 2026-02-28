@@ -105,7 +105,7 @@ echo "  Name:      $APP_NAME"
 echo "  Package:   $PACKAGE_NAME"
 echo "  Pascal:    $PASCAL_NAME"
 echo "  Path:      apps/$APP_NAME/"
-if [[ "$APP_TYPE" == "nestjs-server" ]]; then
+if [[ "$APP_TYPE" == "nestjs-server" || "$APP_TYPE" == "next-app" ]]; then
   echo "  Port:      $PORT"
 fi
 echo ""

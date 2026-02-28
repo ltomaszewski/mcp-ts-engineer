@@ -13,7 +13,6 @@ import {
   EXPORT_DESIGN_RULES,
   RACE_CONDITIONS_RULES,
   resolveSkillsFromTechnologies,
-  SKILL_LOADING_RULES,
   TESTING_REQUIREMENTS_RULES,
 } from './eng-rules/index.js'
 
@@ -89,10 +88,17 @@ const buildSkillLoadingSection = (
   const skillList = skills.map((s) => `  - ${s}`).join('\n')
 
   return `<skill_loading>
-${SKILL_LOADING_RULES}
+BEFORE writing ANY code, load engineering skills via the Skill tool.
+Skills provide project-specific patterns, anti-patterns, and best practices
+that MUST be followed during implementation.
 
-### Skills to Load
-Invoke each of these skills using the Skill tool BEFORE writing any code:
+Loading process:
+1. Invoke each skill listed below using the Skill tool
+2. Read and absorb the patterns returned by each skill
+3. Apply those patterns throughout implementation
+4. Always load typescript-clean-code for TypeScript quality standards
+
+Skills to load:
 ${skillList}
 </skill_loading>`
 }
@@ -101,10 +107,12 @@ ${skillList}
  * Builds engineering rules section with conditional assembly based on technologies.
  */
 const buildEngineeringRulesSection = (technologies: string[]): string => {
+  // Include race condition rules for any React-based project (react-native, expo, nextjs all imply React)
   const hasReact =
     technologies.includes('react') ||
     technologies.includes('react-native') ||
-    technologies.includes('expo')
+    technologies.includes('expo') ||
+    technologies.includes('nextjs')
   const hasReactNative = technologies.includes('react-native')
 
   let section = '<engineering_rules>\n'
@@ -207,7 +215,7 @@ ${skillLoadingSection}
 - LOAD SKILLS FIRST: Invoke all skills from <skill_loading> before writing code
 - TDD: Write tests FIRST, then implement code to make tests pass
 - Verify tests fail initially (red phase), then pass after implementation (green phase)
-- The spec contains all implementation details — avoid extensive codebase research
+- Read only files referenced in the spec or needed for the current phase. Do not search the broader codebase beyond what the spec specifies.
 - Avoid calling AskUserQuestion, slash commands, or referencing .claude/commands/ files
 - If tests fail to pass, set status to "failed" and explain in summary
 - WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${getProjectConfig().monorepoRoot}\`.
@@ -217,6 +225,34 @@ ${skillLoadingSection}
 </rules>
 
 ${engineeringRulesSection}
+
+<example>
+A successful phase completion looks like:
+
+<phase_eng_result>
+{
+  "status": "success",
+  "files_modified": [
+    "src/capabilities/auth/auth.schema.ts",
+    "src/capabilities/auth/__tests__/auth.schema.test.ts",
+    "src/capabilities/auth/auth.types.ts"
+  ],
+  "summary": "Created Zod schemas for login and registration inputs with comprehensive validation rules. Added 12 unit tests covering valid inputs, edge cases, and error messages."
+}
+</phase_eng_result>
+
+A failed phase looks like:
+
+<phase_eng_result>
+{
+  "status": "failed",
+  "files_modified": [
+    "src/capabilities/auth/auth.service.ts"
+  ],
+  "summary": "Implemented auth service but 3 tests fail due to missing mock for database connection. Error: Cannot connect to MongoDB in test environment."
+}
+</phase_eng_result>
+</example>
 
 <output_format>
 - Wrap the JSON in <phase_eng_result></phase_eng_result> XML tags
@@ -315,6 +351,35 @@ ${skillLoadingSection}
 </rules>
 
 ${engineeringRulesSection}
+
+<example>
+A successful fix iteration:
+
+<fix_result>
+{
+  "status": "success",
+  "files_modified": [
+    "src/features/auth/login-screen.tsx",
+    "src/features/auth/__tests__/login-screen.test.tsx"
+  ],
+  "fixes_applied": 3,
+  "summary": "Fixed 2 race conditions in login screen (added AbortController cleanup and loading guard) and 1 TypeScript strict mode violation. All 8 tests pass."
+}
+</fix_result>
+
+A failed fix iteration:
+
+<fix_result>
+{
+  "status": "failed",
+  "files_modified": [
+    "src/features/dashboard/chart.tsx"
+  ],
+  "fixes_applied": 1,
+  "summary": "Fixed 1 of 3 issues. Remaining 2 require architectural changes to the chart rendering pipeline that cannot be safely applied without manual review."
+}
+</fix_result>
+</example>
 
 <output_format>
 - Wrap JSON in <fix_result></fix_result> XML tags

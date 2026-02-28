@@ -96,7 +96,8 @@ packages/mcp-ts-engineer/
 │       ├── registry.json                # App type registry
 │       ├── expo-app/                    # React Native (Expo) template
 │       ├── nestjs-server/               # NestJS backend template
-│       └── mcp-server/                  # MCP server template
+│       ├── mcp-server/                  # MCP server template
+│       └── next-app/                    # Next.js frontend template
 ├── vitest.config.ts                     # Vitest configuration
 ├── vitest.setup.ts                      # Vitest setup file
 ├── tsconfig.json                        # TypeScript config (IDE)
@@ -209,15 +210,41 @@ templates/apps/
 │   ├── src/main.ts.template
 │   ├── src/app.module.ts.template
 │   └── src/modules/health/           # Health check module with tests
-└── mcp-server/          # MCP server template
+├── mcp-server/          # MCP server template
+│   ├── package.json.template
+│   ├── tsconfig.json.template
+│   ├── vitest.config.ts.template
+│   ├── vitest.setup.ts.template
+│   ├── biome.json.template            # Excludes build/
+│   ├── src/index.ts.template          # stdio entry point
+│   ├── src/server.ts.template         # McpServer factory
+│   └── src/capabilities/echo/         # Echo tool with tests
+└── next-app/            # Next.js frontend template
     ├── package.json.template
     ├── tsconfig.json.template
+    ├── next.config.ts.template
+    ├── postcss.config.mjs.template
     ├── vitest.config.ts.template
     ├── vitest.setup.ts.template
-    ├── biome.json.template            # Excludes build/
-    ├── src/index.ts.template          # stdio entry point
-    ├── src/server.ts.template         # McpServer factory
-    └── src/capabilities/echo/         # Echo tool with tests
+    ├── biome.json.template            # Excludes .next/
+    ├── components.json.template       # shadcn/ui config
+    ├── env.example.template           # → .env.example (dot-prefix auto-added)
+    ├── nvmrc.template                 # Node.js version 22
+    ├── src/app/layout.tsx.template
+    ├── src/app/page.tsx.template
+    ├── src/app/loading.tsx.template
+    ├── src/app/error.tsx.template
+    ├── src/app/not-found.tsx.template
+    ├── src/app/globals.css.template
+    ├── src/features/health/           # Health check feature with TanStack Query
+    ├── src/lib/api-client.ts.template # Fetch wrapper for backend
+    ├── src/lib/query-client.ts.template # TanStack Query config
+    ├── src/lib/utils.ts.template
+    ├── src/components/ui/.gitkeep    # shadcn/ui components
+    ├── src/hooks/.gitkeep
+    ├── src/stores/.gitkeep
+    ├── src/types/.gitkeep
+    └── public/.gitkeep
 ```
 
 ### Usage
@@ -232,6 +259,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
 /create-app expo-app my-mobile
 /create-app nestjs-server my-api
 /create-app mcp-server my-agent
+/create-app next-app my-web
 ```
 
 ### Script Flow (`create-app.sh`)
@@ -244,6 +272,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
    - `.template` files → copy with suffix stripped, run `sed` placeholder replacement
    - `swcrc.template` → `.swcrc` (dot-prefix)
    - `env.example.template` → `.env.example` (dot-prefix)
+   - `nvmrc.template` → `.nvmrc` (dot-prefix)
    - Other files (`.gitkeep`) → copy as-is
 6. **Create `docs/specs/<name>/todo/`**
 7. **Run `npm install`** (workspace auto-discovery)
@@ -259,11 +288,13 @@ Defined in `templates/apps/registry.json`:
 | `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
 | `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth |
 | `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
+| `next-app` | Next.js Web App | Vitest (`jsdom`) | Next.js 15, React 19, TanStack Query, Better Auth, shadcn/ui, Tailwind v4 |
 
 **Test runner rationale**:
 - **expo-app + Jest**: `jest-expo` provides 100+ native module mocks. `vitest-react-native` is still experimental.
 - **nestjs-server + Vitest**: `unplugin-swc` is officially recommended by NestJS. 3-4x faster than Jest.
 - **mcp-server + Vitest**: Standard ESM setup, no special plugins needed.
+- **next-app + Vitest**: Official Next.js recommendation. `@vitejs/plugin-react` for JSX, `vite-tsconfig-paths` for `@/` aliases, jsdom environment.
 
 ### Template Placeholders
 
@@ -284,21 +315,22 @@ Each app gets a minimal `biome.json` with **only** app-specific file exclusions.
 - `expo-app`: excludes `.expo/`, `ios/`, `android/`
 - `nestjs-server`: excludes `dist/`
 - `mcp-server`: excludes `build/`
+- `next-app`: excludes `.next/`
 
 ### Per-App Scripts (Consistent Across Types)
 
-| Script | expo-app | nestjs-server | mcp-server |
-|---|---|---|---|
-| `dev` | `expo start` | `tsx watch src/main.ts` | `tsx src/index.ts` |
-| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` |
-| `start` | — | `node dist/main.js` | `node build/index.js` |
-| `test` | `jest` | `vitest run` | `vitest run` |
-| `test:watch` | `jest --watch` | `vitest` | `vitest` |
-| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` |
-| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
-| `lint` | `biome check .` | `biome check .` | `biome check .` |
-| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
-| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` |
+| Script | expo-app | nestjs-server | mcp-server | next-app |
+|---|---|---|---|---|
+| `dev` | `expo start` | `tsx watch src/main.ts` | `tsx src/index.ts` | `next dev --turbopack` |
+| `build` | `tsc` | `tsc -p tsconfig.build.json` | `rm -rf build && tsc` | `next build` |
+| `start` | — | `node dist/main.js` | `node build/index.js` | `next start -p PORT` |
+| `test` | `jest` | `vitest run` | `vitest run` | `vitest run` |
+| `test:watch` | `jest --watch` | `vitest` | `vitest` | `vitest` |
+| `test:coverage` | `jest --coverage` | `vitest run --coverage` | `vitest run --coverage` | `vitest run --coverage` |
+| `type-check` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` | `tsc --noEmit` |
+| `lint` | `biome check .` | `biome check .` | `biome check .` | `biome check .` |
+| `format` | `biome format --write .` | `biome format --write .` | `biome format --write .` | `biome format --write .` |
+| `clean` | `rm -rf .expo dist node_modules` | `rm -rf dist` | `rm -rf build` | `rm -rf .next` |
 
 ### Adding a New App Type
 
@@ -310,7 +342,7 @@ The system is fully registry-driven. **No script changes needed**:
    { "my-type": { "label": "My Framework", "description": "Short description" } }
    ```
 3. Add template files with `.template` suffix, using `{{PLACEHOLDER}}` markers
-4. Special naming: `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`
+4. Special naming: `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`, `nvmrc.template` → `.nvmrc`
 5. Non-template files (`.gitkeep`) are copied as-is
 6. Add tests in `__tests__/create-app-scripts.test.ts`
 
@@ -332,10 +364,10 @@ Tests in `__tests__/create-app-scripts.test.ts`:
 - `_common.sh` and `create-app.sh` exist, have shebang, pass `bash -n`
 - `_common.sh` contains all shared functions
 - `create-app.sh` sources `_common.sh`, validates name, handles dot-prefix files
-- `registry.json` exists, valid JSON, contains all three app types
+- `registry.json` exists, valid JSON, contains all four app types
 - Each template dir has `package.json.template` with `{{PACKAGE_NAME}}`
 - Each template dir has `tsconfig.json.template` and `biome.json.template`
-- Correct test runner config per type (Jest for expo, Vitest for nestjs/mcp)
+- Correct test runner config per type (Jest for expo, Vitest for nestjs/mcp/next-app)
 
 ## Technology Stack
 
