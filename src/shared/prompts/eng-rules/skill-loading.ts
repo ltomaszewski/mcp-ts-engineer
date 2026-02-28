@@ -36,6 +36,12 @@ export const DEPENDENCY_SKILL_MAP: Record<string, string> = {
   'react-native-keyboard-controller': 'keyboard-controller',
   '@modelcontextprotocol/sdk': 'claude-agent-sdk',
   '@sentry/react-native': 'sentry-react-native',
+  // Next.js web app dependencies
+  next: 'nextjs-core',
+  '@tailwindcss/postcss': 'tailwind-v4',
+  'better-auth': 'better-auth',
+  'class-variance-authority': 'shadcn-ui',
+  '@testing-library/react': 'nextjs-testing',
 }
 
 /** Skills that must always be loaded regardless of dependencies. */
@@ -93,6 +99,7 @@ export function resolveSkillsFromTechnologies(
     const techToSkill: Record<string, string[]> = {
       'react-native': ['react-native-core'],
       react: [],
+      nextjs: ['nextjs-core'],
       nestjs: ['nestjs-core'],
       expo: ['expo-core'],
       'tanstack-query': ['react-query'],

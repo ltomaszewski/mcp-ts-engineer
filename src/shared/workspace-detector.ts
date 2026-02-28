@@ -13,6 +13,7 @@ import { join } from 'node:path'
 export type TechnologyTag =
   | 'react-native'
   | 'react'
+  | 'nextjs'
   | 'nestjs'
   | 'expo'
   | 'tanstack-query'
@@ -22,6 +23,7 @@ export type TechnologyTag =
 const DEPENDENCY_TECHNOLOGY_MAP: Record<string, TechnologyTag> = {
   'react-native': 'react-native',
   react: 'react',
+  next: 'nextjs',
   '@nestjs/core': 'nestjs',
   expo: 'expo',
   '@tanstack/react-query': 'tanstack-query',
@@ -71,13 +73,14 @@ export function detectWorkspace(cwd: string | undefined): WorkspaceDetectionResu
 
   const technologies = new Set<string>()
   const hasReactNative = uniqueDeps.includes('react-native')
+  const hasNextjs = uniqueDeps.includes('next')
 
   for (const dep of uniqueDeps) {
     const tech = DEPENDENCY_TECHNOLOGY_MAP[dep]
     if (tech) {
-      // If react-native is present, skip the standalone "react" tag
-      // (react-native implies react)
-      if (tech === 'react' && hasReactNative) {
+      // If react-native or next is present, skip the standalone "react" tag
+      // (both imply react)
+      if (tech === 'react' && (hasReactNative || hasNextjs)) {
         continue
       }
       technologies.add(tech)

@@ -104,7 +104,8 @@ const buildEngineeringRulesSection = (technologies: string[]): string => {
   const hasReact =
     technologies.includes('react') ||
     technologies.includes('react-native') ||
-    technologies.includes('expo')
+    technologies.includes('expo') ||
+    technologies.includes('nextjs')
   const hasReactNative = technologies.includes('react-native')
 
   let section = '<engineering_rules>\n'

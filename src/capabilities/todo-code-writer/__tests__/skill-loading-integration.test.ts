@@ -118,6 +118,39 @@ const MCP_TS_ENGINEER_PKG = {
   },
 }
 
+/** Example Next.js web app package.json */
+const EXAMPLE_NEXT_APP_PKG = {
+  dependencies: {
+    next: '15.0.0',
+    react: '19.0.0',
+    'react-dom': '19.0.0',
+    '@tanstack/react-query': '5.0.0',
+    zustand: '5.0.0',
+    'react-hook-form': '7.0.0',
+    '@hookform/resolvers': '3.0.0',
+    zod: '3.0.0',
+    'better-auth': '1.0.0',
+    'class-variance-authority': '0.7.0',
+    clsx: '2.0.0',
+    'tailwind-merge': '2.0.0',
+    'lucide-react': '0.400.0',
+    'tw-animate-css': '1.0.0',
+  },
+  devDependencies: {
+    typescript: '5.0.0',
+    '@biomejs/biome': '2.0.0',
+    '@tailwindcss/postcss': '4.0.0',
+    tailwindcss: '4.0.0',
+    vitest: '3.0.0',
+    '@vitejs/plugin-react': '4.0.0',
+    '@testing-library/react': '16.0.0',
+    '@testing-library/jest-dom': '6.0.0',
+    '@testing-library/user-event': '14.0.0',
+    'vite-tsconfig-paths': '5.0.0',
+    jsdom: '25.0.0',
+  },
+}
+
 /** apps/mcp-agents-executor/package.json (MCP server, no Agent SDK) */
 const MCP_AGENTS_EXECUTOR_PKG = {
   dependencies: {
@@ -342,6 +375,88 @@ describe('Dynamic Skill Loading — Cross-Project Integration', () => {
       expect(prompt.userPrompt).toContain('react-native-core')
       expect(prompt.userPrompt).toContain('expo-core')
       expect(prompt.userPrompt).toContain('zustand')
+      expect(prompt.userPrompt).toContain('typescript-clean-code')
+    })
+  })
+
+  describe('example-next-app (Next.js web app)', () => {
+    beforeEach(() => mockPackageJson(EXAMPLE_NEXT_APP_PKG))
+
+    it('detects nextjs technology tag', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      expect(result.technologies).toContain('nextjs')
+    })
+
+    it('does NOT detect standalone react (nextjs implies react)', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      expect(result.technologies).not.toContain('react')
+    })
+
+    it('does NOT detect react-native or expo', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      expect(result.technologies).not.toContain('react-native')
+      expect(result.technologies).not.toContain('expo')
+    })
+
+    it('resolves correct Next.js skill set', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      const skills = resolveSkillsFromTechnologies(result.technologies, result.dependencies)
+
+      // Expected Next.js skills
+      expect(skills).toContain('typescript-clean-code')
+      expect(skills).toContain('nextjs-core')
+      expect(skills).toContain('tailwind-v4')
+      expect(skills).toContain('shadcn-ui')
+      expect(skills).toContain('better-auth')
+      expect(skills).toContain('nextjs-testing')
+      expect(skills).toContain('react-query')
+      expect(skills).toContain('zustand')
+      expect(skills).toContain('zod')
+      expect(skills).toContain('react-hook-form')
+      expect(skills).toContain('biome')
+
+      // Must NOT contain mobile or backend skills
+      expect(skills).not.toContain('react-native-core')
+      expect(skills).not.toContain('expo-core')
+      expect(skills).not.toContain('nestjs-core')
+      expect(skills).not.toContain('nativewind')
+    })
+
+    it('eng prompt includes race-conditions but NOT component-check for Next.js', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      const prompt = phaseEngPromptV2.build({
+        specPath: 'docs/specs/example-next-app/feature.md',
+        phasePlan: MOCK_PHASE_PLAN,
+        currentPhaseNumber: 1,
+        detectedTechnologies: result.technologies,
+        detectedDependencies: result.dependencies,
+      })
+
+      // Race conditions included (Next.js uses React)
+      expect(prompt.userPrompt).toContain('<race_conditions>')
+
+      // Component check NOT included (that's react-native only)
+      expect(prompt.userPrompt).not.toContain('<component_check>')
+
+      // Skills present
+      expect(prompt.userPrompt).toContain('nextjs-core')
+      expect(prompt.userPrompt).toContain('tailwind-v4')
+      expect(prompt.userPrompt).toContain('better-auth')
+    })
+
+    it('audit prompt includes Next.js skills', () => {
+      const result = detectWorkspace('/apps/example-next-app')
+      const prompt = phaseAuditPromptV2.build({
+        specPath: 'docs/specs/example-next-app/feature.md',
+        phaseNumber: 1,
+        filesModified: ['src/features/dashboard/dashboard.tsx'],
+        engSummary: 'Implemented dashboard',
+        detectedTechnologies: result.technologies,
+        detectedDependencies: result.dependencies,
+      })
+
+      expect(prompt.userPrompt).toContain('nextjs-core')
+      expect(prompt.userPrompt).toContain('tailwind-v4')
       expect(prompt.userPrompt).toContain('typescript-clean-code')
     })
   })
@@ -693,6 +808,31 @@ describe('Dynamic Skill Loading — Cross-Project Integration', () => {
 
       for (const dep of expectedMapped) {
         expect(appDeps).toContain(dep)
+        expect(DEPENDENCY_SKILL_MAP[dep]).toBeDefined()
+      }
+    })
+
+    it('maps all dependencies from example-next-app that have skills', () => {
+      const nextAppDeps = [
+        ...Object.keys(EXAMPLE_NEXT_APP_PKG.dependencies),
+        ...Object.keys(EXAMPLE_NEXT_APP_PKG.devDependencies),
+      ]
+
+      const expectedMapped = [
+        'next',
+        '@tanstack/react-query',
+        'zustand',
+        'react-hook-form',
+        'zod',
+        'better-auth',
+        'class-variance-authority',
+        '@biomejs/biome',
+        '@tailwindcss/postcss',
+        '@testing-library/react',
+      ]
+
+      for (const dep of expectedMapped) {
+        expect(nextAppDeps).toContain(dep)
         expect(DEPENDENCY_SKILL_MAP[dep]).toBeDefined()
       }
     })
