@@ -5,6 +5,17 @@
  * Originally from: src/capabilities/finalize/prompts/audit.v2.ts
  */
 
+import {
+  AUDIT_PHASE_KB_AND_SKILLS,
+  MAESTRO_RULES,
+  NESTJS_RULES,
+  NEXTJS_BFF_RULES,
+  RACE_CONDITION_FIX_TEMPLATES,
+  RACE_CONDITION_RULES,
+  ROUTE_FILE_RULES,
+  TYPESCRIPT_RULES,
+} from './audit-rules/index.js'
+
 /** Parameters for building audit user prompt. */
 export interface AuditWorkflowParams {
   /** Specific files to audit (file-scoped mode). */
@@ -19,7 +30,7 @@ export interface AuditWorkflowParams {
 // Embedded /audit workflow (source: .claude/commands/audit.md)
 // ---------------------------------------------------------------------------
 
-export const AUDIT_WORKFLOW = `
+const AUDIT_WORKFLOW_HEADER = `
 ## Identity
 
 You are **AuditAgent**, a code quality engineer for TypeScript monorepos.
@@ -93,106 +104,9 @@ Output per phase:
 - Phase 2: {N} files, {M} violations
 - Phase 3: {N} fixed, {M} manual
 - Phase 4: Report complete
+`.trim()
 
----
-
-## Phase 0: Load KB
-
-IF scope contains "mobile" OR "app" OR empty:
-  Read(".claude/knowledge-base/react-native-mobile-architecture.md")
-  IF fail → WARN and continue
-
-IF scope contains "web" OR "next" OR "frontend":
-  Read(".claude/knowledge-base/nextjs-web-architecture.md")
-  IF fail → WARN and continue
-
-IF scope contains "server" OR "api" OR "backend":
-  Read(".claude/knowledge-base/nestjs-backend-architecture.md")
-  IF fail → WARN and continue
-
-IF scope contains "mcp" OR "agent":
-  Read(".claude/knowledge-base/mcp-server-architecture.md")
-  IF fail → WARN and continue
-
-IF scope contains "components" OR "ui":
-  Read(".claude/skills/design-system/00-master-index.md")
-  IF fail → WARN and continue
-
----
-
-## Phase 1: Load Skills (Monorepo-Aware)
-
-### Step 1: Detect Monorepo Structure
-
-1. Read root package.json → IF fail: WARN and continue
-2. If "workspaces" field exists:
-   - Glob: apps/*/package.json, packages/*/package.json
-   - Read each workspace package.json
-   - Aggregate ALL dependencies across workspaces
-3. If no "workspaces" field:
-   - Use only root package.json
-
-### Step 2: Scope-Based Filtering
-
-If targets a specific app path:
-- Determine which workspace the target belongs to
-- Prioritize that workspace's dependencies
-- Still load commonly shared skills (typescript-clean-code, etc.)
-
-### Step 3: Dependency → Skill Mapping
-
-Scan ALL package.json files (or scoped workspace) and load skills:
-
-| Dependency (in package.json) | Skill to Load |
-|------------------------------|---------------|
-| expo | expo-core |
-| expo-router | expo-router |
-| expo-notifications | expo-notifications |
-| react-native | react-native-core |
-| nativewind | nativewind |
-| react-native-reanimated | reanimated |
-| zustand | zustand |
-| @tanstack/react-query | react-query |
-| zod | zod |
-| react-native-mmkv | mmkv |
-| react-hook-form | react-hook-form |
-| graphql-request | graphql-request |
-| @shopify/flash-list | flash-list |
-| @react-native-community/netinfo | netinfo |
-| date-fns | date-fns |
-| @testing-library/react-native | rn-testing-library |
-| @nestjs/core | nestjs-core |
-| @nestjs/graphql | nestjs-graphql |
-| @nestjs/mongoose | nestjs-mongoose |
-| @nestjs/passport | nestjs-auth |
-| class-validator | class-validator |
-| biome OR @biomejs/biome | biome |
-| react-native-keyboard-controller | keyboard-controller |
-| @modelcontextprotocol/sdk | claude-agent-sdk |
-| @sentry/react-native | sentry-react-native |
-| next | nextjs-core |
-| @tailwindcss/postcss OR tailwindcss | tailwind-v4 |
-| better-auth | better-auth |
-| class-variance-authority | shadcn-ui |
-| @testing-library/react | nextjs-testing |
-
-### Step 4: Folder-Based & Always-Load Skills
-
-| Detection | Skill |
-|-----------|-------|
-| .maestro/ folder exists | maestro |
-| Always | typescript-clean-code |
-
-### Step 5: Load All Matched Skills
-
-1. Extract dependencies from both dependencies AND devDependencies
-2. Match against mapping table (deduplicated)
-3. Check folder-based skills
-4. Invoke ALL matched skills using the Skill tool
-5. Always invoke typescript-clean-code
-
----
-
+const AUDIT_PHASE_2_SCAN = `
 ## Phase 2: Scan
 
 **Run in parallel**:
@@ -205,7 +119,7 @@ Grep("from ['\\"]redux['\\"]", scope)
 Grep("import.*StyleSheet", scope)
 Grep("from.*AsyncStorage", scope)
 Grep("app/api/", scope)
-Grep("use client.*page\\.tsx", scope)
+Find all page.tsx files (Glob "**/page.tsx" in scope) and check if any contain "use client" directive
 Grep("import.*prisma|import.*mongoose", scope)
 
 **For each match**:
@@ -213,9 +127,9 @@ Grep("import.*prisma|import.*mongoose", scope)
 2. Read 10 lines context
 3. Check false positive filters
 4. IF violation → add to violations[]
+`.trim()
 
----
-
+const AUDIT_PHASE_3_4 = `
 ## Phase 3: Fix & Verify
 
 **Fix loop**:
@@ -272,145 +186,38 @@ REMAINING
 
 RECOMMENDATIONS
 - {suggestions}
-
----
-
-## Rules
-
-### Race Conditions (CRITICAL)
-
-| Pattern | Detection | Confidence | Fix |
-|---------|-----------|------------|-----|
-| useEffect no cleanup | async/.then, no return () => | HIGH | isMounted |
-| Missing AbortController | fetch( no signal: | HIGH | AbortController |
-| Double-tap | onPress={async no disabled= | HIGH | loading state |
-| Zustand hydration | persist( no _hasHydrated | MEDIUM | hydration |
-| Mutation no return | mutationFn: block no return | MEDIUM | add return |
-| Stale closure | setState in Promise.all no prev => | MEDIUM | functional |
-
-**Skip if**: return () => exists, imports @tanstack/react-query, isPending used, implicit return
-
-### Route Files
-- **Path**: app/**/*.tsx (not _layout.tsx)
-- **Rule**: 2-5 lines only
-- **Signals**: <View, <Text, useState, useEffect
-- **Fix**: Move to src/features/*/screens/
-
-### Screen Components
-- **Path**: src/features/*/screens/*.tsx
-- **Rule**: One hook, max 60 lines
-- **Exception**: useKeyboardManager() allowed
-- **Fix**: Extract to use*Screen hook
-
-### TypeScript
-| Rule | Max | Fix |
-|------|-----|-----|
-| File | 300 lines | Split |
-| Function | 50 lines | Extract |
-| Params | 4 | Options object |
-| Nesting | 3 | Early returns |
-| any | 0 | Type properly |
-
-### Forbidden
-| Pattern | Detection |
-|---------|-----------|
-| StyleSheet | import.*StyleSheet |
-| Redux | from 'redux' |
-| AsyncStorage | from.*AsyncStorage |
-| God component | >150 lines |
-
-### Next.js (BFF Pattern)
-| Pattern | Detection | Fix |
-|---------|-----------|-----|
-| API routes in BFF | app/api/ directory exists | Remove — backend owns endpoints |
-| "use client" on pages | page.tsx with "use client" | Extract interactive parts to components |
-| Direct DB access | import prisma/mongoose in Next.js | Fetch from backend API instead |
-| Sync params access | params.id (not await) in page | Use async params (Next.js 15) |
-
-### NestJS
-| Rule | Fix |
-|------|-----|
-| Module encapsulation | Update exports |
-| Missing @UseGuards | Add decorator |
-| Missing validators | Add decorators |
-
-### Maestro
-| Rule | Max |
-|------|-----|
-| File size | 60 lines |
-| Sleeps | 3 per file |
-| Optional assertions | 20% |
-
----
-
-## Fix Templates
-
-### useEffect Cleanup
-\`\`\`typescript
-// BEFORE
-useEffect(() => { fetchData().then(setData); }, []);
-
-// AFTER
-useEffect(() => {
-  let isMounted = true;
-  fetchData().then(data => { if (isMounted) setData(data); });
-  return () => { isMounted = false; };
-}, []);
-\`\`\`
-
-### AbortController
-\`\`\`typescript
-// BEFORE
-useEffect(() => { fetch(url).then(r => r.json()).then(setData); }, [url]);
-
-// AFTER
-useEffect(() => {
-  const controller = new AbortController();
-  fetch(url, { signal: controller.signal })
-    .then(r => r.json()).then(setData)
-    .catch(e => { if (e.name !== 'AbortError') throw e; });
-  return () => controller.abort();
-}, [url]);
-\`\`\`
-
-### Button Loading
-\`\`\`typescript
-// BEFORE
-<Pressable onPress={async () => { await submit(); }}>
-
-// AFTER
-const [loading, setLoading] = useState(false);
-const handle = async () => {
-  if (loading) return;
-  setLoading(true);
-  try { await submit(); } finally { setLoading(false); }
-};
-<Pressable onPress={handle} disabled={loading}>
-\`\`\`
-
-### Zustand Hydration
-\`\`\`typescript
-_hasHydrated: false,
-setHasHydrated: (v: boolean) => set({ _hasHydrated: v }),
-onRehydrateStorage: () => (s) => s?.setHasHydrated(true),
-\`\`\`
-
-### Mutation Return
-\`\`\`typescript
-// BEFORE
-mutationFn: (id) => { api.delete(id); },
-// AFTER
-mutationFn: (id) => { return api.delete(id); },
-\`\`\`
-
-### Functional Update
-\`\`\`typescript
-// BEFORE
-setItems([...items, item]);
-// AFTER
-setItems(prev => [...prev, item]);
-\`\`\`
 `.trim()
+
+// Compose the full workflow from extracted sections
+export const AUDIT_WORKFLOW = [
+  AUDIT_WORKFLOW_HEADER,
+  '---',
+  AUDIT_PHASE_KB_AND_SKILLS,
+  '---',
+  AUDIT_PHASE_2_SCAN,
+  '---',
+  AUDIT_PHASE_3_4,
+  '---',
+  '## Rules',
+  '',
+  RACE_CONDITION_RULES,
+  '',
+  ROUTE_FILE_RULES,
+  '',
+  TYPESCRIPT_RULES,
+  '',
+  NEXTJS_BFF_RULES,
+  '',
+  NESTJS_RULES,
+  '',
+  MAESTRO_RULES,
+  '',
+  '---',
+  '',
+  '## Fix Templates',
+  '',
+  RACE_CONDITION_FIX_TEMPLATES,
+].join('\n')
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -427,7 +234,6 @@ export function buildAuditUserPrompt(params: AuditWorkflowParams): string {
 
   const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
-  // Determine mode: file-scoped (filesChanged) or project-scoped (projectPath)
   const isFileScopedMode = filesChanged && filesChanged.length > 0
 
   let scopeSection: string
@@ -441,7 +247,6 @@ ${filesChangedList}
 
 Only audit the files listed above. Do NOT expand scope to unrelated files.`
   } else {
-    // Project-scoped mode
     const projectPathValue = projectPath || cwd || '.'
     scopeSection = `## Scope
 

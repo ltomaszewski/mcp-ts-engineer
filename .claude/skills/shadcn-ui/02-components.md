@@ -393,4 +393,4 @@ Always pair with `htmlFor` matching the input's `id` for accessibility.
 
 ---
 
-**Version:** latest | **Source:** https://ui.shadcn.com/docs
+**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs

@@ -296,4 +296,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** latest | **Source:** https://ui.shadcn.com/docs
+**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs

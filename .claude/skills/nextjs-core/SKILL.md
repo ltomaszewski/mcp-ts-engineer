@@ -5,7 +5,9 @@ description: Next.js 15 App Router - Server/Client Components, routing, data fet
 
 # Next.js 15 App Router
 
-Server-first React framework with file-system routing, Server Components by default, and built-in data fetching with caching and revalidation.
+> Server-first React framework with file-system routing, Server Components by default, and built-in data fetching with caching and revalidation.
+
+**Stack:** Next.js 15 App Router + React 19
 
 ---
 
@@ -34,7 +36,7 @@ LOAD THIS SKILL when user is:
 7. Mark error boundaries with `"use client"` -- React error boundaries must be Client Components
 
 **NEVER:**
-1. Create API routes (`app/api/`) in BFF architecture -- all endpoints belong in the NestJS backend
+1. Create API routes (`app/api/`) in BFF architecture -- all endpoints belong in the NestJS backend (exception: auth catch-all at `app/api/auth/[...all]/route.ts`)
 2. Use `useEffect` for data fetching -- use Server Components or TanStack Query instead
 3. Add `"use client"` to page or layout files -- extract interactive parts into separate components
 4. Pass non-serializable data from Server to Client Components -- only JSON-serializable props allowed

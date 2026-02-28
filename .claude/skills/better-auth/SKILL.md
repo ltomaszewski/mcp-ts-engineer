@@ -3,10 +3,19 @@ name: better-auth
 description: Better Auth v1.4 authentication - email/password, OAuth, sessions, RBAC, MFA, Next.js integration. Use when implementing auth, managing sessions, adding social login, or role-based access.
 ---
 
-# Better Auth Skill
+# Better Auth
+
+> Full-stack authentication with email/password, social login, MFA, and session management for Next.js apps.
+
+**Stack:** better-auth + @better-auth/react
+
+> **BFF Note:** In BFF architecture, Better Auth runs on the NestJS backend. The Next.js app only needs the auth client and the catch-all API route handler (`app/api/auth/[...all]/route.ts`) for auth callbacks.
+
+---
 
 ## When to Use
 
+LOAD THIS SKILL when user is:
 - Setting up authentication in a new project (email/password, OAuth, social login)
 - Integrating Better Auth with Next.js (App Router, Server Components, middleware)
 - Implementing session management (cookies, caching, revocation)
@@ -18,32 +27,34 @@ description: Better Auth v1.4 authentication - email/password, OAuth, sessions, 
 - Migrating from NextAuth/Auth.js to Better Auth
 - Protecting routes via middleware, server components, or server actions
 
+---
+
 ## Critical Rules
 
-### ALWAYS
+**ALWAYS:**
+1. Install `better-auth` in both server and client packages when they are separate
+2. Set `BETTER_AUTH_SECRET` (min 32 chars, high entropy) and `BETTER_AUTH_URL` in environment variables
+3. Use `toNextJsHandler` for Next.js App Router API route at `/api/auth/[...all]/route.ts`
+4. Pass `await headers()` from `next/headers` when calling `auth.api.getSession()` in Server Components
+5. Add `nextCookies()` plugin when calling auth functions from Server Actions that set cookies
+6. Run `npx @better-auth/cli migrate` or `npx @better-auth/cli generate` after adding plugins
+7. Use `createAuthClient` from `"better-auth/react"` for React/Next.js client
+8. Validate sessions server-side in protected routes; middleware cookie checks are optimistic only
+9. Use `authClient.useSession()` hook for reactive session state on the client
+10. Keep access control definitions (`createAccessControl`) in a shared file imported by both server and client
+11. Use typed `auth` export with `typeof auth` for client-side type inference with plugins
 
-- Install `better-auth` in both server and client packages when they are separate
-- Set `BETTER_AUTH_SECRET` (min 32 chars, high entropy) and `BETTER_AUTH_URL` in environment variables
-- Use `toNextJsHandler` for Next.js App Router API route at `/api/auth/[...all]/route.ts`
-- Pass `await headers()` from `next/headers` when calling `auth.api.getSession()` in Server Components
-- Add `nextCookies()` plugin when calling auth functions from Server Actions that set cookies
-- Run `npx @better-auth/cli migrate` or `npx @better-auth/cli generate` after adding plugins
-- Use `createAuthClient` from `"better-auth/react"` for React/Next.js client
-- Validate sessions server-side in protected routes; middleware cookie checks are optimistic only
-- Use `authClient.useSession()` hook for reactive session state on the client
-- Keep access control definitions (`createAccessControl`) in a shared file imported by both server and client
-- Use typed `auth` export with `typeof auth` for client-side type inference with plugins
+**NEVER:**
+1. Call `authClient.signIn.*` or `authClient.signUp.*` from server-side code; use `auth.api.*` instead
+2. Store secrets, client IDs, or client secrets in client-side code or commit them to version control
+3. Rely solely on middleware cookie checks for security; always validate sessions in route handlers
+4. Skip database migrations after adding or updating plugins
+5. Use `@ts-ignore` to suppress Better Auth type errors; fix the types instead
+6. Hardcode the `baseURL` in production; use `BETTER_AUTH_URL` environment variable
+7. Expose backup codes or TOTP secrets in logs or error messages
+8. Trust `getSessionCookie()` in middleware as proof of authentication; it only checks cookie existence
 
-### NEVER
-
-- Call `authClient.signIn.*` or `authClient.signUp.*` from server-side code; use `auth.api.*` instead
-- Store secrets, client IDs, or client secrets in client-side code or commit them to version control
-- Rely solely on middleware cookie checks for security; always validate sessions in route handlers
-- Skip database migrations after adding or updating plugins
-- Use `@ts-ignore` to suppress Better Auth type errors; fix the types instead
-- Hardcode the `baseURL` in production; use `BETTER_AUTH_URL` environment variable
-- Expose backup codes or TOTP secrets in logs or error messages
-- Trust `getSessionCookie()` in middleware as proof of authentication; it only checks cookie existence
+---
 
 ## Core Patterns
 
@@ -148,6 +159,8 @@ export const config = {
 };
 ```
 
+---
+
 ## Anti-Patterns
 
 | Anti-Pattern | Correct Approach |
@@ -159,6 +172,8 @@ export const config = {
 | Storing TOTP secret in client state | Keep secrets server-side; only expose `totpURI` for QR code |
 | Using `any` for auth client type | Use `typeof auth` generic: `createAuthClient<typeof auth>()` |
 | Not passing `headers` to `auth.api.getSession()` | Always pass `headers: await headers()` in Server Components |
+
+---
 
 ## Quick Reference
 
@@ -179,6 +194,8 @@ export const config = {
 | Enable 2FA | `auth.api.enableTwoFactor({ body, headers })` | `authClient.twoFactor.enable({ ... })` |
 | Verify TOTP | `auth.api.verifyTOTP({ body })` | `authClient.twoFactor.verifyTotp({ ... })` |
 
+---
+
 ## Plugin Architecture
 
 Better Auth extends via plugins on both server and client. Always register matching pairs:
@@ -198,6 +215,8 @@ Key plugins:
 - `nextCookies` -- Required for Server Actions that set cookies
 - `customSession` / `customSessionClient` -- Extend session response with custom fields
 
+---
+
 ## Database Schema
 
 Core tables (auto-created via `npx @better-auth/cli migrate`):
@@ -211,12 +230,18 @@ Core tables (auto-created via `npx @better-auth/cli migrate`):
 
 Plugins add their own tables/columns. Always run migrations after adding plugins.
 
+---
+
 ## Deep Dive References
 
-| Topic | File |
-|---|---|
-| Installation, database, env vars, Next.js setup | `01-setup.md` |
-| Email/password, OAuth, sessions, password reset | `02-authentication.md` |
-| RBAC, admin plugin, organization plugin, permissions | `03-authorization.md` |
+Load additional context when needed:
+
+| When you need | Load |
+|---------------|------|
+| Installation, database, env vars, Next.js setup | [01-setup.md](01-setup.md) |
+| Email/password, OAuth, sessions, password reset | [02-authentication.md](02-authentication.md) |
+| RBAC, admin plugin, organization plugin, permissions | [03-authorization.md](03-authorization.md) |
+
+---
 
 **Version:** 1.4.x | **Source:** https://www.better-auth.com/docs

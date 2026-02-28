@@ -180,6 +180,8 @@ src/
 | `class-variance-authority` | Type-safe component variants (CVA) |
 | `lucide-react` | Icon library used by components |
 | `tw-animate-css` | Animation utilities for Tailwind v4 |
+| `sonner` | Toast notification library (used by shadcn Toast) |
+| `next-themes` | Dark mode / theme switching for Next.js |
 
 ### Installed per Component
 
@@ -391,4 +393,4 @@ Ensure `tsconfig.json` paths match `components.json` aliases:
 
 ---
 
-**Version:** latest | **Source:** https://ui.shadcn.com/docs
+**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs

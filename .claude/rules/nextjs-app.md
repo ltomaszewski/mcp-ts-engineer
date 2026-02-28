@@ -23,46 +23,17 @@ Browser → Next.js Server Action → NestJS Backend (mutations)
 | Server Components fetch from backend | No direct DB access in Next.js |
 | Client Components use TanStack Query | Caching, polling, optimistic updates |
 | Server Actions proxy mutations | No client-side API keys |
-| No API routes in Next.js | Backend owns all endpoints |
+| No API routes in Next.js (exception: auth catch-all at `app/api/auth/[...all]/route.ts`) | Backend owns all endpoints |
 | Environment: `NEXT_PUBLIC_API_URL` | Backend URL configured per environment |
 
 ---
 
 ## Server vs Client Components
 
-### Server Components (default)
+- **Server Components** (default): Data fetching, SEO content, layout shells
+- **Client Components** (`"use client"`): Interactive UI, TanStack Query hooks, browser APIs
 
-Use for:
-- Initial data fetching
-- SEO-critical content
-- Static or rarely-changing content
-- Layout and page shells
-
-```tsx
-// app/users/page.tsx — Server Component (default)
-export default async function UsersPage() {
-  const users = await apiFetch<User[]>("/users");
-  return <UserList users={users} />;
-}
-```
-
-### Client Components (`"use client"`)
-
-Use for:
-- Interactive UI (forms, buttons, modals)
-- TanStack Query hooks
-- Browser APIs (localStorage, window)
-- Real-time updates (polling, WebSocket)
-
-```tsx
-"use client";
-// components/user-search.tsx
-export function UserSearch() {
-  const [query, setQuery] = useState("");
-  const { data } = useQuery({ queryKey: ["users", query], queryFn: ... });
-  return <input value={query} onChange={e => setQuery(e.target.value)} />;
-}
-```
+For detailed patterns and code examples, load the `nextjs-core` skill.
 
 ### Anti-Patterns
 
@@ -71,7 +42,7 @@ export function UserSearch() {
 | `"use client"` on page components | Keep pages as Server Components, extract interactive parts |
 | Fetching in Client Components without TanStack Query | Use `useQuery` for caching and deduplication |
 | Direct database calls in Next.js | Fetch from NestJS backend instead |
-| API routes (`app/api/`) for proxying | Use Server Components or Server Actions |
+| API routes (`app/api/`) for proxying (exception: auth catch-all at `app/api/auth/[...all]/route.ts`) | Use Server Components or Server Actions |
 | `useEffect` for data fetching | Use TanStack Query or Server Components |
 
 ---
@@ -107,40 +78,11 @@ src/
 
 ## Data Fetching
 
-### Server Components
+- **Server Components**: Use `apiFetch<T>()` with optional `next: { revalidate }` for caching
+- **Client Components**: Use TanStack Query `useQuery` / `useMutation` with cache invalidation
+- **Mutations**: Server Actions or `useMutation` proxying to backend
 
-```tsx
-// Direct fetch in Server Component — cached by Next.js
-const data = await apiFetch<T>("/endpoint");
-
-// With revalidation
-const data = await apiFetch<T>("/endpoint", {
-  next: { revalidate: 60 },
-});
-```
-
-### Client Components
-
-```tsx
-"use client";
-const { data, isLoading, error } = useQuery({
-  queryKey: ["resource", id],
-  queryFn: () => fetchResource(id),
-  staleTime: 60_000,
-});
-```
-
-### Mutations
-
-```tsx
-const mutation = useMutation({
-  mutationFn: (input: CreateInput) => apiFetch("/resource", {
-    method: "POST",
-    body: JSON.stringify(input),
-  }),
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["resource"] }),
-});
-```
+For detailed data fetching and mutation patterns, load the `nextjs-core` skill.
 
 ---
 
@@ -160,24 +102,7 @@ const mutation = useMutation({
 - **Setup**: `vitest.setup.ts` imports `@testing-library/jest-dom`
 - **Path aliases**: `vite-tsconfig-paths` resolves `@/` imports
 
-```tsx
-import { render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return ({ children }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-}
-
-it("renders component", () => {
-  render(<MyComponent />, { wrapper: createWrapper() });
-  expect(screen.getByText("Hello")).toBeInTheDocument();
-});
-```
+For test patterns, query helpers, and mocking strategies, load the `nextjs-testing` skill.
 
 ---
 

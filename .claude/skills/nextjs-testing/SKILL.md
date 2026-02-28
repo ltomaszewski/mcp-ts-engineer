@@ -5,7 +5,7 @@ description: Next.js testing with Vitest - component testing, Server Component m
 
 # Next.js Testing with Vitest
 
-Unit and integration testing for Next.js App Router using Vitest, @testing-library/react, and jsdom.
+> Unit and integration testing for Next.js App Router using Vitest, @testing-library/react, and jsdom.
 
 **Stack:** Vitest + @vitejs/plugin-react + vite-tsconfig-paths + @testing-library/react + @testing-library/jest-dom
 

@@ -40,53 +40,13 @@ Background + foreground pattern. The `background` suffix is omitted in utilities
 
 ---
 
-## OKLCH Color Format
-
-Tailwind v4 uses `oklch(L C H)`: Lightness (0-1), Chroma (0-0.4), Hue (0-360).
-
-- **L=0** is black, **L=1** is white
-- **C=0** is gray (neutral), higher = more saturated
-- Perceptually uniform, better accessibility than HSL
-
-```css
-oklch(0.985 0 0)            /* near-white */
-oklch(0.141 0.005 285.82)   /* near-black */
-oklch(0.546 0.245 262.88)   /* blue */
-oklch(0.577 0.245 27.33)    /* red */
-oklch(0.723 0.219 149.58)   /* green */
-```
-
----
-
 ## Customizing Theme Colors
 
-### Edit globals.css Variables
+Edit CSS variables in `globals.css` `:root` and `.dark` blocks, then map them via `@theme inline`. All colors use OKLCH format.
 
-```css
-:root {
-  /* Change primary to blue */
-  --primary: oklch(0.546 0.245 262.88);
-  --primary-foreground: oklch(0.985 0 0);
-  /* Adjust global radius */
-  --radius: 0.75rem;
-}
-.dark {
-  --primary: oklch(0.623 0.214 259.53);
-  --primary-foreground: oklch(0.21 0.034 264.66);
-}
-```
+For detailed Tailwind v4 theming (`@theme inline`, `@custom-variant`, OKLCH color format, container queries), see `tailwind-v4/03-theming.md`.
 
-### Register in @theme inline
-
-```css
-@theme inline {
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  /* ... map all variables ... */
-}
-```
-
-### Adding Custom Colors
+### Adding Custom shadcn Tokens
 
 ```css
 :root {
@@ -250,23 +210,9 @@ export function LoadingButton({ loading, disabled, children, className, ...props
 
 ## Dark Mode
 
-Powered by `next-themes`. The `.dark` class on `<html>` activates dark CSS variables.
+Powered by `next-themes`. The `.dark` class on `<html>` activates dark CSS variables. Use `useTheme()` from `next-themes` for toggle controls.
 
-```tsx
-"use client"
-import { useTheme } from "next-themes"
-
-export function ThemeAware() {
-  const { resolvedTheme, setTheme } = useTheme()
-  return (
-    <button onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
-      Toggle ({resolvedTheme})
-    </button>
-  )
-}
-```
-
-Tailwind `dark:` prefix works via `@custom-variant dark (&:is(.dark *))` in globals.css.
+For `@custom-variant` dark mode setup in Tailwind v4, see `tailwind-v4/03-theming.md`.
 
 ---
 
@@ -302,4 +248,4 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
 
 ---
 
-**Version:** latest | **Source:** https://ui.shadcn.com/docs
+**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs

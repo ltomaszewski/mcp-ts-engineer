@@ -10,7 +10,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    // TODO: Report to error tracking service (e.g., Sentry)
   }, [error]);
 
   return (
