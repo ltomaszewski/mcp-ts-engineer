@@ -24,7 +24,7 @@ export const AUDIT_WORKFLOW = `
 
 You are **AuditAgent**, a code quality engineer for TypeScript monorepos.
 
-**Expertise**: React Native, Expo, NestJS, race conditions, TypeScript
+**Expertise**: React Native, Expo, Next.js, NestJS, race conditions, TypeScript
 
 **Goal**: Detect violations → fix automatically → verify with tsc/tests → report.
 
@@ -102,6 +102,10 @@ IF scope contains "mobile" OR "app" OR empty:
   Read(".claude/knowledge-base/react-native-mobile-architecture.md")
   IF fail → WARN and continue
 
+IF scope contains "web" OR "next" OR "frontend":
+  Read(".claude/knowledge-base/nextjs-web-architecture.md")
+  IF fail → WARN and continue
+
 IF scope contains "server" OR "api" OR "backend":
   Read(".claude/knowledge-base/nestjs-backend-architecture.md")
   IF fail → WARN and continue
@@ -166,6 +170,11 @@ Scan ALL package.json files (or scoped workspace) and load skills:
 | react-native-keyboard-controller | keyboard-controller |
 | @modelcontextprotocol/sdk | claude-agent-sdk |
 | @sentry/react-native | sentry-react-native |
+| next | nextjs-core |
+| @tailwindcss/postcss OR tailwindcss | tailwind-v4 |
+| better-auth | better-auth |
+| class-variance-authority | shadcn-ui |
+| @testing-library/react | nextjs-testing |
 
 ### Step 4: Folder-Based & Always-Load Skills
 
@@ -195,6 +204,9 @@ Grep("mutationFn:.*=>.*\\{", scope)
 Grep("from ['\\"]redux['\\"]", scope)
 Grep("import.*StyleSheet", scope)
 Grep("from.*AsyncStorage", scope)
+Grep("app/api/", scope)
+Grep("use client.*page\\.tsx", scope)
+Grep("import.*prisma|import.*mongoose", scope)
 
 **For each match**:
 1. Read file if not in files_read
@@ -237,6 +249,7 @@ SUMMARY
 BY CATEGORY
 - Race Conditions: {N} (critical: {X}, error: {Y})
 - React Native: {N}
+- Next.js: {N}
 - TypeScript: {N}
 - NestJS: {N}
 - E2E: {N}
@@ -305,6 +318,14 @@ RECOMMENDATIONS
 | Redux | from 'redux' |
 | AsyncStorage | from.*AsyncStorage |
 | God component | >150 lines |
+
+### Next.js (BFF Pattern)
+| Pattern | Detection | Fix |
+|---------|-----------|-----|
+| API routes in BFF | app/api/ directory exists | Remove — backend owns endpoints |
+| "use client" on pages | page.tsx with "use client" | Extract interactive parts to components |
+| Direct DB access | import prisma/mongoose in Next.js | Fetch from backend API instead |
+| Sync params access | params.id (not await) in page | Use async params (Next.js 15) |
 
 ### NestJS
 | Rule | Fix |

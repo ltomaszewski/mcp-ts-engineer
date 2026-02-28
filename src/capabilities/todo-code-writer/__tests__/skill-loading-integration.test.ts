@@ -722,6 +722,39 @@ describe('Dynamic Skill Loading — Cross-Project Integration', () => {
       expect(promptInput.detectedDependencies).toContain('nativewind')
     })
 
+    it('end-to-end: Next.js workspace → capability detects and passes technologies', async () => {
+      mockPackageJson(EXAMPLE_NEXT_APP_PKG)
+      const { phaseEngStepCapability } = await import('../phase-eng-step.capability.js')
+
+      const mockContext = {
+        session: { id: 's1' },
+        invocation: { id: 'i1' },
+        logger: { info: () => {}, debug: () => {}, error: () => {}, warn: () => {} },
+        getSessionCost: () => ({ totalCostUsd: 0 }),
+        promptVersion: 'v2',
+        providerName: 'ClaudeProvider',
+        invokeCapability: vi.fn(),
+      }
+
+      const input = {
+        spec_path: 'docs/specs/example-next-app/feature.md',
+        phase_plan: MOCK_PHASE_PLAN,
+        current_phase_number: 1,
+        cwd: '/apps/example-next-app',
+      }
+
+      const promptInput = phaseEngStepCapability.preparePromptInput(
+        input as never,
+        mockContext as never,
+      ) as Record<string, unknown>
+
+      expect(promptInput.detectedTechnologies).toContain('nextjs')
+      expect(promptInput.detectedTechnologies).not.toContain('react')
+      expect(promptInput.detectedDependencies).toContain('next')
+      expect(promptInput.detectedDependencies).toContain('better-auth')
+      expect(promptInput.detectedDependencies).toContain('@tailwindcss/postcss')
+    })
+
     it('end-to-end: audit capability detects workspace for RN project', async () => {
       mockPackageJson(EXAMPLE_APP_PKG)
       const { phaseAuditStepCapability } = await import('../phase-audit-step.capability.js')

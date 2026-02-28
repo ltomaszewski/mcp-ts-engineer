@@ -38,6 +38,7 @@ export const DEPENDENCY_SKILL_MAP: Record<string, string> = {
   '@sentry/react-native': 'sentry-react-native',
   // Next.js web app dependencies
   next: 'nextjs-core',
+  tailwindcss: 'tailwind-v4',
   '@tailwindcss/postcss': 'tailwind-v4',
   'better-auth': 'better-auth',
   'class-variance-authority': 'shadcn-ui',

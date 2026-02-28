@@ -96,7 +96,8 @@ packages/mcp-ts-engineer/
 │       ├── registry.json                # App type registry
 │       ├── expo-app/                    # React Native (Expo) template
 │       ├── nestjs-server/               # NestJS backend template
-│       └── mcp-server/                  # MCP server template
+│       ├── mcp-server/                  # MCP server template
+│       └── next-app/                    # Next.js frontend template
 ├── vitest.config.ts                     # Vitest configuration
 ├── vitest.setup.ts                      # Vitest setup file
 ├── tsconfig.json                        # TypeScript config (IDE)
@@ -232,6 +233,7 @@ templates/apps/
     ├── src/app/layout.tsx.template
     ├── src/app/page.tsx.template
     ├── src/app/loading.tsx.template
+    ├── src/app/error.tsx.template
     ├── src/app/not-found.tsx.template
     ├── src/app/globals.css.template
     ├── src/features/health/           # Health check feature with TanStack Query
@@ -270,6 +272,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
    - `.template` files → copy with suffix stripped, run `sed` placeholder replacement
    - `swcrc.template` → `.swcrc` (dot-prefix)
    - `env.example.template` → `.env.example` (dot-prefix)
+   - `nvmrc.template` → `.nvmrc` (dot-prefix)
    - Other files (`.gitkeep`) → copy as-is
 6. **Create `docs/specs/<name>/todo/`**
 7. **Run `npm install`** (workspace auto-discovery)
@@ -339,7 +342,7 @@ The system is fully registry-driven. **No script changes needed**:
    { "my-type": { "label": "My Framework", "description": "Short description" } }
    ```
 3. Add template files with `.template` suffix, using `{{PLACEHOLDER}}` markers
-4. Special naming: `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`
+4. Special naming: `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`, `nvmrc.template` → `.nvmrc`
 5. Non-template files (`.gitkeep`) are copied as-is
 6. Add tests in `__tests__/create-app-scripts.test.ts`
 
@@ -361,10 +364,10 @@ Tests in `__tests__/create-app-scripts.test.ts`:
 - `_common.sh` and `create-app.sh` exist, have shebang, pass `bash -n`
 - `_common.sh` contains all shared functions
 - `create-app.sh` sources `_common.sh`, validates name, handles dot-prefix files
-- `registry.json` exists, valid JSON, contains all three app types
+- `registry.json` exists, valid JSON, contains all four app types
 - Each template dir has `package.json.template` with `{{PACKAGE_NAME}}`
 - Each template dir has `tsconfig.json.template` and `biome.json.template`
-- Correct test runner config per type (Jest for expo, Vitest for nestjs/mcp)
+- Correct test runner config per type (Jest for expo, Vitest for nestjs/mcp/next-app)
 
 ## Technology Stack
 

@@ -80,6 +80,26 @@ describe('detectWorkspace', () => {
       const result = detectWorkspace('/some/path')
       expect(result.technologies).toContain('zustand')
     })
+
+    it('detects nextjs from next dependency', () => {
+      mockPackageJson({ dependencies: { next: '15.0.0', react: '19.0.0' } })
+      const result = detectWorkspace('/some/path')
+      expect(result.technologies).toContain('nextjs')
+    })
+
+    it('does NOT include standalone react tag when next is present', () => {
+      mockPackageJson({ dependencies: { next: '15.0.0', react: '19.0.0', 'react-dom': '19.0.0' } })
+      const result = detectWorkspace('/some/path')
+      expect(result.technologies).toContain('nextjs')
+      expect(result.technologies).not.toContain('react')
+    })
+
+    it('detects react when next is NOT present', () => {
+      mockPackageJson({ dependencies: { react: '19.0.0' } })
+      const result = detectWorkspace('/some/path')
+      expect(result.technologies).toContain('react')
+      expect(result.technologies).not.toContain('nextjs')
+    })
   })
 
   describe('dependencies field (AC-3.9)', () => {

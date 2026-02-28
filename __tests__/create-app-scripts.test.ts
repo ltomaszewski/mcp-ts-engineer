@@ -115,6 +115,10 @@ describe('create-app.sh specifics', () => {
     expect(content).toContain('.env.example')
   })
 
+  it('handles nvmrc.template dot-prefix', () => {
+    expect(content).toContain('.nvmrc')
+  })
+
   it('creates spec directory', () => {
     expect(content).toContain('docs/specs/$APP_NAME/todo')
   })
@@ -251,6 +255,10 @@ describe('App template directories', () => {
 
   it('next-app has src/app/layout.tsx.template', () => {
     expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/src/app/layout.tsx.template'))).toBe(true)
+  })
+
+  it('next-app has src/app/error.tsx.template (error boundary)', () => {
+    expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app/src/app/error.tsx.template'))).toBe(true)
   })
 
   it('next-app has postcss.config.mjs.template', () => {
