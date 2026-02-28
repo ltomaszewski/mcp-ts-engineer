@@ -238,7 +238,7 @@ templates/apps/
     ├── src/app/globals.css.template
     ├── src/features/health/           # Health check feature with TanStack Query
     ├── src/lib/api-client.ts.template # Fetch wrapper for backend
-    ├── src/lib/query-client.ts.template # TanStack Query config
+    ├── src/lib/query-client.tsx.template # TanStack Query config
     ├── src/lib/utils.ts.template
     ├── src/components/ui/.gitkeep    # shadcn/ui components
     ├── src/hooks/.gitkeep
