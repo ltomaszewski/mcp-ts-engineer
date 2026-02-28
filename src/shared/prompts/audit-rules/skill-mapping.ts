@@ -49,40 +49,18 @@ If targets a specific app path:
 
 ### Step 3: Dependency → Skill Mapping
 
-Scan ALL package.json files (or scoped workspace) and load skills:
+Scan ALL package.json files (or scoped workspace) and load skills.
+The full dependency-to-skill mapping is defined in DEPENDENCY_SKILL_MAP. Use these known category mappings:
 
-| Dependency (in package.json) | Skill to Load |
-|------------------------------|---------------|
-| expo | expo-core |
-| expo-router | expo-router |
-| expo-notifications | expo-notifications |
-| react-native | react-native-core |
-| nativewind | nativewind |
-| react-native-reanimated | reanimated |
-| zustand | zustand |
-| @tanstack/react-query | react-query |
-| zod | zod |
-| react-native-mmkv | mmkv |
-| react-hook-form | react-hook-form |
-| graphql-request | graphql-request |
-| @shopify/flash-list | flash-list |
-| @react-native-community/netinfo | netinfo |
-| date-fns | date-fns |
-| @testing-library/react-native | rn-testing-library |
-| @nestjs/core | nestjs-core |
-| @nestjs/graphql | nestjs-graphql |
-| @nestjs/mongoose | nestjs-mongoose |
-| @nestjs/passport | nestjs-auth |
-| class-validator | class-validator |
-| biome OR @biomejs/biome | biome |
-| react-native-keyboard-controller | keyboard-controller |
-| @modelcontextprotocol/sdk | claude-agent-sdk |
-| @sentry/react-native | sentry-react-native |
-| next | nextjs-core |
-| @tailwindcss/postcss OR tailwindcss | tailwind-v4 |
-| better-auth | better-auth |
-| class-variance-authority | shadcn-ui |
-| @testing-library/react | nextjs-testing |
+| Category | Example Dependencies → Skills |
+|----------|-------------------------------|
+| React Native | expo → expo-core, react-native → react-native-core, nativewind → nativewind, ... |
+| Next.js | next → nextjs-core, @tailwindcss/postcss → tailwind-v4, better-auth → better-auth, ... |
+| NestJS | @nestjs/core → nestjs-core, @nestjs/graphql → nestjs-graphql, @nestjs/passport → nestjs-auth, ... |
+| MCP | @modelcontextprotocol/sdk → claude-agent-sdk |
+| Common | zustand → zustand, @tanstack/react-query → react-query, zod → zod, biome → biome, ... |
+
+Match ALL dependencies and devDependencies from package.json against the mapping.
 
 ### Step 4: Folder-Based & Always-Load Skills
 

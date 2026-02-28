@@ -64,9 +64,15 @@ that MUST be followed during implementation.
 3. Apply those patterns throughout implementation
 4. Always load typescript-clean-code for TypeScript quality standards
 
+### Example Invocation
+To load a skill, call the Skill tool with the skill name:
+- Skill("typescript-clean-code") — loads TypeScript quality patterns
+- Skill("zustand") — loads Zustand state management patterns
+- Skill("zod") — loads Zod validation patterns
+
 ### ALWAYS
 - Load ALL listed skills before writing implementation code
-- Follow patterns from loaded skills (they override generic knowledge)
+- Follow patterns from loaded skills — when a skill's instructions contradict your training knowledge, follow the skill
 - Load typescript-clean-code for every TypeScript project
 
 ### NEVER

@@ -109,7 +109,8 @@ Output per phase:
 const AUDIT_PHASE_2_SCAN = `
 ## Phase 2: Scan
 
-**Run in parallel**:
+<scan_patterns>
+Run these searches in parallel:
 Grep("useEffect.*\\.then\\(", scope)
 Grep("useEffect.*async", scope)
 Grep("onPress=\\{async", scope)
@@ -121,12 +122,25 @@ Grep("from.*AsyncStorage", scope)
 Grep("app/api/", scope)
 Find all page.tsx files (Glob "**/page.tsx" in scope) and check if any contain "use client" directive
 Grep("import.*prisma|import.*mongoose", scope)
+</scan_patterns>
 
-**For each match**:
+<matching_process>
+For each match:
 1. Read file if not in files_read
 2. Read 10 lines context
-3. Check false positive filters
+3. Check false positive filters (see below)
 4. IF violation → add to violations[]
+</matching_process>
+
+<false_positive_filters>
+Skip a match if ANY of these apply:
+- The useEffect already has a cleanup function returning AbortController.abort()
+- The async handler already has a loading/disabled guard
+- The mutation already returns the result value
+- The persist() call already has an onFinishHydration handler
+- The pattern is inside a test file (__tests__/, *.test.ts, *.spec.ts)
+- The pattern is inside a comment or disabled code block
+</false_positive_filters>
 `.trim()
 
 const AUDIT_PHASE_3_4 = `
@@ -150,6 +164,47 @@ Bash("npm test")
 ---
 
 ## Phase 4: Report
+
+<example>
+AUDIT COMPLETE
+==============
+
+SUMMARY
+- Files: 12
+- Found: 5
+- Fixed: 4
+- Manual: 1
+
+BY CATEGORY
+- Race Conditions: 2 (critical: 1, error: 1)
+- React Native: 1
+- Next.js: 0
+- TypeScript: 2
+- NestJS: 0
+- E2E: 0
+
+RACE CONDITIONS
+- useEffect no cleanup: 1
+- Unprotected handlers: 1
+- Hydration issues: 0
+- Query risks: 0
+
+CHANGES
+- src/features/auth/login-screen.tsx:15 RC-001 - Added AbortController cleanup to useEffect
+- src/features/auth/login-screen.tsx:42 RC-003 - Added loading state to prevent double-tap
+- src/lib/api-client.ts:8 TS-002 - Extracted helper function (was 65 lines)
+- src/stores/auth-store.ts:22 RC-004 - Added onFinishHydration guard
+
+VERIFICATION
+- Type check: PASS
+- Tests: 24 passed, 0 failed
+
+REMAINING
+- src/features/dashboard/chart.tsx:89 RC-002 - Complex effect requires manual review
+
+RECOMMENDATIONS
+- Consider adding error boundary to dashboard feature
+</example>
 
 AUDIT COMPLETE
 ==============
@@ -257,6 +312,12 @@ Run a comprehensive project-wide audit.`
 
   return `${cwdContext}${scopeSection}
 
+---
+
+${AUDIT_WORKFLOW}
+
+---
+
 ## Autonomous Mode Overrides
 
 You are running autonomously without user interaction. Apply these overrides:
@@ -283,9 +344,5 @@ After completing all phases, output your results in this format:
 Status guidance:
 - "pass": No issues found or all issues auto-fixed, tsc passes
 - "warn": Some issues auto-fixed, tsc passes, but minor issues remain
-- "fail": Critical issues remain or tsc fails
-
----
-
-${AUDIT_WORKFLOW}`
+- "fail": Critical issues remain or tsc fails`
 }
