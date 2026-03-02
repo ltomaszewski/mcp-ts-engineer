@@ -353,6 +353,19 @@ describe('App template directories', () => {
     )
     expect(content).toContain('NEXT_PUBLIC_SITE_URL')
   })
+
+  it('next-app has CLAUDE.md.template with SEO maintenance instructions', () => {
+    const templatePath = join(APPS_TEMPLATES_DIR, 'next-app/CLAUDE.md.template')
+    expect(existsSync(templatePath)).toBe(true)
+    const content = readFileSync(templatePath, 'utf-8')
+    expect(content).toContain('SEO')
+    expect(content).toContain('sitemap.ts')
+    expect(content).toContain('llms.txt')
+    expect(content).toContain('robots.ts')
+    expect(content).toContain('json-ld')
+    expect(content).toContain('generateMetadata')
+    expect(content).toContain('{{PASCAL_NAME}}')
+  })
 })
 
 describe('Command files', () => {

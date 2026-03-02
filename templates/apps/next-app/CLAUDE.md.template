@@ -1,0 +1,78 @@
+# {{PASCAL_NAME}}
+
+Next.js web app using the BFF (Backend-for-Frontend) pattern.
+
+## Architecture
+
+- **Next.js 15** with App Router, Server/Client Components
+- **BFF pattern**: Next.js is a thin frontend layer — all business logic lives in the NestJS backend
+- **Data fetching**: Server Components use `apiFetch<T>()`, Client Components use TanStack Query
+- **Styling**: Tailwind CSS v4 (CSS-first config), shadcn/ui components
+- **Auth**: Better Auth (not next-auth), session managed via NestJS backend
+- **Testing**: Vitest + @testing-library/react + jsdom
+
+## Key Rules
+
+- Server Components fetch from backend — no direct DB access
+- Client Components use TanStack Query for caching/polling
+- No API routes except: auth catch-all, markdown proxy, llms.txt
+- Use `buildSiteMetadata()` from `@/lib/seo/metadata` — never hardcode metadata
+- Use Biome for linting (not ESLint)
+
+## SEO & AI Readability Infrastructure
+
+This app includes built-in SEO and AI optimization. **Keep it updated on every change.**
+
+### What to Update When Adding/Changing Routes
+
+| Change | Files to Update |
+|--------|----------------|
+| New public page/route | `src/app/sitemap.ts` — add URL entry |
+| New public page/route | `src/app/llms.txt/route.ts` — add page to manifest |
+| New content type (article, product, etc.) | `src/lib/seo/json-ld.ts` — add schema builder |
+| New page with unique content | Add `generateMetadata()` export to the page file |
+| New page with structured data | Add `<JsonLdScript>` with appropriate schema |
+| New admin/private section | `src/app/robots.ts` — add to disallow list |
+| New API route | `src/app/robots.ts` — already disallows `/api/` |
+
+### SEO File Reference
+
+| File | Purpose | When to Touch |
+|------|---------|---------------|
+| `src/app/sitemap.ts` | Dynamic sitemap.xml generation | Every new public route |
+| `src/app/robots.ts` | Crawl rules (standard + AI bots) | New private sections |
+| `src/app/llms.txt/route.ts` | LLM discovery manifest | Every new public route |
+| `src/lib/seo/metadata.ts` | `buildSiteMetadata()` — site-wide defaults | Brand/title changes |
+| `src/lib/seo/json-ld.ts` | Schema.org JSON-LD builders | New content types |
+| `src/lib/seo/ai-bots.ts` | AI bot user-agent detection | New AI crawlers emerge |
+| `src/lib/seo/markdown-transform.ts` | HTML-to-Markdown for AI bots | Rarely |
+| `src/lib/seo/sanitize.ts` | HTML sanitization before markdown | Rarely |
+| `src/components/seo/json-ld-script.tsx` | JSON-LD renderer component | Rarely |
+| `src/middleware.ts` | AI bot detection + markdown rewrite | New bypass rules |
+| `src/app/api/markdown/[...path]/route.ts` | Markdown proxy for AI bots | Rarely |
+
+### Checklist for New Pages
+
+- [ ] Page has `generateMetadata()` with title and description
+- [ ] Page added to `sitemap.ts`
+- [ ] Page added to `llms.txt/route.ts`
+- [ ] JSON-LD added if page has structured content (articles, products, FAQs, etc.)
+- [ ] Private pages excluded in `robots.ts`
+
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_API_URL` | Backend API base URL |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL (used by SEO infra) |
+| `PORT` | Dev server port |
+
+## Commands
+
+```bash
+npm run dev          # Start dev server (Turbopack)
+npm run build        # Production build
+npm test             # Run tests
+npm run type-check   # TypeScript check
+npm run lint         # Biome lint
+```

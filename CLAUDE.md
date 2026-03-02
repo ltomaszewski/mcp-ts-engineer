@@ -227,6 +227,7 @@ templates/apps/
     ├── vitest.config.ts.template
     ├── vitest.setup.ts.template
     ├── biome.json.template            # Excludes .next/
+    ├── CLAUDE.md.template             # Project instructions (SEO maintenance)
     ├── components.json.template       # shadcn/ui config
     ├── env.example.template           # → .env.example (dot-prefix auto-added)
     ├── nvmrc.template                 # Node.js version 22
