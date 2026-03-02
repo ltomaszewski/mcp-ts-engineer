@@ -1,0 +1,57 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { htmlToMarkdown } from "@/lib/seo/markdown-transform";
+
+export const runtime = "nodejs";
+
+const BYPASS_HEADER = "X-Markdown-Bypass";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+): Promise<NextResponse> {
+  const { path } = await params;
+  const targetPath = `/${path.join("/")}`;
+  const targetUrl = `${siteUrl}${targetPath}`;
+
+  try {
+    // Self-fetch with bypass header to get rendered HTML
+    const response = await fetch(targetUrl, {
+      headers: { [BYPASS_HEADER]: "1" },
+      next: { revalidate: 0 },
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `Failed to fetch: ${response.status}` },
+        { status: response.status },
+      );
+    }
+
+    const html = await response.text();
+    const { markdown } = htmlToMarkdown(html);
+
+    if (!markdown) {
+      return NextResponse.json(
+        { error: "Could not extract readable content" },
+        { status: 422 },
+      );
+    }
+
+    return new NextResponse(markdown, {
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        Vary: "Accept, User-Agent",
+        "Cache-Control":
+          "public, s-maxage=3600, stale-while-revalidate=1800",
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: `Markdown conversion failed: ${message}` },
+      { status: 500 },
+    );
+  }
+}

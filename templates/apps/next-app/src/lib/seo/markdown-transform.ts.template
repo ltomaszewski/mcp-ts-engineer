@@ -1,0 +1,38 @@
+import { parseHTML } from "linkedom";
+import { Readability } from "@mozilla/readability";
+import TurndownService from "turndown";
+
+interface MarkdownResult {
+  title: string | null;
+  markdown: string;
+}
+
+/**
+ * Convert an HTML string to clean Markdown using linkedom + Readability + Turndown.
+ *
+ * IMPORTANT: This module must only be imported in Node.js runtime routes
+ * (NOT in middleware, which runs on Edge). The API route at
+ * app/api/markdown/[...path]/route.ts uses `export const runtime = 'nodejs'`.
+ */
+export function htmlToMarkdown(html: string): MarkdownResult {
+  const { document } = parseHTML(html);
+
+  const reader = new Readability(document);
+  const article = reader.parse();
+
+  if (!article) {
+    return { title: null, markdown: "" };
+  }
+
+  const turndown = new TurndownService({
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+  });
+
+  const markdown = turndown.turndown(article.content);
+
+  return {
+    title: article.title,
+    markdown: article.title ? `# ${article.title}\n\n${markdown}` : markdown,
+  };
+}

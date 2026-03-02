@@ -1,0 +1,29 @@
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+/**
+ * Build site-wide metadata defaults for the root layout.
+ * Sets metadataBase, title template, OG, and Twitter card defaults.
+ *
+ * Usage in app/layout.tsx:
+ *   export const metadata = buildSiteMetadata();
+ */
+export function buildSiteMetadata(): Metadata {
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: "{{PASCAL_NAME}}",
+      template: "%s | {{PASCAL_NAME}}",
+    },
+    description: "{{PASCAL_NAME}} web application",
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      siteName: "{{PASCAL_NAME}}",
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  };
+}

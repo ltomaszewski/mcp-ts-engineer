@@ -1,0 +1,30 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { isAiBot, wantsMarkdown } from "@/lib/seo/ai-bots";
+
+const BYPASS_HEADER = "X-Markdown-Bypass";
+
+export function middleware(request: NextRequest): NextResponse | undefined {
+  // Skip if this is already a bypass request (prevents infinite loop)
+  if (request.headers.get(BYPASS_HEADER)) {
+    return undefined;
+  }
+
+  const ua = request.headers.get("user-agent") ?? "";
+  const accept = request.headers.get("accept") ?? "";
+
+  if (isAiBot(ua) || wantsMarkdown(accept)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/api/markdown${url.pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  return undefined;
+}
+
+export const config = {
+  matcher: [
+    // Match all paths except static files, API routes, and _next
+    "/((?!api|_next/static|_next/image|favicon\\.ico|.*\\..*).*)",
+  ],
+};

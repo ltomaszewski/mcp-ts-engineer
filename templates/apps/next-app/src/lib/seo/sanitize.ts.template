@@ -1,0 +1,13 @@
+/**
+ * XSS-safe JSON-LD serialization.
+ *
+ * JSON-LD is injected via <script type="application/ld+json">. If the data
+ * contains "</script>", it breaks out of the tag — a classic XSS vector.
+ * Replacing all "<" with the Unicode escape "\u003c" prevents this while
+ * remaining valid JSON.
+ *
+ * @see https://nextjs.org/docs/app/guides/json-ld
+ */
+export function safeJsonLdStringify(data: object): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}

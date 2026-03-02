@@ -1,0 +1,22 @@
+import type { Thing, WithContext } from "schema-dts";
+import { safeJsonLdStringify } from "@/lib/seo/sanitize";
+
+interface JsonLdScriptProps {
+  readonly data: WithContext<Thing> | WithContext<Thing>[];
+}
+
+/**
+ * Server Component that renders a JSON-LD script tag with XSS-safe
+ * serialization. Use in layouts or pages to inject structured data.
+ *
+ * @example
+ *   <JsonLdScript data={buildWebSiteSchema()} />
+ */
+export function JsonLdScript({ data }: JsonLdScriptProps): React.JSX.Element {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(data) }}
+    />
+  );
+}
