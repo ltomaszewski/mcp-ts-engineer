@@ -303,6 +303,56 @@ describe('App template directories', () => {
     )
     expect(content).toContain('@tailwindcss/postcss')
   })
+
+  describe('next-app SEO template files', () => {
+    const SEO_TEMPLATE_FILES = [
+      'src/app/robots.ts.template',
+      'src/app/sitemap.ts.template',
+      'src/app/api/markdown/[...path]/route.ts.template',
+      'src/app/llms.txt/route.ts.template',
+      'src/components/seo/json-ld-script.tsx.template',
+      'src/lib/seo/ai-bots.ts.template',
+      'src/lib/seo/json-ld.ts.template',
+      'src/lib/seo/markdown-transform.ts.template',
+      'src/lib/seo/metadata.ts.template',
+      'src/lib/seo/sanitize.ts.template',
+      'src/middleware.ts.template',
+    ] as const
+
+    it.each(SEO_TEMPLATE_FILES)('%s exists', (file) => {
+      expect(existsSync(join(APPS_TEMPLATES_DIR, 'next-app', file))).toBe(true)
+    })
+  })
+
+  it('next-app package.json.template contains SEO dependencies', () => {
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'next-app/package.json.template'),
+      'utf-8',
+    )
+    expect(content).toContain('"linkedom"')
+    expect(content).toContain('"@mozilla/readability"')
+    expect(content).toContain('"turndown"')
+    expect(content).toContain('"schema-dts"')
+    expect(content).toContain('"@types/turndown"')
+  })
+
+  it('next-app layout.tsx.template imports SEO utilities', () => {
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'next-app/src/app/layout.tsx.template'),
+      'utf-8',
+    )
+    expect(content).toContain('buildSiteMetadata')
+    expect(content).toContain('JsonLdScript')
+    expect(content).toContain('buildWebSiteSchema')
+  })
+
+  it('next-app env.example.template contains NEXT_PUBLIC_SITE_URL', () => {
+    const content = readFileSync(
+      join(APPS_TEMPLATES_DIR, 'next-app/env.example.template'),
+      'utf-8',
+    )
+    expect(content).toContain('NEXT_PUBLIC_SITE_URL')
+  })
 })
 
 describe('Command files', () => {

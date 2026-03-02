@@ -43,6 +43,7 @@ export const DEPENDENCY_SKILL_MAP: Record<string, string> = {
   'better-auth': 'better-auth',
   'class-variance-authority': 'shadcn-ui',
   '@testing-library/react': 'nextjs-testing',
+  'schema-dts': 'nextjs-seo',
 }
 
 /** Skills that must always be loaded regardless of dependencies. */
