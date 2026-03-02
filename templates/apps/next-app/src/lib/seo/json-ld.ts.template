@@ -1,0 +1,16 @@
+import type { WebSite, WithContext } from "schema-dts";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+/**
+ * Build a Schema.org WebSite JSON-LD object for the site.
+ * Include in the root layout via <JsonLdScript data={buildWebSiteSchema()} />.
+ */
+export function buildWebSiteSchema(): WithContext<WebSite> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "{{PASCAL_NAME}}",
+    url: siteUrl,
+  };
+}

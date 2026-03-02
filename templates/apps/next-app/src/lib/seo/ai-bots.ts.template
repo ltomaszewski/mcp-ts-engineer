@@ -1,0 +1,61 @@
+/**
+ * AI bot user-agent patterns — single source of truth.
+ * Used by both robots.ts (Allow rules) and middleware (UA detection).
+ */
+
+/** User-agent strings for robots.txt Allow rules */
+export const AI_BOT_USER_AGENTS = [
+  // OpenAI
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  // Anthropic
+  "ClaudeBot",
+  "Claude-Web",
+  "anthropic-ai",
+  // Google
+  "Google-Extended",
+  "Gemini-Deep-Research",
+  "GoogleAgent-Mariner",
+  "Google-CloudVertexBot",
+  // Perplexity
+  "PerplexityBot",
+  "Perplexity-User",
+  // Meta
+  "Meta-ExternalAgent",
+  // Apple
+  "Applebot-Extended",
+  // ByteDance
+  "Bytespider",
+  // xAI
+  "xAI-Bot",
+  // Deepseek
+  "DeepseekBot",
+  // Cohere
+  "Cohere-AI",
+  // Mistral
+  "MistralAI-User",
+  // Amazon
+  "Amazonbot",
+  // DuckDuckGo
+  "DuckAssistBot",
+  // Common Crawl
+  "CCBot",
+  // Diffbot
+  "Diffbot",
+] as const;
+
+/** Regex patterns for middleware UA detection */
+export const AI_BOT_PATTERNS: RegExp[] = AI_BOT_USER_AGENTS.map(
+  (ua) => new RegExp(ua, "i"),
+);
+
+/** Check if a user-agent string matches any known AI bot */
+export function isAiBot(userAgent: string): boolean {
+  return AI_BOT_PATTERNS.some((pattern) => pattern.test(userAgent));
+}
+
+/** Check if the Accept header requests Markdown content */
+export function wantsMarkdown(acceptHeader: string): boolean {
+  return acceptHeader.includes("text/markdown");
+}
