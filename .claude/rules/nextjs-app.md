@@ -1,3 +1,7 @@
+---
+globs: apps/*-web/**, apps/*-frontend/**, templates/apps/next-app/**
+---
+
 # Next.js Web App Rules
 
 Architecture and coding rules for Next.js apps using the BFF pattern.

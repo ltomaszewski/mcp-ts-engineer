@@ -1,13 +1,27 @@
+---
+name: patterns
+description: Common TypeScript patterns - service layer, hooks, Zustand stores, error handling, Zod validation, testing. Use when implementing services, creating hooks, setting up stores, or writing tests.
+---
+
 # Common Patterns
 
-Reusable patterns for TypeScript development.
+> Reusable TypeScript patterns for this project's architecture.
+
+---
+
+## When to Use
+
+**LOAD THIS SKILL** when user is:
+- Implementing a new service class
+- Creating React hooks or Zustand stores
+- Writing error handling or validation logic
+- Setting up unit test structure with Vitest
 
 ---
 
 ## Service Pattern
 
 ```typescript
-// Service encapsulates business logic
 export class SessionService {
   constructor(
     private readonly store: SessionStore,
@@ -66,22 +80,14 @@ useEffect(() => {
   async function fetchData() {
     try {
       const data = await api.fetch({ signal: controller.signal })
-      if (!cancelled) {
-        setData(data)
-      }
+      if (!cancelled) setData(data)
     } catch (err) {
-      if (!cancelled && !controller.signal.aborted) {
-        setError(err)
-      }
+      if (!cancelled && !controller.signal.aborted) setError(err)
     }
   }
 
   fetchData()
-
-  return () => {
-    cancelled = true
-    controller.abort()
-  }
+  return () => { cancelled = true; controller.abort() }
 }, [dependency])
 ```
 
@@ -115,37 +121,29 @@ export const useAppStore = create<AppStore>()(
 
 ---
 
-## Error Handling Pattern
+## Error Handling
 
 ### Service Layer
-
 ```typescript
 async findById(id: string): Promise<Resource> {
   const resource = await this.store.get(id)
-  if (!resource) {
-    throw new NotFoundException(`Resource ${id} not found`)
-  }
+  if (!resource) throw new NotFoundException(`Resource ${id} not found`)
   return resource
 }
 ```
 
 ### API Layer
-
 ```typescript
 async function fetchResource(id: string): Promise<Resource> {
   const result = await client.query({ id })
-
-  if (result.error) {
-    throw new ApiError(result.error.message)
-  }
-
+  if (result.error) throw new ApiError(result.error.message)
   return result.data
 }
 ```
 
 ---
 
-## Validation Pattern (Zod)
+## Validation (Zod)
 
 ```typescript
 const sessionSchema = z.object({
@@ -162,9 +160,7 @@ type SessionInput = z.infer<typeof sessionSchema>
 
 ---
 
-## Testing Patterns
-
-### Unit Test
+## Testing (Vitest)
 
 ```typescript
 describe('SessionService', () => {
@@ -172,11 +168,7 @@ describe('SessionService', () => {
   let mockStore: Mocked<SessionStore>
 
   beforeEach(() => {
-    mockStore = {
-      get: vi.fn(),
-      save: vi.fn(),
-      delete: vi.fn(),
-    }
+    mockStore = { get: vi.fn(), save: vi.fn(), delete: vi.fn() }
     service = new SessionService(mockStore, mockLogger)
   })
 

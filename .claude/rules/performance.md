@@ -99,60 +99,12 @@ npm run build &
 
 ---
 
-## Build Performance
-
-### TypeScript Optimization
-
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
-    "skipLibCheck": true
-  }
-}
-```
-
----
-
-## MCP Tool Efficiency
-
-### Use the Right Tool
-
-| Task | MCP Tool |
-|------|----------|
-| Spec review | `mcp__ts-engineer__todo_reviewer` |
-| TDD implementation | `mcp__ts-engineer__todo_code_writer` |
-| Final audit + commit | `mcp__ts-engineer__finalize` |
-| Fix violations | `mcp__ts-engineer__audit_fix` |
-| PR review | `mcp__ts-engineer__pr_reviewer` |
-
-### Provide Accurate Inputs
-
-```markdown
-# GOOD: Specific spec path and files
-finalize({ files_changed: ["src/core/session/session.manager.ts"], spec_path: "docs/specs/..." })
-
-# BAD: Missing context
-finalize({ files_changed: [] })
-```
-
----
-
 ## Troubleshooting
 
-### Build Failures
-1. Use `mcp__ts-engineer__audit_fix` to auto-fix violations
-2. Fix incrementally
-3. Verify after each fix
+| Problem | Fix |
+|---------|-----|
+| Build failures | Use `audit_fix` MCP tool, fix incrementally |
+| Slow tests | Check for missing mocks, verify isolation |
+| High memory | Check leaks in tests, reduce parallelism |
 
-### Slow Tests
-1. Check for missing mocks (real API calls)
-2. Verify test isolation
-3. Use `--maxWorkers=4`
-
-### High Memory Usage
-1. Check for memory leaks in tests
-2. Reduce parallelism
-3. Clear caches
+See `agents.md` for MCP tool reference and parameters.

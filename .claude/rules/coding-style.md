@@ -129,19 +129,6 @@ async function executeTask(input: TaskInput): Promise<TaskOutput> {
 
 ## TypeScript
 
-### Configuration
-
-```json
-// tsconfig.json — required settings
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true
-  }
-}
-```
-
 ### Type Patterns
 
 ```typescript
@@ -270,14 +257,3 @@ import { CreateUserInput } from './dto'
 - [ ] Explicit types on exported functions
 - [ ] Import order follows convention
 
----
-
-## Flexibility Notes
-
-These rules are guidelines, not laws. Use judgment:
-
-- **Size limits are soft** — A 55-line function is fine if cohesive
-- **Patterns can flex** — Context matters more than rigid rules
-- **Consistency wins** — Match existing code style in a file
-- **Readability first** — If breaking a rule improves clarity, consider it
-- **Document exceptions** — Comment when deliberately deviating
