@@ -4,3 +4,7 @@ logs/
 logs_tests/
 *.tsbuildinfo
 .DS_Store
+.turbo/
+.env
+.env.*
+!.env.example

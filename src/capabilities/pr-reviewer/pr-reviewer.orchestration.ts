@@ -394,9 +394,21 @@ async function fetchPreviousReviewComment(
   _context: CapabilityContext,
 ): Promise<string | null> {
   try {
-    const { execSync } = await import('node:child_process')
-    const cmd = `gh pr view ${prContext.pr_number} --repo ${prContext.repo_owner}/${prContext.repo_name} --json comments --jq '.comments | map(select(.body | contains("Issues Data"))) | last | .body'`
-    const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000 }).trim()
+    const { execFileSync } = await import('node:child_process')
+    const safePattern = /^[a-zA-Z0-9._-]+$/
+    if (!safePattern.test(prContext.repo_owner) || !safePattern.test(prContext.repo_name)) {
+      return null
+    }
+    const output = execFileSync(
+      'gh',
+      [
+        'pr', 'view', String(prContext.pr_number),
+        '--repo', `${prContext.repo_owner}/${prContext.repo_name}`,
+        '--json', 'comments',
+        '--jq', '.comments | map(select(.body | contains("Issues Data"))) | last | .body',
+      ],
+      { encoding: 'utf-8', timeout: 15_000 },
+    ).trim()
     return output || null
   } catch {
     return null

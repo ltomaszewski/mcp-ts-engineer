@@ -3,7 +3,7 @@
  * Used by orchestrators to detect actual file changes vs AI-reported changes.
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 
 /**
@@ -32,13 +32,13 @@ export function hasUncommittedChanges(filePath: string, cwd?: string): boolean {
   try {
     // Check both staged and unstaged changes
     // git diff --quiet exits with 1 if there are changes, 0 if clean
-    execSync(`git diff --quiet -- "${absolutePath}"`, {
+    execFileSync('git', ['diff', '--quiet', '--', absolutePath], {
       cwd: workingDir,
       stdio: 'pipe',
     })
 
     // Also check staged changes
-    execSync(`git diff --quiet --cached -- "${absolutePath}"`, {
+    execFileSync('git', ['diff', '--quiet', '--cached', '--', absolutePath], {
       cwd: workingDir,
       stdio: 'pipe',
     })
@@ -64,7 +64,7 @@ export function isFileTracked(filePath: string, cwd?: string): boolean {
   const absolutePath = resolve(workingDir, filePath)
 
   try {
-    execSync(`git ls-files --error-unmatch "${absolutePath}"`, {
+    execFileSync('git', ['ls-files', '--error-unmatch', absolutePath], {
       cwd: workingDir,
       stdio: 'pipe',
     })

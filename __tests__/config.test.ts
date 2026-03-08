@@ -331,25 +331,25 @@ describe('CONFIG', () => {
 
   describe('deriveLogDir()', () => {
     it('converts PascalCase to kebab-case log path', () => {
-      expect(deriveLogDir('BastionTsEngineer')).toBe('~/.claude/bastion-ts-engineer/logs/')
+      expect(deriveLogDir('MyProjectServer')).toBe('~/.claude/my-project-server/logs/')
     })
 
     it('converts default McpTsEngineer correctly', () => {
       expect(deriveLogDir('McpTsEngineer')).toBe('~/.claude/mcp-ts-engineer/logs/')
     })
 
-    it('converts MellowTsEngineer correctly', () => {
-      expect(deriveLogDir('MellowTsEngineer')).toBe('~/.claude/mellow-ts-engineer/logs/')
+    it('converts another PascalCase name correctly', () => {
+      expect(deriveLogDir('AcmeTsEngineer')).toBe('~/.claude/acme-ts-engineer/logs/')
     })
 
     it('produces different paths for different server names', () => {
-      const bastionDir = deriveLogDir('BastionTsEngineer')
-      const mellowDir = deriveLogDir('MellowTsEngineer')
+      const acmeDir = deriveLogDir('AcmeTsEngineer')
+      const fooDir = deriveLogDir('FooBarServer')
       const defaultDir = deriveLogDir('McpTsEngineer')
 
-      expect(bastionDir).not.toBe(mellowDir)
-      expect(bastionDir).not.toBe(defaultDir)
-      expect(mellowDir).not.toBe(defaultDir)
+      expect(acmeDir).not.toBe(fooDir)
+      expect(acmeDir).not.toBe(defaultDir)
+      expect(fooDir).not.toBe(defaultDir)
     })
 
     it('handles single word name', () => {

@@ -43,9 +43,8 @@ export interface ProjectConfig {
  * Converts PascalCase/camelCase to kebab-case for filesystem-friendly paths.
  *
  * @example
- * "BastionTsEngineer" → "~/.claude/bastion-ts-engineer/logs/"
- * "MellowTsEngineer"  → "~/.claude/mellow-ts-engineer/logs/"
- * "McpTsEngineer"     → "~/.claude/mcp-ts-engineer/logs/"
+ * "MyProjectServer"  → "~/.claude/my-project-server/logs/"
+ * "McpTsEngineer"    → "~/.claude/mcp-ts-engineer/logs/"
  */
 export function deriveLogDir(serverName: string): string {
   const kebab = serverName

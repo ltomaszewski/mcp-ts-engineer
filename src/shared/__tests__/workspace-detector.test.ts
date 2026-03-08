@@ -3,14 +3,15 @@
  * Verifies detection still works after moving from capability-specific location.
  */
 
+import { resolve } from 'node:path'
 import { detectWorkspace, detectWorkspaceTechnologies } from '../workspace-detector.js'
+
+/** Repo root — works regardless of where the tests are run from. */
+const REPO_ROOT = resolve(import.meta.dirname, '../../..')
 
 describe('detectWorkspace (shared)', () => {
   it('reads package.json and returns technologies', () => {
-    // Using the current package.json path as test data
-    const result = detectWorkspace(
-      '/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer',
-    )
+    const result = detectWorkspace(REPO_ROOT)
 
     expect(result.technologies).toBeInstanceOf(Array)
     expect(result.dependencies).toBeInstanceOf(Array)
@@ -34,9 +35,7 @@ describe('detectWorkspace (shared)', () => {
   })
 
   it('detectWorkspaceTechnologies returns array', () => {
-    const result = detectWorkspaceTechnologies(
-      '/Users/ltomaszewski/Desktop/bastion3.0-mono/packages/mcp-ts-engineer',
-    )
+    const result = detectWorkspaceTechnologies(REPO_ROOT)
 
     expect(result).toBeInstanceOf(Array)
   })
