@@ -9,7 +9,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe } from '../../core/utils/index.js'
+import { isValidPath, parseJsonSafe, shellQuote } from '../../core/utils/index.js'
 import type { FixerValidateStepOutput } from './pr-fixer.schema.js'
 import {
   FIXER_VALIDATE_OUTPUT_JSON_SCHEMA,
@@ -17,7 +17,7 @@ import {
 } from './pr-fixer.schema.js'
 
 const ValidateStepInputSchema = z.object({
-  worktree_path: z.string(),
+  worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
   files_changed: z.array(z.string()),
 })
 
@@ -41,12 +41,12 @@ Worktree: ${data.worktree_path}
 
 1. **Run TypeScript type check**:
 \`\`\`bash
-cd ${data.worktree_path} && npx tsc --noEmit 2>&1 | tail -20
+cd ${shellQuote(data.worktree_path)} && npx tsc --noEmit 2>&1 | tail -20
 \`\`\`
 
 2. **Run tests**:
 \`\`\`bash
-cd ${data.worktree_path} && npm test 2>&1 | tail -30
+cd ${shellQuote(data.worktree_path)} && npm test 2>&1 | tail -30
 \`\`\`
 
 ## Output
@@ -97,7 +97,7 @@ If no workspaces can be determined from the paths, set both tsc_passed and tests
 
 For each affected workspace that has a \`tsconfig.json\`:
 \`\`\`bash
-cd ${data.worktree_path} && npx tsc --noEmit -p <workspace>/tsconfig.json 2>&1 | tail -30
+cd ${shellQuote(data.worktree_path)} && npx tsc --noEmit -p <workspace>/tsconfig.json 2>&1 | tail -30
 \`\`\`
 
 **Regression detection**: Only count tsc errors as failures if the errors reference files that are in the changed files list above. Pre-existing errors in files NOT in the changed list should be IGNORED — they are not regressions introduced by the fixer.
@@ -108,7 +108,7 @@ Do NOT run \`npx tsc --noEmit\` at the monorepo root — this will use the root 
 
 For each affected workspace:
 \`\`\`bash
-cd ${data.worktree_path} && npm test -w <workspace> 2>&1 | tail -30
+cd ${shellQuote(data.worktree_path)} && npm test -w <workspace> 2>&1 | tail -30
 \`\`\`
 
 ### 4. Determine results

@@ -4,7 +4,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
 import type { CommitStepInput, CommitStepOutput } from './pr-reviewer.schema.js'
 import {
   COMMIT_OUTPUT_JSON_SCHEMA,
@@ -54,7 +54,7 @@ Branch: ${data.pr_branch}
 
 1. **Check for changes**:
    \`\`\`bash
-   cd ${data.worktree_path}
+   cd ${shellQuote(data.worktree_path)}
    git status
    git diff --stat
    \`\`\`
@@ -67,7 +67,7 @@ Branch: ${data.pr_branch}
 
 3. **Push to remote**:
    \`\`\`bash
-   git push origin ${data.pr_branch}
+   git push origin ${shellQuote(data.pr_branch)}
    \`\`\`
 
 4. **Get commit SHA**:
@@ -114,14 +114,14 @@ Branch: ${data.pr_branch}
 
 1. **Check for changes**:
    \`\`\`bash
-   cd ${data.worktree_path}
+   cd ${shellQuote(data.worktree_path)}
    git status
    git diff --stat
    \`\`\`
 
 2. **Stage and commit** (if changes exist):
    \`\`\`bash
-   cd ${data.worktree_path} && git add -A && git commit -m "$(cat <<'COMMITMSG'
+   cd ${shellQuote(data.worktree_path)} && git add -A && git commit -m "$(cat <<'COMMITMSG'
 ${commitMsg}
 COMMITMSG
 )"
@@ -129,7 +129,7 @@ COMMITMSG
 
 3. **Push to remote**:
    \`\`\`bash
-   git push origin ${data.pr_branch}
+   git push origin ${shellQuote(data.pr_branch)}
    \`\`\`
 
 4. **Get commit SHA**:

@@ -5,6 +5,7 @@
  */
 
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { shellQuote } from '../../../core/utils/shell-safe.js'
 
 interface DepsScanPromptInput {
   projectPath: string
@@ -35,27 +36,27 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 <workflow>
 1. FIRST, check if package-lock.json exists at MONOREPO ROOT:
    \`\`\`bash
-   ls -la ${rootPath}/package-lock.json
+   ls -la ${shellQuote(rootPath + '/package-lock.json')}
    \`\`\`
 
 2. If package-lock.json EXISTS at root (step 1 succeeded):
    - This is a MONOREPO with npm workspaces
    - Run npm audit with --workspace flag:
    \`\`\`bash
-   npm audit --workspace=${projectPath} --json 2>&1
+   npm audit --workspace=${shellQuote(projectPath)} --json 2>&1
    \`\`\`
    - Then SKIP to step 5 (parse output)
 
 3. If package-lock.json does NOT exist at root, check project directory:
    \`\`\`bash
-   ls -la ${projectPath}/package-lock.json
+   ls -la ${shellQuote(projectPath + '/package-lock.json')}
    \`\`\`
 
 4. If package-lock.json exists in project (step 3 succeeded):
    - This is a STANDALONE project
    - Run npm audit from project directory:
    \`\`\`bash
-   cd ${projectPath} && npm audit --json 2>&1
+   cd ${shellQuote(projectPath)} && npm audit --json 2>&1
    \`\`\`
 
    If package-lock.json does NOT exist in EITHER location:

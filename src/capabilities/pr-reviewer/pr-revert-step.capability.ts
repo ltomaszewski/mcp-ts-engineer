@@ -4,7 +4,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
 import type { RevertStepInput, RevertStepOutput } from './pr-reviewer.schema.js'
 import {
   REVERT_OUTPUT_JSON_SCHEMA,
@@ -35,7 +35,7 @@ ${data.lock_file_path ? `Lock file: ${data.lock_file_path}` : 'No lock file to r
    ${
      data.worktree_path
        ? `\`\`\`bash
-   git worktree remove ${data.worktree_path} --force
+   git worktree remove ${shellQuote(data.worktree_path)} --force
    \`\`\``
        : 'Skip - no worktree path provided'
    }
@@ -44,7 +44,7 @@ ${data.lock_file_path ? `Lock file: ${data.lock_file_path}` : 'No lock file to r
    ${
      data.lock_file_path
        ? `\`\`\`bash
-   rm -f ${data.lock_file_path}
+   rm -f ${shellQuote(data.lock_file_path)}
    \`\`\``
        : 'Skip - no lock file path provided'
    }

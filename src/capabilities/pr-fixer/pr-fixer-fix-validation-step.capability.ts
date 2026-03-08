@@ -10,14 +10,14 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe } from '../../core/utils/index.js'
+import { isValidPath, parseJsonSafe } from '../../core/utils/index.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
 import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
 import { FIX_VALIDATION_PROMPT_V1 } from './prompts/fix-validation.v1.js'
 import { buildFixValidationPromptV2 } from './prompts/fix-validation.v2.js'
 
 const FixValidationStepInputSchema = z.object({
-  worktree_path: z.string(),
+  worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
   error_summary: z.string(),
   files_changed: z.array(z.string()),
   project_context: z.string().optional(),

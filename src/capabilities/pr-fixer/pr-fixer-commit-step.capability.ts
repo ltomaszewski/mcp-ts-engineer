@@ -9,13 +9,13 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe } from '../../core/utils/index.js'
+import { isValidGitRef, isValidPath, parseJsonSafe, shellQuote } from '../../core/utils/index.js'
 import type { FixerCommitStepOutput } from './pr-fixer.schema.js'
 import { FIXER_COMMIT_OUTPUT_JSON_SCHEMA, FixerCommitStepOutputSchema } from './pr-fixer.schema.js'
 
 const CommitStepInputSchema = z.object({
-  worktree_path: z.string(),
-  pr_branch: z.string(),
+  worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
+  pr_branch: z.string().refine(isValidGitRef, { message: 'Invalid git ref' }),
   fixes_applied: z.number(),
   issue_titles: z.array(z.string()).default([]),
 })
@@ -42,22 +42,22 @@ Fixes: ${data.fixes_applied}
 
 1. Check for changes:
 \`\`\`bash
-cd ${data.worktree_path} && git status && git diff --stat
+cd ${shellQuote(data.worktree_path)} && git status && git diff --stat
 \`\`\`
 
 2. Stage and commit:
 \`\`\`bash
-cd ${data.worktree_path} && git add -A && git commit -m "fix: apply ${data.fixes_applied} review fixes (pr-fixer)"
+cd ${shellQuote(data.worktree_path)} && git add -A && git commit -m "fix: apply ${data.fixes_applied} review fixes (pr-fixer)"
 \`\`\`
 
 3. Push:
 \`\`\`bash
-cd ${data.worktree_path} && git push origin ${data.pr_branch}
+cd ${shellQuote(data.worktree_path)} && git push origin ${shellQuote(data.pr_branch)}
 \`\`\`
 
 4. Get SHA:
 \`\`\`bash
-cd ${data.worktree_path} && git rev-parse HEAD
+cd ${shellQuote(data.worktree_path)} && git rev-parse HEAD
 \`\`\`
 
 ## Output
@@ -118,12 +118,12 @@ Fixes: ${data.fixes_applied}
 
 1. Check for changes:
 \`\`\`bash
-cd ${data.worktree_path} && git status && git diff --stat
+cd ${shellQuote(data.worktree_path)} && git status && git diff --stat
 \`\`\`
 
 2. Stage and commit with descriptive message:
 \`\`\`bash
-cd ${data.worktree_path} && git add -A && git commit -m "$(cat <<'COMMITMSG'
+cd ${shellQuote(data.worktree_path)} && git add -A && git commit -m "$(cat <<'COMMITMSG'
 ${commitMsg}
 COMMITMSG
 )"
@@ -131,12 +131,12 @@ COMMITMSG
 
 3. Push:
 \`\`\`bash
-cd ${data.worktree_path} && git push origin ${data.pr_branch}
+cd ${shellQuote(data.worktree_path)} && git push origin ${shellQuote(data.pr_branch)}
 \`\`\`
 
 4. Get SHA:
 \`\`\`bash
-cd ${data.worktree_path} && git rev-parse HEAD
+cd ${shellQuote(data.worktree_path)} && git rev-parse HEAD
 \`\`\`
 
 ## Output

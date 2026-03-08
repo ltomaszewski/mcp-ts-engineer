@@ -4,7 +4,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
 import type { CleanupStepInput, CleanupStepOutput } from './pr-reviewer.schema.js'
 import {
   CLEANUP_OUTPUT_JSON_SCHEMA,
@@ -30,15 +30,16 @@ const CLEANUP_PROMPT_V1: PromptVersion = {
       ),
     ]
 
+    const quotedPath = shellQuote(data.worktree_path)
     const knipCommands =
       workspaces.length > 0
         ? workspaces
             .map(
               (ws) =>
-                `cd ${data.worktree_path} && npx knip --workspace './${ws}' --no-exit-code 2>&1 || true`,
+                `cd ${quotedPath} && npx knip --workspace './${ws}' --no-exit-code 2>&1 || true`,
             )
             .join('\n   ')
-        : `cd ${data.worktree_path} && npx knip --no-exit-code 2>&1 || true`
+        : `cd ${quotedPath} && npx knip --no-exit-code 2>&1 || true`
 
     return {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
@@ -75,7 +76,7 @@ Changed workspaces: ${workspaces.length > 0 ? workspaces.join(', ') : 'unknown'}
 
 4. **Run type check** in the affected workspace:
    \`\`\`bash
-   cd ${data.worktree_path}${workspaces.length === 1 ? `/${workspaces[0]}` : ''} && npx tsc --noEmit
+   cd ${shellQuote(data.worktree_path + (workspaces.length === 1 ? `/${workspaces[0]}` : ''))} && npx tsc --noEmit
    \`\`\`
 
 ## Output Format

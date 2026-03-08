@@ -5,6 +5,7 @@
  */
 
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { shellQuote } from '../../../core/utils/shell-safe.js'
 
 interface DepsFixPromptInput {
   projectPath: string
@@ -42,7 +43,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 2. Capture baseline file state using git status:
    \`\`\`bash
-   git status --short package.json package-lock.json ${projectPath}/package.json 2>&1
+   git status --short package.json package-lock.json ${shellQuote(projectPath + '/package.json')} 2>&1
    \`\`\`
    This shows the state before npm audit fix runs.
 
@@ -50,17 +51,17 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
    **Mode A - Monorepo/Workspace** (package-lock.json at root):
    \`\`\`bash
-   npm audit fix --workspace=${projectPath} 2>&1
+   npm audit fix --workspace=${shellQuote(projectPath)} 2>&1
    \`\`\`
 
    **Mode B - Standalone project** (package-lock.json in project):
    \`\`\`bash
-   cd ${projectPath} && npm audit fix 2>&1
+   cd ${shellQuote(projectPath)} && npm audit fix 2>&1
    \`\`\`
 
 4. Track modified files after npm audit fix:
    \`\`\`bash
-   git status --short package.json package-lock.json ${projectPath}/package.json 2>&1
+   git status --short package.json package-lock.json ${shellQuote(projectPath + '/package.json')} 2>&1
    \`\`\`
    Extract file paths that changed (look for " M " prefix or "??" for new files)
 
@@ -68,12 +69,12 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
    **Mode A - Monorepo/Workspace**:
    \`\`\`bash
-   npm audit --workspace=${projectPath} --json 2>&1
+   npm audit --workspace=${shellQuote(projectPath)} --json 2>&1
    \`\`\`
 
    **Mode B - Standalone project**:
    \`\`\`bash
-   cd ${projectPath} && npm audit --json 2>&1
+   cd ${shellQuote(projectPath)} && npm audit --json 2>&1
    \`\`\`
    Parse "metadata.vulnerabilities.total" from JSON output
 

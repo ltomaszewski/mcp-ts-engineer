@@ -9,7 +9,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe } from '../../core/utils/index.js'
+import { isValidPath, parseJsonSafe } from '../../core/utils/index.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
 import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
 import { DIRECT_FIX_PROMPT_V1 } from './prompts/direct-fix.v1.js'
@@ -17,7 +17,7 @@ import { buildDirectFixPromptV2 } from './prompts/direct-fix.v2.js'
 
 const DirectFixStepInputSchema = z.object({
   issues_summary: z.string(),
-  worktree_path: z.string(),
+  worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
   project_context: z.string().optional(),
 })
 

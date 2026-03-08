@@ -33,4 +33,10 @@ export {
   validateAndCorrectSpecPaths,
   validateSpecPaths,
 } from './spec-path-utils.js'
+export {
+  isValidGitRef,
+  isValidGitSha,
+  isValidPath,
+  shellQuote,
+} from './shell-safe.js'
 export { updateSpecStatus } from './spec-status.js'

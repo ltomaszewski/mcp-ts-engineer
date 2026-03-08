@@ -3,6 +3,22 @@
  */
 
 import { z } from 'zod'
+import { isValidGitRef, isValidGitSha, isValidPath } from '../../core/utils/shell-safe.js'
+
+/** Git ref (branch/tag) pattern: alphanumeric, dots, hyphens, underscores, slashes. */
+const gitRefSchema = z.string().refine(isValidGitRef, {
+  message: 'Invalid git ref: must contain only alphanumeric, dot, hyphen, underscore, slash characters',
+})
+
+/** Git SHA pattern: 7-40 lowercase hex characters. */
+const gitShaSchema = z.string().refine(isValidGitSha, {
+  message: 'Invalid git SHA: must be 7-40 hex characters',
+})
+
+/** Safe filesystem path pattern: no shell metacharacters or path traversal. */
+const safePathSchema = z.string().refine(isValidPath, {
+  message: 'Invalid path: must not contain shell metacharacters or path traversal',
+})
 
 // ---------------------------------------------------------------------------
 // Main capability schemas
@@ -132,13 +148,13 @@ export const PrContextSchema = z.object({
   pr_number: z.number(),
   repo_owner: z.string(),
   repo_name: z.string(),
-  pr_branch: z.string(),
-  base_branch: z.string(),
+  pr_branch: gitRefSchema,
+  base_branch: gitRefSchema,
   files_changed: z.preprocess((v) => (Array.isArray(v) ? v : []), z.array(z.string())),
   diff_content: z.preprocess((v) => (typeof v === 'string' ? v : ''), z.string()),
   is_draft: z.preprocess((v) => (typeof v === 'boolean' ? v : false), z.boolean()),
   is_closed: z.preprocess((v) => (typeof v === 'boolean' ? v : false), z.boolean()),
-  last_reviewed_sha: z.string().nullish(),
+  last_reviewed_sha: gitShaSchema.nullish(),
 }) as z.ZodType<PrContext>
 
 // ---------------------------------------------------------------------------
@@ -171,7 +187,7 @@ export type ContextStepInput = z.infer<typeof ContextStepInputSchema>
 
 /** Context step output. */
 export const ContextStepOutputSchema = z.object({
-  worktree_path: z.string(),
+  worktree_path: safePathSchema,
   diff_content: z.string(),
   files_changed: z.array(z.string()),
 })
@@ -181,7 +197,7 @@ export type ContextStepOutput = z.infer<typeof ContextStepOutputSchema>
 export const ReviewStepInputSchema = z.object({
   pr_context: PrContextSchema,
   diff_content: z.string(),
-  worktree_path: z.string(),
+  worktree_path: safePathSchema,
   project_context: z.string().optional(),
   cwd: z.string().optional(),
 })
@@ -230,7 +246,7 @@ export type ValidateStepOutput = z.infer<typeof ValidateStepOutputSchema>
 /** Fix step input. */
 export const FixStepInputSchema = z.object({
   issues: z.array(ReviewIssueSchema),
-  worktree_path: z.string(),
+  worktree_path: safePathSchema,
   budget_remaining: z.number(),
   project_context: z.string().optional(),
   cwd: z.string().optional(),
@@ -248,7 +264,7 @@ export type FixStepOutput = z.infer<typeof FixStepOutputSchema>
 
 /** Cleanup step input. */
 export const CleanupStepInputSchema = z.object({
-  worktree_path: z.string(),
+  worktree_path: safePathSchema,
   files_changed: z.preprocess((v) => (Array.isArray(v) ? v : []), z.array(z.string())),
   cwd: z.string().optional(),
 }) as z.ZodType<{
@@ -268,7 +284,7 @@ export type CleanupStepOutput = z.infer<typeof CleanupStepOutputSchema>
 
 /** Test step input. */
 export const TestStepInputSchema = z.object({
-  worktree_path: z.string(),
+  worktree_path: safePathSchema,
   files_changed: z.array(z.string()),
   cwd: z.string().optional(),
 })
@@ -284,8 +300,8 @@ export type TestStepOutput = z.infer<typeof TestStepOutputSchema>
 
 /** Commit step input. */
 export const CommitStepInputSchema = z.object({
-  worktree_path: z.string(),
-  pr_branch: z.string(),
+  worktree_path: safePathSchema,
+  pr_branch: gitRefSchema,
   fixes_applied: z.number(),
   issues_fixed: z.array(z.string()).default([]),
   cwd: z.string().optional(),
@@ -302,8 +318,8 @@ export type CommitStepOutput = z.infer<typeof CommitStepOutputSchema>
 
 /** Revert/cleanup step input. */
 export const RevertStepInputSchema = z.object({
-  worktree_path: z.string().optional(),
-  lock_file_path: z.string().optional(),
+  worktree_path: safePathSchema.optional(),
+  lock_file_path: safePathSchema.optional(),
   cwd: z.string().optional(),
 })
 export type RevertStepInput = z.infer<typeof RevertStepInputSchema>

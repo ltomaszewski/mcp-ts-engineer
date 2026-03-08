@@ -4,7 +4,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
 import { tryParseJson } from './pr-reviewer.helpers.js'
 import type { ContextStepInput, ContextStepOutput } from './pr-reviewer.schema.js'
 import {
@@ -34,13 +34,13 @@ ${ctx.last_reviewed_sha ? `Incremental review from SHA: ${ctx.last_reviewed_sha}
 ## Tasks
 
 1. **Create Worktree**
-   - Create worktree: \`git worktree add .worktrees/pr-${ctx.pr_number}-review ${ctx.pr_branch}\`
+   - Create worktree: \`git worktree add .worktrees/pr-${ctx.pr_number}-review ${shellQuote(ctx.pr_branch)}\`
    - Run: \`npm install\` in the worktree
 
 2. **Fetch Diff**
    ${
      ctx.last_reviewed_sha
-       ? `- Get incremental diff: \`git diff ${ctx.last_reviewed_sha}..HEAD\``
+       ? `- Get incremental diff: \`git diff ${shellQuote(ctx.last_reviewed_sha)}..HEAD\``
        : `- Get full diff: \`gh pr diff ${ctx.pr_number}\``
    }
 

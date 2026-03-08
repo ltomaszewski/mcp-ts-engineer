@@ -4,7 +4,7 @@ import type {
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock } from '../../core/utils/index.js'
+import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
 import type { TestStepInput, TestStepOutput } from './pr-reviewer.schema.js'
 import {
   TEST_OUTPUT_JSON_SCHEMA,
@@ -40,7 +40,7 @@ ${data.files_changed.map((f) => `- ${f}`).join('\n')}
 
 2. **Run tests for each workspace**:
    \`\`\`bash
-   cd ${data.worktree_path}
+   cd ${shellQuote(data.worktree_path)}
    npm test -w <workspace>
    \`\`\`
 
