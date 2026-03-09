@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/header.png" alt="mcp-ts-engineer — Multi-agent engineering workflows for Claude Code" width="100%" />
+</div>
+
 # MCP TypeScript Engineer
 
 > Generic MCP server for multi-agent software engineering workflows — designed as a git submodule for turbo-based npm monorepos.
