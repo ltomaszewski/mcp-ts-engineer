@@ -2,6 +2,7 @@
  * CostReportWriter - writes daily cost reports with atomic file operations and lock file pattern.
  */
 
+import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { getDefaultLogDir } from '../../config/constants.js'
