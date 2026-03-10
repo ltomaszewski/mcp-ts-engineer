@@ -104,7 +104,8 @@ export function generateSpecContent(
   ]
 
   for (let i = 0; i < issues.length; i++) {
-    const issue = issues[i]!
+    const issue = issues[i]
+    if (!issue) continue
     const lineRef = issue.line ? `:${issue.line}` : ''
 
     lines.push(

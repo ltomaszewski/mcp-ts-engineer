@@ -91,13 +91,13 @@ describe('Finalize Integration', () => {
     it('rejects empty files_changed array', () => {
       const capability = registry.getCapability('finalize')
       const result = capability?.inputSchema.safeParse({ files_changed: [] })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects missing files_changed', () => {
       const capability = registry.getCapability('finalize')
       const result = capability?.inputSchema.safeParse({})
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects non-string array items in files_changed', () => {
@@ -105,7 +105,7 @@ describe('Finalize Integration', () => {
       const result = capability?.inputSchema.safeParse({
         files_changed: ['src/file.ts', 123],
       })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects non-boolean skip_tests', () => {
@@ -114,7 +114,7 @@ describe('Finalize Integration', () => {
         files_changed: ['src/file.ts'],
         skip_tests: 'true',
       })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('accepts valid input with defaults', () => {
@@ -122,8 +122,8 @@ describe('Finalize Integration', () => {
       const result = capability?.inputSchema.safeParse({
         files_changed: ['src/file.ts'],
       })
-      expect(result.success).toBe(true)
-      if (result.success) {
+      expect(result?.success).toBe(true)
+      if (result && result.success) {
         expect((result.data as { skip_tests: boolean }).skip_tests).toBe(false)
         expect((result.data as { skip_codemaps: boolean }).skip_codemaps).toBe(false)
       }
@@ -137,7 +137,7 @@ describe('Finalize Integration', () => {
         skip_tests: true,
         skip_codemaps: true,
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
   })
 

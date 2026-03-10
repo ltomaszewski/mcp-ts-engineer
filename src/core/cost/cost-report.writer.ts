@@ -2,17 +2,11 @@
  * CostReportWriter - writes daily cost reports with atomic file operations and lock file pattern.
  */
 
-import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import {
-  getDefaultLogDir,
-  LOCK_JITTER_MS,
-  LOCK_POLL_MS,
-  LOCK_TIMEOUT_MS,
-  STALE_LOCK_AGE_MS,
-} from '../../config/constants.js'
+import { getDefaultLogDir } from '../../config/constants.js'
 import { resolveLogPath } from '../logger/path-utils.js'
+import { acquireLock, releaseLock } from './cost-report.lock.js'
 import type { Session } from '../session/session.types.js'
 import type { CostSummary } from './cost.types.js'
 import type {
@@ -127,7 +121,7 @@ export class CostReportWriter {
     await fs.mkdir(this.reportsDir, { recursive: true, mode: 0o700 })
 
     // Acquire lock
-    await this.acquireLock(reportDate)
+    await acquireLock(this.reportsDir, reportDate)
 
     try {
       // Read existing report or create new one
@@ -245,7 +239,7 @@ export class CostReportWriter {
       await this.atomicWrite(reportDate, report)
     } finally {
       // Release lock
-      await this.releaseLock(reportDate)
+      await releaseLock(this.reportsDir, reportDate)
     }
   }
 
@@ -331,83 +325,10 @@ export class CostReportWriter {
   }
 
   /**
-   * Acquires a lock for the given date.
-   * @internal
-   */
-  private async acquireLock(date: string): Promise<void> {
-    const lockPath = path.join(this.reportsDir, `${date}.lock`)
-    const startTime = Date.now()
-
-    while (true) {
-      try {
-        // Try to create lock file (O_CREAT | O_EXCL)
-        const handle = await fs.open(lockPath, 'wx')
-        await handle.writeFile(process.pid.toString())
-        await handle.close()
-        return // Lock acquired
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-          throw error
-        }
-
-        // Lock file exists - check if stale
-        try {
-          const stats = await fs.stat(lockPath)
-          const lockAge = Date.now() - stats.mtimeMs
-
-          if (lockAge > STALE_LOCK_AGE_MS) {
-            // Stale lock - try to remove
-            try {
-              await fs.unlink(lockPath)
-              continue // Retry acquisition
-            } catch {
-              // Another process may have removed it
-            }
-          }
-        } catch {
-          // Lock file disappeared - retry
-          continue
-        }
-
-        // Check timeout
-        if (Date.now() - startTime > LOCK_TIMEOUT_MS) {
-          throw new Error(`Lock acquisition timeout for ${date}`)
-        }
-
-        // Wait with jitter
-        const jitter = crypto.randomInt(0, LOCK_JITTER_MS)
-        await this.sleep(LOCK_POLL_MS + jitter)
-      }
-    }
-  }
-
-  /**
-   * Releases a lock for the given date.
-   * @internal
-   */
-  private async releaseLock(date: string): Promise<void> {
-    const lockPath = path.join(this.reportsDir, `${date}.lock`)
-
-    try {
-      await fs.unlink(lockPath)
-    } catch {
-      // Ignore errors (lock may have been removed as stale)
-    }
-  }
-
-  /**
    * Gets today's date in YYYY-MM-DD format.
    * @internal
    */
   private getTodayDate(): string {
     return new Date().toISOString().split('T')[0] as string
-  }
-
-  /**
-   * Sleep for the specified duration.
-   * @internal
-   */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }

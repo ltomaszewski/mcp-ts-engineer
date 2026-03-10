@@ -185,6 +185,7 @@ describe('setup-worktree.sh specifics', () => {
 
   it('determines root from symlink location (pre-resolution)', () => {
     // Must use dirname of BASH_SOURCE directly, NOT resolve_symlink
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional bash string check
     expect(content).toContain('dirname "${BASH_SOURCE[0]}"')
     expect(content).not.toContain('resolve_symlink')
   })

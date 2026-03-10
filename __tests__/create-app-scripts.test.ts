@@ -289,10 +289,7 @@ describe('App template directories', () => {
   })
 
   it('next-app biome.json excludes .next', () => {
-    const content = readFileSync(
-      join(APPS_TEMPLATES_DIR, 'next-app/biome.json.template'),
-      'utf-8',
-    )
+    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'next-app/biome.json.template'), 'utf-8')
     expect(content).toContain('.next')
   })
 
@@ -347,10 +344,7 @@ describe('App template directories', () => {
   })
 
   it('next-app env.example.template contains NEXT_PUBLIC_SITE_URL', () => {
-    const content = readFileSync(
-      join(APPS_TEMPLATES_DIR, 'next-app/env.example.template'),
-      'utf-8',
-    )
+    const content = readFileSync(join(APPS_TEMPLATES_DIR, 'next-app/env.example.template'), 'utf-8')
     expect(content).toContain('NEXT_PUBLIC_SITE_URL')
   })
 

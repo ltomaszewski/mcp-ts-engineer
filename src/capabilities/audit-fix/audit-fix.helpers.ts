@@ -155,6 +155,7 @@ export function detectSubmodules(cwd: string | undefined): string[] {
  * @param exclude - Explicit paths to exclude from discovery
  * @returns List of discovered projects with path, reason, and priority
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: directory scanning with nested conditions
 export function discoverProjects(
   cwd: string | undefined,
   exclude?: string[],

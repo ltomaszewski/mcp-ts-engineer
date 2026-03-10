@@ -580,12 +580,12 @@ describe('ClaudeProvider', () => {
       const result = await provider.query({ prompt: 'Test' })
 
       const rawEvent = result.trace.rawEvents?.[0]
-      expect(rawEvent.type).toBe('assistant')
-      expect(rawEvent.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/) // ISO timestamp
-      expect(rawEvent.data).toBeDefined()
+      expect(rawEvent?.type).toBe('assistant')
+      expect(rawEvent?.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/) // ISO timestamp
+      expect(rawEvent?.data).toBeDefined()
       // data should contain message payload but NOT type/subtype keys
-      expect(rawEvent.data).not.toHaveProperty('type')
-      expect(rawEvent.data).not.toHaveProperty('subtype')
+      expect(rawEvent?.data).not.toHaveProperty('type')
+      expect(rawEvent?.data).not.toHaveProperty('subtype')
     })
 
     it('should capture rawEvent subtype from result messages', async () => {

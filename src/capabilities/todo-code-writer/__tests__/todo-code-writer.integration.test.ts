@@ -80,13 +80,13 @@ describe('Todo Code Writer Integration', () => {
     it('rejects empty spec_path', () => {
       const capability = registry.getCapability('todo_code_writer')
       const result = capability?.inputSchema.safeParse({ spec_path: '' })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects non-.md spec_path', () => {
       const capability = registry.getCapability('todo_code_writer')
       const result = capability?.inputSchema.safeParse({ spec_path: 'file.txt' })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects max_phases out of range', () => {
@@ -95,7 +95,7 @@ describe('Todo Code Writer Integration', () => {
         spec_path: 'docs/specs/feature.md',
         max_phases: 11,
       })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('accepts valid input with defaults', () => {
@@ -103,7 +103,7 @@ describe('Todo Code Writer Integration', () => {
       const result = capability?.inputSchema.safeParse({
         spec_path: 'docs/specs/feature.md',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
   })
 

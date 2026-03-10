@@ -7,6 +7,7 @@ const path = require('node:path')
 
 let data = ''
 process.stdin.on('data', (chunk) => (data += chunk))
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex hook handler
 process.stdin.on('end', () => {
   const input = JSON.parse(data)
   const filePath = input.tool_input?.file_path

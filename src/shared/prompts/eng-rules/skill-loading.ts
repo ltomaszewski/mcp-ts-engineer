@@ -85,6 +85,7 @@ To load a skill, call the Skill tool with the skill name:
  * Resolves detected technologies to a deduplicated list of skill names.
  * Includes ALWAYS_LOAD_SKILLS automatically.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: technology mapping logic
 export function resolveSkillsFromTechnologies(
   detectedTechnologies: string[],
   allDependencies?: string[],

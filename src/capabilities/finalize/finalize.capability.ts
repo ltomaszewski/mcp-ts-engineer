@@ -207,6 +207,7 @@ export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOut
     input: FinalizeInput,
     aiResult: AIQueryResult,
     context: CapabilityContext,
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: orchestration pipeline with conditional steps
   ): Promise<FinalizeOutput> => {
     // Parse finalize plan from orchestrator AI response
     const finalizePlan = parseFinalizePlanFromAiContent(aiResult.content)

@@ -61,6 +61,7 @@ export async function invokeTestStep(
  * Process a single project through the audit -> fix loop.
  * Returns the ProjectResult and the number of iterations consumed.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: orchestration logic with multiple phases
 export async function processProject(
   projectPath: string,
   maxIterPerProject: number,

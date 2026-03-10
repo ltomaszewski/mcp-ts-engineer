@@ -79,6 +79,7 @@ describe('echo-agent integration tests', () => {
     })
 
     // Register echo agent capability (cast to base type)
+    // biome-ignore lint/suspicious/noExplicitAny: registry requires base type for test registration
     registry.registerCapability(echoAgentCapability as any)
   })
 
@@ -104,7 +105,7 @@ describe('echo-agent integration tests', () => {
       expect(responseText).toBeDefined()
 
       // Parse JSON response
-      const parsed = JSON.parse(responseText!)
+      const parsed = JSON.parse(responseText as string)
       expect(parsed.response).toBe('AI response text')
       expect(parsed.cost_usd).toBe(0.000123)
       expect(parsed.turns).toBe(1)
@@ -218,6 +219,7 @@ describe('echo-agent integration tests', () => {
       expect(activeSessions.length).toBe(0) // Session is closed after invocation
 
       // Check that session was created and is now completed
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private sessions map for test verification
       const allSessions = Array.from((sessionManager as any).sessions.values()) as any[]
       expect(allSessions.length).toBe(1)
       expect(allSessions[0]?.state).toBe('completed')
@@ -251,6 +253,7 @@ describe('echo-agent integration tests', () => {
       })
 
       // Each invocation creates its own session
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private sessions map for test verification
       const allSessions = Array.from((sessionManager as any).sessions.values()) as Session[]
       expect(allSessions.length).toBe(2)
 
@@ -336,6 +339,7 @@ describe('echo-agent integration tests', () => {
       await registry.gracefulShutdown()
 
       // All sessions should be closed (completed state)
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private sessions map for test verification
       const allSessions = Array.from((sessionManager as any).sessions.values()) as Session[]
       allSessions.forEach((session: Session) => {
         expect(session.state).toBe('completed')
@@ -537,6 +541,7 @@ describe('echo-agent integration tests', () => {
         costUsd: 0.001,
         turns: 1,
         terminationReason: 'success',
+        // biome-ignore lint/suspicious/noExplicitAny: intentional undefined cast to match type signature
         trace: undefined as any,
       })
 
@@ -609,6 +614,7 @@ describe('echo-agent integration tests', () => {
       }
 
       // Register the enhanced capability (cast to base type for registration)
+      // biome-ignore lint/suspicious/noExplicitAny: registry requires base type for test registration
       registry.registerCapability(enhancedCapability as any)
 
       const input = {
@@ -655,7 +661,7 @@ describe('echo-agent integration tests', () => {
       expect(responseText).toBeDefined()
 
       // Parse JSON response
-      const parsed = JSON.parse(responseText!)
+      const parsed = JSON.parse(responseText as string)
       expect(parsed.response).toBe('AI response text')
       expect(parsed.cost_usd).toBe(0.000123)
       expect(parsed.turns).toBe(1)
@@ -677,6 +683,7 @@ describe('echo-agent integration tests', () => {
       // Verify customAgentTools is undefined (not set in echo-agent defaults)
       const queryMock = mockAIProvider.query as Mock
       const lastCallArgs = queryMock.mock.calls[queryMock.mock.calls.length - 1]
+      // biome-ignore lint/suspicious/noExplicitAny: checking for undefined property on unknown call args
       const queryCall = lastCallArgs?.[0] as any
       expect(queryCall?.customAgentTools).toBeUndefined()
     })

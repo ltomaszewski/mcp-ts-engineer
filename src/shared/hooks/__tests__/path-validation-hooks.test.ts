@@ -146,7 +146,7 @@ describe('buildPathValidationHooks', () => {
     const writeResult = writeHook?.hooks[0]({ file_path: invalidPath })
     const editResult = editHook?.hooks[0]({ file_path: invalidPath })
 
-    expect(writeResult.decision).toBe('block')
-    expect(editResult.decision).toBe('block')
+    expect(writeResult?.decision).toBe('block')
+    expect(editResult?.decision).toBe('block')
   })
 })

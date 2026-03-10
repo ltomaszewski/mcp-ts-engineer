@@ -102,7 +102,7 @@ describe('Audit-Fix Integration', () => {
         workspaces: ['apps/my-server'],
         cwd: '/path',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
 
     it('rejects empty project_path', () => {
@@ -111,7 +111,7 @@ describe('Audit-Fix Integration', () => {
         project_path: '',
         workspaces: ['apps/my-server'],
       })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects empty workspaces array', () => {
@@ -120,13 +120,13 @@ describe('Audit-Fix Integration', () => {
         project_path: 'apps/my-server',
         workspaces: [],
       })
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
 
     it('rejects missing required fields', () => {
       const capability = registry.getCapability('audit_fix_test_step')
       const result = capability?.inputSchema.safeParse({})
-      expect(result.success).toBe(false)
+      expect(result?.success).toBe(false)
     })
   })
 
@@ -137,7 +137,7 @@ describe('Audit-Fix Integration', () => {
         skip_tests: true,
         cwd: '/path',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
 
     it('accepts spec_path field', () => {
@@ -146,7 +146,7 @@ describe('Audit-Fix Integration', () => {
         spec_path: 'docs/specs/feature.md',
         cwd: '/path',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
 
     it('accepts both skip_tests and spec_path', () => {
@@ -156,7 +156,7 @@ describe('Audit-Fix Integration', () => {
         spec_path: 'docs/specs/feature.md',
         project: 'apps/my-server',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
 
     it('accepts exclude field as string array', () => {
@@ -196,7 +196,7 @@ describe('Audit-Fix Integration', () => {
         iteration_number: 1,
         test_failure_summary: '3 tests failed',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
 
     it('accepts spec_path field', () => {
@@ -208,7 +208,7 @@ describe('Audit-Fix Integration', () => {
         iteration_number: 1,
         spec_path: 'docs/specs/feature.md',
       })
-      expect(result.success).toBe(true)
+      expect(result?.success).toBe(true)
     })
   })
 

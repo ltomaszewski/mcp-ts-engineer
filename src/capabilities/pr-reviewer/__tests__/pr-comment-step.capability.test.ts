@@ -19,11 +19,14 @@ const makeCommentStepInput = (
   },
   issues,
   fixes_applied: 0,
+  issues_fixed: [],
   cost_usd: 0.05,
   mode: 'review-fix',
   incremental: false,
   unfixed_medium_count: 0,
   unfixed_auto_fixable_count: 0,
+  round: 1,
+  head_sha: '',
   ...overrides,
 })
 
