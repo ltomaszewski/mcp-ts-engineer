@@ -9,11 +9,31 @@ import type { CapabilityContext } from '../../../core/capability-registry/capabi
 import {
   AUDIT_STEP_RESULT_FALLBACK,
   COMMIT_RESULT_FALLBACK,
+  detectSubmodules,
   discoverProjects,
   ENG_FIX_RESULT_FALLBACK,
   TEST_RESULT_FALLBACK,
 } from '../audit-fix.helpers.js'
 import { deriveWorkspacesFromProject, invokeTestStep } from '../audit-fix-process-project.js'
+
+describe('detectSubmodules', () => {
+  it('returns empty array when cwd is undefined', () => {
+    expect(detectSubmodules(undefined)).toEqual([])
+  })
+
+  it('returns empty array for nonexistent cwd', () => {
+    expect(detectSubmodules('/nonexistent/path')).toEqual([])
+  })
+
+  it('returns array of strings (paths) when called on a git repo', () => {
+    const result = detectSubmodules(process.cwd())
+    expect(Array.isArray(result)).toBe(true)
+    for (const path of result) {
+      expect(typeof path).toBe('string')
+      expect(path.length).toBeGreaterThan(0)
+    }
+  })
+})
 
 describe('discoverProjects', () => {
   it('returns empty array when cwd is undefined', () => {
@@ -27,14 +47,9 @@ describe('discoverProjects', () => {
   })
 
   it('returns array of projects when valid cwd is provided', () => {
-    // Test with actual monorepo root to verify real behavior
     const result = discoverProjects(process.cwd())
-
-    // Should find at least the mcp-ts-engineer project itself
-    // or return empty if apps/ and packages/ don't exist at this level
     expect(Array.isArray(result)).toBe(true)
 
-    // If results exist, verify structure
     if (result.length > 0) {
       expect(result[0]).toHaveProperty('path')
       expect(result[0]).toHaveProperty('reason')
@@ -43,6 +58,23 @@ describe('discoverProjects', () => {
       expect(typeof result[0].reason).toBe('string')
       expect(typeof result[0].priority).toBe('number')
     }
+  })
+
+  it('filters out explicitly excluded paths', () => {
+    const allProjects = discoverProjects(process.cwd())
+    if (allProjects.length === 0) return // Skip if no projects in cwd
+
+    const excludePath = allProjects[0]!.path
+    const filtered = discoverProjects(process.cwd(), [excludePath])
+    expect(filtered.find((p) => p.path === excludePath)).toBeUndefined()
+    expect(filtered.length).toBeLessThan(allProjects.length)
+  })
+
+  it('backward-compatible: no exclude returns same as before', () => {
+    const withoutExclude = discoverProjects(process.cwd())
+    const withEmptyExclude = discoverProjects(process.cwd(), [])
+    // Submodules are auto-detected, so both should produce same result
+    expect(withoutExclude).toEqual(withEmptyExclude)
   })
 })
 

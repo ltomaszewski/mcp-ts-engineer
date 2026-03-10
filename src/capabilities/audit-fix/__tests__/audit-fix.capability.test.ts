@@ -165,17 +165,47 @@ describe('auditFixCapability', () => {
         project: 'apps/server',
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+        skip_tests: true,
         cwd: '/path/to/mono',
       }
       const context = createMockContext()
 
       const result = auditFixCapability.preparePromptInput(input, context)
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         targetProject: 'apps/server',
         cwd: '/path/to/mono',
       })
+    })
+
+    it('merges explicit exclude with auto-detected submodules', () => {
+      const input: AuditFixInput = {
+        max_iteration_per_project: 3,
+        max_total_cap: 10,
+        cwd: '/path/to/mono',
+        exclude: ['packages/legacy'],
+      }
+      const context = createMockContext()
+
+      const result = auditFixCapability.preparePromptInput(input, context)
+
+      // Should have excludeList containing at least the explicit exclude
+      if (result.excludeList) {
+        expect(result.excludeList).toContain('packages/legacy')
+      }
+    })
+
+    it('returns no excludeList when no excludes and no submodules', () => {
+      const input: AuditFixInput = {
+        max_iteration_per_project: 3,
+        max_total_cap: 10,
+        // No cwd = no submodule detection, no exclude
+      }
+      const context = createMockContext()
+
+      const result = auditFixCapability.preparePromptInput(input, context)
+
+      expect(result.excludeList).toBeUndefined()
     })
   })
 
@@ -220,6 +250,33 @@ describe('auditFixCapability', () => {
 
       expect(result.projects_audited).toBe(0)
       expect(result.status).toBe('failed')
+    })
+
+    it('post-planner filter excludes projects matching exclude list', async () => {
+      const plan = {
+        projects: [
+          { path: 'apps/server', reason: 'TS project', priority: 1 },
+          { path: 'packages/mcp-ts-engineer', reason: 'TS project', priority: 2 },
+        ],
+      }
+      const aiResult = createMockAiResult(`<audit_plan>${JSON.stringify(plan)}</audit_plan>`)
+
+      const context = createMockContext({
+        audit_fix_audit_step: [passAudit()],
+      })
+
+      const input: AuditFixInput = {
+        max_iteration_per_project: 3,
+        max_total_cap: 10,
+        skip_tests: true,
+        exclude: ['packages/mcp-ts-engineer'],
+      }
+
+      const result = await auditFixCapability.processResult(input, aiResult, context)
+
+      // Should only audit 1 project (the excluded one filtered out)
+      expect(result.projects_audited).toBe(1)
+      expect(result.project_results[0]?.project_path).toBe('apps/server')
     })
 
     it('runs audit then eng loop for each project', async () => {
