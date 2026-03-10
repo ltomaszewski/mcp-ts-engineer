@@ -1,6 +1,6 @@
 # 06: Tool Use (Function Calling)
 
-**Source**: Anthropic Official Documentation
+**Source**: Anthropic Official Documentation (2025-2026)
 **Principle**: Detailed tool descriptions are the #1 factor in tool use performance.
 
 ---
@@ -39,7 +39,7 @@ Claude can call external functions (tools) to:
 
 ### The Description is Critical
 
-> "Even small refinements to tool descriptions can yield dramatic improvements. Claude Sonnet 3.5 achieved state-of-the-art performance on the SWE-bench evaluation after precise refinements to tool descriptions."
+> "Even small refinements to tool descriptions can yield dramatic improvements in tool use performance."
 > — Anthropic Engineering
 
 ---
@@ -380,7 +380,7 @@ Test different formats for your use case:
 
 ### Explicit Tool Use Instructions
 
-> "Claude 4.5 models are trained for precise instruction following. If you say 'can you suggest some changes,' it will sometimes provide suggestions rather than implementing them."
+> "Claude 4.6 models are trained for precise instruction following. If you say 'can you suggest some changes,' it will sometimes provide suggestions rather than implementing them."
 
 Add to system prompt:
 ```
@@ -398,6 +398,176 @@ Before making a tool call, briefly consider:
 3. What do I expect the result to be?
 ```
 
+### Overtriggering on Claude 4.6
+
+Claude 4.6 is significantly more proactive about using tools. If your prompts were designed to reduce undertriggering on older models, they may now **overtrigger**:
+
+- **Dial back aggressive language**: Replace "CRITICAL: You MUST use this tool when..." with "Use this tool when..."
+- **Remove over-prompting**: Instructions like "If in doubt, use [tool]" will cause overuse on 4.6
+- **Use targeted guidance**: Instead of "Default to using [tool]," use "Use [tool] when it would enhance your understanding"
+
+---
+
+## Advanced Tool Use Patterns
+
+### Tool Search Tool (Dynamic Discovery)
+
+Instead of loading all tool definitions upfront, use the Tool Search Tool for dynamic discovery. Mark infrequently-used tools with `defer_loading: true`.
+
+**Performance**: 85% reduction in token usage; accuracy improved from 49% to 74% (Opus 4) and 79.5% to 88.1% (Opus 4.5).
+
+```json
+{
+  "tools": [
+    {"type": "tool_search_tool_regex_20251119", "name": "tool_search_tool_regex"},
+    {
+      "name": "github.createPullRequest",
+      "defer_loading": true
+    }
+  ]
+}
+```
+
+**For MCP servers** — defer entire servers while keeping high-use tools accessible:
+
+```json
+{
+  "type": "mcp_toolset",
+  "mcp_server_name": "google-drive",
+  "default_config": {"defer_loading": true},
+  "configs": {
+    "search_files": {"defer_loading": false}
+  }
+}
+```
+
+**When to use**:
+- Tool definitions consuming >10K tokens
+- 10+ tools available
+- Multi-server MCP setups
+- Tool selection accuracy issues
+
+**When less beneficial**:
+- Small tool libraries (<10 tools)
+- All tools used frequently every session
+
+---
+
+### Programmatic Tool Calling (Code Execution)
+
+Claude writes Python code to orchestrate multiple tools, processing outputs in a sandboxed environment. Only final results enter Claude's context — **preventing "context pollution"** from intermediate data.
+
+**Performance**: 37% token reduction; eliminates 19+ inference passes for 20+ tool calls.
+
+**Step 1: Mark tools callable from code**
+
+```json
+{
+  "tools": [
+    {"type": "code_execution_20250825", "name": "code_execution"},
+    {
+      "name": "get_team_members",
+      "allowed_callers": ["code_execution_20250825"]
+    }
+  ]
+}
+```
+
+**Step 2: Claude generates orchestration code**
+
+```python
+team = await get_team_members("engineering")
+levels = list(set(m["level"] for m in team))
+budget_results = await asyncio.gather(*[
+    get_budget_by_level(level) for level in levels
+])
+# Only final aggregated results return to Claude's context
+print(json.dumps(exceeded))
+```
+
+**When to use**:
+- Processing large datasets needing only aggregates
+- Multi-step workflows with 3+ dependent tool calls
+- Filtering/transforming before Claude sees data
+- Parallel operations across many items
+
+**When less beneficial**:
+- Simple single-tool invocations
+- Tasks where Claude should see all intermediate results
+
+---
+
+### Tool Use Examples (input_examples)
+
+Add concrete usage examples directly to tool definitions. JSON Schema defines structural validity but can't express usage patterns — examples show real conventions.
+
+**Performance**: Accuracy improved from 72% to 90% on complex parameter handling.
+
+```json
+{
+  "name": "create_ticket",
+  "input_schema": {
+    "properties": {
+      "title": {"type": "string"},
+      "priority": {"enum": ["low", "medium", "high", "critical"]},
+      "labels": {"type": "array"},
+      "reporter": {"type": "object"}
+    }
+  },
+  "input_examples": [
+    {
+      "title": "Login page returns 500 error",
+      "priority": "critical",
+      "labels": ["bug", "authentication"],
+      "reporter": {"id": "USR-12345", "name": "Jane Smith"}
+    },
+    {
+      "title": "Add dark mode support",
+      "labels": ["feature-request"],
+      "reporter": {"id": "USR-67890", "name": "Alex Chen"}
+    },
+    {"title": "Update API documentation"}
+  ]
+}
+```
+
+**What examples teach Claude**:
+- Format conventions (dates, IDs, labels)
+- Optional parameter inclusion patterns
+- Parameter correlations and pairings
+- Nested structure patterns
+
+**Best practices**:
+- Use realistic data (real city names, plausible prices)
+- Show minimal, partial, and full specification patterns
+- Keep to 1-5 examples per tool
+- Focus on ambiguous areas JSON Schema cannot express
+
+---
+
+### Feature Layering Strategy
+
+Start with the biggest bottleneck:
+1. **Context bloat from definitions** → Tool Search Tool
+2. **Intermediate results in context** → Programmatic Tool Calling
+3. **Parameter errors** → Tool Use Examples
+
+These features are complementary and can be layered together.
+
+### Enabling Advanced Features
+
+```python
+client.beta.messages.create(
+    betas=["advanced-tool-use-2025-11-20"],
+    model="claude-sonnet-4-6",
+    max_tokens=4096,
+    tools=[
+        {"type": "tool_search_tool_regex_20251119", "name": "tool_search_tool_regex"},
+        {"type": "code_execution_20250825", "name": "code_execution"}
+    ]
+)
+```
+
 ---
 
 ## Tool Definition Checklist
@@ -410,6 +580,9 @@ Before making a tool call, briefly consider:
 - [ ] Return format is specified
 - [ ] Error conditions are described
 - [ ] Related tools are mentioned (e.g., "Use X before this tool")
+- [ ] Consider `defer_loading: true` if tool library is large (10+)
+- [ ] Add `input_examples` for tools with complex parameters
+- [ ] Mark tools for programmatic calling if orchestration would reduce context
 
 ---
 

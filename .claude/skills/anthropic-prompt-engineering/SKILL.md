@@ -111,7 +111,7 @@ A store sells apples at $0.50 each. If I buy 3 apples, I get 1 free. How much do
 ```python
 # Using the Messages API
 client.messages.create(
-    model="claude-sonnet-4-20250514",
+    model="claude-opus-4-6",
     system="You are an expert Python developer with 10+ years of experience. You write clean, maintainable code following PEP 8. Always include type hints and docstrings.",
     messages=[
         {"role": "user", "content": "Write a function to validate email addresses"}
@@ -119,19 +119,21 @@ client.messages.create(
 )
 ```
 
-### Prefill for Output Control
+### Structured Outputs for Format Control
 
 ```python
-# Prefill the assistant's response to enforce JSON format
+# Use Structured Outputs to enforce response format (replaces prefill)
 client.messages.create(
-    model="claude-sonnet-4-20250514",
+    model="claude-opus-4-6",
+    max_tokens=1024,
     messages=[
-        {"role": "user", "content": "Extract the name and email from: John Doe (john@example.com)"},
-        {"role": "assistant", "content": "{"}  # Prefill with opening brace
-    ]
+        {"role": "user", "content": "Extract the name and email from: John Doe (john@example.com)"}
+    ],
+    # Use tool_choice or structured outputs to enforce JSON
 )
-# Claude will continue with: "name": "John Doe", "email": "john@example.com"}
 ```
+
+> **Note**: Prefilled assistant responses are **deprecated** starting with Claude 4.6. Use structured outputs, direct instructions, or XML tags instead. See [Claude 4 Best Practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices) for migration guidance.
 
 ### Long Document Optimization
 
@@ -222,7 +224,7 @@ Extract product names and prices from customer emails.
 | Task | Technique | Example |
 |------|-----------|---------|
 | Increase consistency | Multishot prompting | Wrap 3-5 examples in `<example>` tags |
-| Control output format | Prefill assistant response | Start with `{` for JSON, `<result>` for XML |
+| Control output format | Structured outputs or XML tags | Use structured outputs API for JSON schemas, XML tags for text |
 | Complex reasoning | Chain of thought | Ask Claude to think in `<thinking>` tags |
 | Set behavior/expertise | System prompt | Use system parameter for role definition |
 | Long documents (20K+) | Put content first | Documents above queries and instructions |
@@ -230,18 +232,23 @@ Extract product names and prices from customer emails.
 | Ground in sources | Citation pattern | Ask for `<quotes>` before `<analysis>` |
 | Guaranteed JSON | Structured Outputs | Use Structured Outputs API for schema validation |
 | Optimize cost | Prompt caching | Cache system prompts and long documents |
+| Adaptive thinking | Set effort parameter | Use `effort: "high"` for complex, `"medium"` for standard |
 | Improve prompts | Anthropic Console | Use built-in prompt improver tool |
 
 ---
 
-## Claude 4 Enhancements
+## Claude 4.6 Enhancements
 
-Claude 4 models (Opus 4.5, Opus 4, Sonnet 4) have been trained for **more precise instruction following** than previous generations:
+Claude 4.6 models (Opus 4.6, Sonnet 4.6) and Haiku 4.5 have significant improvements:
 
-- **Enhanced clarity**: Responds exceptionally well to clear, explicit instructions
-- **Better specificity**: Being specific about desired output significantly enhances results
-- **Improved examples**: Pays close attention to details in examples; ensure examples align with desired behaviors
-- **Context engineering**: Focus on curating the smallest possible set of high-signal tokens for optimal results
+- **Adaptive thinking**: `thinking: {type: "adaptive"}` replaces manual `budget_tokens` — Claude decides when and how much to think. Control depth with `effort` parameter (low/medium/high/max)
+- **More proactive**: Claude 4.6 takes action by default; dial back aggressive tool-triggering language from older prompts ("CRITICAL: MUST use" → "Use when...")
+- **Context awareness**: Model tracks remaining context window, enabling better state management across long sessions
+- **Prefill deprecated**: Use structured outputs, XML tags, or direct instructions instead
+- **Anti-overengineering**: Add explicit guidance to prevent extra files, unnecessary abstractions, defensive coding for impossible scenarios
+- **Subagent orchestration**: Claude 4.6 spawns subagents proactively; add guidance on when direct work is better
+- **LaTeX default**: Opus 4.6 defaults to LaTeX for math; explicitly request plain text if needed
+- **More concise**: May skip verbal summaries after tool calls; request summaries explicitly if desired
 
 ---
 
@@ -264,7 +271,9 @@ Load additional context when needed:
 | Testing and evaluation strategies | [knowledge-base/10-testing.md](knowledge-base/10-testing.md) |
 | Ready-to-use templates | [knowledge-base/11-templates.md](knowledge-base/11-templates.md) |
 | Building skills (SKILL.md, frontmatter, testing) | [knowledge-base/12-skills.md](knowledge-base/12-skills.md) |
+| Agent teams and multi-agent orchestration | [knowledge-base/13-agent-teams.md](knowledge-base/13-agent-teams.md) |
+| Advanced tool use (search, programmatic, examples) | [knowledge-base/06-tool-use.md](knowledge-base/06-tool-use.md) |
 
 ---
 
-**Version:** Claude 4.x | **Source:** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview, [Building Skills Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf)
+**Version:** Claude 4.6 (Opus 4.6, Sonnet 4.6, Haiku 4.5) | **Source:** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices, [Building Skills Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf)

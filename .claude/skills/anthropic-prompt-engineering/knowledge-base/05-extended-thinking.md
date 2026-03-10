@@ -1,6 +1,6 @@
 # 05: Extended Thinking
 
-**Source**: Anthropic Official Documentation
+**Source**: Anthropic Official Documentation (2025-2026)
 **Principle**: Extended thinking enables Claude to reason through complex problems with allocated "thinking budget" tokens.
 
 ---
@@ -12,6 +12,85 @@ Extended thinking is a Claude feature that:
 - Improves performance on complex, multi-step problems
 - Separates "thinking" from the final output
 - Enables deeper analysis than standard prompting
+
+---
+
+## Adaptive Thinking (Claude 4.6 Default)
+
+Starting with Claude 4.6, **adaptive thinking** replaces manual `budget_tokens` as the recommended approach. Claude dynamically decides when and how much to think.
+
+### Configuration
+
+```python
+# Adaptive thinking (recommended for Claude 4.6)
+client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=64000,
+    thinking={"type": "adaptive"},
+    output_config={"effort": "high"},  # low, medium, high, max
+    messages=[{"role": "user", "content": "..."}],
+)
+```
+
+### Effort Parameter
+
+| Level | Best For | Notes |
+|-------|----------|-------|
+| `low` | High-volume, latency-sensitive workloads | Similar to no-thinking performance |
+| `medium` | Most standard applications | Recommended starting point for Sonnet 4.6 |
+| `high` | Complex reasoning, agentic coding | Default for Sonnet 4.6 |
+| `max` | Hardest problems, deep research | Maximum reasoning depth |
+
+### When to Use Adaptive vs Manual
+
+| Pattern | Recommended |
+|---------|-------------|
+| Claude Opus 4.6 | Always use adaptive thinking |
+| Claude Sonnet 4.6 agentic workflows | Try adaptive first; fall back to manual if needed |
+| Claude Sonnet 4.6 predictable token usage | Manual with `budget_tokens` cap (e.g., 16384) |
+| Older models (Sonnet 4.5, etc.) | Manual with `budget_tokens` |
+
+### Steering Adaptive Thinking
+
+Control how often Claude thinks:
+
+**Encourage more thinking:**
+```
+After receiving tool results, carefully reflect on their quality and determine optimal next steps before proceeding.
+```
+
+**Reduce unnecessary thinking:**
+```
+Extended thinking adds latency and should only be used when it will meaningfully improve answer quality — typically for problems that require multi-step reasoning. When in doubt, respond directly.
+```
+
+### Migration from Manual Extended Thinking
+
+```python
+# Before (manual, older models)
+client.messages.create(
+    model="claude-sonnet-4-5-20250929",
+    max_tokens=64000,
+    thinking={"type": "enabled", "budget_tokens": 32000},
+    messages=[{"role": "user", "content": "..."}],
+)
+
+# After (adaptive, Claude 4.6)
+client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=64000,
+    thinking={"type": "adaptive"},
+    output_config={"effort": "high"},
+    messages=[{"role": "user", "content": "..."}],
+)
+```
+
+### Sonnet 4.6 Specific Guidance
+
+- Default effort level is `high` — consider explicitly setting `medium` for most apps
+- For coding use cases: start with `medium` effort + `budget_tokens: 16384`
+- For chat/non-coding: start with `low` effort
+- Set large max output token budget (64k recommended) at medium/high effort
 
 ---
 
@@ -37,6 +116,8 @@ Extended thinking is a Claude feature that:
 ### Minimum Budget
 - **Minimum**: 1024 tokens
 - **Recommendation**: Start at minimum, increase based on need
+
+> **Note**: With adaptive thinking, you no longer need to manually set `budget_tokens`. The `effort` parameter controls thinking depth automatically.
 
 ### For High-Budget Workloads (>32K tokens)
 Use batch processing to avoid:
@@ -216,6 +297,18 @@ For complex agentic tasks, provide a dedicated "think" tool:
 - Complex decisions about next steps
 - Reasoning about errors or unexpected results
 
+### Interleaved Thinking
+
+Claude Sonnet 4.6 supports **interleaved thinking** — Claude can think between tool calls, not just at the start. This enables:
+- Reflection on tool results before next action
+- Mid-workflow course corrections
+- Better multi-step reasoning in agentic loops
+
+Guide interleaved thinking with prompts like:
+```
+After receiving tool results, carefully reflect on their quality and determine optimal next steps before proceeding. Use your thinking to plan and iterate based on this new information.
+```
+
 ### Tool Use Constraints with Extended Thinking
 
 - `tool_choice: {"type": "any"}` is **NOT supported** with extended thinking
@@ -318,6 +411,17 @@ Think about this problem thoroughly. Consider multiple approaches.
 (Start at 1024, increase only when needed)
 ```
 
+### 4. Using Manual Budget When Adaptive Is Better
+```
+# BAD (for Claude 4.6)
+thinking={"type": "enabled", "budget_tokens": 32000}
+
+# GOOD (for Claude 4.6)
+thinking={"type": "adaptive"}
+output_config={"effort": "high"}
+```
+**Exception**: Use manual `budget_tokens` on Sonnet 4.6 when you need predictable token costs.
+
 ---
 
 ## Validation Checklist
@@ -329,6 +433,9 @@ Think about this problem thoroughly. Consider multiple approaches.
 - [ ] Using batch processing if budget > 32K
 - [ ] Prompt is in English for best thinking performance
 - [ ] Output format prevents thinking repetition
+- [ ] Using adaptive thinking for Claude 4.6 (not manual budget)
+- [ ] Effort parameter set appropriately (medium for most, high for complex)
+- [ ] Interleaved thinking enabled for agentic workflows
 
 ---
 

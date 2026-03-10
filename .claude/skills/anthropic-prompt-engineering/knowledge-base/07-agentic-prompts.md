@@ -1,6 +1,6 @@
 # 07: Agentic Prompts
 
-**Source**: Anthropic Official Documentation + Claude Code Best Practices
+**Source**: Anthropic Official Documentation + Claude Code Best Practices (2025-2026)
 **Principle**: Effective agents require careful context engineering, not just prompt engineering.
 
 ---
@@ -234,6 +234,83 @@ For multi-step tasks:
 
 ---
 
+## Claude 4.6 Agentic Behaviors
+
+### Context Awareness
+
+Claude 4.6 can track its remaining context window. Prevent premature task completion:
+
+```
+Your context window will be automatically compacted as it approaches its limit, allowing you to continue working indefinitely from where you left off. Therefore, do not stop tasks early due to token budget concerns. As you approach your token budget limit, save your current progress and state to memory before the context window refreshes. Always be as persistent and autonomous as possible and complete tasks fully.
+```
+
+### Memory Tool
+
+File-based system (public beta) for storing/consulting information outside the context window. Pairs with context awareness for seamless context transitions.
+
+- Agent writes notes persisted outside context window
+- To-do lists, NOTES.md files, progress tracking
+- Retrieved later when context is cleared or compacted
+
+### Overtriggering (New Problem in 4.6)
+
+Claude 4.6 is significantly more proactive. Old aggressive prompting causes overuse:
+
+| Old Pattern (Causes Overtriggering) | New Pattern (Correct for 4.6) |
+|--------------------------------------|-------------------------------|
+| "CRITICAL: You MUST use this tool" | "Use this tool when..." |
+| "If in doubt, use [tool]" | "Use [tool] when it enhances understanding" |
+| "Default to using [tool]" | "Use [tool] for [specific situation]" |
+| "Always check with [tool] first" | "Check with [tool] when uncertain about [X]" |
+
+### Subagent Orchestration
+
+Claude 4.6 spawns subagents proactively without requiring explicit instruction. Manage this:
+
+```
+Use subagents when tasks can run in parallel, require isolated context, or involve independent workstreams that don't need to share state. For simple tasks, sequential operations, single-file edits, or tasks where you need to maintain context across steps, work directly rather than delegating.
+```
+
+### Anti-Overengineering Prompt
+
+Anthropic-recommended template to prevent over-engineering:
+
+```
+Avoid over-engineering. Only make changes that are directly requested or clearly necessary. Keep solutions simple and focused:
+
+- Scope: Don't add features, refactor code, or make "improvements" beyond what was asked.
+- Documentation: Don't add docstrings, comments, or type annotations to code you didn't change.
+- Defensive coding: Don't add error handling, fallbacks, or validation for scenarios that can't happen.
+- Abstractions: Don't create helpers, utilities, or abstractions for one-time operations.
+```
+
+### Anti-Hallucination Prompt
+
+```xml
+<investigate_before_answering>
+Never speculate about code you have not opened. If the user references a specific file, you MUST read the file before answering. Make sure to investigate and read relevant files BEFORE answering questions about the codebase. Never make any claims about code before investigating unless you are certain of the correct answer.
+</investigate_before_answering>
+```
+
+### Anti-Hardcoding Prompt
+
+```
+Write a high-quality, general-purpose solution. Do not hard-code values or create solutions that only work for specific test inputs. Implement the actual logic that solves the problem generally. If any tests are incorrect, inform me rather than working around them.
+```
+
+### Autonomy and Safety Balance
+
+```
+Consider the reversibility and potential impact of your actions. Take local, reversible actions freely (editing files, running tests), but for actions that are hard to reverse, affect shared systems, or could be destructive, ask before proceeding.
+
+Examples requiring confirmation:
+- Destructive: deleting files/branches, dropping tables, rm -rf
+- Hard to reverse: git push --force, git reset --hard
+- Visible to others: pushing code, commenting on PRs, sending messages
+```
+
+---
+
 ## Agent Communication
 
 ### Progress Updates
@@ -260,6 +337,52 @@ Ask the user when:
 - Be specific about what you need
 - Offer options when possible
 - Explain why you need the information
+```
+
+---
+
+## Multi-Context-Window Workflows
+
+For tasks spanning multiple context windows (long-running agent work):
+
+### Session Architecture
+
+1. **First context window**: Set up framework -- write tests, create init.sh, establish state tracking
+2. **Subsequent windows**: Iterate on todo-list, pick up where left off
+
+### State Management
+
+| State Type | Format | Purpose |
+|-----------|--------|---------|
+| Structured (test results, task status) | JSON (`tests.json`) | Schema enforcement, easy parsing |
+| Progress notes | Freeform text (`progress.txt`) | General context, decisions made |
+| Checkpoints | Git commits | Rollback capability, change history |
+
+### Session Initialization Sequence
+
+```
+1. pwd — verify working directory
+2. Read git logs + progress files
+3. Review feature_list.json or tests.json
+4. Execute init.sh
+5. Run baseline tests
+6. Fix any broken state before new work
+```
+
+### Starting Fresh vs Compacting
+
+Consider starting with a brand new context window rather than compacting. Claude 4.6 is extremely effective at discovering state from the filesystem:
+
+```
+Call pwd; you can only read and write files in this directory.
+Review progress.txt, tests.json, and the git logs.
+Manually run through a fundamental integration test before moving on to new features.
+```
+
+### Encourage Complete Context Usage
+
+```
+This is a very long task, so plan your work clearly. Spend your entire output context working on the task — just make sure you don't run out of context with significant uncommitted work. Continue working systematically until completed.
 ```
 
 ---
@@ -378,6 +501,12 @@ if error:
 - [ ] Stopping conditions are defined
 - [ ] State management is explicit
 - [ ] Uncertainty triggers clarification requests
+- [ ] Overtriggering addressed (dial back aggressive tool prompts for 4.6)
+- [ ] Anti-overengineering prompt included for coding agents
+- [ ] Context awareness / memory tool integrated for long sessions
+- [ ] Subagent usage guidance provided (when to delegate vs work directly)
+- [ ] Multi-context-window state management defined
+- [ ] Autonomy/safety boundaries set for irreversible actions
 
 ---
 

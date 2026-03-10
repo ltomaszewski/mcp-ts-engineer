@@ -1,6 +1,6 @@
 # 12: Building Skills for Claude
 
-**Source**: Anthropic Official Guide — "The Complete Guide to Building Skills for Claude" (2026)
+**Source**: Anthropic Official Guide — "The Complete Guide to Building Skills for Claude" (2026) + Agent Skills Engineering Blog
 **Principle**: Skills are structured instruction folders that teach Claude to handle specific tasks consistently, using progressive disclosure to minimize token usage.
 
 ---
@@ -540,11 +540,7 @@ With skill:
 
 ### Via API
 
-```
-/v1/skills endpoint for managing skills
-Add skills to Messages API via container.skills parameter
-Works with Claude Agent SDK
-```
+See [Skills API](#skills-api-programmatic-access) section for full programmatic access details including the `/v1/skills` endpoint, `container.skills` parameter, and Agent SDK integration.
 
 ### Recommended Approach
 
@@ -565,6 +561,80 @@ in seconds — instead of spending 30 minutes on manual setup."
 "The ProjectHub skill is a folder containing YAML frontmatter and Markdown
 instructions that calls our MCP server tools."
 ```
+
+---
+
+## Skills API (Programmatic Access)
+
+For building applications, agents, or automated workflows that leverage skills.
+
+### Key Capabilities
+
+| Feature | Details |
+|---------|---------|
+| Endpoint | `/v1/skills` for listing and managing skills |
+| Messages API | Add skills via `container.skills` parameter |
+| Console | Version control and management |
+| Agent SDK | Works with Claude Agent SDK for custom agents |
+
+### When to Use API vs Claude.ai
+
+| Use Case | Best Surface |
+|----------|-------------|
+| End users interacting directly | Claude.ai / Claude Code |
+| Manual testing and iteration | Claude.ai / Claude Code |
+| Individual, ad-hoc workflows | Claude.ai / Claude Code |
+| Applications using skills programmatically | API |
+| Production deployments at scale | API |
+| Automated pipelines and agent systems | API |
+
+> **Note**: Skills in the API require the Code Execution Tool beta, which provides the secure environment skills need to run.
+
+### Implementation References
+
+- [Skills API Quickstart](https://docs.anthropic.com/en/docs/build-with-claude/agent-skills/quickstart)
+- [Create Custom Skills](https://docs.anthropic.com/en/docs/build-with-claude/agent-skills/custom-skills)
+- [Skills in the Agent SDK](https://docs.anthropic.com/en/docs/build-with-claude/agent-skills/agent-sdk)
+
+---
+
+## Agent Skills: Open Standard
+
+Anthropic has published [Agent Skills](https://agentskills.io) as an **open standard** — like MCP, skills should be portable across tools and platforms.
+
+### Key Principles
+
+- Same skill works whether using Claude or other AI platforms
+- Portable across Claude.ai, Claude Code, and API
+- Some skills can take advantage of platform-specific capabilities
+- Authors can note platform requirements in the `compatibility` field
+
+### Ecosystem
+
+- Early adopters collaborating on the standard
+- Skills designed for composability alongside other capabilities
+- Future direction: agents creating and evaluating their own skills autonomously
+
+---
+
+## Success Metrics
+
+### Quantitative
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| Trigger accuracy | 90%+ on relevant queries | Run 10-20 test queries, track auto vs manual invocation |
+| Workflow efficiency | Complete in X tool calls | Compare with and without skill enabled |
+| API reliability | 0 failed calls per workflow | Monitor MCP server logs during test runs |
+| Token efficiency | 50%+ reduction vs no skill | Count tool calls and total tokens consumed |
+
+### Qualitative
+
+| Signal | How to Assess |
+|--------|---------------|
+| Users don't need to prompt about next steps | During testing, note redirect/clarify frequency |
+| Workflows complete without user correction | Run same request 3-5 times, compare consistency |
+| Consistent results across sessions | Can a new user accomplish task on first try? |
 
 ---
 
@@ -686,4 +756,4 @@ After encountering edge cases, bring examples back:
 
 ---
 
-**Source**: [The Complete Guide to Building Skills for Claude](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) (Anthropic, 2026)
+**Source**: [The Complete Guide to Building Skills for Claude](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) (Anthropic, 2026) | [Agent Skills Engineering Blog](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)

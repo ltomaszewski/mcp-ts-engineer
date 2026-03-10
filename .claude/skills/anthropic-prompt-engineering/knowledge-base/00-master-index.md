@@ -2,7 +2,7 @@
 
 **Complete Knowledge Base for Writing Optimal Prompts for Claude Models**
 
-**Source**: Anthropic Official Documentation (2025)
+**Source**: Anthropic Official Documentation (2025-2026)
 **Version**: 1.0
 
 ---
@@ -27,7 +27,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 | **02 Prompt Structure** | How to organize prompts | XML tags, sections, formatting |
 | **03 System Prompts** | Designing system instructions | Role definition, constraints, tools |
 | **04 Chain of Thought** | Reasoning techniques | CoT, thinking tags, step-by-step |
-| **05 Extended Thinking** | Advanced reasoning mode | Budget tokens, multishot, reflection |
+| **05 Extended Thinking** | Advanced reasoning mode | Adaptive thinking, effort parameter, budget tokens, multishot |
 | **06 Tool Use** | Function calling patterns | Tool definitions, descriptions, parallel |
 | **07 Agentic Prompts** | Autonomous agent design | Context engineering, state management |
 | **08 Prompt Chaining** | Multi-step workflows | Handoffs, verification, pipelines |
@@ -35,6 +35,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 | **10 Testing** | Evaluation and iteration | Empirical testing, debugging |
 | **11 Templates** | Ready-to-use patterns | Claude Code skills, commands, agents |
 | **12 Skills** | Building skills for Claude | SKILL.md, frontmatter, progressive disclosure, testing |
+| **13 Agent Teams** | Multi-agent orchestration | Agent teams, subagents, shared tasks, messaging |
 
 ---
 
@@ -70,9 +71,10 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 8. [Agentic Prompts](07-agentic-prompts.md) - Autonomous agent patterns
 9. [Prompt Chaining](08-prompt-chaining.md) - Multi-step workflows
 10. [Templates](11-templates.md) - Production-ready patterns
+11. [Agent Teams](13-agent-teams.md) - Multi-agent orchestration patterns
 
 ### Specialist: Skills & Distribution
-11. [Building Skills](12-skills.md) - SKILL.md structure, frontmatter, testing, distribution
+12. [Building Skills](12-skills.md) - SKILL.md structure, frontmatter, testing, distribution
 
 ---
 
@@ -89,7 +91,12 @@ All content sourced from official Anthropic documentation:
 - **Claude Code Best Practices**: https://www.anthropic.com/engineering/claude-code-best-practices
 - **Think Tool**: https://www.anthropic.com/engineering/claude-think-tool
 - **Prompt Caching**: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+- **Advanced Tool Use**: https://www.anthropic.com/engineering/advanced-tool-use
+- **Agent Teams**: https://code.claude.com/docs/en/agent-teams
+- **Long-Running Agent Harnesses**: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
+- **Agent Skills (Open Standard)**: https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
+- **Adaptive Thinking**: https://docs.anthropic.com/en/docs/build-with-claude/adaptive-thinking
 
 ---
 
-**Last Updated**: February 2026 | **Status**: Production Ready
+**Last Updated**: March 2026 | **Status**: Production Ready
