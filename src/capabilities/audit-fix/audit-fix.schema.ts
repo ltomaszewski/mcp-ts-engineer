@@ -22,6 +22,7 @@ export const AuditFixInputSchema = z.object({
   cwd: z.string().optional(),
   skip_tests: z.boolean().optional(),
   spec_path: z.string().optional(),
+  exclude: z.array(z.string()).optional(),
 }) as z.ZodType<{
   project?: string
   max_iteration_per_project: number
@@ -29,6 +30,7 @@ export const AuditFixInputSchema = z.object({
   cwd?: string
   skip_tests?: boolean
   spec_path?: string
+  exclude?: string[]
 }>
 
 export type AuditFixInput = z.infer<typeof AuditFixInputSchema>

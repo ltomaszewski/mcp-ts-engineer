@@ -9,6 +9,7 @@
  * @internal Exported for unit testing and sub-capability reuse
  */
 
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
@@ -107,20 +108,64 @@ export const DEPS_FIX_STEP_RESULT_FALLBACK: DepsFixStepResult = {
 }
 
 // ---------------------------------------------------------------------------
+// Submodule detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detects git submodule paths via `git submodule status`.
+ * Uses execFileSync (no shell) to avoid injection risks.
+ *
+ * @param cwd - Working directory to run git from
+ * @returns Array of relative submodule paths (e.g. ['packages/mcp-ts-engineer'])
+ */
+export function detectSubmodules(cwd: string | undefined): string[] {
+  if (!cwd) return []
+
+  try {
+    const output = execFileSync('git', ['submodule', 'status'], {
+      cwd,
+      timeout: 10_000,
+      encoding: 'utf-8',
+    })
+
+    return output
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .map((line) => {
+        // Format: " <sha> <path> (<ref>)" or "-<sha> <path>" or "+<sha> <path>"
+        const parts = line.trim().split(/\s+/)
+        return parts[1] ?? ''
+      })
+      .filter((p) => p.length > 0)
+  } catch {
+    return []
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Project discovery
 // ---------------------------------------------------------------------------
 
 /**
  * Discovers projects in apps/ and packages/ directories.
  * Returns a list of projects that have package.json files.
+ * Filters out excluded paths (explicit + auto-detected submodules).
  *
  * @param cwd - Working directory to search from (root of monorepo)
+ * @param exclude - Explicit paths to exclude from discovery
  * @returns List of discovered projects with path, reason, and priority
  */
-export function discoverProjects(cwd: string | undefined): AuditPlan['projects'] {
+export function discoverProjects(
+  cwd: string | undefined,
+  exclude?: string[],
+): AuditPlan['projects'] {
   if (!cwd) {
     return []
   }
+
+  // Merge explicit excludes with auto-detected submodules
+  const submodules = detectSubmodules(cwd)
+  const excludeSet = new Set([...(exclude ?? []), ...submodules])
 
   const projects: AuditPlan['projects'] = []
 
@@ -131,10 +176,15 @@ export function discoverProjects(cwd: string | undefined): AuditPlan['projects']
       const apps = readdirSync(appsPath)
       for (const app of apps) {
         const appPath = join(appsPath, app)
+        const relativePath = `apps/${app}`
         const stats = statSync(appPath)
-        if (stats.isDirectory() && existsSync(join(appPath, 'package.json'))) {
+        if (
+          stats.isDirectory() &&
+          existsSync(join(appPath, 'package.json')) &&
+          !excludeSet.has(relativePath)
+        ) {
           projects.push({
-            path: `apps/${app}`,
+            path: relativePath,
             reason: 'Discovered TypeScript project in apps/',
             priority: 1,
           })
@@ -148,10 +198,15 @@ export function discoverProjects(cwd: string | undefined): AuditPlan['projects']
       const packages = readdirSync(packagesPath)
       for (const pkg of packages) {
         const pkgPath = join(packagesPath, pkg)
+        const relativePath = `packages/${pkg}`
         const stats = statSync(pkgPath)
-        if (stats.isDirectory() && existsSync(join(pkgPath, 'package.json'))) {
+        if (
+          stats.isDirectory() &&
+          existsSync(join(pkgPath, 'package.json')) &&
+          !excludeSet.has(relativePath)
+        ) {
           projects.push({
-            path: `packages/${pkg}`,
+            path: relativePath,
             reason: 'Discovered TypeScript project in packages/',
             priority: 2,
           })

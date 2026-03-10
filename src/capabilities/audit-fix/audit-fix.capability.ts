@@ -16,6 +16,7 @@ import type {
 } from '../../core/capability-registry/capability-registry.types.js'
 import {
   buildSummary,
+  detectSubmodules,
   determineOverallStatus,
   discoverProjects,
   parseAuditPlan,
@@ -64,10 +65,16 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
     settingSources: ['user', 'project'],
   },
 
-  preparePromptInput: (input: AuditFixInput, _context) => ({
-    targetProject: input.project,
-    cwd: input.cwd,
-  }),
+  preparePromptInput: (input: AuditFixInput, _context) => {
+    // Merge explicit excludes with auto-detected submodules for the planner prompt
+    const submodules = detectSubmodules(input.cwd)
+    const allExcludes = [...new Set([...(input.exclude ?? []), ...submodules])]
+    return {
+      targetProject: input.project,
+      cwd: input.cwd,
+      excludeList: allExcludes.length > 0 ? allExcludes : undefined,
+    }
+  },
 
   processResult: async (
     input: AuditFixInput,
@@ -77,15 +84,26 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
     // Step 1: Parse plan from planner AI result
     let plan = parseAuditPlan(aiResult.content)
 
-    // Step 2: Fallback to discoverProjects if plan is empty
+    // Step 2: Fallback to discoverProjects if plan is empty (exclude-aware)
     if (plan.projects.length === 0) {
-      plan = { projects: discoverProjects(input.cwd) }
+      plan = { projects: discoverProjects(input.cwd, input.exclude) }
     }
 
     // Step 3: Single-project override
     if (input.project) {
       plan = {
         projects: [{ path: input.project, reason: 'user-specified', priority: 1 }],
+      }
+    }
+
+    // Step 3b: Post-planner exclusion filter (safety net if AI ignores prompt instructions)
+    if (!input.project) {
+      const submodules = detectSubmodules(input.cwd)
+      const excludeSet = new Set([...(input.exclude ?? []), ...submodules])
+      if (excludeSet.size > 0) {
+        plan = {
+          projects: plan.projects.filter((p) => !excludeSet.has(p.path)),
+        }
       }
     }
 

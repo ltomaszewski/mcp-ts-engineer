@@ -229,6 +229,11 @@ export async function runFixerOrchestration(
   state.repoOwner = config.repoOwner || ''
   state.repoName = config.repoName || ''
 
+  // Pre-populate worktree path if cwd provided (skip pr_context_step in executeParseState)
+  if (input.cwd) {
+    state.worktreePath = input.cwd
+  }
+
   try {
     while (state.phase !== 'done') {
       if (state.budgetSpent >= budgetLimit) {
@@ -302,22 +307,26 @@ async function executeParseState(state: FixerState, context: CapabilityContext):
     state.prBranch = preflightResult.pr_context.pr_branch
   }
 
-  // Set up worktree
-  const contextResult = (await context.invokeCapability('pr_context_step', {
-    pr_context: {
-      pr_number: state.prNumber,
-      repo_owner: state.repoOwner,
-      repo_name: state.repoName,
-      pr_branch: state.prBranch,
-      base_branch: 'main',
-      files_changed: [],
-      diff_content: '',
-      is_draft: false,
-      is_closed: false,
-    },
-  })) as { worktree_path: string }
+  // Set up worktree (skip if already pre-populated from input.cwd)
+  if (!state.worktreePath) {
+    const contextResult = (await context.invokeCapability('pr_context_step', {
+      pr_context: {
+        pr_number: state.prNumber,
+        repo_owner: state.repoOwner,
+        repo_name: state.repoName,
+        pr_branch: state.prBranch,
+        base_branch: 'main',
+        files_changed: [],
+        diff_content: '',
+        is_draft: false,
+        is_closed: false,
+      },
+    })) as { worktree_path: string }
 
-  state.worktreePath = contextResult.worktree_path
+    state.worktreePath = contextResult.worktree_path
+  } else {
+    context.logger.info('Reusing external worktree', { worktreePath: state.worktreePath })
+  }
 
   // Fetch the latest reviewer comment to extract issues
   const commentBody = await fetchReviewerComment(state, context)

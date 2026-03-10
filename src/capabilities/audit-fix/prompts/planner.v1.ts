@@ -9,9 +9,14 @@ import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 interface PlannerPromptInput {
   targetProject?: string
   cwd?: string
+  excludeList?: string[]
 }
 
-const buildPlannerUserPrompt = (targetProject?: string, cwd?: string): string => {
+const buildPlannerUserPrompt = (
+  targetProject?: string,
+  cwd?: string,
+  excludeList?: string[],
+): string => {
   const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
 
   if (targetProject) {
@@ -32,8 +37,13 @@ Output the following plan directly — no filesystem scanning needed:
 </audit_plan>`
   }
 
-  return `${cwdContext}You are the Audit Planner for a TypeScript monorepo. Your role is to discover which projects need auditing.
+  const excludeSection =
+    excludeList && excludeList.length > 0
+      ? `\n\n**IMPORTANT: Exclude the following paths from the audit plan — do NOT include them:**\n${excludeList.map((p) => `- \`${p}\``).join('\n')}\n`
+      : ''
 
+  return `${cwdContext}You are the Audit Planner for a TypeScript monorepo. Your role is to discover which projects need auditing.
+${excludeSection}
 Your tasks:
 1. List directories in \`apps/\` and \`packages/\` that contain a \`package.json\`
 2. For each project, check if it has TypeScript files (tsconfig.json or .ts files)
@@ -69,13 +79,13 @@ export const plannerPromptV1: PromptVersion = {
   deprecated: false,
   sunsetDate: undefined,
   build: (input: unknown) => {
-    const { targetProject, cwd } = input as PlannerPromptInput
+    const { targetProject, cwd, excludeList } = input as PlannerPromptInput
     return {
       systemPrompt: {
         type: 'preset' as const,
         preset: 'claude_code' as const,
       },
-      userPrompt: buildPlannerUserPrompt(targetProject, cwd),
+      userPrompt: buildPlannerUserPrompt(targetProject, cwd, excludeList),
     }
   },
 }
