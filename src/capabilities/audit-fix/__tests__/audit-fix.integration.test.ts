@@ -158,6 +158,32 @@ describe('Audit-Fix Integration', () => {
       })
       expect(result.success).toBe(true)
     })
+
+    it('accepts exclude field as string array', () => {
+      const capability = registry.getCapability('audit_fix')
+      const result = capability?.inputSchema.safeParse({
+        cwd: '/path',
+        exclude: ['packages/mcp-ts-engineer', 'packages/legacy'],
+      })
+      expect(result.success).toBe(true)
+    })
+
+    it('accepts empty exclude array', () => {
+      const capability = registry.getCapability('audit_fix')
+      const result = capability?.inputSchema.safeParse({
+        exclude: [],
+      })
+      expect(result.success).toBe(true)
+    })
+
+    it('is backward-compatible without exclude', () => {
+      const capability = registry.getCapability('audit_fix')
+      const result = capability?.inputSchema.safeParse({
+        project: 'apps/my-app',
+        max_iteration_per_project: 3,
+      })
+      expect(result.success).toBe(true)
+    })
   })
 
   describe('eng step input validation - extended fields', () => {

@@ -22,6 +22,49 @@ const CONTEXT_PROMPT_V1: PromptVersion = {
   build: (input: unknown) => {
     const data = input as ContextStepInput
     const ctx = data.pr_context
+    const externalCwd = data.cwd
+
+    // When cwd is provided, skip worktree creation and just fetch diff
+    if (externalCwd) {
+      return {
+        systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+        userPrompt: `# PR Context Setup (External Worktree)
+
+You are setting up the review context for PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}.
+
+An existing worktree is provided at: ${externalCwd}
+
+**DO NOT create a new worktree.** Use the provided path as the worktree.
+
+## Tasks
+
+1. **Use existing worktree at \`${externalCwd}\`** — do NOT run \`git worktree add\`
+
+2. **Fetch Diff**
+   ${
+     ctx.last_reviewed_sha
+       ? `- Get incremental diff: \`git diff ${shellQuote(ctx.last_reviewed_sha)}..HEAD\``
+       : `- Get full diff: \`gh pr diff ${ctx.pr_number}\``
+   }
+
+3. **Catalog Files Changed**
+   - Run: \`gh pr diff ${ctx.pr_number} --name-only\` to get the file list
+
+## Output Format
+
+Respond with JSON:
+\`\`\`json
+{
+  "worktree_path": "${externalCwd}",
+  "diff_content": "git diff output...",
+  "files_changed": ["path/to/file.ts"]
+}
+\`\`\`
+
+Proceed with context setup now.`,
+      }
+    }
+
     return {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
       userPrompt: `# PR Context Setup

@@ -30,11 +30,13 @@ export const PrReviewerInputSchema = z.object({
   mode: z.enum(['review-fix']).default('review-fix'),
   incremental: z.boolean().default(false),
   budget: z.number().positive().optional(),
+  cwd: z.string().optional(),
 }) as z.ZodType<{
   pr: string
   mode: 'review-fix'
   incremental: boolean
   budget?: number
+  cwd?: string
 }>
 
 export type PrReviewerInput = z.infer<typeof PrReviewerInputSchema>

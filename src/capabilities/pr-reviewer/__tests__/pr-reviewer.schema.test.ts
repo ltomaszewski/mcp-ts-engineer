@@ -97,6 +97,27 @@ describe('PrReviewerInputSchema', () => {
       })
       expect(result.success).toBe(true)
     })
+
+    it('accepts cwd field for worktree reuse', () => {
+      const result = PrReviewerInputSchema.safeParse({
+        pr: '123',
+        cwd: '/path/to/worktree',
+      })
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.cwd).toBe('/path/to/worktree')
+      }
+    })
+
+    it('is backward-compatible without cwd', () => {
+      const result = PrReviewerInputSchema.safeParse({
+        pr: '456',
+      })
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.cwd).toBeUndefined()
+      }
+    })
   })
 
   describe('invalid inputs', () => {

@@ -442,20 +442,24 @@ function convertIssueDataToReviewIssues(
 
 /**
  * Context phase: Setup worktree and load diff.
+ * When `cwd` is provided in input, skips pr_context_step and reuses the external worktree.
+ * Otherwise creates a new worktree via pr_context_step.
  * Merges diff_content and files_changed back into prContext
  * since the preflight step only collects metadata.
  */
 async function executeContext(
   state: ReviewState,
-  _input: PrReviewerInput,
+  input: PrReviewerInput,
   context: CapabilityContext,
 ): Promise<void> {
   if (!state.prContext) {
     throw new Error('PR context not available')
   }
 
+  // Pass cwd to pr_context_step so it skips worktree creation when provided
   const result = (await context.invokeCapability('pr_context_step', {
     pr_context: state.prContext,
+    ...(input.cwd ? { cwd: input.cwd } : {}),
   })) as ContextStepOutput
 
   state.worktreePath = result.worktree_path
@@ -464,9 +468,13 @@ async function executeContext(
     throw new Error('Context step returned empty worktree_path')
   }
 
-  // Only claim ownership if the worktree follows the pr-*-review pattern (created by context step).
-  // External worktrees (e.g. from /issue-implement pipeline) must NOT be removed on cleanup.
-  state.worktreeOwnedByReviewer = /\.worktrees\/pr-\d+-review/.test(state.worktreePath)
+  // When cwd was provided externally, never claim ownership (skip cleanup).
+  // Otherwise only claim ownership if the worktree follows the pr-*-review pattern.
+  if (input.cwd) {
+    state.worktreeOwnedByReviewer = false
+  } else {
+    state.worktreeOwnedByReviewer = /\.worktrees\/pr-\d+-review/.test(state.worktreePath)
+  }
 
   // Merge context step output back into prContext.
   // The preflight step collects PR metadata; the context step fetches the actual diff.
