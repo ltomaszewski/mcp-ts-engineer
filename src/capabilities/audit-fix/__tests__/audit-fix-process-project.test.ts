@@ -333,6 +333,9 @@ describe('Process Project - Lint Integration', () => {
   })
 
   describe('iteration counter accuracy', () => {
+    const passTestResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+    const failTestResult = { passed: false, tests_total: 10, tests_failed: 1, failure_summary: 'test failed', workspaces_tested: ['apps/test-project'] }
+
     it('reports iterations: 1 when audit passes on first check', async () => {
       const depsScanResult: DepsScanStepResult = {
         audit_ran: true,
@@ -363,6 +366,7 @@ describe('Process Project - Lint Integration', () => {
         .mockResolvedValueOnce(depsScanResult)
         .mockResolvedValueOnce(lintScanResult)
         .mockResolvedValueOnce(auditResult)
+        .mockResolvedValueOnce(passTestResult)
 
       const { result, iterationsUsed } = await processProject(
         'apps/test-project',
@@ -370,7 +374,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -422,9 +425,11 @@ describe('Process Project - Lint Integration', () => {
       invokeSpy
         .mockResolvedValueOnce(depsScanResult)
         .mockResolvedValueOnce(lintScanResult)
-        .mockResolvedValueOnce(failAudit)   // iteration 1: audit fails
-        .mockResolvedValueOnce(engResult)    // iteration 1: eng fix
-        .mockResolvedValueOnce(passAudit)    // iteration 2: audit passes
+        .mockResolvedValueOnce(failAudit)      // iteration 1: audit fails
+        .mockResolvedValueOnce(failTestResult)  // iteration 1: test
+        .mockResolvedValueOnce(engResult)       // iteration 1: eng fix
+        .mockResolvedValueOnce(passAudit)       // iteration 2: audit passes
+        .mockResolvedValueOnce(passTestResult)  // iteration 2: test passes
         .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: ['src/a.ts'] })
 
       const { result, iterationsUsed } = await processProject(
@@ -433,7 +438,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -443,6 +447,8 @@ describe('Process Project - Lint Integration', () => {
   })
 
   describe('total_fixes counter accuracy', () => {
+    const passTestResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
     it('includes lint fix count in total_fixes', async () => {
       const depsScanResult: DepsScanStepResult = {
         audit_ran: true,
@@ -480,6 +486,7 @@ describe('Process Project - Lint Integration', () => {
         .mockResolvedValueOnce(lintScanResult)
         .mockResolvedValueOnce(lintFixResult)
         .mockResolvedValueOnce(auditResult)
+        .mockResolvedValueOnce(passTestResult)
         .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
 
       const { result } = await processProject(
@@ -488,7 +495,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -534,6 +540,7 @@ describe('Process Project - Lint Integration', () => {
         .mockResolvedValueOnce(depsFixResult)
         .mockResolvedValueOnce(lintScanResult)
         .mockResolvedValueOnce(auditResult)
+        .mockResolvedValueOnce(passTestResult)
         .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
 
       const { result } = await processProject(
@@ -542,7 +549,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -550,6 +556,8 @@ describe('Process Project - Lint Integration', () => {
     })
 
     it('aggregates fixes from all phases: deps + lint + audit', async () => {
+      const failTestResult = { passed: false, tests_total: 10, tests_failed: 1, failure_summary: 'test failed', workspaces_tested: ['apps/test-project'] }
+
       const depsScanResult: DepsScanStepResult = {
         audit_ran: true,
         vulnerabilities_found: 2,
@@ -609,9 +617,11 @@ describe('Process Project - Lint Integration', () => {
         .mockResolvedValueOnce(depsFixResult)
         .mockResolvedValueOnce(lintScanResult)
         .mockResolvedValueOnce(lintFixResult)
-        .mockResolvedValueOnce(failAudit)    // iteration 1: audit fails, 3 fixes_applied
-        .mockResolvedValueOnce(engResult)     // iteration 1: eng fix
-        .mockResolvedValueOnce(passAudit)     // iteration 2: audit passes
+        .mockResolvedValueOnce(failAudit)       // iteration 1: audit fails, 3 fixes_applied
+        .mockResolvedValueOnce(failTestResult)   // iteration 1: test fails
+        .mockResolvedValueOnce(engResult)        // iteration 1: eng fix
+        .mockResolvedValueOnce(passAudit)        // iteration 2: audit passes
+        .mockResolvedValueOnce(passTestResult)   // iteration 2: test passes
         .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
 
       const { result } = await processProject(
@@ -620,7 +630,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -665,7 +674,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
