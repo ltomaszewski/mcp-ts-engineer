@@ -1,14 +1,16 @@
 import { type MockInstance, vi } from 'vitest'
 
 /**
- * Integration tests for lint phase execution in processProject orchestration.
- * Tests that lint scan and lint fix steps are invoked in the correct order.
+ * Integration tests for processProject orchestration.
+ * Tests lint phase execution, counter accuracy, and fix tracking across all phases.
  */
 
 import type { CapabilityContext } from '../../../core/capability-registry/capability-registry.types.js'
 import type {
   AuditStepResult,
+  DepsFixStepResult,
   DepsScanStepResult,
+  EngFixResult,
   LintFixResult,
   LintScanResult,
 } from '../audit-fix.schema.js'
@@ -327,6 +329,348 @@ describe('Process Project - Lint Integration', () => {
       expect(result.files_modified).toContain('src/a.ts')
       expect(result.files_modified).toContain('src/b.ts')
       expect(result.files_modified.length).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  describe('iteration counter accuracy', () => {
+    it('reports iterations: 1 when audit passes on first check', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 0,
+        vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+        audit_json: '',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: false,
+        lint_passed: true,
+        error_count: 0,
+        warning_count: 0,
+        lint_report: '',
+        files_with_lint_errors: [],
+      }
+
+      const auditResult: AuditStepResult = {
+        status: 'pass',
+        issues_remaining: 0,
+        files_with_issues: [],
+        fixes_applied: 0,
+        tsc_passed: true,
+        summary: 'All clean',
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockResolvedValueOnce(auditResult)
+
+      const { result, iterationsUsed } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      expect(result.iterations).toBe(1)
+      expect(iterationsUsed).toBe(1)
+    })
+
+    it('reports iterations: 2 when audit fails first then passes', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 0,
+        vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+        audit_json: '',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: false,
+        lint_passed: true,
+        error_count: 0,
+        warning_count: 0,
+        lint_report: '',
+        files_with_lint_errors: [],
+      }
+
+      const failAudit: AuditStepResult = {
+        status: 'fail',
+        issues_remaining: 3,
+        files_with_issues: ['src/a.ts'],
+        fixes_applied: 2,
+        tsc_passed: false,
+        summary: '3 issues found',
+      }
+
+      const engResult: EngFixResult = {
+        status: 'success',
+        files_modified: ['src/a.ts'],
+        summary: 'Fixed issues',
+      }
+
+      const passAudit: AuditStepResult = {
+        status: 'pass',
+        issues_remaining: 0,
+        files_with_issues: [],
+        fixes_applied: 0,
+        tsc_passed: true,
+        summary: 'All clean',
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockResolvedValueOnce(failAudit)   // iteration 1: audit fails
+        .mockResolvedValueOnce(engResult)    // iteration 1: eng fix
+        .mockResolvedValueOnce(passAudit)    // iteration 2: audit passes
+        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: ['src/a.ts'] })
+
+      const { result, iterationsUsed } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      expect(result.iterations).toBe(2)
+      expect(iterationsUsed).toBe(2)
+    })
+  })
+
+  describe('total_fixes counter accuracy', () => {
+    it('includes lint fix count in total_fixes', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 0,
+        vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+        audit_json: '',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: true,
+        lint_passed: false,
+        error_count: 3,
+        warning_count: 0,
+        lint_report: '3 errors',
+        files_with_lint_errors: ['src/a.ts', 'src/b.ts', 'src/c.ts'],
+      }
+
+      const lintFixResult: LintFixResult = {
+        status: 'success',
+        files_modified: ['src/a.ts', 'src/b.ts', 'src/c.ts'],
+        summary: 'Fixed 3 files',
+      }
+
+      const auditResult: AuditStepResult = {
+        status: 'pass',
+        issues_remaining: 0,
+        files_with_issues: [],
+        fixes_applied: 0,
+        tsc_passed: true,
+        summary: 'All clean',
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockResolvedValueOnce(lintFixResult)
+        .mockResolvedValueOnce(auditResult)
+        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
+
+      const { result } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      expect(result.total_fixes).toBe(3)
+    })
+
+    it('includes deps fix count in total_fixes', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 5,
+        vulnerabilities_by_severity: { critical: 1, high: 2, moderate: 1, low: 1 },
+        audit_json: '{}',
+      }
+
+      const depsFixResult: DepsFixStepResult = {
+        fix_ran: true,
+        vulnerabilities_fixed: 4,
+        vulnerabilities_remaining: 1,
+        files_modified: ['package-lock.json'],
+        fix_summary: 'Fixed 4 vulnerabilities',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: false,
+        lint_passed: true,
+        error_count: 0,
+        warning_count: 0,
+        lint_report: '',
+        files_with_lint_errors: [],
+      }
+
+      const auditResult: AuditStepResult = {
+        status: 'pass',
+        issues_remaining: 0,
+        files_with_issues: [],
+        fixes_applied: 0,
+        tsc_passed: true,
+        summary: 'All clean',
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(depsFixResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockResolvedValueOnce(auditResult)
+        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
+
+      const { result } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      expect(result.total_fixes).toBe(4)
+    })
+
+    it('aggregates fixes from all phases: deps + lint + audit', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 2,
+        vulnerabilities_by_severity: { critical: 0, high: 1, moderate: 1, low: 0 },
+        audit_json: '{}',
+      }
+
+      const depsFixResult: DepsFixStepResult = {
+        fix_ran: true,
+        vulnerabilities_fixed: 2,
+        vulnerabilities_remaining: 0,
+        files_modified: ['package-lock.json'],
+        fix_summary: 'Fixed 2 vulnerabilities',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: true,
+        lint_passed: false,
+        error_count: 2,
+        warning_count: 0,
+        lint_report: '2 errors',
+        files_with_lint_errors: ['src/a.ts', 'src/b.ts'],
+      }
+
+      const lintFixResult: LintFixResult = {
+        status: 'success',
+        files_modified: ['src/a.ts', 'src/b.ts'],
+        summary: 'Fixed 2 files',
+      }
+
+      const failAudit: AuditStepResult = {
+        status: 'fail',
+        issues_remaining: 1,
+        files_with_issues: ['src/c.ts'],
+        fixes_applied: 3,
+        tsc_passed: false,
+        summary: '1 issue',
+      }
+
+      const engResult: EngFixResult = {
+        status: 'success',
+        files_modified: ['src/c.ts'],
+        summary: 'Fixed',
+      }
+
+      const passAudit: AuditStepResult = {
+        status: 'pass',
+        issues_remaining: 0,
+        files_with_issues: [],
+        fixes_applied: 0,
+        tsc_passed: true,
+        summary: 'All clean',
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(depsFixResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockResolvedValueOnce(lintFixResult)
+        .mockResolvedValueOnce(failAudit)    // iteration 1: audit fails, 3 fixes_applied
+        .mockResolvedValueOnce(engResult)     // iteration 1: eng fix
+        .mockResolvedValueOnce(passAudit)     // iteration 2: audit passes
+        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
+
+      const { result } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      // deps: 2 + lint: 2 files + audit: 3 fixes_applied = 7
+      expect(result.total_fixes).toBe(7)
+    })
+
+    it('includes fix counts in error path result', async () => {
+      const depsScanResult: DepsScanStepResult = {
+        audit_ran: true,
+        vulnerabilities_found: 1,
+        vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 1, low: 0 },
+        audit_json: '{}',
+      }
+
+      const depsFixResult: DepsFixStepResult = {
+        fix_ran: true,
+        vulnerabilities_fixed: 1,
+        vulnerabilities_remaining: 0,
+        files_modified: ['package-lock.json'],
+        fix_summary: 'Fixed 1 vulnerability',
+      }
+
+      const lintScanResult: LintScanResult = {
+        lint_available: false,
+        lint_passed: true,
+        error_count: 0,
+        warning_count: 0,
+        lint_report: '',
+        files_with_lint_errors: [],
+      }
+
+      invokeSpy
+        .mockResolvedValueOnce(depsScanResult)
+        .mockResolvedValueOnce(depsFixResult)
+        .mockResolvedValueOnce(lintScanResult)
+        .mockRejectedValueOnce(new Error('Audit step crashed'))
+
+      const { result } = await processProject(
+        'apps/test-project',
+        5,
+        10,
+        '/test/cwd',
+        mockContext,
+        true,
+        undefined,
+      )
+
+      expect(result.final_audit_status).toBe('fail')
+      expect(result.total_fixes).toBe(1)
     })
   })
 })

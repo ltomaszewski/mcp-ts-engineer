@@ -315,7 +315,8 @@ describe('auditFixCapability', () => {
         'audit_fix_commit_step',
         expect.any(Object),
       )
-      expect(result.total_iterations).toBe(1)
+      // Iteration 1: audit fails + eng fix; Iteration 2: audit passes
+      expect(result.total_iterations).toBe(2)
     })
 
     it('early exit when audit returns pass with 0 issues', async () => {
@@ -347,7 +348,8 @@ describe('auditFixCapability', () => {
         'audit_fix_commit_step',
         expect.any(Object),
       )
-      expect(result.total_iterations).toBe(0)
+      // Iteration 1: audit passes immediately (still counts as 1 iteration)
+      expect(result.total_iterations).toBe(1)
       expect(result.project_results[0].final_audit_status).toBe('pass')
     })
 
@@ -376,7 +378,8 @@ describe('auditFixCapability', () => {
         'audit_fix_commit_step',
         expect.any(Object),
       )
-      expect(result.total_iterations).toBe(0)
+      // Iteration 1: audit fails + eng returns empty (still counts as 1 iteration)
+      expect(result.total_iterations).toBe(1)
     })
 
     it('respects per-project iteration limit', async () => {

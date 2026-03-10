@@ -340,7 +340,14 @@ async function executePhase(
       break
 
     case 'comment':
-      await executeComment(state, input, context)
+      try {
+        await executeComment(state, input, context)
+      } catch (error) {
+        // Comment posting is non-fatal — review results are still valid
+        context.logger.warn('Comment phase failed, continuing with results', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
       break
 
     default:

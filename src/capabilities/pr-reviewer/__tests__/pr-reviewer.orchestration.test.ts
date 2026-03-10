@@ -409,4 +409,33 @@ describe('buildOutput', () => {
     expect(output.medium_count).toBe(1)
     expect(output.low_count).toBe(1)
   })
+
+  it('returns success with issues_found: 0 for clean review (no issues)', () => {
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [],
+      autoFixableIssues: [],
+      manualIssues: [],
+      fixesApplied: 0,
+      issuesFixed: [],
+    }
+    const output = buildOutput(state)
+    expect(output.status).toBe('success')
+    expect(output.issues_found).toBe(0)
+    expect(output.issues_fixed).toBe(0)
+    expect(output.critical_count).toBe(0)
+    expect(output.high_count).toBe(0)
+    expect(output.medium_count).toBe(0)
+    expect(output.low_count).toBe(0)
+  })
+
+  it('never returns failed with issues_found: 0 (contradictory state)', () => {
+    // With zero validated issues, status should always be success
+    const state: ReviewState = {
+      ...createInitialState(),
+      validatedIssues: [],
+    }
+    const output = buildOutput(state)
+    expect(output.status).not.toBe('failed')
+  })
 })

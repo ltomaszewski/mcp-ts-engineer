@@ -75,6 +75,8 @@ export async function processProject(
   let totalFixes = 0
   let lastAuditResult: AuditStepResult = AUDIT_STEP_RESULT_FALLBACK
   let lastTestResult: TestResult | null = null
+  let depsFixCount = 0
+  let lintFixCount = 0
 
   try {
     // PHASE 1: DEPS (first - before any other steps)
@@ -97,8 +99,9 @@ export async function processProject(
           cwd,
           context,
         )
-        // Track modified files (prefixed with projectPath)
+        // Track modified files (prefixed with projectPath) and fix count
         allFilesModified.push(...depsFixResult.files_modified.map((f) => `${projectPath}/${f}`))
+        depsFixCount += depsFixResult.vulnerabilities_fixed
       } catch {
         // Non-blocking: deps fix failure doesn't stop workflow
       }
@@ -125,6 +128,7 @@ export async function processProject(
           context,
         )
         allFilesModified.push(...lintFixResult.files_modified)
+        lintFixCount += lintFixResult.files_modified.length
       } catch {
         // Non-blocking: lint fix failure doesn't stop audit
       }
@@ -133,6 +137,8 @@ export async function processProject(
     // PHASE 3: AUDIT (separate - no lint data mixed in)
     // --------------------------------------------------
     while (projectIterations < maxIterPerProject && projectIterations < remainingCap) {
+      projectIterations++
+
       const auditResult = await invokeAuditStep(projectPath, cwd, context)
       lastAuditResult = auditResult
 
@@ -154,7 +160,7 @@ export async function processProject(
         projectPath,
         auditResult.summary,
         auditResult.files_with_issues,
-        projectIterations + 1,
+        projectIterations,
         cwd,
         context,
         testResult?.failure_summary,
@@ -167,7 +173,6 @@ export async function processProject(
 
       allFilesModified.push(...engResult.files_modified)
       totalFixes += auditResult.fixes_applied
-      projectIterations++
     }
 
     let commitResult: CommitResult | null = null
@@ -181,11 +186,13 @@ export async function processProject(
       )
     }
 
+    const allPhaseFixes = totalFixes + depsFixCount + lintFixCount
+
     return {
       result: {
         project_path: projectPath,
         iterations: projectIterations,
-        total_fixes: totalFixes,
+        total_fixes: allPhaseFixes,
         final_audit_status: lastAuditResult.status,
         files_modified: [...new Set(allFilesModified)],
         commit_sha: commitResult?.commit_sha ?? null,
@@ -195,12 +202,13 @@ export async function processProject(
       iterationsUsed: projectIterations,
     }
   } catch (error) {
+    const allPhaseFixes = totalFixes + depsFixCount + lintFixCount
     const errorMsg = error instanceof Error ? error.message : String(error)
     return {
       result: {
         project_path: projectPath,
         iterations: projectIterations,
-        total_fixes: totalFixes,
+        total_fixes: allPhaseFixes,
         final_audit_status: 'fail',
         files_modified: [...new Set(allFilesModified)],
         commit_sha: null,
