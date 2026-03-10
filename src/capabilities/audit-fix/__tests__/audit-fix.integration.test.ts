@@ -160,8 +160,8 @@ describe('Audit-Fix Integration', () => {
     })
 
     it('accepts exclude field as string array', () => {
-      const capability = registry.getCapability('audit_fix')
-      const result = capability?.inputSchema.safeParse({
+      const capability = registry.getCapability('audit_fix')!
+      const result = capability.inputSchema.safeParse({
         cwd: '/path',
         exclude: ['packages/mcp-ts-engineer', 'packages/legacy'],
       })
@@ -169,16 +169,16 @@ describe('Audit-Fix Integration', () => {
     })
 
     it('accepts empty exclude array', () => {
-      const capability = registry.getCapability('audit_fix')
-      const result = capability?.inputSchema.safeParse({
+      const capability = registry.getCapability('audit_fix')!
+      const result = capability.inputSchema.safeParse({
         exclude: [],
       })
       expect(result.success).toBe(true)
     })
 
     it('is backward-compatible without exclude', () => {
-      const capability = registry.getCapability('audit_fix')
-      const result = capability?.inputSchema.safeParse({
+      const capability = registry.getCapability('audit_fix')!
+      const result = capability.inputSchema.safeParse({
         project: 'apps/my-app',
         max_iteration_per_project: 3,
       })

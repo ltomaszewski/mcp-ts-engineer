@@ -187,7 +187,7 @@ describe('auditFixCapability', () => {
       }
       const context = createMockContext()
 
-      const result = auditFixCapability.preparePromptInput(input, context)
+      const result = auditFixCapability.preparePromptInput(input, context) as Record<string, unknown>
 
       // Should have excludeList containing at least the explicit exclude
       if (result.excludeList) {
@@ -203,7 +203,7 @@ describe('auditFixCapability', () => {
       }
       const context = createMockContext()
 
-      const result = auditFixCapability.preparePromptInput(input, context)
+      const result = auditFixCapability.preparePromptInput(input, context) as Record<string, unknown>
 
       expect(result.excludeList).toBeUndefined()
     })
