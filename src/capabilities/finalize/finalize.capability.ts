@@ -66,7 +66,7 @@ async function invokeTestStep(
   workspaces: string[],
   cwd: string | undefined,
   context: CapabilityContext,
-): Promise<TestResult | null> {
+): Promise<TestResult> {
   if (workspaces.length === 0) {
     return {
       passed: true,
@@ -134,21 +134,21 @@ async function invokeCommitStep(
  */
 function buildOutput(
   auditResult: AuditResult,
-  testResult: TestResult | null,
+  testResult: TestResult,
   codemapResult: CodemapResult | null,
   readmeResult: ReadmeResult | null,
   commitResult: FinalizeCommitResult,
 ): FinalizeOutput {
   // Determine overall status
-  const status = auditResult.tsc_passed && (testResult?.passed ?? true) ? 'success' : 'failed'
+  const status = auditResult.tsc_passed && testResult.passed ? 'success' : 'failed'
 
   return {
     status,
     audit_status: auditResult.status,
     audit_fixes_applied: auditResult.fixes_applied,
     audit_summary: auditResult.summary,
-    tests_passed: testResult?.passed ?? null,
-    tests_summary: testResult?.summary ?? 'Tests skipped',
+    tests_passed: testResult.passed,
+    tests_summary: testResult.summary,
     codemaps_updated: codemapResult?.updated ?? null,
     codemaps_summary: codemapResult?.summary ?? 'Codemaps skipped',
     readmes_updated: readmeResult?.updated ?? null,
@@ -221,11 +221,8 @@ export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOut
     // Step 1: Audit
     const auditResult = await invokeAuditStep(input, context)
 
-    // Step 2: Test (conditional)
-    let testResult: TestResult | null = null
-    if (!input.skip_tests) {
-      testResult = await invokeTestStep(workspaces, input.cwd, context)
-    }
+    // Step 2: Test
+    const testResult = await invokeTestStep(workspaces, input.cwd, context)
 
     // Step 3: Codemap (conditional)
     let codemapResult: CodemapResult | null = null
@@ -250,7 +247,7 @@ export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOut
       ...(codemapResult?.codemaps_changed ?? []),
       ...(readmeResult?.readmes_changed ?? []),
     ]
-    if (input.spec_path && auditResult.tsc_passed && (testResult?.passed ?? true)) {
+    if (input.spec_path && auditResult.tsc_passed && testResult.passed) {
       try {
         const specUpdated = await updateSpecStatus(
           input.spec_path,

@@ -32,7 +32,6 @@ describe('FinalizeInputSchema', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.files_changed).toEqual(['src/file.ts'])
-        expect(result.data.skip_tests).toBe(false)
         expect(result.data.skip_codemaps).toBe(false)
         expect(result.data.cwd).toBeUndefined()
       }
@@ -61,18 +60,6 @@ describe('FinalizeInputSchema', () => {
       }
     })
 
-    it('accepts skip_tests=true', () => {
-      const result = FinalizeInputSchema.safeParse({
-        files_changed: ['src/file.ts'],
-        skip_tests: true,
-      })
-
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data.skip_tests).toBe(true)
-      }
-    })
-
     it('accepts skip_codemaps=true', () => {
       const result = FinalizeInputSchema.safeParse({
         files_changed: ['src/file.ts'],
@@ -81,20 +68,6 @@ describe('FinalizeInputSchema', () => {
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.skip_codemaps).toBe(true)
-      }
-    })
-
-    it('accepts both skip flags', () => {
-      const result = FinalizeInputSchema.safeParse({
-        files_changed: ['src/file.ts'],
-        skip_tests: true,
-        skip_codemaps: true,
-      })
-
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data.skip_tests).toBe(true)
         expect(result.data.skip_codemaps).toBe(true)
       }
     })
@@ -141,15 +114,6 @@ describe('FinalizeInputSchema', () => {
     it('rejects non-string array items in files_changed', () => {
       const result = FinalizeInputSchema.safeParse({
         files_changed: ['src/file.ts', 123, 'src/file2.ts'],
-      })
-
-      expect(result.success).toBe(false)
-    })
-
-    it('rejects non-boolean skip_tests', () => {
-      const result = FinalizeInputSchema.safeParse({
-        files_changed: ['src/file.ts'],
-        skip_tests: 'true',
       })
 
       expect(result.success).toBe(false)

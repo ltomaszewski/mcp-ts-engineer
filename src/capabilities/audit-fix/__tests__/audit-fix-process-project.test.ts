@@ -52,17 +52,21 @@ describe('Process Project - Lint Integration', () => {
         files_with_lint_errors: [],
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan (runs first)
         .mockResolvedValueOnce(lintScanResult) // lint scan
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
 
-      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, true, undefined)
+      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, undefined)
 
-      expect(invokeSpy).toHaveBeenCalledTimes(3)
+      expect(invokeSpy).toHaveBeenCalledTimes(4)
       expect(invokeSpy.mock.calls[0]?.[0]).toBe('audit_fix_deps_scan_step')
       expect(invokeSpy.mock.calls[1]?.[0]).toBe('audit_fix_lint_scan_step')
       expect(invokeSpy.mock.calls[2]?.[0]).toBe('audit_fix_audit_step')
+      expect(invokeSpy.mock.calls[3]?.[0]).toBe('audit_fix_test_step')
     })
   })
 
@@ -99,11 +103,14 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan (runs first)
         .mockResolvedValueOnce(lintScanResult) // lint scan
         .mockResolvedValueOnce(lintFixResult) // lint fix
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
         .mockResolvedValueOnce({ commit_sha: 'abc123', status: 'success', summary: 'Committed' }) // commit
 
       const { result } = await processProject(
@@ -112,7 +119,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -158,12 +164,15 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan
         .mockResolvedValueOnce(lintScanResult) // lint scan
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
 
-      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, true, undefined)
+      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, undefined)
 
       const lintFixCalls = invokeSpy.mock.calls.filter(
         (call) => call[0] === 'audit_fix_lint_fix_step',
@@ -197,12 +206,15 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan
         .mockResolvedValueOnce(lintScanResult) // lint scan
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
 
-      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, true, undefined)
+      await processProject('apps/test-project', 5, 10, '/test/cwd', mockContext, undefined)
 
       const lintFixCalls = invokeSpy.mock.calls.filter(
         (call) => call[0] === 'audit_fix_lint_fix_step',
@@ -229,10 +241,13 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan
         .mockRejectedValueOnce(new Error('Lint scan failed')) // lint scan error
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
 
       const { result } = await processProject(
         'apps/test-project',
@@ -240,7 +255,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 
@@ -291,11 +305,14 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
+      const testResult = { passed: true, tests_total: 10, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test-project'] }
+
       invokeSpy
         .mockResolvedValueOnce(depsScanResult) // deps scan
         .mockResolvedValueOnce(lintScanResult) // lint scan
         .mockResolvedValueOnce(lintFixResult) // lint fix
         .mockResolvedValueOnce(auditResult) // audit step
+        .mockResolvedValueOnce(testResult) // test step
         .mockResolvedValueOnce({ commit_sha: 'abc123', status: 'success', summary: 'Committed' }) // commit
 
       const { result } = await processProject(
@@ -304,7 +321,6 @@ describe('Process Project - Lint Integration', () => {
         10,
         '/test/cwd',
         mockContext,
-        true,
         undefined,
       )
 

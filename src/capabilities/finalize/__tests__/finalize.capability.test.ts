@@ -139,7 +139,7 @@ describe('finalizeCapability', () => {
       const input: FinalizeInput = {
         files_changed: ['src/file1.ts', 'src/file2.ts'],
         cwd: '/some/path',
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -158,7 +158,7 @@ describe('finalizeCapability', () => {
     it('handles missing cwd', () => {
       const input: FinalizeInput = {
         files_changed: ['src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -209,7 +209,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/my-server/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -251,70 +251,6 @@ describe('finalizeCapability', () => {
       expect(result.commit_sha).toBe('abc123')
     })
 
-    it('skips test step when skip_tests=true', async () => {
-      const auditResult = {
-        status: 'pass' as const,
-        fixes_applied: 0,
-        issues_remaining: 0,
-        tsc_passed: true,
-        summary: 'No issues',
-      }
-      const codemapResult = {
-        updated: false,
-        codemaps_changed: [],
-        summary: 'No changes',
-      }
-      const commitResult = {
-        committed: true,
-        commit_sha: 'abc123',
-        commit_message: 'chore: finalize',
-        files_committed: [],
-      }
-
-      const context = createMockContext({
-        finalize_audit_step: auditResult,
-        finalize_codemap_step: codemapResult,
-        finalize_commit_step: commitResult,
-      })
-
-      const input: FinalizeInput = {
-        files_changed: ['src/file.ts'],
-        skip_tests: true,
-        skip_codemaps: false,
-        skip_readmes: false,
-      }
-
-      const finalizePlan = {
-        workspaces: [],
-        codemap_areas: [],
-      }
-      const aiResult = createMockAiResult(
-        `<finalize_plan>${JSON.stringify(finalizePlan)}</finalize_plan>`,
-      )
-
-      const result = await finalizeCapability.processResult(input, aiResult, context)
-
-      expect(context.invokeCapability).toHaveBeenCalledWith(
-        'finalize_audit_step',
-        expect.any(Object),
-      )
-      expect(context.invokeCapability).not.toHaveBeenCalledWith(
-        'finalize_test_step',
-        expect.any(Object),
-      )
-      expect(context.invokeCapability).toHaveBeenCalledWith(
-        'finalize_codemap_step',
-        expect.any(Object),
-      )
-      expect(context.invokeCapability).toHaveBeenCalledWith(
-        'finalize_commit_step',
-        expect.any(Object),
-      )
-
-      expect(result.tests_passed).toBeNull()
-      expect(result.tests_summary).toBe('Tests skipped')
-    })
-
     it('skips codemap step when skip_codemaps=true', async () => {
       const auditResult = {
         status: 'pass' as const,
@@ -343,7 +279,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/my-server/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: true,
         skip_readmes: false,
       }
@@ -401,7 +337,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['src/file.ts'],
-        skip_tests: true,
+
         skip_codemaps: true,
         skip_readmes: false,
       }
@@ -447,7 +383,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/my-server/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: true,
         skip_readmes: false,
       }
@@ -502,7 +438,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/test/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -559,7 +495,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/test/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -611,7 +547,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/test/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }
@@ -663,7 +599,7 @@ describe('finalizeCapability', () => {
 
       const input: FinalizeInput = {
         files_changed: ['apps/test/src/file.ts'],
-        skip_tests: false,
+
         skip_codemaps: false,
         skip_readmes: false,
       }

@@ -128,7 +128,7 @@ const successCommit = (sha: string) => ({
   files_changed: ['src/file.ts'],
 })
 
-const _passTest = () => ({
+const passTest = () => ({
   passed: true,
   tests_total: 10,
   tests_failed: 0,
@@ -136,7 +136,7 @@ const _passTest = () => ({
   workspaces_tested: ['apps/server'],
 })
 
-const _failTest = (failedCount: number, summary: string) => ({
+const failTest = (failedCount: number, summary: string) => ({
   passed: false,
   tests_total: 10,
   tests_failed: failedCount,
@@ -165,7 +165,6 @@ describe('auditFixCapability', () => {
         project: 'apps/server',
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true,
         cwd: '/path/to/mono',
       }
       const context = createMockContext()
@@ -218,12 +217,13 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit()],
+        audit_fix_test_step: [passTest()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -243,7 +243,7 @@ describe('auditFixCapability', () => {
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -263,12 +263,13 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit()],
+        audit_fix_test_step: [passTest()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true,
+
         exclude: ['packages/mcp-ts-engineer'],
       }
 
@@ -288,6 +289,7 @@ describe('auditFixCapability', () => {
       const context = createMockContext({
         // First audit: issues found, second audit: clean
         audit_fix_audit_step: [failAudit(3, ['src/a.ts']), passAudit()],
+        audit_fix_test_step: [failTest(1, 'test failed'), passTest()],
         audit_fix_eng_step: [successEng(['src/a.ts'])],
         audit_fix_commit_step: [successCommit('abc123')],
       })
@@ -295,7 +297,7 @@ describe('auditFixCapability', () => {
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -324,12 +326,13 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit()],
+        audit_fix_test_step: [passTest()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -356,13 +359,14 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [failAudit(3, ['src/a.ts'])],
+        audit_fix_test_step: [failTest(1, 'test failed')],
         audit_fix_eng_step: [emptyEng()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -384,6 +388,7 @@ describe('auditFixCapability', () => {
       // Always return issues and always fix something
       const context = createMockContext({
         audit_fix_audit_step: [warnAudit(1, 2, ['src/a.ts']), warnAudit(1, 1, ['src/a.ts'])],
+        audit_fix_test_step: [passTest(), passTest()],
         audit_fix_eng_step: [successEng(['src/a.ts']), successEng(['src/a.ts'])],
         audit_fix_commit_step: [successCommit('abc123')],
       })
@@ -391,7 +396,7 @@ describe('auditFixCapability', () => {
       const input: AuditFixInput = {
         max_iteration_per_project: 2,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -411,6 +416,7 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [warnAudit(1, 1, ['src/a.ts']), warnAudit(1, 1, ['src/a.ts'])],
+        audit_fix_test_step: [passTest(), passTest()],
         audit_fix_eng_step: [successEng(['src/a.ts']), successEng(['src/b.ts'])],
         audit_fix_commit_step: [successCommit('abc123'), successCommit('def456')],
       })
@@ -418,7 +424,7 @@ describe('auditFixCapability', () => {
       const input: AuditFixInput = {
         max_iteration_per_project: 5,
         max_total_cap: 1, // Only 1 total iteration allowed
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -435,6 +441,7 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [failAudit(2, ['src/a.ts']), passAudit()],
+        audit_fix_test_step: [failTest(1, 'test failed'), passTest()],
         audit_fix_eng_step: [successEng(['src/a.ts', 'src/b.ts'])],
         audit_fix_commit_step: [successCommit('abc123')],
       })
@@ -442,7 +449,7 @@ describe('auditFixCapability', () => {
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -465,12 +472,13 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit()],
+        audit_fix_test_step: [passTest()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       await auditFixCapability.processResult(input, aiResult, context)
@@ -492,12 +500,13 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit(), passAudit()],
+        audit_fix_test_step: [passTest(), passTest()],
       })
 
       const input: AuditFixInput = {
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
@@ -518,13 +527,14 @@ describe('auditFixCapability', () => {
 
       const context = createMockContext({
         audit_fix_audit_step: [passAudit()],
+        audit_fix_test_step: [passTest()],
       })
 
       const input: AuditFixInput = {
         project: 'apps/specific',
         max_iteration_per_project: 3,
         max_total_cap: 10,
-        skip_tests: true, // Phase 3: Skip tests for backward compatibility
+
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)

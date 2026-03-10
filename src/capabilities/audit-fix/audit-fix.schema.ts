@@ -13,14 +13,13 @@ import { z } from 'zod'
  * Main capability input schema for audit-fix orchestrator.
  * Validates project (optional string), max_iteration_per_project (1-10, default 3),
  * max_total_cap (1-20, default 10), cwd (optional string),
- * skip_tests (boolean, default false), and spec_path (optional string).
+ * and spec_path (optional string).
  */
 export const AuditFixInputSchema = z.object({
   project: z.string().optional(),
   max_iteration_per_project: z.number().int().min(1).max(10).default(3),
   max_total_cap: z.number().int().min(1).max(20).default(10),
   cwd: z.string().optional(),
-  skip_tests: z.boolean().optional(),
   spec_path: z.string().optional(),
   exclude: z.array(z.string()).optional(),
 }) as z.ZodType<{
@@ -28,7 +27,6 @@ export const AuditFixInputSchema = z.object({
   max_iteration_per_project: number
   max_total_cap: number
   cwd?: string
-  skip_tests?: boolean
   spec_path?: string
   exclude?: string[]
 }>

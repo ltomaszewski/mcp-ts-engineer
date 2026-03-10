@@ -7,13 +7,12 @@ import { z } from 'zod'
 /**
  * Main capability input schema for finalize orchestrator.
  * Validates files_changed (required array of strings, min 1 item),
- * cwd (optional string), skip_tests (optional boolean, default false),
+ * cwd (optional string),
  * skip_codemaps (optional boolean, default false).
  */
 export const FinalizeInputSchema = z.object({
   files_changed: z.array(z.string()).min(1, 'files_changed must contain at least one file'),
   cwd: z.string().optional(),
-  skip_tests: z.boolean().default(false),
   skip_codemaps: z.boolean().default(false),
   skip_readmes: z.boolean().default(false),
   spec_path: z
@@ -23,7 +22,6 @@ export const FinalizeInputSchema = z.object({
 }) as z.ZodType<{
   files_changed: string[]
   cwd?: string
-  skip_tests: boolean
   skip_codemaps: boolean
   skip_readmes: boolean
   spec_path?: string

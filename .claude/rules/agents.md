@@ -61,12 +61,12 @@ finalize
 ### `finalize`
 - `files_changed` (required): List of modified file paths
 - `spec_path` (optional): Spec to mark as IMPLEMENTED
-- `skip_tests` (optional): Skip test execution
 - `skip_codemaps` (optional): Skip codemap updates
 
 ### `audit_fix`
 - `project` (optional): Specific project to audit
 - `spec_path` (optional): Spec for context
+- `exclude` (optional): Array of project paths to exclude
 - `max_iteration_per_project` (optional): Fix iterations per project (1-10, default 3)
 
 ### `pr_reviewer`

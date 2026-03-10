@@ -32,7 +32,6 @@ describe('AuditFixInputSchema', () => {
       max_iteration_per_project: 5,
       max_total_cap: 15,
       cwd: '/path/to/workspace',
-      skip_tests: true,
       spec_path: 'docs/specs/feature.md',
     }
     const result = AuditFixInputSchema.safeParse(input)
@@ -439,24 +438,6 @@ describe('TestResultSchema', () => {
 })
 
 describe('AuditFixInputSchema - Extended Fields', () => {
-  it('accepts skip_tests field as optional', () => {
-    const input = {}
-    const result = AuditFixInputSchema.safeParse(input)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.skip_tests).toBeUndefined()
-    }
-  })
-
-  it('accepts skip_tests as true', () => {
-    const input = { skip_tests: true }
-    const result = AuditFixInputSchema.safeParse(input)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.skip_tests).toBe(true)
-    }
-  })
-
   it('accepts optional spec_path', () => {
     const input = { spec_path: 'docs/specs/feature.md' }
     const result = AuditFixInputSchema.safeParse(input)
@@ -466,14 +447,13 @@ describe('AuditFixInputSchema - Extended Fields', () => {
     }
   })
 
-  it('accepts both skip_tests and spec_path', () => {
-    const input = {
-      skip_tests: true,
-      spec_path: 'docs/specs/feature.md',
-      project: 'apps/my-server',
-    }
+  it('does not accept skip_tests field', () => {
+    const input = { skip_tests: true }
     const result = AuditFixInputSchema.safeParse(input)
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect('skip_tests' in result.data).toBe(false)
+    }
   })
 })
 

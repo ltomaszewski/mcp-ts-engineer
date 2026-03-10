@@ -1,6 +1,6 @@
 /**
  * Integration tests for audit-fix capability test step orchestration.
- * Tests capability registration, test step invocation flow, and skip_tests behavior.
+ * Tests capability registration and test step invocation flow.
  */
 
 import path from 'node:path'
@@ -131,30 +131,11 @@ describe('Audit-Fix Integration', () => {
   })
 
   describe('orchestrator input validation - extended fields', () => {
-    it('accepts skip_tests field', () => {
-      const capability = registry.getCapability('audit_fix')
-      const result = capability?.inputSchema.safeParse({
-        skip_tests: true,
-        cwd: '/path',
-      })
-      expect(result?.success).toBe(true)
-    })
-
     it('accepts spec_path field', () => {
       const capability = registry.getCapability('audit_fix')
       const result = capability?.inputSchema.safeParse({
         spec_path: 'docs/specs/feature.md',
         cwd: '/path',
-      })
-      expect(result?.success).toBe(true)
-    })
-
-    it('accepts both skip_tests and spec_path', () => {
-      const capability = registry.getCapability('audit_fix')
-      const result = capability?.inputSchema.safeParse({
-        skip_tests: false,
-        spec_path: 'docs/specs/feature.md',
-        project: 'apps/my-server',
       })
       expect(result?.success).toBe(true)
     })

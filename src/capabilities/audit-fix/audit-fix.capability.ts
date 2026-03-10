@@ -126,7 +126,6 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
         remainingCap,
         input.cwd,
         context,
-        input.skip_tests ?? false,
         input.spec_path,
       )
 

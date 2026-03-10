@@ -68,7 +68,6 @@ export async function processProject(
   remainingCap: number,
   cwd: string | undefined,
   context: CapabilityContext,
-  skipTests: boolean,
   specPath: string | undefined,
 ): Promise<{ result: ProjectResult; iterationsUsed: number }> {
   let projectIterations = 0
@@ -137,19 +136,16 @@ export async function processProject(
       const auditResult = await invokeAuditStep(projectPath, cwd, context)
       lastAuditResult = auditResult
 
-      // Run tests if not skipped
-      let testResult: TestResult | null = null
-      if (!skipTests) {
-        const workspaces = deriveWorkspacesFromProject(projectPath)
-        testResult = await invokeTestStep(projectPath, workspaces, cwd, context)
-        lastTestResult = testResult
-      }
+      // Run tests
+      const workspaces = deriveWorkspacesFromProject(projectPath)
+      const testResult = await invokeTestStep(projectPath, workspaces, cwd, context)
+      lastTestResult = testResult
 
-      // Early exit if audit passes and tests pass (or tests skipped)
+      // Early exit if audit passes and tests pass
       if (
         auditResult.status === 'pass' &&
         auditResult.issues_remaining === 0 &&
-        (skipTests || testResult?.passed)
+        testResult.passed
       ) {
         break
       }

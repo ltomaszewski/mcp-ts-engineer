@@ -108,15 +108,6 @@ describe('Finalize Integration', () => {
       expect(result?.success).toBe(false)
     })
 
-    it('rejects non-boolean skip_tests', () => {
-      const capability = registry.getCapability('finalize')
-      const result = capability?.inputSchema.safeParse({
-        files_changed: ['src/file.ts'],
-        skip_tests: 'true',
-      })
-      expect(result?.success).toBe(false)
-    })
-
     it('accepts valid input with defaults', () => {
       const capability = registry.getCapability('finalize')
       const result = capability?.inputSchema.safeParse({
@@ -124,7 +115,6 @@ describe('Finalize Integration', () => {
       })
       expect(result?.success).toBe(true)
       if (result && result.success) {
-        expect((result.data as { skip_tests: boolean }).skip_tests).toBe(false)
         expect((result.data as { skip_codemaps: boolean }).skip_codemaps).toBe(false)
       }
     })
@@ -134,7 +124,6 @@ describe('Finalize Integration', () => {
       const result = capability?.inputSchema.safeParse({
         files_changed: ['src/file1.ts', 'src/file2.ts'],
         cwd: '/some/path',
-        skip_tests: true,
         skip_codemaps: true,
       })
       expect(result?.success).toBe(true)
