@@ -7,7 +7,11 @@ import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import { MAX_TRACE_ENTRY_SIZE_BYTES } from '../../config/constants.js'
+import {
+  MAX_TRACE_ENTRY_SIZE_BYTES,
+  SDK_HARD_TIMEOUT_MS,
+  SDK_IDLE_TIMEOUT_MS,
+} from '../../config/constants.js'
 import type {
   AIExecutionTrace,
   AIProvider,
@@ -59,32 +63,37 @@ export class ClaudeProvider implements AIProvider {
   }
 
   /**
-   * Query Claude with full trace capture.
+   * Query Claude with full trace capture and watchdog timeouts.
+   *
+   * Two-layer timeout protection:
+   * - Idle watchdog: resets on every SDK message, fires if no message for SDK_IDLE_TIMEOUT_MS
+   * - Hard timeout: absolute maximum query duration (SDK_HARD_TIMEOUT_MS)
+   *
+   * Both use AbortController to kill the spawned CLI subprocess on timeout,
+   * preventing orphaned processes that consume memory indefinitely.
    *
    * @param request - AI query request with all SDK options
    * @returns Promise resolving to result with full redacted trace
-   * @throws {AIProviderError} If query execution fails
+   * @throws {AIProviderError} If query execution fails or times out
    */
   async query(request: AIQueryRequest): Promise<AIQueryResult> {
-    const traceId = this.generateTraceId()
     const startTime = Date.now()
-
-    const trace: AIExecutionTrace = {
-      tid: traceId,
-      startedAt: new Date(startTime).toISOString(),
-      request: { ...request },
-      turns: [],
-      rawEvents: [],
-    }
+    const trace = this.createTrace(request)
+    const watchdog = createWatchdog(request.timeout)
 
     try {
       const options = this.mapRequestToOptions(request)
+      options.abortController = watchdog.controller
       const acc = createInitialAccumulator()
+
+      watchdog.resetIdle()
 
       for await (const message of this.queryFn({
         prompt: request.prompt,
         options,
       })) {
+        watchdog.resetIdle()
+
         const sdkMsg = message as SDKMessage
         trace.rawEvents?.push(this.captureRawEvent(message as Record<string, unknown>))
 
@@ -118,30 +127,13 @@ export class ClaudeProvider implements AIProvider {
       trace.result = result
       return result
     } catch (error) {
-      const endTime = Date.now()
-      trace.completedAt = new Date(endTime).toISOString()
-      trace.durationMs = endTime - startTime
-
-      // Capture detailed error information in trace
-      if (error instanceof Error) {
-        trace.error = error.message
-        trace.errorType = error.constructor.name
-        trace.errorStack = error.stack
-        if (error.cause) {
-          trace.errorCause =
-            error.cause instanceof Error
-              ? `${error.cause.constructor.name}: ${error.cause.message}`
-              : String(error.cause)
-        }
-      } else {
-        trace.error = String(error)
-      }
-
-      // Re-throw with cause chain preserved
+      this.captureTraceError(trace, startTime, error)
       if (error instanceof AIProviderError) {
-        throw error // Already an AIProviderError, don't double-wrap
+        throw error
       }
       throw new AIProviderError('Claude query failed', { cause: error })
+    } finally {
+      watchdog.cleanup()
     }
   }
 
@@ -242,6 +234,38 @@ export class ClaudeProvider implements AIProvider {
     return randomBytes(16).toString('hex')
   }
 
+  /** Create initial trace object for a query. */
+  private createTrace(request: AIQueryRequest): AIExecutionTrace {
+    return {
+      tid: this.generateTraceId(),
+      startedAt: new Date().toISOString(),
+      request: { ...request },
+      turns: [],
+      rawEvents: [],
+    }
+  }
+
+  /** Capture error details into the trace object. */
+  private captureTraceError(trace: AIExecutionTrace, startTime: number, error: unknown): void {
+    const endTime = Date.now()
+    trace.completedAt = new Date(endTime).toISOString()
+    trace.durationMs = endTime - startTime
+
+    if (error instanceof Error) {
+      trace.error = error.message
+      trace.errorType = error.constructor.name
+      trace.errorStack = error.stack
+      if (error.cause) {
+        trace.errorCause =
+          error.cause instanceof Error
+            ? `${error.cause.constructor.name}: ${error.cause.message}`
+            : String(error.cause)
+      }
+    } else {
+      trace.error = String(error)
+    }
+  }
+
   /**
    * Capture an SDK message as a raw event for full observability.
    */
@@ -257,4 +281,41 @@ export class ClaudeProvider implements AIProvider {
 
     return { type, subtype, timestamp: new Date().toISOString(), data }
   }
+}
+
+/** Watchdog timer state for SDK query lifecycle. */
+interface Watchdog {
+  controller: AbortController
+  resetIdle: () => void
+  cleanup: () => void
+}
+
+/**
+ * Create idle + hard watchdog timers that abort the controller on timeout.
+ * Idle timer resets on every SDK message; hard timer is absolute max.
+ */
+function createWatchdog(requestTimeoutMs?: number): Watchdog {
+  const controller = new AbortController()
+  const idleMs = requestTimeoutMs || SDK_IDLE_TIMEOUT_MS
+  const hardMs = SDK_HARD_TIMEOUT_MS
+
+  let idleTimer: ReturnType<typeof setTimeout> | null = null
+
+  const resetIdle = () => {
+    if (idleTimer) clearTimeout(idleTimer)
+    idleTimer = setTimeout(() => {
+      controller.abort(new Error(`SDK idle timeout: no message for ${idleMs}ms`))
+    }, idleMs)
+  }
+
+  const hardTimer = setTimeout(() => {
+    controller.abort(new Error(`SDK hard timeout: exceeded ${hardMs}ms total`))
+  }, hardMs)
+
+  const cleanup = () => {
+    if (idleTimer) clearTimeout(idleTimer)
+    clearTimeout(hardTimer)
+  }
+
+  return { controller, resetIdle, cleanup }
 }

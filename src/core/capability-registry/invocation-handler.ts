@@ -6,10 +6,15 @@
  * Error response logic lives in invocation-handler.error.ts.
  */
 
-import { MAX_DAILY_BUDGET_USD } from '../../config/constants.js'
+import { INVOCATION_HARD_TIMEOUT_MS, MAX_DAILY_BUDGET_USD } from '../../config/constants.js'
 import type { AIModel, AIQueryResult } from '../ai-provider/ai-provider.types.js'
 import type { CostEntry } from '../cost/cost.types.js'
-import { CapabilityError, ServerShuttingDownError, ValidationError } from '../errors.js'
+import {
+  AIProviderError,
+  CapabilityError,
+  ServerShuttingDownError,
+  ValidationError,
+} from '../errors.js'
 import type { CapabilityRegistryDeps } from './capability-registry.js'
 import type { CapabilityContext, CapabilityDefinition } from './capability-registry.types.js'
 import { createCapabilityContext } from './context-builder.js'
@@ -141,7 +146,8 @@ export async function handleCapabilityInvocation(
 }
 
 /**
- * Execute the AI query for a capability.
+ * Execute the AI query for a capability with hard timeout protection.
+ * Defense-in-depth: even if the provider's watchdog fails, this kills the invocation.
  */
 async function executeCapability(
   capability: CapabilityDefinition,
@@ -157,7 +163,13 @@ async function executeCapability(
 
   const mergedRequest = mergeAndValidateAIQueryRequest(capability, builtPrompt, validatedInput)
 
-  const aiResult = await deps.aiProvider.query(mergedRequest)
+  const aiResult = await Promise.race([
+    deps.aiProvider.query(mergedRequest),
+    rejectAfterTimeout(
+      INVOCATION_HARD_TIMEOUT_MS,
+      `Capability ${capabilityName} exceeded ${INVOCATION_HARD_TIMEOUT_MS}ms hard timeout`,
+    ),
+  ])
 
   const costEntry = buildCostEntry(context.session.id, context.invocation.id, aiResult)
   deps.costTracker.recordCost(context.session.id, context.invocation.id, capabilityName, costEntry)
@@ -165,6 +177,16 @@ async function executeCapability(
   const output = await capability.processResult(validatedInput, aiResult, context)
 
   return { output, aiResult, costEntry }
+}
+
+/**
+ * Returns a promise that rejects after the given timeout.
+ * Used with Promise.race as a hard timeout for capability execution.
+ */
+function rejectAfterTimeout(ms: number, message: string): Promise<never> {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new AIProviderError(message)), ms)
+  })
 }
 
 /**

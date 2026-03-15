@@ -5,6 +5,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		root: "./",
+		teardownTimeout: 10000,
 		include: ["**/__tests__/**/*.test.ts", "**/*.test.ts"],
 		coverage: {
 			provider: "v8",

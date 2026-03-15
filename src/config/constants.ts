@@ -72,6 +72,11 @@ export const VALIDATION_TIMEOUT_MS = 2000
 export const OUTPUT_SCHEMA_TIMEOUT_MS = 5000
 export const CUSTOM_TOOL_TIMEOUT_MS = 10000
 
+/** Watchdog timeouts for SDK query lifecycle */
+export const SDK_IDLE_TIMEOUT_MS = 600_000 // 10 min — no SDK message = assume dead
+export const SDK_HARD_TIMEOUT_MS = 1_800_000 // 30 min — absolute max per query
+export const INVOCATION_HARD_TIMEOUT_MS = 3_600_000 // 60 min — max per capability invocation
+
 /** Worker pool configuration */
 export const WORKER_POOL_SIZE = 4
 export const WORKER_MEMORY_LIMIT_HOOKS_MB = 25
