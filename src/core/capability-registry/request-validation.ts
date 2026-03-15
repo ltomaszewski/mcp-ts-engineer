@@ -18,6 +18,7 @@ import { getProjectConfig } from '../../config/project-config.js'
 import type { AIQueryRequest } from '../ai-provider/ai-provider.types.js'
 import { ValidationError } from '../errors.js'
 import type { SystemPromptValue } from '../prompt/prompt.types.js'
+import { resolveGitRoot } from '../utils/git-utils.js'
 import type { CapabilityDefinition } from './capability-registry.types.js'
 
 /**
@@ -55,11 +56,14 @@ export function mergeAndValidateAIQueryRequest(
   // Apply ProjectConfig defaults for cwd and additionalDirectories.
   // Default cwd to monorepoRoot so agents operate where .claude/codemaps/,
   // workspaces, and git live. When the submodule is separate, grant access to it.
+  // When cwd points to a worktree, resolve to the main repo root so git/gh
+  // commands work correctly (worktrees have a .git file, not a directory).
   const config = getProjectConfig()
-  const cwd = defaults.cwd ?? config.monorepoRoot
+  const rawCwd = defaults.cwd ?? config.monorepoRoot
+  const cwd = resolveGitRoot(rawCwd)
   const additionalDirectories =
     defaults.additionalDirectories ??
-    (config.submodulePath !== config.monorepoRoot ? [config.submodulePath] : undefined)
+    buildAdditionalDirectories(config, rawCwd, cwd)
 
   return {
     prompt: builtPrompt.userPrompt,
@@ -81,6 +85,29 @@ export function mergeAndValidateAIQueryRequest(
     outputSchema: defaults.outputSchema,
     settingSources: defaults.settingSources,
   }
+}
+
+/**
+ * Build additionalDirectories list.
+ * Includes both the submodule (if separate from monorepo root) and the
+ * original worktree path (if cwd was resolved to a different git root).
+ * @internal
+ */
+function buildAdditionalDirectories(
+  config: { submodulePath: string; monorepoRoot: string },
+  rawCwd: string,
+  resolvedCwd: string,
+): string[] | undefined {
+  const dirs: string[] = []
+  if (config.submodulePath !== config.monorepoRoot) {
+    dirs.push(config.submodulePath)
+  }
+  // When cwd was a worktree that resolved to a different root,
+  // grant access to the original worktree path too
+  if (rawCwd !== resolvedCwd) {
+    dirs.push(rawCwd)
+  }
+  return dirs.length > 0 ? dirs : undefined
 }
 
 /**

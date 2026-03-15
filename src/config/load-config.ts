@@ -12,6 +12,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
+import { resolveWorktreeGitFile } from '../core/utils/git-utils.js'
 import type { CodemapEntry, ProjectConfig } from './project-config.js'
 import { deriveLogDir } from './project-config.js'
 
@@ -55,9 +56,17 @@ function findMonorepoRoot(startDir: string): string {
         /* ignore parse errors */
       }
     }
-    // Fallback: .git directory (not file — submodules use a .git file)
+    // Fallback: .git directory or worktree .git file
     const gitPath = path.join(dir, '.git')
-    if (existsSync(gitPath) && statSync(gitPath).isDirectory()) return dir
+    if (existsSync(gitPath)) {
+      const stat = statSync(gitPath)
+      if (stat.isDirectory()) return dir
+      // Worktree .git file: parse gitdir to find main repo root
+      if (stat.isFile()) {
+        const mainRoot = resolveWorktreeGitFile(gitPath)
+        if (mainRoot) return mainRoot
+      }
+    }
 
     const parent = path.dirname(dir)
     if (parent === dir) break // reached filesystem root

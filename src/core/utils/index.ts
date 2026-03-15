@@ -12,6 +12,8 @@ export {
   fileNeedsCommit,
   hasUncommittedChanges,
   isFileTracked,
+  resolveGitRoot,
+  resolveWorktreeGitFile,
 } from './git-utils.js'
 export { generateIssueId } from './issue-id.js'
 export { parseJsonSafe } from './parse-json-safe.js'
