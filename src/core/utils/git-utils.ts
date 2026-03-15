@@ -1,10 +1,75 @@
 /**
- * Git utility functions for checking file status.
+ * Git utility functions for checking file status and resolving git context.
  * Used by orchestrators to detect actual file changes vs AI-reported changes.
+ * Handles git worktrees where .git is a pointer file, not a directory.
  */
 
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+
+/**
+ * Resolve the git repository root from a given directory.
+ * Handles both normal repos (.git is a directory) and worktrees (.git is a file
+ * containing "gitdir: /path/to/main/.git/worktrees/name").
+ *
+ * Uses `git rev-parse --show-toplevel` which works correctly in both cases.
+ * Falls back to the input directory if git resolution fails.
+ *
+ * @param cwd - Directory to resolve from (may be a worktree or main repo)
+ * @returns The git repository root path
+ */
+export function resolveGitRoot(cwd: string): string {
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 5_000,
+    }).trim()
+  } catch {
+    // Fallback: walk up looking for .git directory or file
+    return findGitRoot(cwd)
+  }
+}
+
+/**
+ * Walk up from startDir to find a directory containing .git (file or directory).
+ * Used as fallback when `git rev-parse` fails.
+ */
+function findGitRoot(startDir: string): string {
+  let dir = startDir
+  while (true) {
+    const gitPath = join(dir, '.git')
+    if (existsSync(gitPath)) {
+      // For worktrees, .git is a file — read it to find the main repo
+      if (statSync(gitPath).isFile()) {
+        try {
+          const content = readFileSync(gitPath, 'utf-8').trim()
+          // Format: "gitdir: /path/to/main/.git/worktrees/name"
+          const match = content.match(/^gitdir:\s*(.+)$/)
+          if (match) {
+            // Extract main repo .git dir: strip /worktrees/<name>
+            const gitdir = match[1]
+            const worktreesIdx = gitdir.lastIndexOf('/worktrees/')
+            if (worktreesIdx !== -1) {
+              const mainGitDir = gitdir.substring(0, worktreesIdx)
+              // Main repo root is parent of .git
+              return resolve(mainGitDir, '..')
+            }
+          }
+        } catch {
+          // Can't read .git file, return current dir
+        }
+      }
+      return dir
+    }
+    const parent = resolve(dir, '..')
+    if (parent === dir) break
+    dir = parent
+  }
+  return startDir
+}
 
 /**
  * Check if a file has uncommitted changes (staged or unstaged).

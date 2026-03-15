@@ -55,9 +55,26 @@ function findMonorepoRoot(startDir: string): string {
         /* ignore parse errors */
       }
     }
-    // Fallback: .git directory (not file — submodules use a .git file)
+    // Fallback: .git directory or file (worktrees use a .git file)
     const gitPath = path.join(dir, '.git')
     if (existsSync(gitPath) && statSync(gitPath).isDirectory()) return dir
+    // Worktree .git file: parse gitdir to find main repo root
+    if (existsSync(gitPath) && statSync(gitPath).isFile()) {
+      try {
+        const content = readFileSync(gitPath, 'utf-8').trim()
+        const match = content.match(/^gitdir:\s*(.+)$/)
+        if (match) {
+          const gitdir = match[1]
+          const worktreesIdx = gitdir.lastIndexOf('/worktrees/')
+          if (worktreesIdx !== -1) {
+            const mainGitDir = gitdir.substring(0, worktreesIdx)
+            return path.resolve(mainGitDir, '..')
+          }
+        }
+      } catch {
+        /* ignore read errors */
+      }
+    }
 
     const parent = path.dirname(dir)
     if (parent === dir) break // reached filesystem root
