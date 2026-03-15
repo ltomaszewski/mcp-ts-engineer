@@ -6,30 +6,61 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 
 /**
- * Resolve the git repository root from a given directory.
+ * Resolve the **main** git repository root from a given directory.
  * Handles both normal repos (.git is a directory) and worktrees (.git is a file
  * containing "gitdir: /path/to/main/.git/worktrees/name").
  *
- * Uses `git rev-parse --show-toplevel` which works correctly in both cases.
- * Falls back to the input directory if git resolution fails.
+ * Uses `git rev-parse --git-common-dir` which returns the shared .git directory
+ * even from worktrees (unlike --show-toplevel which returns the worktree path).
+ * Falls back to walking up the filesystem if git resolution fails.
  *
  * @param cwd - Directory to resolve from (may be a worktree or main repo)
- * @returns The git repository root path
+ * @returns The main git repository root path (parent of .git)
  */
 export function resolveGitRoot(cwd: string): string {
   try {
-    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
       cwd,
       encoding: 'utf-8',
       stdio: 'pipe',
       timeout: 5_000,
     }).trim()
+    // --git-common-dir returns the shared .git dir (e.g. "/repo/.git")
+    // Resolve to absolute (it may be relative like ".git") then take parent
+    return resolve(cwd, gitCommonDir, '..')
   } catch {
     // Fallback: walk up looking for .git directory or file
     return findGitRoot(cwd)
+  }
+}
+
+/**
+ * Parse a worktree .git file to resolve the main repository root.
+ * Worktree .git files contain "gitdir: /path/to/main/.git/worktrees/name".
+ *
+ * @param gitFilePath - Path to the .git file
+ * @returns The main repo root path, or undefined if not a valid worktree pointer
+ */
+export function resolveWorktreeGitFile(gitFilePath: string): string | undefined {
+  try {
+    const content = readFileSync(gitFilePath, 'utf-8').trim()
+    const match = content.match(/^gitdir:\s*(.+)$/)
+    if (!match) return undefined
+    // Resolve relative gitdir paths against the directory containing the .git file
+    const rawGitdir = match[1]
+    const gitdir = isAbsolute(rawGitdir)
+      ? rawGitdir
+      : resolve(dirname(gitFilePath), rawGitdir)
+    const worktreesIdx = gitdir.lastIndexOf('/worktrees/')
+    if (worktreesIdx === -1) return undefined
+    // Strip /worktrees/<name> to get main .git dir, then take parent
+    const mainGitDir = gitdir.substring(0, worktreesIdx)
+    return resolve(mainGitDir, '..')
+  } catch {
+    return undefined
   }
 }
 
@@ -42,25 +73,11 @@ function findGitRoot(startDir: string): string {
   while (true) {
     const gitPath = join(dir, '.git')
     if (existsSync(gitPath)) {
-      // For worktrees, .git is a file — read it to find the main repo
-      if (statSync(gitPath).isFile()) {
-        try {
-          const content = readFileSync(gitPath, 'utf-8').trim()
-          // Format: "gitdir: /path/to/main/.git/worktrees/name"
-          const match = content.match(/^gitdir:\s*(.+)$/)
-          if (match) {
-            // Extract main repo .git dir: strip /worktrees/<name>
-            const gitdir = match[1]
-            const worktreesIdx = gitdir.lastIndexOf('/worktrees/')
-            if (worktreesIdx !== -1) {
-              const mainGitDir = gitdir.substring(0, worktreesIdx)
-              // Main repo root is parent of .git
-              return resolve(mainGitDir, '..')
-            }
-          }
-        } catch {
-          // Can't read .git file, return current dir
-        }
+      const stat = statSync(gitPath)
+      // For worktrees, .git is a file — parse it to find the main repo
+      if (stat.isFile()) {
+        const mainRoot = resolveWorktreeGitFile(gitPath)
+        if (mainRoot) return mainRoot
       }
       return dir
     }

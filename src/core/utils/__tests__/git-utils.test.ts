@@ -28,9 +28,13 @@ vi.mock('node:fs', () => ({
 }))
 
 // Dynamic import after mock setup (required for ESM mocking)
-const { hasUncommittedChanges, isFileTracked, fileNeedsCommit, resolveGitRoot } = await import(
-  '../git-utils.js'
-)
+const {
+  hasUncommittedChanges,
+  isFileTracked,
+  fileNeedsCommit,
+  resolveGitRoot,
+  resolveWorktreeGitFile,
+} = await import('../git-utils.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -184,27 +188,50 @@ describe('git-utils', () => {
   })
 
   describe('resolveGitRoot', () => {
-    it('returns git rev-parse output for normal repos', () => {
-      // execFileSync with encoding:'utf-8' returns string, not Buffer
-      mockExecFileSync.mockReturnValueOnce('/repo/root\n' as unknown as Buffer)
+    it('returns repo root for normal repos at root via --git-common-dir', () => {
+      // --git-common-dir returns ".git" (relative to cwd) when at repo root
+      mockExecFileSync.mockReturnValueOnce('.git\n' as unknown as Buffer)
 
-      const result = resolveGitRoot('/repo/root/src')
+      const result = resolveGitRoot('/repo/root')
 
+      // resolve('/repo/root', '.git', '..') = /repo/root
       expect(result).toBe('/repo/root')
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'git',
-        ['rev-parse', '--show-toplevel'],
-        expect.objectContaining({ cwd: '/repo/root/src' }),
+        ['rev-parse', '--git-common-dir'],
+        expect.objectContaining({ cwd: '/repo/root' }),
       )
     })
 
-    it('returns git rev-parse output for worktree directories', () => {
-      // git rev-parse --show-toplevel works correctly in worktrees too
-      mockExecFileSync.mockReturnValueOnce('/repo/.worktrees/feature\n' as unknown as Buffer)
+    it('returns repo root from subdirectory via --git-common-dir', () => {
+      // --git-common-dir from /repo/root/src returns relative path to .git
+      mockExecFileSync.mockReturnValueOnce('../.git\n' as unknown as Buffer)
+
+      const result = resolveGitRoot('/repo/root/src')
+
+      // resolve('/repo/root/src', '../.git', '..') = /repo/root
+      expect(result).toBe('/repo/root')
+    })
+
+    it('resolves worktree to main repo root via --git-common-dir', () => {
+      // --git-common-dir returns the shared .git dir even from worktrees
+      mockExecFileSync.mockReturnValueOnce('/repo/.git\n' as unknown as Buffer)
 
       const result = resolveGitRoot('/repo/.worktrees/feature')
 
-      expect(result).toBe('/repo/.worktrees/feature')
+      // Should resolve to parent of .git = /repo
+      expect(result).toBe('/repo')
+    })
+
+    it('resolves relative --git-common-dir paths correctly', () => {
+      // In a worktree, --git-common-dir may return a relative path like
+      // "../../.git" when worktree is at /repo/.worktrees/feature
+      mockExecFileSync.mockReturnValueOnce('../../.git\n' as unknown as Buffer)
+
+      const result = resolveGitRoot('/repo/.worktrees/feature')
+
+      // resolve('/repo/.worktrees/feature', '../../.git', '..') = /repo
+      expect(result).toBe('/repo')
     })
 
     it('falls back to walking up when git command fails', () => {
@@ -255,6 +282,59 @@ describe('git-utils', () => {
       const result = resolveGitRoot('/no-git-here')
 
       expect(result).toBe('/no-git-here')
+    })
+  })
+
+  describe('resolveWorktreeGitFile', () => {
+    it('parses valid worktree .git file and returns main repo root', () => {
+      mockReadFileSync.mockReturnValue(
+        'gitdir: /main-repo/.git/worktrees/feature\n',
+      )
+
+      const result = resolveWorktreeGitFile('/some/.git')
+
+      expect(result).toBe('/main-repo')
+    })
+
+    it('resolves relative gitdir path against .git file location', () => {
+      // Git writes relative paths in worktree .git files by default
+      // From /repo/.worktrees/feature to /repo/.git/worktrees/feature = ../../.git/worktrees/feature
+      mockReadFileSync.mockReturnValue(
+        'gitdir: ../../.git/worktrees/feature\n',
+      )
+
+      const result = resolveWorktreeGitFile('/repo/.worktrees/feature/.git')
+
+      // dirname(.git file) = /repo/.worktrees/feature
+      // resolve('/repo/.worktrees/feature', '../../.git/worktrees/feature') = /repo/.git/worktrees/feature
+      // strip /worktrees/feature → /repo/.git → parent = /repo
+      expect(result).toBe('/repo')
+    })
+
+    it('returns undefined for non-worktree .git file content', () => {
+      mockReadFileSync.mockReturnValue('gitdir: /some/other/path\n')
+
+      const result = resolveWorktreeGitFile('/some/.git')
+
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when .git file has no gitdir line', () => {
+      mockReadFileSync.mockReturnValue('not a gitdir line\n')
+
+      const result = resolveWorktreeGitFile('/some/.git')
+
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when .git file cannot be read', () => {
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error('ENOENT')
+      })
+
+      const result = resolveWorktreeGitFile('/some/.git')
+
+      expect(result).toBeUndefined()
     })
   })
 })
