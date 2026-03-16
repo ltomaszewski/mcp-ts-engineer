@@ -47,7 +47,7 @@ export const MAX_INVOCATIONS_PER_SESSION = 50
 export const MAX_SESSION_BUDGET_USD = 10.0
 export const MAX_DAILY_BUDGET_USD = 500.0
 export const MAX_SESSIONS_PER_DAY = 1000
-export const MAX_SESSION_DURATION_MS = 1800000 // 30 minutes
+export const MAX_SESSION_DURATION_MS = 2_700_000 // 45 min — P99+20% of todo_reviewer E2E
 
 /** File locking constants */
 export const LOCK_TIMEOUT_MS = 5000
@@ -73,9 +73,9 @@ export const OUTPUT_SCHEMA_TIMEOUT_MS = 5000
 export const CUSTOM_TOOL_TIMEOUT_MS = 10000
 
 /** Watchdog timeouts for SDK query lifecycle */
-export const SDK_IDLE_TIMEOUT_MS = 600_000 // 10 min — no SDK message = assume dead
+export const SDK_IDLE_TIMEOUT_MS = 900_000 // 15 min — no SDK message = assume dead (max query 7.6m + API stall buffer)
 export const SDK_HARD_TIMEOUT_MS = 1_800_000 // 30 min — absolute max per query
-export const INVOCATION_HARD_TIMEOUT_MS = 3_600_000 // 60 min — max per capability invocation
+export const INVOCATION_HARD_TIMEOUT_MS = 2_700_000 // 45 min — max per capability invocation (P99=37.8m + 20%)
 
 /** Worker pool configuration */
 export const WORKER_POOL_SIZE = 4

@@ -194,16 +194,16 @@ describe('SessionManager', () => {
     it('enforces session timeout (30 minutes)', () => {
       const session = manager.createSession('root')
 
-      // Manually set startedAt to 31 minutes ago
+      // Manually set startedAt to 46 minutes ago
       const oldSession = manager.getSession(session.id)
       if (oldSession) {
-        const thirtyOneMinutesAgo = new Date(Date.now() - 31 * 60 * 1000)
-        ;(oldSession as any).startedAt = thirtyOneMinutesAgo.toISOString()
+        const fortySixMinutesAgo = new Date(Date.now() - 46 * 60 * 1000)
+        ;(oldSession as any).startedAt = fortySixMinutesAgo.toISOString()
       }
 
       expect(() => {
         manager.startInvocation(session.id, 'cap-timeout')
-      }).toThrow('Session timeout (30 minutes) exceeded')
+      }).toThrow('Session timeout (45 minutes) exceeded')
     })
   })
 
