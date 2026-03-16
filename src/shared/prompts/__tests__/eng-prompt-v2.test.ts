@@ -187,6 +187,72 @@ describe('shared eng prompt builder', () => {
       expect(result.userPrompt).toContain('WORKING DIRECTORY')
     })
 
+    it('spec mode uses cwd in WORKING DIRECTORY when provided (FR-1)', () => {
+      const input: EngPromptInput = {
+        mode: 'spec',
+        specPath: 'docs/specs/test.md',
+        phasePlan: basePhasePlan,
+        currentPhaseNumber: 1,
+        cwd: '/tmp/worktree/health-check',
+      }
+
+      const result = buildEngPromptV2(input)
+
+      expect(result.userPrompt).toContain(
+        'The monorepo root is at `/tmp/worktree/health-check`',
+      )
+    })
+
+    it('fix mode uses cwd in WORKING DIRECTORY when provided (FR-1)', () => {
+      const input: EngPromptInput = {
+        mode: 'fix',
+        projectPath: 'apps/test',
+        auditSummary: 'Issues found',
+        filesWithIssues: ['src/file1.ts'],
+        iterationNumber: 1,
+        cwd: '/tmp/worktree/health-check',
+      }
+
+      const result = buildEngPromptV2(input)
+
+      expect(result.userPrompt).toContain(
+        'The monorepo root is at `/tmp/worktree/health-check`',
+      )
+    })
+
+    it('spec mode falls back to monorepoRoot when cwd is undefined (FR-1)', () => {
+      const input: EngPromptInput = {
+        mode: 'spec',
+        specPath: 'docs/specs/test.md',
+        phasePlan: basePhasePlan,
+        currentPhaseNumber: 1,
+        // cwd intentionally omitted
+      }
+
+      const result = buildEngPromptV2(input)
+
+      // Should contain WORKING DIRECTORY rule with monorepoRoot fallback
+      expect(result.userPrompt).toContain('WORKING DIRECTORY')
+      expect(result.userPrompt).toContain('The monorepo root is at')
+    })
+
+    it('fix mode falls back to monorepoRoot when cwd is undefined (FR-1)', () => {
+      const input: EngPromptInput = {
+        mode: 'fix',
+        projectPath: 'apps/test',
+        auditSummary: 'Issues found',
+        filesWithIssues: [],
+        iterationNumber: 1,
+        // cwd intentionally omitted
+      }
+
+      const result = buildEngPromptV2(input)
+
+      // Should contain WORKING DIRECTORY rule with monorepoRoot fallback
+      expect(result.userPrompt).toContain('WORKING DIRECTORY')
+      expect(result.userPrompt).toContain('The monorepo root is at')
+    })
+
     it('spec mode contains PATH FORMAT rule', () => {
       const input: EngPromptInput = {
         mode: 'spec',

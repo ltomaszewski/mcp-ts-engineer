@@ -288,6 +288,9 @@ export function buildAuditUserPrompt(params: AuditWorkflowParams): string {
   const { filesChanged, projectPath, cwd } = params
 
   const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
+  const workingDirRule = cwd
+    ? `\n\n## Working Directory\n\nAll file operations and shell commands MUST use \`${cwd}\` as the working directory.\n- Use absolute paths starting with \`${cwd}/\` for all file reads/edits\n- Run all shell commands from \`${cwd}\`\n- Do NOT use paths relative to any other root directory`
+    : ''
 
   const isFileScopedMode = filesChanged && filesChanged.length > 0
 
@@ -310,7 +313,7 @@ Scan all TypeScript files in project: ${projectPathValue}
 Run a comprehensive project-wide audit.`
   }
 
-  return `${cwdContext}${scopeSection}
+  return `${cwdContext}${scopeSection}${workingDirRule}
 
 ---
 

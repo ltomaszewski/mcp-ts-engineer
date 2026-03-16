@@ -4,6 +4,7 @@
  * Supports npm workspaces (monorepos) by checking for root package-lock.json.
  */
 
+import { getProjectConfig } from '../../../config/project-config.js'
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 import { shellQuote } from '../../../core/utils/shell-safe.js'
 
@@ -26,7 +27,7 @@ const depsScanPromptV1: PromptVersion = {
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { projectPath, cwd } = input as DepsScanPromptInput
-    const rootPath = cwd || '.'
+    const rootPath = cwd || getProjectConfig().monorepoRoot
 
     const userPrompt = `You are executing a dependency security scan for a code quality audit.
 
@@ -56,7 +57,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
    - This is a STANDALONE project
    - Run npm audit from project directory:
    \`\`\`bash
-   cd ${shellQuote(projectPath)} && npm audit --json 2>&1
+   cd ${shellQuote(`${rootPath}/${projectPath}`)} && npm audit --json 2>&1
    \`\`\`
 
    If package-lock.json does NOT exist in EITHER location:

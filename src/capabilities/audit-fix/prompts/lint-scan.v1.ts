@@ -46,7 +46,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 4. If a lint script exists, execute:
    \`\`\`bash
-   cd ${shellQuote(projectPath)} && npm run lint 2>&1
+   cd ${shellQuote(cwd ? `${cwd}/${projectPath}` : projectPath)} && npm run lint 2>&1
    \`\`\`
 
 5. Parse the lint output to identify:

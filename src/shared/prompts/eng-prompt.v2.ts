@@ -218,7 +218,7 @@ ${skillLoadingSection}
 - Read only files referenced in the spec or needed for the current phase. Do not search the broader codebase beyond what the spec specifies.
 - Avoid calling AskUserQuestion, slash commands, or referencing .claude/commands/ files
 - If tests fail to pass, set status to "failed" and explain in summary
-- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${getProjectConfig().monorepoRoot}\`.
+- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${input.cwd ?? getProjectConfig().monorepoRoot}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.
@@ -344,7 +344,7 @@ ${skillLoadingSection}
 - Follow patterns from loaded skills
 - Run tests after applying fixes
 - Set status to "failed" if unable to fix issues
-- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${getProjectConfig().monorepoRoot}\`.
+- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${input.cwd ?? getProjectConfig().monorepoRoot}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.

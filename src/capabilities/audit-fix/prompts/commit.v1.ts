@@ -80,7 +80,7 @@ Git trailer format:
 - Add the Session-Id trailer: Session-Id: ${sessionId}
 - This trailer enables tracing commits back to their cost report session
 
-Your goal is to create a clean commit that captures audit-fix changes for ${projectPath}.`
+Your goal is to create a clean commit that captures audit-fix changes for ${projectPath}.${cwd ? `\n\nIMPORTANT: Run all git commands from the working directory: ${cwd}\nUse \`cd ${cwd}\` before any git operations to ensure changes are committed in the correct repository.` : ''}`
 }
 
 export const commitPromptV1: PromptVersion = {
