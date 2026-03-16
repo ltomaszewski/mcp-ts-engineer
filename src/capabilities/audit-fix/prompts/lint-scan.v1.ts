@@ -27,6 +27,7 @@ const lintScanPromptV1: PromptVersion = {
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { projectPath, cwd } = input as LintScanPromptInput
+    const rootPath = resolveCwd(cwd)
 
     const userPrompt = `You are executing a lint scan for a code quality audit.
 
@@ -47,7 +48,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 4. If a lint script exists, execute:
    \`\`\`bash
-   cd ${shellQuote(cwdPath(resolveCwd(cwd), projectPath))} && npm run lint 2>&1
+   cd ${shellQuote(cwdPath(rootPath, projectPath))} && npm run lint 2>&1
    \`\`\`
 
 5. Parse the lint output to identify:

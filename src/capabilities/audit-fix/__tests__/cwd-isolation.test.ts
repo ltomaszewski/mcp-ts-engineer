@@ -7,7 +7,6 @@
  * - FR-4: Planner uses resolved cwd for ls commands
  */
 
-import { vi } from 'vitest'
 import { initProjectConfig, type ProjectConfig } from '../../../config/project-config.js'
 import { resolveCwd, cwdPath } from '../../../core/utils/cwd.js'
 import { plannerPromptV1 } from '../prompts/planner.v1.js'

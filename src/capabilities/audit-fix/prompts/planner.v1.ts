@@ -5,6 +5,7 @@
  */
 
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { cwdPath } from '../../../core/utils/cwd.js'
 
 interface PlannerPromptInput {
   targetProject?: string
@@ -45,14 +46,14 @@ Output the following plan directly — no filesystem scanning needed:
   return `${cwdContext}You are the Audit Planner for a TypeScript monorepo. Your role is to discover which projects need auditing.
 ${excludeSection}
 Your tasks:
-1. List directories in \`${cwd ? `${cwd}/` : ''}apps/\` and \`${cwd ? `${cwd}/` : ''}packages/\` that contain a \`package.json\`
+1. List directories in \`${cwd ? cwdPath(cwd, 'apps/') : 'apps/'}\` and \`${cwd ? cwdPath(cwd, 'packages/') : 'packages/'}\` that contain a \`package.json\`
 2. For each project, check if it has TypeScript files (tsconfig.json or .ts files)
 3. Prioritize apps over packages (apps get priority 1, packages get priority 2)
 4. Output the plan
 
 Use the following commands to discover projects:
-- ls ${cwd ? `${cwd}/apps/` : 'apps/'} to list app directories
-- ls ${cwd ? `${cwd}/packages/` : 'packages/'} to list package directories
+- ls ${cwd ? cwdPath(cwd, 'apps/') : 'apps/'} to list app directories
+- ls ${cwd ? cwdPath(cwd, 'packages/') : 'packages/'} to list package directories
 - Check for package.json in each directory
 
 Output your analysis in this format:

@@ -5,6 +5,7 @@
  * Originally from: src/capabilities/finalize/prompts/audit.v2.ts
  */
 
+import { resolveCwd } from '../../core/utils/cwd.js'
 import {
   AUDIT_PHASE_KB_AND_SKILLS,
   MAESTRO_RULES,
@@ -305,7 +306,7 @@ ${filesChangedList}
 
 Only audit the files listed above. Do NOT expand scope to unrelated files.`
   } else {
-    const projectPathValue = projectPath || cwd || '.'
+    const projectPathValue = projectPath || resolveCwd(cwd)
     scopeSection = `## Scope
 
 Scan all TypeScript files in project: ${projectPathValue}
