@@ -147,10 +147,10 @@ describe('CONFIG', () => {
       expect(MAX_SESSIONS_PER_DAY).toBe(1000)
     })
 
-    it('MAX_SESSION_DURATION_MS is defined and equals 30 minutes', () => {
+    it('MAX_SESSION_DURATION_MS is defined and equals 45 minutes', () => {
       expect(MAX_SESSION_DURATION_MS).toBeDefined()
       expect(typeof MAX_SESSION_DURATION_MS).toBe('number')
-      expect(MAX_SESSION_DURATION_MS).toBe(1800000) // 30 minutes
+      expect(MAX_SESSION_DURATION_MS).toBe(2700000) // 45 minutes
     })
   })
 
