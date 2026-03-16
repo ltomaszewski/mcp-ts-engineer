@@ -12,7 +12,6 @@ import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.typ
 import { parseJsonSafe } from '../../core/utils/index.js'
 import type { ClassifyStepOutput } from './pr-fixer.schema.js'
 import { CLASSIFY_OUTPUT_JSON_SCHEMA, ClassifyStepOutputSchema } from './pr-fixer.schema.js'
-import { CLASSIFY_PROMPT_V1 } from './prompts/classify.v1.js'
 import { buildClassifyPromptV2 } from './prompts/classify.v2.js'
 
 const ClassifyStepInputSchema = z.object({
@@ -23,21 +22,6 @@ const ClassifyStepInputSchema = z.object({
 })
 
 type ClassifyStepInput = z.infer<typeof ClassifyStepInputSchema>
-
-const CLASSIFY_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-24',
-  description: 'Issue classification for direct vs spec-required fixes',
-  deprecated: true,
-  sunsetDate: '2026-03-15',
-  build: (input: unknown) => {
-    const data = input as ClassifyStepInput
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: CLASSIFY_PROMPT_V1.replace('{issues}', data.issues_summary),
-    }
-  },
-}
 
 const CLASSIFY_V2: PromptVersion = {
   version: 'v2',
@@ -54,7 +38,7 @@ const CLASSIFY_V2: PromptVersion = {
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: CLASSIFY_V1, v2: CLASSIFY_V2 }
+const PROMPT_VERSIONS: PromptRegistry = { v2: CLASSIFY_V2 }
 const CURRENT_VERSION = 'v2'
 
 const FALLBACK: ClassifyStepOutput = { classifications: [] }

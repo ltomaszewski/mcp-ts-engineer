@@ -12,7 +12,6 @@ import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.typ
 import { isValidPath, parseJsonSafe } from '../../core/utils/index.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
 import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
-import { DIRECT_FIX_PROMPT_V1 } from './prompts/direct-fix.v1.js'
 import { buildDirectFixPromptV2 } from './prompts/direct-fix.v2.js'
 
 const DirectFixStepInputSchema = z.object({
@@ -23,24 +22,6 @@ const DirectFixStepInputSchema = z.object({
 })
 
 type DirectFixStepInput = z.infer<typeof DirectFixStepInputSchema>
-
-const DIRECT_FIX_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-24',
-  description: 'Apply direct mechanical fixes',
-  deprecated: true,
-  sunsetDate: '2026-03-15',
-  build: (input: unknown) => {
-    const data = input as DirectFixStepInput
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: DIRECT_FIX_PROMPT_V1.replace(/{worktree_path}/g, data.worktree_path).replace(
-        '{issues}',
-        data.issues_summary,
-      ),
-    }
-  },
-}
 
 const DIRECT_FIX_V2: PromptVersion = {
   version: 'v2',
@@ -61,7 +42,7 @@ const DIRECT_FIX_V2: PromptVersion = {
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: DIRECT_FIX_V1, v2: DIRECT_FIX_V2 }
+const PROMPT_VERSIONS: PromptRegistry = { v2: DIRECT_FIX_V2 }
 const CURRENT_VERSION = 'v2'
 
 const FALLBACK: DirectFixStepOutput = {

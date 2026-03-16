@@ -156,7 +156,10 @@ export const PrContextSchema = z.object({
   diff_content: z.preprocess((v) => (typeof v === 'string' ? v : ''), z.string()),
   is_draft: z.preprocess((v) => (typeof v === 'boolean' ? v : false), z.boolean()),
   is_closed: z.preprocess((v) => (typeof v === 'boolean' ? v : false), z.boolean()),
-  last_reviewed_sha: gitShaSchema.nullish(),
+  last_reviewed_sha: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
+    gitShaSchema.nullish(),
+  ),
 }) as z.ZodType<PrContext>
 
 // ---------------------------------------------------------------------------
@@ -176,7 +179,14 @@ export const PreflightStepOutputSchema = z.object({
   proceed: z.boolean(),
   skip_reason: z.string().nullish(),
   pr_context: PrContextSchema.nullish(),
-  last_reviewed_sha: z.string().nullish(),
+  last_reviewed_sha: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
+    z.string().nullish(),
+  ),
+  head_sha: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
+    z.string().nullish(),
+  ),
 })
 export type PreflightStepOutput = z.infer<typeof PreflightStepOutputSchema>
 

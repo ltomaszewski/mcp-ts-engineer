@@ -14,47 +14,6 @@ import {
   ReviewStepOutputSchema,
 } from './pr-reviewer.schema.js'
 
-const REVIEW_PROMPT_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-14',
-  description: 'Comprehensive multi-category code review',
-  deprecated: true,
-  sunsetDate: '2026-03-15',
-  build: (input: unknown) => {
-    const data = input as ReviewStepInput
-    const ctx = data.pr_context
-
-    const projectContextSection = data.project_context
-      ? `## Project-Specific Rules & Patterns\n\n${data.project_context}\n\n`
-      : ''
-
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# Code Review
-
-You are reviewing PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}.
-
-## Context
-
-Worktree: ${data.worktree_path}
-Branch: ${ctx.pr_branch} → ${ctx.base_branch}
-Files Changed: ${ctx.files_changed.length}
-
-${projectContextSection}## Diff
-
-\`\`\`diff
-${data.diff_content.substring(0, 30000)}
-\`\`\`
-
-## Files to Review
-
-${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
-
-Begin review now.`,
-    }
-  },
-}
-
 const REVIEW_PROMPT_V2: PromptVersion = {
   version: 'v2',
   createdAt: '2026-02-24',
@@ -241,7 +200,6 @@ Begin review now.`,
 }
 
 const PROMPT_VERSIONS: PromptRegistry = {
-  v1: REVIEW_PROMPT_V1,
   v2: REVIEW_PROMPT_V2,
   v3: REVIEW_PROMPT_V3,
 }

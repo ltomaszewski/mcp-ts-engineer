@@ -1,6 +1,3 @@
-export { CLASSIFY_PROMPT_V1 } from './classify.v1.js'
 export { buildClassifyPromptV2 } from './classify.v2.js'
-export { DIRECT_FIX_PROMPT_V1 } from './direct-fix.v1.js'
 export { buildDirectFixPromptV2 } from './direct-fix.v2.js'
-export { FIX_VALIDATION_PROMPT_V1 } from './fix-validation.v1.js'
 export { buildFixValidationPromptV2 } from './fix-validation.v2.js'

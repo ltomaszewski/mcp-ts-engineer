@@ -374,6 +374,11 @@ async function executePreflight(
 
   state.prContext = result.pr_context
 
+  // Populate HEAD SHA from preflight result
+  if (result.head_sha) {
+    state.headSha = result.head_sha
+  }
+
   // In incremental mode, load previous issues from last review comment for cross-run dedup
   if (input.incremental && state.prContext) {
     try {

@@ -119,7 +119,12 @@ export function tryParseJson<T>(content: string): T | null {
  */
 export function sanitizePrContext(raw: unknown): PrContext | null {
   if (!raw || typeof raw !== 'object') return null
-  const result = PrContextSchema.safeParse(raw)
+  // Coerce empty string SHAs to null before Zod validation (defensive against LLM output)
+  const patched = { ...(raw as Record<string, unknown>) }
+  if (typeof patched.last_reviewed_sha === 'string' && patched.last_reviewed_sha.trim() === '') {
+    patched.last_reviewed_sha = null
+  }
+  const result = PrContextSchema.safeParse(patched)
   return result.success ? result.data : null
 }
 

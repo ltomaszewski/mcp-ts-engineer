@@ -1,75 +1,62 @@
+import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type {
   CapabilityContext,
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
-import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
+import { shellQuote } from '../../core/utils/index.js'
 import type { RevertStepInput, RevertStepOutput } from './pr-reviewer.schema.js'
-import {
-  REVERT_OUTPUT_JSON_SCHEMA,
-  RevertStepInputSchema,
-  RevertStepOutputSchema,
-} from './pr-reviewer.schema.js'
+import { RevertStepInputSchema } from './pr-reviewer.schema.js'
 
-const REVERT_PROMPT_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-14',
-  description: 'Clean up worktree and lock file after review',
+/**
+ * Remove a git worktree by path. Returns true if removed or already absent.
+ */
+function removeWorktree(worktreePath: string): boolean {
+  if (!existsSync(worktreePath)) return true
+  try {
+    execSync(`git worktree remove ${shellQuote(worktreePath)} --force`, {
+      stdio: 'pipe',
+      timeout: 30_000,
+    })
+    return true
+  } catch {
+    return !existsSync(worktreePath)
+  }
+}
+
+/**
+ * Remove a lock file by path. Returns true if removed or already absent.
+ */
+function removeLockFile(lockFilePath: string): boolean {
+  if (!existsSync(lockFilePath)) return true
+  try {
+    execSync(`rm -f ${shellQuote(lockFilePath)}`, { stdio: 'pipe', timeout: 10_000 })
+    return true
+  } catch {
+    return !existsSync(lockFilePath)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Capability definition (programmatic — no AI agent needed)
+// ---------------------------------------------------------------------------
+
+const REVERT_PROMPT_V2: PromptVersion = {
+  version: 'v2',
+  createdAt: '2026-03-16',
+  description: 'Programmatic worktree/lock cleanup — no AI agent needed',
   deprecated: false,
   sunsetDate: undefined,
-  build: (input: unknown) => {
-    const data = input as RevertStepInput
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `# Cleanup After Review
-
-You are cleaning up resources after PR review.
-
-${data.worktree_path ? `Worktree: ${data.worktree_path}` : 'No worktree to clean'}
-${data.lock_file_path ? `Lock file: ${data.lock_file_path}` : 'No lock file to remove'}
-
-## Tasks
-
-1. **Remove worktree** (if exists):
-   ${
-     data.worktree_path
-       ? `\`\`\`bash
-   git worktree remove ${shellQuote(data.worktree_path)} --force
-   \`\`\``
-       : 'Skip - no worktree path provided'
-   }
-
-2. **Remove lock file** (if exists):
-   ${
-     data.lock_file_path
-       ? `\`\`\`bash
-   rm -f ${shellQuote(data.lock_file_path)}
-   \`\`\``
-       : 'Skip - no lock file path provided'
-   }
-
-3. **Verify cleanup**:
-   - Check worktree directory is gone
-   - Check lock file is gone
-
-## Output Format
-
-Respond with JSON:
-\`\`\`json
-{
-  "worktree_removed": true,
-  "lock_removed": true
-}
-\`\`\`
-
-Begin cleanup now.`,
-    }
-  },
+  build: (_input: unknown) => ({
+    systemPrompt: 'You are a no-op assistant. Return the JSON exactly as shown.',
+    userPrompt: 'Return this JSON: {"status":"ready"}',
+  }),
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: REVERT_PROMPT_V1 }
-const CURRENT_VERSION = 'v1'
+const PROMPT_VERSIONS: PromptRegistry = { v2: REVERT_PROMPT_V2 }
+const CURRENT_VERSION = 'v2'
 
 export const prRevertStepCapability: CapabilityDefinition<RevertStepInput, RevertStepOutput> = {
   id: 'pr_revert_step',
@@ -82,32 +69,25 @@ export const prRevertStepCapability: CapabilityDefinition<RevertStepInput, Rever
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
     model: 'haiku',
-    maxTurns: 20,
-    maxBudgetUsd: 0.5,
-    tools: { type: 'preset', preset: 'claude_code' },
-    permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
-    settingSources: ['user', 'project'],
-    outputSchema: REVERT_OUTPUT_JSON_SCHEMA,
+    maxTurns: 1,
+    maxBudgetUsd: 0.01,
   },
   preparePromptInput: (input: RevertStepInput, _context: CapabilityContext) => input,
   processResult: (
-    _input: RevertStepInput,
-    aiResult: AIQueryResult,
-    _context: CapabilityContext,
+    input: RevertStepInput,
+    _aiResult: AIQueryResult,
+    context: CapabilityContext,
   ): RevertStepOutput => {
-    const FALLBACK: RevertStepOutput = { worktree_removed: false, lock_removed: false }
+    const worktreeRemoved = input.worktree_path ? removeWorktree(input.worktree_path) : true
+    const lockRemoved = input.lock_file_path ? removeLockFile(input.lock_file_path) : true
 
-    // Strategy 1: SDK structured output
-    if (aiResult.structuredOutput) {
-      const validated = RevertStepOutputSchema.safeParse(aiResult.structuredOutput)
-      if (validated.success) return validated.data
-    }
+    context.logger.info('Revert step completed programmatically', {
+      worktreeRemoved,
+      lockRemoved,
+      worktreePath: input.worktree_path ?? null,
+      lockFilePath: input.lock_file_path ?? null,
+    })
 
-    // Strategy 2: XML block fallback
-    const xmlContent = parseXmlBlock(aiResult.content, 'revert_result')
-    if (xmlContent) return parseJsonSafe(xmlContent, RevertStepOutputSchema, FALLBACK)
-
-    return FALLBACK
+    return { worktree_removed: worktreeRemoved, lock_removed: lockRemoved }
   },
 }

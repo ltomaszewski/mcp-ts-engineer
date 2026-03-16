@@ -54,6 +54,7 @@ export const PREFLIGHT_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
         required: ['pr_number', 'repo_owner', 'repo_name', 'pr_branch', 'base_branch'],
       },
       last_reviewed_sha: { type: 'string' },
+      head_sha: { type: 'string' },
     },
     required: ['proceed'],
   },

@@ -30,9 +30,9 @@ You are performing preflight checks for PR "${data.pr}".
 ## Tasks
 
 1. **Check PR Status**
-   - Run: \`gh pr view ${data.pr} --json state,headRefName,baseRefName,isDraft,number,headRepository\`
+   - Run: \`gh pr view ${data.pr} --json state,headRefName,baseRefName,isDraft,number,headRepository,headRefOid\`
    - Verify PR is open (not draft, not closed)
-   - Extract: PR number, branch name, base branch, repo owner, repo name
+   - Extract: PR number, branch name, base branch, repo owner, repo name, HEAD SHA (headRefOid)
 
 2. **Get Changed Files List**
    - Run: \`gh pr diff ${data.pr} --name-only\`
@@ -66,7 +66,8 @@ You MUST respond with ONLY a JSON code block. Do NOT include diff content — th
     "is_closed": false,
     "last_reviewed_sha": null
   },
-  "last_reviewed_sha": null
+  "last_reviewed_sha": null,
+  "head_sha": "abc1234def5678"
 }
 \`\`\`
 
@@ -74,6 +75,7 @@ IMPORTANT:
 - Do NOT include "diff_content" — it will be fetched in the next step
 - "files_changed" MUST be an array of file path strings
 - "pr_number" MUST be a number (not string)
+- "head_sha" MUST be the headRefOid from gh pr view (the full commit SHA of the PR HEAD)
 - Set proceed=false if PR is draft, closed, or locked
 
 Proceed with checks now.`,
@@ -156,7 +158,13 @@ export const prPreflightStepCapability: CapabilityDefinition<
       skip_reason: typeof parsed.skip_reason === 'string' ? parsed.skip_reason : undefined,
       pr_context: prContext ?? undefined,
       last_reviewed_sha:
-        typeof parsed.last_reviewed_sha === 'string' ? parsed.last_reviewed_sha : undefined,
+        typeof parsed.last_reviewed_sha === 'string' && parsed.last_reviewed_sha.trim() !== ''
+          ? parsed.last_reviewed_sha
+          : undefined,
+      head_sha:
+        typeof parsed.head_sha === 'string' && parsed.head_sha.trim() !== ''
+          ? parsed.head_sha
+          : undefined,
     }
   },
 }

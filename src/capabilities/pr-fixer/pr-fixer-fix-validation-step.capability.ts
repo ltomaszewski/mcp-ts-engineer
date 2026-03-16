@@ -13,7 +13,6 @@ import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.typ
 import { isValidPath, parseJsonSafe } from '../../core/utils/index.js'
 import type { DirectFixStepOutput } from './pr-fixer.schema.js'
 import { DIRECT_FIX_OUTPUT_JSON_SCHEMA, DirectFixStepOutputSchema } from './pr-fixer.schema.js'
-import { FIX_VALIDATION_PROMPT_V1 } from './prompts/fix-validation.v1.js'
 import { buildFixValidationPromptV2 } from './prompts/fix-validation.v2.js'
 
 const FixValidationStepInputSchema = z.object({
@@ -25,23 +24,6 @@ const FixValidationStepInputSchema = z.object({
 })
 
 type FixValidationStepInput = z.infer<typeof FixValidationStepInputSchema>
-
-const FIX_VALIDATION_V1: PromptVersion = {
-  version: 'v1',
-  createdAt: '2026-02-24',
-  description: 'Fix validation errors from direct fixes',
-  deprecated: true,
-  sunsetDate: '2026-03-15',
-  build: (input: unknown) => {
-    const data = input as FixValidationStepInput
-    return {
-      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: FIX_VALIDATION_PROMPT_V1.replace(/{worktree_path}/g, data.worktree_path)
-        .replace('{error_summary}', data.error_summary)
-        .replace('{files_changed}', data.files_changed.map((f) => `- ${f}`).join('\n')),
-    }
-  },
-}
 
 const FIX_VALIDATION_V2: PromptVersion = {
   version: 'v2',
@@ -63,7 +45,7 @@ const FIX_VALIDATION_V2: PromptVersion = {
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: FIX_VALIDATION_V1, v2: FIX_VALIDATION_V2 }
+const PROMPT_VERSIONS: PromptRegistry = { v2: FIX_VALIDATION_V2 }
 const CURRENT_VERSION = 'v2'
 
 const FALLBACK: DirectFixStepOutput = {
