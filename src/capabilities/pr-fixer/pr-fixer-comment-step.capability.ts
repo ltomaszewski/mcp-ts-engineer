@@ -129,6 +129,10 @@ export const prFixerCommentStepCapability: CapabilityDefinition<
     } catch (error) {
       context.logger.error('Failed to post fixer comment', {
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        pr: input.pr_number,
+        repo: `${input.repo_owner}/${input.repo_name}`,
+        bodyLength: commentBody.length,
       })
       return { comment_url: '', comment_posted: false }
     }

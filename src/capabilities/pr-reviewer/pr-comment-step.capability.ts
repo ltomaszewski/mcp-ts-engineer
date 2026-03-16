@@ -304,6 +304,10 @@ export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, Com
     } catch (error) {
       context.logger.error('Failed to post PR comment', {
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        pr: ctx.pr_number,
+        repo: `${ctx.repo_owner}/${ctx.repo_name}`,
+        bodyLength: commentBody.length,
       })
       return {
         comment_url: '',
