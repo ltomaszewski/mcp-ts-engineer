@@ -14,6 +14,7 @@ import type {
   CapabilityContext,
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
+import { resolveCwd } from '../../core/utils/cwd.js'
 import {
   buildSummary,
   detectSubmodules,
@@ -66,12 +67,13 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
   },
 
   preparePromptInput: (input: AuditFixInput, _context) => {
+    const resolvedCwd = resolveCwd(input.cwd)
     // Merge explicit excludes with auto-detected submodules for the planner prompt
-    const submodules = detectSubmodules(input.cwd)
+    const submodules = detectSubmodules(resolvedCwd)
     const allExcludes = [...new Set([...(input.exclude ?? []), ...submodules])]
     return {
       targetProject: input.project,
-      cwd: input.cwd,
+      cwd: resolvedCwd,
       excludeList: allExcludes.length > 0 ? allExcludes : undefined,
     }
   },
@@ -81,12 +83,14 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
     aiResult: AIQueryResult,
     context: CapabilityContext,
   ): Promise<AuditFixOutput> => {
+    const resolvedCwd = resolveCwd(input.cwd)
+
     // Step 1: Parse plan from planner AI result
     let plan = parseAuditPlan(aiResult.content)
 
     // Step 2: Fallback to discoverProjects if plan is empty (exclude-aware)
     if (plan.projects.length === 0) {
-      plan = { projects: discoverProjects(input.cwd, input.exclude) }
+      plan = { projects: discoverProjects(resolvedCwd, input.exclude) }
     }
 
     // Step 3: Single-project override
@@ -98,7 +102,7 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
 
     // Step 3b: Post-planner exclusion filter (safety net if AI ignores prompt instructions)
     if (!input.project) {
-      const submodules = detectSubmodules(input.cwd)
+      const submodules = detectSubmodules(resolvedCwd)
       const excludeSet = new Set([...(input.exclude ?? []), ...submodules])
       if (excludeSet.size > 0) {
         plan = {
@@ -124,7 +128,7 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
         project.path,
         input.max_iteration_per_project,
         remainingCap,
-        input.cwd,
+        resolvedCwd,
         context,
         input.spec_path,
       )

@@ -5,6 +5,7 @@
  * Originally from: src/capabilities/finalize/prompts/audit.v2.ts
  */
 
+import { resolveCwd } from '../../core/utils/cwd.js'
 import {
   AUDIT_PHASE_KB_AND_SKILLS,
   MAESTRO_RULES,
@@ -288,6 +289,9 @@ export function buildAuditUserPrompt(params: AuditWorkflowParams): string {
   const { filesChanged, projectPath, cwd } = params
 
   const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
+  const workingDirRule = cwd
+    ? `\n\n## Working Directory\n\nAll file operations and shell commands MUST use \`${cwd}\` as the working directory.\n- Use absolute paths starting with \`${cwd}/\` for all file reads/edits\n- Run all shell commands from \`${cwd}\`\n- Do NOT use paths relative to any other root directory`
+    : ''
 
   const isFileScopedMode = filesChanged && filesChanged.length > 0
 
@@ -302,7 +306,7 @@ ${filesChangedList}
 
 Only audit the files listed above. Do NOT expand scope to unrelated files.`
   } else {
-    const projectPathValue = projectPath || cwd || '.'
+    const projectPathValue = projectPath || resolveCwd(cwd)
     scopeSection = `## Scope
 
 Scan all TypeScript files in project: ${projectPathValue}
@@ -310,7 +314,7 @@ Scan all TypeScript files in project: ${projectPathValue}
 Run a comprehensive project-wide audit.`
   }
 
-  return `${cwdContext}${scopeSection}
+  return `${cwdContext}${scopeSection}${workingDirRule}
 
 ---
 

@@ -81,4 +81,24 @@ describe('buildAuditUserPrompt', () => {
     expect(result).toContain('Scan all TypeScript files')
     expect(result).toContain('/workspace/apps/fallback')
   })
+
+  it('includes Working Directory section with file-path rules when cwd provided (FR-3)', () => {
+    const result = buildAuditUserPrompt({
+      projectPath: 'apps/my-app',
+      cwd: '/tmp/worktree/health-check',
+    })
+
+    expect(result).toContain('## Working Directory')
+    expect(result).toContain('/tmp/worktree/health-check')
+    expect(result).toContain('Use absolute paths starting with')
+    expect(result).toContain('Run all shell commands from')
+  })
+
+  it('omits Working Directory section when cwd is not provided', () => {
+    const result = buildAuditUserPrompt({
+      projectPath: 'apps/my-app',
+    })
+
+    expect(result).not.toContain('## Working Directory')
+  })
 })

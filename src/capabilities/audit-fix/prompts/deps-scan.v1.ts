@@ -6,6 +6,7 @@
 
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 import { shellQuote } from '../../../core/utils/shell-safe.js'
+import { cwdPath, resolveCwd } from '../../../core/utils/cwd.js'
 
 interface DepsScanPromptInput {
   projectPath: string
@@ -26,7 +27,7 @@ const depsScanPromptV1: PromptVersion = {
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { projectPath, cwd } = input as DepsScanPromptInput
-    const rootPath = cwd || '.'
+    const rootPath = resolveCwd(cwd)
 
     const userPrompt = `You are executing a dependency security scan for a code quality audit.
 
@@ -56,7 +57,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
    - This is a STANDALONE project
    - Run npm audit from project directory:
    \`\`\`bash
-   cd ${shellQuote(projectPath)} && npm audit --json 2>&1
+   cd ${shellQuote(cwdPath(rootPath, projectPath))} && npm audit --json 2>&1
    \`\`\`
 
    If package-lock.json does NOT exist in EITHER location:

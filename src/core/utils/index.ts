@@ -2,6 +2,7 @@
  * Core utility functions.
  */
 
+export { cwdPath, resolveCwd } from './cwd.js'
 export {
   extractCauseChain,
   extractErrorChain,

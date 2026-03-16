@@ -70,7 +70,7 @@ Important guidelines:
 - Be specific about which workspace had which failures
 - If npm test command fails completely, set passed=false and explain in failure_summary
 
-Your goal is to verify that the audit fixes didn't break existing functionality by ensuring all tests pass.`
+Your goal is to verify that the audit fixes didn't break existing functionality by ensuring all tests pass.${cwd ? `\n\nIMPORTANT: Run all commands from the working directory: ${cwd}\nUse \`cd ${cwd}/<workspace>\` when navigating to workspaces for test execution.` : ''}`
 }
 
 export const testPromptV1: PromptVersion = {
