@@ -1,3 +1,4 @@
+import { REACT_HOOKS_REVIEW_RULES } from '../../shared/prompts/eng-rules/react-hooks-review.js'
 import type { AIQueryResult } from '../../core/ai-provider/ai-provider.types.js'
 import type {
   CapabilityContext,
@@ -58,8 +59,8 @@ const REVIEW_PROMPT_V2: PromptVersion = {
   version: 'v2',
   createdAt: '2026-02-24',
   description: 'Sonnet-optimized review with diff-first positioning and XML tags',
-  deprecated: false,
-  sunsetDate: undefined,
+  deprecated: true,
+  sunsetDate: '2026-04-15',
   build: (input: unknown) => {
     const data = input as ReviewStepInput
     const ctx = data.pr_context
@@ -138,8 +139,113 @@ Begin review now.`,
   },
 }
 
-const PROMPT_VERSIONS: PromptRegistry = { v1: REVIEW_PROMPT_V1, v2: REVIEW_PROMPT_V2 }
-const CURRENT_VERSION = 'v2'
+function hasReactFiles(files: string[]): boolean {
+  return files.some((f) => f.endsWith('.tsx') || f.endsWith('.jsx'))
+}
+
+const REVIEW_PROMPT_V3: PromptVersion = {
+  version: 'v3',
+  createdAt: '2026-03-16',
+  description: 'React-aware review with conditional hook performance rules and examples',
+  deprecated: false,
+  sunsetDate: undefined,
+  build: (input: unknown) => {
+    const data = input as ReviewStepInput
+    const ctx = data.pr_context
+    const isReact = hasReactFiles(ctx.files_changed)
+
+    const projectRulesSection = data.project_context
+      ? `<project_rules>\n${data.project_context}\n</project_rules>\n`
+      : ''
+
+    const engRulesSection = isReact
+      ? `<eng_rules>\n${REACT_HOOKS_REVIEW_RULES}\n</eng_rules>\n`
+      : ''
+
+    const performanceItem = isReact
+      ? `4. **Performance**: N+1 queries, memory leaks, large bundles, and for React files:
+   - Validate useCallback/useMemo/useEffect dependency arrays for unstable references
+   - Check for entire hook return objects used as dependencies instead of individual stable values
+   - Verify props passed to React.memo children are referentially stable
+   - Apply all ALWAYS/NEVER rules and Audit Checklist items from <eng_rules>`
+      : '4. **Performance**: N+1 queries, memory leaks, unnecessary re-renders, large bundles'
+
+    return {
+      systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
+      userPrompt: `<diff>
+${data.diff_content.substring(0, 30000)}
+</diff>
+
+<context>
+<pr_info>PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}, branch ${ctx.pr_branch} → ${ctx.base_branch}</pr_info>
+<worktree>${data.worktree_path}</worktree>
+${projectRulesSection}${engRulesSection}<files_changed>
+${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
+</files_changed>
+</context>
+
+<instructions>
+Review from these perspectives (skip lint/formatting — handled by daily audit):
+
+1. **Code Quality**: TypeScript anti-patterns, logic errors, missing error handling
+2. **Security**: Input validation, auth bypass, secret exposure, injection risks
+3. **Architecture**: SOLID violations, circular deps, coupling, design pattern misuse
+${performanceItem}
+
+Read each changed file in the worktree at ${data.worktree_path} for full context.
+</instructions>
+
+<constraints>
+DO NOT REPORT (handled by daily audit):
+- Lint/Biome violations, formatting, import ordering
+- Unused exports, test coverage thresholds
+- Missing semicolons, trailing commas, whitespace
+
+auto_fixable=true ONLY for trivial mechanical changes (confidence >= 80):
+- Unused import removal, console.log removal
+- Missing return type on simple functions
+- Simple null check additions
+- Missing error logging in empty catch blocks
+
+auto_fixable=false for EVERYTHING ELSE including:
+- Error handling with business logic, type extraction
+- Validation logic, security hardening, architectural refactors
+</constraints>
+
+<output_format>
+Respond with JSON:
+\`\`\`json
+{
+  "agent": "multi-review",
+  "issues": [
+    {
+      "severity": "CRITICAL",
+      "category": "security",
+      "title": "Short issue title",
+      "file_path": "path/to/file.ts",
+      "line": 42,
+      "details": "Detailed explanation",
+      "suggestion": "How to fix",
+      "auto_fixable": true,
+      "confidence": 85
+    }
+  ]
+}
+\`\`\`
+If no issues found, return: { "agent": "multi-review", "issues": [] }
+</output_format>
+
+Begin review now.`,
+    }
+  },
+}
+
+const PROMPT_VERSIONS: PromptRegistry = {
+  v1: REVIEW_PROMPT_V1,
+  v2: REVIEW_PROMPT_V2,
+  v3: REVIEW_PROMPT_V3,
+}
+const CURRENT_VERSION = 'v3'
 
 export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, ReviewStepOutput> = {
   id: 'pr_review_step',
