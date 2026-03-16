@@ -224,7 +224,7 @@ describe('phaseEngPromptV2', () => {
       expect(charCount).toBeLessThan(8000)
     })
 
-    it('should be under 12000 characters for react-native with all rules (AC-2.10b)', () => {
+    it('should be under 13000 characters for react-native with all rules (AC-2.10b)', () => {
       const result = phaseEngPromptV2.build({
         specPath: 'docs/specs/test.md',
         phasePlan: MOCK_PHASE_PLAN,
@@ -233,7 +233,7 @@ describe('phaseEngPromptV2', () => {
       })
 
       const charCount = result.userPrompt.length
-      expect(charCount).toBeLessThan(12000)
+      expect(charCount).toBeLessThan(13000)
     })
   })
 

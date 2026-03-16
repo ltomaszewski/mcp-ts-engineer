@@ -35,4 +35,35 @@ Run AFTER implementation, BEFORE marking task complete:
 ### NEVER Rules
 - Skip testing for "small changes" (small exports still add surface area)
 - Export internal helpers just to test them
-- Leave undocumented test-only exports in barrel files`
+- Leave undocumented test-only exports in barrel files
+
+### Babel/TypeScript in Test Files
+Projects using Babel for TypeScript (e.g. Expo/React Native with babel-preset-expo, or
+@babel/plugin-transform-typescript) strip all TS syntax at transform time. Key rules:
+
+- \`import type\` statements are SAFE — Babel strips them completely. Do NOT remove or
+  convert them to regular imports as a "fix" for test failures.
+- TypeScript type annotations INSIDE \`jest.mock()\` factory functions cause parse errors
+  because mock factories are runtime code evaluated before transforms complete.
+
+**Correct pattern** (plain JS in mock factories):
+\`\`\`typescript
+// ✅ import type at top level — always safe
+import type { SomeType } from './types';
+
+// ✅ Mock factory uses plain JS, no type annotations
+jest.mock('./module', () => ({
+  useHook: () => ({ data: [], loading: false }),
+}));
+\`\`\`
+
+**Wrong pattern** (TS annotations in mock factory):
+\`\`\`typescript
+// ❌ Type annotation in runtime mock factory — Babel cannot parse this
+jest.mock('./module', () => ({
+  useHook: (): { data: SomeType[]; loading: boolean } => ({ data: [], loading: false }),
+}));
+\`\`\`
+
+If you encounter Babel/TypeScript errors in test files, check mock factories for type
+annotations first. Do NOT misdiagnose as "\`import type\` not supported".`
