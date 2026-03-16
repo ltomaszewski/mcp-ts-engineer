@@ -6,7 +6,7 @@
  */
 
 import type { PhasePlan } from '../../capabilities/todo-code-writer/todo-code-writer.schema.js'
-import { getProjectConfig } from '../../config/project-config.js'
+import { resolveCwd } from '../../core/utils/cwd.js'
 import { buildDevContext } from './dev-context.js'
 import {
   COMPONENT_CHECK_RULES,
@@ -218,7 +218,7 @@ ${skillLoadingSection}
 - Read only files referenced in the spec or needed for the current phase. Do not search the broader codebase beyond what the spec specifies.
 - Avoid calling AskUserQuestion, slash commands, or referencing .claude/commands/ files
 - If tests fail to pass, set status to "failed" and explain in summary
-- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${input.cwd ?? getProjectConfig().monorepoRoot}\`.
+- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${resolveCwd(input.cwd)}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.
@@ -344,7 +344,7 @@ ${skillLoadingSection}
 - Follow patterns from loaded skills
 - Run tests after applying fixes
 - Set status to "failed" if unable to fix issues
-- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${input.cwd ?? getProjectConfig().monorepoRoot}\`.
+- WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${resolveCwd(input.cwd)}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.

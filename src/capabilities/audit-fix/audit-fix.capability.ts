@@ -14,7 +14,7 @@ import type {
   CapabilityContext,
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
-import { getProjectConfig } from '../../config/project-config.js'
+import { resolveCwd } from '../../core/utils/cwd.js'
 import {
   buildSummary,
   detectSubmodules,
@@ -67,8 +67,7 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
   },
 
   preparePromptInput: (input: AuditFixInput, _context) => {
-    // Resolve cwd: use provided cwd or fall back to monorepoRoot (FR-2)
-    const resolvedCwd = input.cwd ?? getProjectConfig().monorepoRoot
+    const resolvedCwd = resolveCwd(input.cwd)
     // Merge explicit excludes with auto-detected submodules for the planner prompt
     const submodules = detectSubmodules(resolvedCwd)
     const allExcludes = [...new Set([...(input.exclude ?? []), ...submodules])]
@@ -84,8 +83,7 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
     aiResult: AIQueryResult,
     context: CapabilityContext,
   ): Promise<AuditFixOutput> => {
-    // Resolve cwd: use provided cwd or fall back to monorepoRoot (FR-2)
-    const resolvedCwd = input.cwd ?? getProjectConfig().monorepoRoot
+    const resolvedCwd = resolveCwd(input.cwd)
 
     // Step 1: Parse plan from planner AI result
     let plan = parseAuditPlan(aiResult.content)

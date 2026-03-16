@@ -5,6 +5,7 @@
 
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 import { shellQuote } from '../../../core/utils/shell-safe.js'
+import { cwdPath, resolveCwd } from '../../../core/utils/cwd.js'
 
 interface LintScanPromptInput {
   projectPath: string
@@ -46,7 +47,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
 4. If a lint script exists, execute:
    \`\`\`bash
-   cd ${shellQuote(cwd ? `${cwd}/${projectPath}` : projectPath)} && npm run lint 2>&1
+   cd ${shellQuote(cwdPath(resolveCwd(cwd), projectPath))} && npm run lint 2>&1
    \`\`\`
 
 5. Parse the lint output to identify:

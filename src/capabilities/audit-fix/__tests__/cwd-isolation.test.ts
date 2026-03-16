@@ -9,9 +9,14 @@
 
 import { vi } from 'vitest'
 import { initProjectConfig, type ProjectConfig } from '../../../config/project-config.js'
+import { resolveCwd, cwdPath } from '../../../core/utils/cwd.js'
 import { plannerPromptV1 } from '../prompts/planner.v1.js'
 import { commitPromptV1 } from '../prompts/commit.v1.js'
 import { testPromptV1 } from '../prompts/test.v1.js'
+import { depsScanPromptV1 } from '../prompts/deps-scan.v1.js'
+import { depsFixPromptV1 } from '../prompts/deps-fix.v1.js'
+import { lintScanPromptV1 } from '../prompts/lint-scan.v1.js'
+import { lintFixPromptV1 } from '../prompts/lint-fix.v1.js'
 import { auditFixCapability } from '../audit-fix.capability.js'
 import type { AuditFixInput } from '../audit-fix.schema.js'
 
@@ -153,5 +158,122 @@ describe('FR-3: test prompt cwd instructions', () => {
     })
 
     expect(result.userPrompt).not.toContain('Run all commands from the working directory')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Shared helpers: resolveCwd and cwdPath
+// ---------------------------------------------------------------------------
+
+describe('resolveCwd helper', () => {
+  it('returns cwd when provided', () => {
+    expect(resolveCwd('/tmp/worktree')).toBe('/tmp/worktree')
+  })
+
+  it('falls back to monorepoRoot when cwd is undefined', () => {
+    expect(resolveCwd(undefined)).toBe(MOCK_MONOREPO_ROOT)
+  })
+})
+
+describe('cwdPath helper', () => {
+  it('joins root and relative path', () => {
+    expect(cwdPath('/tmp/worktree', 'apps/my-server')).toBe('/tmp/worktree/apps/my-server')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-3: Deps scan prompt uses resolved cwd for shell commands
+// ---------------------------------------------------------------------------
+
+describe('FR-3: deps-scan prompt cwd paths', () => {
+  it('uses absolute path in standalone cd command when cwd is provided', () => {
+    const cwd = '/tmp/worktree/health-check'
+    const result = depsScanPromptV1.build({ projectPath: 'apps/my-server', cwd })
+
+    expect(result.userPrompt).toContain(`cd '${cwd}/apps/my-server'`)
+    expect(result.userPrompt).toContain(`${cwd}/package-lock.json`)
+  })
+
+  it('falls back to monorepoRoot in standalone cd command when cwd is omitted', () => {
+    const result = depsScanPromptV1.build({ projectPath: 'apps/my-server' })
+
+    expect(result.userPrompt).toContain(`cd '${MOCK_MONOREPO_ROOT}/apps/my-server'`)
+    expect(result.userPrompt).toContain(`${MOCK_MONOREPO_ROOT}/package-lock.json`)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-3: Deps fix prompt uses resolved cwd for shell commands
+// ---------------------------------------------------------------------------
+
+describe('FR-3: deps-fix prompt cwd paths', () => {
+  it('uses absolute path in standalone cd commands when cwd is provided', () => {
+    const cwd = '/tmp/worktree/health-check'
+    const result = depsFixPromptV1.build({
+      projectPath: 'apps/my-server',
+      vulnerabilitiesFound: 5,
+      cwd,
+    })
+
+    expect(result.userPrompt).toContain(`cd '${cwd}/apps/my-server'`)
+    expect(result.userPrompt).toContain(`${cwd}/package-lock.json`)
+  })
+
+  it('falls back to monorepoRoot in standalone cd commands when cwd is omitted', () => {
+    const result = depsFixPromptV1.build({
+      projectPath: 'apps/my-server',
+      vulnerabilitiesFound: 5,
+    })
+
+    expect(result.userPrompt).toContain(`cd '${MOCK_MONOREPO_ROOT}/apps/my-server'`)
+    expect(result.userPrompt).toContain(`${MOCK_MONOREPO_ROOT}/package-lock.json`)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-3: Lint scan prompt uses resolved cwd for shell commands
+// ---------------------------------------------------------------------------
+
+describe('FR-3: lint-scan prompt cwd paths', () => {
+  it('uses absolute path in cd command when cwd is provided', () => {
+    const cwd = '/tmp/worktree/health-check'
+    const result = lintScanPromptV1.build({ projectPath: 'apps/my-server', cwd })
+
+    expect(result.userPrompt).toContain(`cd '${cwd}/apps/my-server'`)
+  })
+
+  it('falls back to monorepoRoot in cd command when cwd is omitted', () => {
+    const result = lintScanPromptV1.build({ projectPath: 'apps/my-server' })
+
+    expect(result.userPrompt).toContain(`cd '${MOCK_MONOREPO_ROOT}/apps/my-server'`)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FR-3: Lint fix prompt uses cwd in WORKING DIRECTORY rule
+// ---------------------------------------------------------------------------
+
+describe('FR-3: lint-fix prompt cwd rule', () => {
+  it('includes WORKING DIRECTORY rule when cwd is provided', () => {
+    const cwd = '/tmp/worktree/health-check'
+    const result = lintFixPromptV1.build({
+      projectPath: 'apps/my-server',
+      lintReport: 'error: unused import',
+      filesWithLintErrors: ['src/file.ts'],
+      cwd,
+    })
+
+    expect(result.userPrompt).toContain(`WORKING DIRECTORY`)
+    expect(result.userPrompt).toContain(cwd)
+  })
+
+  it('omits WORKING DIRECTORY rule when cwd is not provided', () => {
+    const result = lintFixPromptV1.build({
+      projectPath: 'apps/my-server',
+      lintReport: 'error: unused import',
+      filesWithLintErrors: ['src/file.ts'],
+    })
+
+    expect(result.userPrompt).not.toContain('WORKING DIRECTORY')
   })
 })

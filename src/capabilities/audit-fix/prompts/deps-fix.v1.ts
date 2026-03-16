@@ -4,9 +4,9 @@
  * Supports npm workspaces (monorepos) by using --workspace flag.
  */
 
-import { getProjectConfig } from '../../../config/project-config.js'
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 import { shellQuote } from '../../../core/utils/shell-safe.js'
+import { cwdPath, resolveCwd } from '../../../core/utils/cwd.js'
 
 interface DepsFixPromptInput {
   projectPath: string
@@ -28,7 +28,7 @@ const depsFixPromptV1: PromptVersion = {
   sunsetDate: undefined,
   build: (input: unknown) => {
     const { projectPath, vulnerabilitiesFound, cwd } = input as DepsFixPromptInput
-    const rootPath = cwd || getProjectConfig().monorepoRoot
+    const rootPath = resolveCwd(cwd)
 
     const userPrompt = `You are executing a dependency security fix for a code quality audit.
 
@@ -57,7 +57,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
    **Mode B - Standalone project** (package-lock.json in project):
    \`\`\`bash
-   cd ${shellQuote(`${rootPath}/${projectPath}`)} && npm audit fix 2>&1
+   cd ${shellQuote(cwdPath(rootPath, projectPath))} && npm audit fix 2>&1
    \`\`\`
 
 4. Track modified files after npm audit fix:
@@ -75,7 +75,7 @@ ${cwd ? `<cwd>${cwd}</cwd>` : ''}
 
    **Mode B - Standalone project**:
    \`\`\`bash
-   cd ${shellQuote(`${rootPath}/${projectPath}`)} && npm audit --json 2>&1
+   cd ${shellQuote(cwdPath(rootPath, projectPath))} && npm audit --json 2>&1
    \`\`\`
    Parse "metadata.vulnerabilities.total" from JSON output
 
