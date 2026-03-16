@@ -27,6 +27,7 @@ const CommentStepInputSchema = z.object({
   repo_name: z.string(),
   round: z.number(),
   output: z.record(z.string(), z.unknown()),
+  cwd: z.string().optional(),
 })
 
 type CommentStepInput = z.infer<typeof CommentStepInputSchema>

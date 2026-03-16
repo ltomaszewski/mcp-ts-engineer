@@ -19,6 +19,7 @@ const ClassifyStepInputSchema = z.object({
   issues_summary: z.string(),
   issue_ids: z.array(z.string()),
   project_context: z.string().optional(),
+  cwd: z.string().optional(),
 })
 
 type ClassifyStepInput = z.infer<typeof ClassifyStepInputSchema>

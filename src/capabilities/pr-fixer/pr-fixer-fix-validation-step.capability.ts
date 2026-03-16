@@ -21,6 +21,7 @@ const FixValidationStepInputSchema = z.object({
   error_summary: z.string(),
   files_changed: z.array(z.string()),
   project_context: z.string().optional(),
+  cwd: z.string().optional(),
 })
 
 type FixValidationStepInput = z.infer<typeof FixValidationStepInputSchema>

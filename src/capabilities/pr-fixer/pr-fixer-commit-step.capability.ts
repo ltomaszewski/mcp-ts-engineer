@@ -18,6 +18,7 @@ const CommitStepInputSchema = z.object({
   pr_branch: z.string().refine(isValidGitRef, { message: 'Invalid git ref' }),
   fixes_applied: z.number(),
   issue_titles: z.array(z.string()).default([]),
+  cwd: z.string().optional(),
 })
 
 type CommitStepInput = z.infer<typeof CommitStepInputSchema>

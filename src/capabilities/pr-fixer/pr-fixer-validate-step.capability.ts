@@ -19,6 +19,7 @@ import {
 const ValidateStepInputSchema = z.object({
   worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
   files_changed: z.array(z.string()),
+  cwd: z.string().optional(),
 })
 
 type ValidateStepInput = z.infer<typeof ValidateStepInputSchema>

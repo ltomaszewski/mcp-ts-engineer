@@ -328,15 +328,15 @@ async function executePhase(
       break
 
     case 'cleanup':
-      await executeCleanup(state, context)
+      await executeCleanup(state, input, context)
       break
 
     case 'test':
-      await executeTest(state, context)
+      await executeTest(state, input, context)
       break
 
     case 'commit':
-      await executeCommit(state, context)
+      await executeCommit(state, input, context)
       break
 
     case 'comment':
@@ -466,7 +466,7 @@ async function executeContext(
   // Pass cwd to pr_context_step so it skips worktree creation when provided
   const result = (await context.invokeCapability('pr_context_step', {
     pr_context: state.prContext,
-    ...(input.cwd ? { cwd: input.cwd } : {}),
+    cwd: input.cwd,
   })) as ContextStepOutput
 
   state.worktreePath = result.worktree_path
@@ -504,7 +504,7 @@ async function executeContext(
  */
 async function executeReview(
   state: ReviewState,
-  _input: PrReviewerInput,
+  input: PrReviewerInput,
   context: CapabilityContext,
 ): Promise<void> {
   if (!state.prContext || !state.worktreePath) {
@@ -547,6 +547,7 @@ async function executeReview(
       diff_content: chunkDiff,
       worktree_path: state.worktreePath,
       project_context: state.projectContextString,
+      cwd: input.cwd,
     })) as ReviewStepOutput
 
     const results = Array.isArray(result) ? result : [result]
@@ -596,7 +597,7 @@ async function executeValidate(state: ReviewState, context: CapabilityContext): 
  */
 async function executeFix(
   state: ReviewState,
-  _input: PrReviewerInput,
+  input: PrReviewerInput,
   context: CapabilityContext,
   budgetSpent: number,
   budgetLimit: number,
@@ -612,6 +613,7 @@ async function executeFix(
     worktree_path: state.worktreePath,
     budget_remaining: budgetRemaining,
     project_context: state.projectContextString,
+    cwd: input.cwd,
   })) as FixStepOutput
 
   state.fixesApplied = result.fixes_applied
@@ -623,7 +625,7 @@ async function executeFix(
 /**
  * Cleanup phase: Remove unused exports, verify types.
  */
-async function executeCleanup(state: ReviewState, context: CapabilityContext): Promise<void> {
+async function executeCleanup(state: ReviewState, input: PrReviewerInput, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath) {
     throw new Error('Worktree not available')
   }
@@ -631,13 +633,14 @@ async function executeCleanup(state: ReviewState, context: CapabilityContext): P
   ;(await context.invokeCapability('pr_cleanup_step', {
     worktree_path: state.worktreePath,
     files_changed: state.prContext?.files_changed ?? [],
+    cwd: input.cwd,
   })) as CleanupStepOutput
 }
 
 /**
  * Test phase: Run tests for changed files.
  */
-async function executeTest(state: ReviewState, context: CapabilityContext): Promise<void> {
+async function executeTest(state: ReviewState, input: PrReviewerInput, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath || !state.prContext) {
     throw new Error('Worktree or PR context not available')
   }
@@ -645,6 +648,7 @@ async function executeTest(state: ReviewState, context: CapabilityContext): Prom
   const result = (await context.invokeCapability('pr_test_step', {
     worktree_path: state.worktreePath,
     files_changed: state.prContext.files_changed,
+    cwd: input.cwd,
   })) as TestStepOutput
 
   state.testsPassed = result.tests_passed
@@ -653,7 +657,7 @@ async function executeTest(state: ReviewState, context: CapabilityContext): Prom
 /**
  * Commit phase: Commit and push fixes.
  */
-async function executeCommit(state: ReviewState, context: CapabilityContext): Promise<void> {
+async function executeCommit(state: ReviewState, input: PrReviewerInput, context: CapabilityContext): Promise<void> {
   if (!state.worktreePath || !state.prContext) {
     throw new Error('Worktree or PR context not available')
   }
@@ -663,6 +667,7 @@ async function executeCommit(state: ReviewState, context: CapabilityContext): Pr
     pr_branch: state.prContext.pr_branch,
     fixes_applied: state.fixesApplied,
     issues_fixed: state.issuesFixed,
+    cwd: input.cwd,
   })) as CommitStepOutput
 
   if (result.committed && result.commit_sha) {

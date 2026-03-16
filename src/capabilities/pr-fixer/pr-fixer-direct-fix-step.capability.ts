@@ -19,6 +19,7 @@ const DirectFixStepInputSchema = z.object({
   issues_summary: z.string(),
   worktree_path: z.string().refine(isValidPath, { message: 'Invalid path' }),
   project_context: z.string().optional(),
+  cwd: z.string().optional(),
 })
 
 type DirectFixStepInput = z.infer<typeof DirectFixStepInputSchema>

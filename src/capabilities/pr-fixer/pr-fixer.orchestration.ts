@@ -245,7 +245,7 @@ export async function runFixerOrchestration(
         break
       }
 
-      await executePhase(state, context)
+      await executePhase(state, input, context)
       state.budgetSpent = context.getSessionCost().totalCostUsd
       state.phase = getNextPhase(state.phase, state)
     }
@@ -256,7 +256,7 @@ export async function runFixerOrchestration(
     })
   }
 
-  await ensureCommentPosted(state, context)
+  await ensureCommentPosted(state, input, context)
 
   return buildOutput(state)
 }
@@ -265,30 +265,30 @@ export async function runFixerOrchestration(
 // Phase execution
 // ---------------------------------------------------------------------------
 
-async function executePhase(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executePhase(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   context.logger.info(`Executing fixer phase: ${state.phase}`)
 
   switch (state.phase) {
     case 'parse_state':
-      await executeParseState(state, context)
+      await executeParseState(state, input, context)
       break
     case 'classify':
-      await executeClassify(state, context)
+      await executeClassify(state, input, context)
       break
     case 'direct_fix':
-      await executeDirectFix(state, context)
+      await executeDirectFix(state, input, context)
       break
     case 'validate':
-      await executeValidate(state, context)
+      await executeValidate(state, input, context)
       break
     case 'fix_validation':
-      await executeFixValidation(state, context)
+      await executeFixValidation(state, input, context)
       break
     case 'commit':
-      await executeCommit(state, context)
+      await executeCommit(state, input, context)
       break
     case 'comment':
-      await executeComment(state, context)
+      await executeComment(state, input, context)
       break
   }
 }
@@ -296,11 +296,12 @@ async function executePhase(state: FixerState, context: CapabilityContext): Prom
 /**
  * Parse state: Fetch reviewer comment, extract issues, detect round.
  */
-async function executeParseState(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeParseState(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   // Fetch reviewer comment via pr_preflight_step to get PR branch
   const preflightResult = (await context.invokeCapability('pr_preflight_step', {
     pr: String(state.prNumber),
     incremental: false,
+    cwd: input.cwd,
   })) as { proceed: boolean; pr_context?: { pr_branch: string } }
 
   if (preflightResult.pr_context) {
@@ -321,6 +322,7 @@ async function executeParseState(state: FixerState, context: CapabilityContext):
         is_draft: false,
         is_closed: false,
       },
+      cwd: input.cwd,
     })) as { worktree_path: string }
 
     state.worktreePath = contextResult.worktree_path
@@ -329,7 +331,7 @@ async function executeParseState(state: FixerState, context: CapabilityContext):
   }
 
   // Fetch the latest reviewer comment to extract issues
-  const commentBody = await fetchReviewerComment(state, context)
+  const commentBody = await fetchReviewerComment(state, input, context)
   if (!commentBody) {
     context.logger.info('No reviewer comment found')
     state.issues = []
@@ -382,7 +384,7 @@ async function executeParseState(state: FixerState, context: CapabilityContext):
 /**
  * Classify phase: Categorize issues as direct/spec-required/skip.
  */
-async function executeClassify(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeClassify(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   if (state.issues.length === 0) return
 
   const issuesSummary = state.issues
@@ -396,6 +398,7 @@ async function executeClassify(state: FixerState, context: CapabilityContext): P
     issues_summary: issuesSummary,
     issue_ids: state.issues.map((i) => i.issue_id),
     project_context: state.projectContextString || undefined,
+    cwd: input.cwd,
   })) as ClassifyStepOutput
 
   // Apply classifications
@@ -416,7 +419,7 @@ async function executeClassify(state: FixerState, context: CapabilityContext): P
 /**
  * Direct fix phase: Apply mechanical fixes.
  */
-async function executeDirectFix(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeDirectFix(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   const directIssues = state.issues.filter((i) => i.classification === 'direct')
   if (directIssues.length === 0) return
 
@@ -431,6 +434,7 @@ async function executeDirectFix(state: FixerState, context: CapabilityContext): 
     issues_summary: issuesSummary,
     worktree_path: state.worktreePath,
     project_context: state.projectContextString || undefined,
+    cwd: input.cwd,
   })) as DirectFixStepOutput
 
   state.directFixOutput = result
@@ -457,10 +461,11 @@ async function executeDirectFix(state: FixerState, context: CapabilityContext): 
  * Validate phase: Run tsc + tests.
  * Stores error_summary for fix_validation phase if validation fails.
  */
-async function executeValidate(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeValidate(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   const result = (await context.invokeCapability('pr_fixer_validate_step', {
     worktree_path: state.worktreePath,
     files_changed: state.filesChanged,
+    cwd: input.cwd,
   })) as FixerValidateStepOutput
 
   state.validationPassed = result.tsc_passed && result.tests_passed
@@ -481,7 +486,7 @@ async function executeValidate(state: FixerState, context: CapabilityContext): P
  * Fix validation phase: Fix tsc/test/lint failures introduced by direct fixes.
  * After fixing, loops back to validate by resetting phase.
  */
-async function executeFixValidation(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeFixValidation(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   state.validationFixRound++
   context.logger.info('Attempting to fix validation errors', {
     round: state.validationFixRound,
@@ -493,6 +498,7 @@ async function executeFixValidation(state: FixerState, context: CapabilityContex
     error_summary: state.validationErrorSummary,
     files_changed: state.filesChanged,
     project_context: state.projectContextString || undefined,
+    cwd: input.cwd,
   })) as DirectFixStepOutput
 
   // Track new files changed
@@ -509,6 +515,7 @@ async function executeFixValidation(state: FixerState, context: CapabilityContex
   const validateResult = (await context.invokeCapability('pr_fixer_validate_step', {
     worktree_path: state.worktreePath,
     files_changed: state.filesChanged,
+    cwd: input.cwd,
   })) as FixerValidateStepOutput
 
   state.validationPassed = validateResult.tsc_passed && validateResult.tests_passed
@@ -528,13 +535,14 @@ async function executeFixValidation(state: FixerState, context: CapabilityContex
 /**
  * Commit phase: Commit and push fixes.
  */
-async function executeCommit(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeCommit(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   const fixedIssues = state.issues.filter((i) => i.status === 'fixed')
   const result = (await context.invokeCapability('pr_fixer_commit_step', {
     worktree_path: state.worktreePath,
     pr_branch: state.prBranch,
     fixes_applied: state.directFixOutput?.fixes_applied ?? 0,
     issue_titles: fixedIssues.map((i) => i.title),
+    cwd: input.cwd,
   })) as FixerCommitStepOutput
 
   if (result.committed && result.commit_sha) {
@@ -545,7 +553,7 @@ async function executeCommit(state: FixerState, context: CapabilityContext): Pro
 /**
  * Comment phase: Post/update fixer comment on PR.
  */
-async function executeComment(state: FixerState, context: CapabilityContext): Promise<void> {
+async function executeComment(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   const output = buildOutput(state)
 
   const result = (await context.invokeCapability('pr_fixer_comment_step', {
@@ -554,6 +562,7 @@ async function executeComment(state: FixerState, context: CapabilityContext): Pr
     repo_name: state.repoName,
     round: state.round,
     output,
+    cwd: input.cwd,
   })) as FixerCommentStepOutput
 
   state.commentUrl = result.comment_url
@@ -566,11 +575,11 @@ async function executeComment(state: FixerState, context: CapabilityContext): Pr
 /**
  * Ensure fixer comment is posted even after budget/error exit.
  */
-async function ensureCommentPosted(state: FixerState, context: CapabilityContext): Promise<void> {
+async function ensureCommentPosted(state: FixerState, input: PrFixerInput, context: CapabilityContext): Promise<void> {
   if (state.commentUrl || state.prNumber <= 0 || !state.repoOwner || !state.repoName) return
 
   try {
-    await executeComment(state, context)
+    await executeComment(state, input, context)
   } catch (commentError) {
     context.logger.warn('Failed to post fixer comment after error', {
       error: commentError instanceof Error ? commentError.message : String(commentError),
@@ -603,6 +612,7 @@ function restoreDirectFixed(state: FixerState): void {
 
 async function fetchReviewerComment(
   state: FixerState,
+  input: PrFixerInput,
   context: CapabilityContext,
 ): Promise<string | null> {
   // Use an AI agent to fetch the comment via gh CLI
@@ -612,6 +622,7 @@ async function fetchReviewerComment(
       pr_number: state.prNumber,
       repo_owner: state.repoOwner,
       repo_name: state.repoName,
+      cwd: input.cwd,
     })) as { comment_body: string }
     return result.comment_body || null
   } catch {

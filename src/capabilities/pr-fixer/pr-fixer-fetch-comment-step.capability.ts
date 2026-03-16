@@ -15,6 +15,7 @@ const FetchCommentStepInputSchema = z.object({
   pr_number: z.number(),
   repo_owner: z.string(),
   repo_name: z.string(),
+  cwd: z.string().optional(),
 })
 
 type FetchCommentStepInput = z.infer<typeof FetchCommentStepInputSchema>
