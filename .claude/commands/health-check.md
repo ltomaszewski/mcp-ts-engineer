@@ -1,139 +1,108 @@
 # /health-check
 
-Monorepo code audit with auto-fix and PR review. Creates isolated branch, audits all projects, fixes violations, opens a reviewed PR.
+Monorepo code audit with auto-fix and PR review. Fully autonomous — runs end-to-end without pausing.
 
 ---
 
 ## Identity
 
-**Health Check Orchestrator** — Chains worktree creation, audit_fix, PR creation, and pr_reviewer into a single developer-facing command.
+**Health Check Orchestrator** — Autonomous pipeline that chains worktree creation → audit_fix → PR creation → pr_reviewer into a single uninterrupted execution.
+
+**CRITICAL: This is an autonomous pipeline. Execute ALL steps in a single response without stopping, pausing, or waiting for user input between steps. Treat the entire workflow as one atomic operation.**
+
+---
+
+## Execution Model
+
+<execution_rules>
+ALWAYS:
+- Execute Steps 1 through 6 sequentially in ONE response — never stop between steps
+- After each MCP tool returns, immediately proceed to the next step
+- Store results in variables and carry them forward — do not display intermediate results
+- Use absolute paths (never `cd` into worktree in main shell)
+- Keep worktree after completion
+- Output ONLY the final Step 6 report to the user
+
+NEVER:
+- Stop after an MCP tool completes to show results or wait for feedback
+- Display intermediate tool outputs — save them to variables, report in Step 6
+- Ask for confirmation between steps — the user authorized the full pipeline
+- Audit the mcp-ts-engineer submodule itself (auto-excluded via `detectSubmodules`)
+- Create a PR if no changes were made
+</execution_rules>
 
 ---
 
 ## Prerequisites
 
+Run these checks FIRST. If any fail, stop with the error message — do not proceed.
+
 ```bash
-# Verify repository root
 [ -d .git ] || (echo "Error: Not in repository root" && exit 1)
-
-# Capture original directory
 ORIGINAL_DIR=$(pwd)
-
-# Verify gh authenticated
 gh auth status          # Must be authenticated
-
-# Verify clean working tree
 git status --porcelain  # Must be clean (error if dirty)
 ```
 
-- Not in repo root: Error — `cd to repository root first`
-- gh not auth: Error — `Run gh auth login first`
-- Dirty tree: Error — `Commit or stash changes first`
-
 ---
 
-## Constraints
+## Pipeline
 
-**ALWAYS:**
-- Verify prerequisites before Step 1
-- Use absolute paths (never `cd` into worktree in main shell)
-- Report status after each step
-- Keep worktree after completion
+Execute Steps 1 → 2 → 3 → 4 → 5 → 6 without interruption.
 
-**NEVER:**
-- Audit the mcp-ts-engineer submodule itself (auto-excluded via `detectSubmodules`)
-- Create a PR if no changes were made
-- Run steps in parallel
-- Continue after unrecoverable failure
-
----
-
-## Workflow
-
-### Step 1: Create Worktree
+### Step 1: Create Worktree → immediately proceed to Step 2
 
 ```bash
-# Ensure main is up to date
 git checkout main && git pull origin main
 
-# Generate branch name
 DATE=$(date +%Y-%m-%d)
 RANDOM5=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5)
 BRANCH_NAME="health-check/${DATE}-${RANDOM5}"
 WORKTREE_PATH=".worktrees/health-check-${DATE}-${RANDOM5}"
 
-# Create worktree
 git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"
 cd "$WORKTREE_PATH" && git submodule update --init --recursive && echo "n" | ./scripts/setup-worktree.sh
 ```
 
-**On success:**
-```
-✓ Step 1: Worktree created at $WORKTREE_PATH (branch: $BRANCH_NAME)
-```
+Save `WORKTREE_PATH`, `BRANCH_NAME`, `DATE` for later steps. On failure: stop with error.
 
-**On failure:** STOP with error message
-
----
-
-### Step 2: Run Audit
+### Step 2: Run Audit → immediately proceed to Step 3
 
 ```
-mcp__ts-engineer__audit_fix cwd="$WORKTREE_ABSOLUTE_PATH" skip_tests=true
+mcp__ts-engineer__audit_fix cwd="$WORKTREE_ABSOLUTE_PATH"
 ```
 
 Where `$WORKTREE_ABSOLUTE_PATH` is the absolute path to the worktree.
 
-The `audit_fix` tool will:
-- Auto-detect and exclude git submodules (e.g., `packages/mcp-ts-engineer`)
-- Discover all projects in `apps/` and `packages/`
-- Run code quality audit per project
-- Apply fixes iteratively
-- Auto-commit changes per project
+Save the returned `projects_audited`, `total_iterations`, `status`, `summary` into variables. Do NOT display the audit results to the user — they go into the Step 6 report. On failure: save error, skip to Step 6.
 
-**On success:**
-```
-✓ Step 2: Audit complete — $PROJECTS_AUDITED projects, $TOTAL_ITERATIONS iterations
-  Status: $STATUS
-  Projects: [list of project results]
-```
-
-**On failure:** Report error and STOP
-
----
-
-### Step 3: Check for Changes
+### Step 3: Check for Changes → immediately proceed to Step 4 or Step 6
 
 ```bash
-cd "$WORKTREE_PATH" && git diff HEAD --stat
+cd "$WORKTREE_PATH" && git log origin/main..HEAD --oneline
 ```
 
-**If no changes (clean):**
-```
-✓ Codebase is clean — no violations found
+If no commits beyond main: save `NO_CHANGES=true`, skip to Step 6 (report clean codebase, remove worktree).
+If commits exist: proceed to Step 4.
 
-Removing worktree...
-git worktree remove "$WORKTREE_PATH"
-```
-STOP — no PR needed.
-
-**If changes exist:** Continue to Step 4.
-
----
-
-### Step 4: Push and Create PR
+### Step 4: Push and Create PR → immediately proceed to Step 5
 
 ```bash
 cd "$WORKTREE_PATH"
 git push -u origin "$BRANCH_NAME"
+```
 
+Then create the PR:
+
+```bash
 PR_URL=$(gh pr create \
   --title "chore: health check audit fixes ($DATE)" \
   --base main \
   --head "$BRANCH_NAME" \
-  --body "## Summary
+  --body "$(cat <<'EOF'
+## Summary
 
-Automated code quality fixes from \`/health-check\`.
+Automated code quality fixes from `/health-check`.
 
 ### Audit Results
 - Projects audited: $PROJECTS_AUDITED
@@ -144,45 +113,26 @@ Automated code quality fixes from \`/health-check\`.
 $AUDIT_SUMMARY
 
 ---
-*Generated by \`/health-check\` command*")
+*Generated by `/health-check` command*
+EOF
+)")
 
 PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
 ```
 
-**On success:**
-```
-✓ Step 4: PR created at $PR_URL
-```
+Save `PR_URL` and `PR_NUMBER`. On failure: save error, skip to Step 6.
 
-**On failure:** Report error (push may have succeeded), suggest manual PR creation
-
----
-
-### Step 5: Run PR Review
+### Step 5: Run PR Review → immediately proceed to Step 6
 
 ```
 mcp__ts-engineer__pr_reviewer pr="$PR_NUMBER" cwd="$WORKTREE_ABSOLUTE_PATH"
 ```
 
-The `pr_reviewer` tool will:
-- Reuse the existing worktree (no redundant setup)
-- Review all changes in review-fix mode
-- Auto-fix issues it can resolve
-- Post a review comment on the PR
+Save the returned review results. Do NOT display review results to the user — they go into the Step 6 report. On failure: save error, continue to Step 6.
 
-**On success:**
-```
-✓ Step 5: PR reviewed
-  Issues found: $ISSUES_FOUND
-  Issues fixed: $ISSUES_FIXED
-  Status: $REVIEW_STATUS
-```
+### Step 6: Final Report (ONLY output shown to user)
 
-**On failure:** Report error (PR still exists for manual review)
-
----
-
-### Step 6: Report
+This is the ONLY step where you output to the user. Display all accumulated results:
 
 ```
 ═══════════════════════════════════════════════════════════════════
@@ -191,7 +141,7 @@ The `pr_reviewer` tool will:
 
 Worktree:  $WORKTREE_PATH
 Branch:    $BRANCH_NAME
-PR:        $PR_URL
+PR:        $PR_URL (or "N/A — no changes" or "N/A — creation failed")
 
 Audit:
   Projects: $PROJECTS_AUDITED
@@ -203,32 +153,28 @@ Review:
   Issues fixed: $ISSUES_FIXED
   Status: $REVIEW_STATUS
 
-Worktree kept at $WORKTREE_PATH for inspection or pr_fixer re-runs.
+Errors: $ERRORS (or "None")
+
+Worktree kept at $WORKTREE_PATH for inspection.
 To remove: git worktree remove $WORKTREE_PATH
-
 ═══════════════════════════════════════════════════════════════════
-```
-
-Return to original directory:
-```bash
-cd "$ORIGINAL_DIR"
 ```
 
 ---
 
-## Error Reference
+## Error Recovery
 
-| Step | Error | Fix |
-|------|-------|-----|
-| 0 | Not in repo root | `cd` to repo root |
-| 0 | gh not auth | `gh auth login` |
-| 0 | Dirty tree | Commit or stash |
-| 1 | Worktree creation failed | Check git status, disk space |
-| 1 | Setup script failed | Run manually in worktree |
-| 2 | Audit failed | Check MCP server connection |
-| 4 | Push failed | Check remote permissions |
-| 4 | PR creation failed | Create manually via `gh pr create` |
-| 5 | Review failed | PR exists, review manually |
+| Step | Error | Recovery |
+|------|-------|----------|
+| 0 | Not in repo root | Stop: `cd to repository root first` |
+| 0 | gh not auth | Stop: `Run gh auth login first` |
+| 0 | Dirty tree | Stop: `Commit or stash changes first` |
+| 1 | Worktree failed | Stop: check git status, disk space |
+| 2 | Audit failed | Save error, skip to Step 6 |
+| 4 | Push/PR failed | Save error, skip to Step 6 |
+| 5 | Review failed | Save error, continue to Step 6 |
+
+Non-fatal errors (Steps 2, 4, 5) are captured and reported in Step 6 — they do NOT stop the pipeline.
 
 ---
 
