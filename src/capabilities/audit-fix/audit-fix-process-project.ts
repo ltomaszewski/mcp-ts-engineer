@@ -113,6 +113,8 @@ export async function processProject(
   let depsFixCount = 0
   let lintFixCount = 0
 
+  const projectStartTime = Date.now()
+
   try {
     // PHASE 1: DEPS (first - before any other steps)
     // --------------------------------------------------
@@ -171,16 +173,13 @@ export async function processProject(
 
     // PHASE 3: AUDIT (separate - no lint data mixed in)
     // --------------------------------------------------
-    const projectStartTime = Date.now()
     while (projectIterations < maxIterPerProject && projectIterations < remainingCap) {
-      // Wall-clock guard: abort loop if project exceeds time limit
+      // Wall-clock guard: crash if project exceeds time limit
       const elapsed = Date.now() - projectStartTime
       if (elapsed > AUDIT_FIX_PROJECT_TIMEOUT_MS) {
-        lastAuditResult = {
-          ...lastAuditResult,
-          summary: `${lastAuditResult.summary} [Aborted: project exceeded ${AUDIT_FIX_PROJECT_TIMEOUT_MS / 60_000}min wall-clock limit]`,
-        }
-        break
+        throw new Error(
+          `Project ${projectPath} exceeded ${AUDIT_FIX_PROJECT_TIMEOUT_MS / 60_000}min wall-clock limit (elapsed: ${Math.round(elapsed / 60_000)}min)`,
+        )
       }
 
       projectIterations++
