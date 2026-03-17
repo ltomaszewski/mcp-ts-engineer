@@ -69,6 +69,93 @@ read_pkg_field() {
   fi
 }
 
+# --- Ensure MCP tool permissions in .claude/settings.local.json ---
+# Adds allow entries for all public MCP capabilities so they execute without
+# permission prompts (headless/autonomous mode).
+#
+# Arguments:
+#   $1 — MCP key (e.g. "ts-engineer"), used to build "mcp__<key>__<id>" tool names
+#   $2 — Path to settings.local.json (relative to cwd)
+#
+# Public capability IDs are listed here. When a new public capability is added
+# to src/capabilities/, add its id to this list.
+ensure_mcp_permissions() {
+  local mcp_key="$1"
+  local settings_file="$2"
+
+  # All public MCP capability IDs (visibility != 'internal')
+  local capability_ids=(
+    echo_agent
+    audit_fix
+    todo_reviewer
+    todo_code_writer
+    finalize
+    pr_reviewer
+    pr_fixer
+  )
+
+  # Build fully-qualified tool names: mcp__<key>__<id>
+  local mcp_tools=()
+  for id in "${capability_ids[@]}"; do
+    mcp_tools+=("mcp__${mcp_key}__${id}")
+  done
+
+  local has_jq=false
+  command -v jq &>/dev/null && has_jq=true
+
+  if [[ -f "$settings_file" ]]; then
+    # File exists — merge missing permissions
+    local added=0
+    for tool in "${mcp_tools[@]}"; do
+      if $has_jq; then
+        if ! jq -e ".permissions.allow | index(\"$tool\")" "$settings_file" &>/dev/null; then
+          jq ".permissions.allow += [\"$tool\"]" "$settings_file" > "${settings_file}.tmp" \
+            && mv "${settings_file}.tmp" "$settings_file"
+          added=$((added + 1))
+        fi
+      else
+        local result
+        result=$(TOOL_ENV="$tool" SETTINGS_ENV="$settings_file" node -e "
+          const fs = require('fs');
+          const tool = process.env.TOOL_ENV;
+          const path = process.env.SETTINGS_ENV;
+          const s = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (!s.permissions) s.permissions = {};
+          if (!s.permissions.allow) s.permissions.allow = [];
+          if (!s.permissions.allow.includes(tool)) {
+            s.permissions.allow.push(tool);
+            fs.writeFileSync(path, JSON.stringify(s, null, 2) + '\n');
+            process.stdout.write('added');
+          }
+        " 2>/dev/null || echo "")
+        [[ "$result" == "added" ]] && added=$((added + 1))
+      fi
+    done
+    if [[ $added -gt 0 ]]; then
+      echo "  Added $added MCP tool permissions to $settings_file"
+    else
+      echo "  All MCP tool permissions already configured"
+    fi
+  else
+    # File doesn't exist — create with MCP permissions
+    if $has_jq; then
+      local tools_json
+      tools_json=$(printf '%s\n' "${mcp_tools[@]}" | jq -R . | jq -s .)
+      jq -n --argjson tools "$tools_json" \
+        '{permissions:{allow:$tools,deny:[],ask:[]}}' > "$settings_file"
+    else
+      TOOLS_JSON_ENV="$(printf '"%s",' "${mcp_tools[@]}" | sed 's/,$//')" \
+      SETTINGS_ENV="$settings_file" node -e "
+        const fs = require('fs');
+        const tools = JSON.parse('[' + process.env.TOOLS_JSON_ENV + ']');
+        fs.writeFileSync(process.env.SETTINGS_ENV,
+          JSON.stringify({permissions:{allow:tools,deny:[],ask:[]}}, null, 2) + '\n');
+      "
+    fi
+    echo "  Created: $settings_file with ${#mcp_tools[@]} MCP tool permissions"
+  fi
+}
+
 # --- Idempotent symlink creation ---
 symlink_file() {
   local src="$1"

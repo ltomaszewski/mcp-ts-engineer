@@ -376,6 +376,14 @@ open('CLAUDE.md', 'w').write(content)
 fi
 
 # =============================================================================
+# Step 12b: Ensure MCP tool permissions in settings.local.json
+# =============================================================================
+echo ""
+echo "--- Configuring MCP tool permissions ---"
+
+ensure_mcp_permissions "$MCP_KEY" ".claude/settings.local.json"
+
+# =============================================================================
 # Step 13: Symlink setup-worktree.sh
 # =============================================================================
 echo ""

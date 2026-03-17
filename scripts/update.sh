@@ -122,6 +122,13 @@ for pkg_json in apps/*/package.json packages/*/package.json; do
   fi
 done
 
+# --- Ensure MCP tool permissions ---
+echo ""
+echo "--- Ensuring MCP tool permissions ---"
+
+MCP_KEY="ts-engineer"
+ensure_mcp_permissions "$MCP_KEY" ".claude/settings.local.json"
+
 # --- Rebuild submodule ---
 echo ""
 echo "--- Rebuilding submodule ---"
