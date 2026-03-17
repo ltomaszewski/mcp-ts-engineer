@@ -3,10 +3,7 @@
     "ts-engineer": {
       "type": "stdio",
       "command": "mcpmon",
-      "args": ["node", "{{BIN_PATH}}"],
-      "env": {
-        "MCPMON_WATCH": "{{WATCH_PATH}}"
-      }
+      "args": ["--watch", "{{WATCH_PATH}}", "--ext", "js,json", "--", "node", "{{BIN_PATH}}"]
     }
   }
 }

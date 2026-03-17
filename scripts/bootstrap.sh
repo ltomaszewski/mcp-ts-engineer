@@ -172,7 +172,7 @@ echo ""
 echo "--- Configuring .mcp.json ---"
 
 WATCH_PATH="${SUBMODULE_REL}/build"
-MCP_ENTRY="{\"type\":\"stdio\",\"command\":\"mcpmon\",\"args\":[\"node\",\"$BIN_PATH\"],\"env\":{\"MCPMON_WATCH\":\"$WATCH_PATH\"}}"
+MCP_ENTRY="{\"type\":\"stdio\",\"command\":\"mcpmon\",\"args\":[\"--watch\",\"$WATCH_PATH\",\"--ext\",\"js,json\",\"--\",\"node\",\"$BIN_PATH\"]}"
 
 if [[ -f ".mcp.json" ]]; then
   # Merge: add ts-engineer entry if not present
@@ -192,7 +192,7 @@ if [[ -f ".mcp.json" ]]; then
       const watchPath = process.env.WATCH_PATH_ENV;
       const mcp = JSON.parse(fs.readFileSync('.mcp.json', 'utf8'));
       if (!mcp.mcpServers[key]) {
-        mcp.mcpServers[key] = {type:'stdio',command:'mcpmon',args:['node',binPath],env:{MCPMON_WATCH:watchPath}};
+        mcp.mcpServers[key] = {type:'stdio',command:'mcpmon',args:['--watch',watchPath,'--ext','js,json','--','node',binPath]};
         fs.writeFileSync('.mcp.json', JSON.stringify(mcp, null, 2) + '\n');
         console.log('  Merged ' + key + ' into .mcp.json');
       } else {
@@ -596,6 +596,18 @@ echo "--- Installing root dependencies ---"
 
 npm install
 echo "  Root dependencies installed"
+
+# --- Ensure Bun is available (required by mcpmon) ---
+if ! command -v bun &>/dev/null; then
+  echo "  Installing Bun (required by mcpmon)..."
+  curl -fsSL https://bun.sh/install | bash
+  # Source shell profile to pick up bun in PATH for this session
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+  echo "  Bun installed"
+else
+  echo "  Bun already installed ($(bun --version))"
+fi
 
 # --- Ensure mcpmon is available (MCP hot-reload proxy) ---
 if ! command -v mcpmon &>/dev/null; then
