@@ -6,6 +6,7 @@ import { commitPromptV1 } from './commit.v1.js'
 import { orchestratorPromptV1 } from './orchestrator.v1.js'
 import { readmePromptV1 } from './readme.v1.js'
 import { testPromptV1 } from './test.v1.js'
+import { testPromptV2 } from './test.v2.js'
 
 /**
  * Orchestrator prompt registry for finalize capability.
@@ -30,6 +31,7 @@ export const auditPrompts: PromptRegistry = {
  */
 export const testPrompts: PromptRegistry = {
   v1: testPromptV1,
+  v2: testPromptV2,
 }
 
 /**
@@ -59,7 +61,7 @@ export const readmePrompts: PromptRegistry = {
 // Current versions for each prompt
 export const ORCHESTRATOR_CURRENT_VERSION = 'v1'
 export const AUDIT_CURRENT_VERSION = 'v2'
-export const TEST_CURRENT_VERSION = 'v1'
+export const TEST_CURRENT_VERSION = 'v2'
 export const CODEMAP_CURRENT_VERSION = 'v1'
 export const COMMIT_CURRENT_VERSION = 'v1'
 export const README_CURRENT_VERSION = 'v1'

@@ -11,6 +11,7 @@ import { lintFixPromptV1 } from './lint-fix.v1.js'
 import { lintScanPromptV1 } from './lint-scan.v1.js'
 import { plannerPromptV1 } from './planner.v1.js'
 import { testPromptV1 } from './test.v1.js'
+import { testPromptV2 } from './test.v2.js'
 
 /**
  * Planner prompt registry for audit-fix capability.
@@ -34,6 +35,7 @@ export const auditFixCommitPrompts: PromptRegistry = {
  */
 export const testPrompts: PromptRegistry = {
   v1: testPromptV1,
+  v2: testPromptV2,
 }
 
 /**
@@ -71,7 +73,7 @@ export const depsFixPrompts: PromptRegistry = {
 // Current versions for each prompt
 export const PLANNER_CURRENT_VERSION = 'v1'
 export const AUDIT_FIX_COMMIT_CURRENT_VERSION = 'v1'
-export const TEST_CURRENT_VERSION = 'v1'
+export const TEST_CURRENT_VERSION = 'v2'
 export const LINT_SCAN_CURRENT_VERSION = 'v1'
 export const LINT_FIX_CURRENT_VERSION = 'v1'
 export const DEPS_SCAN_CURRENT_VERSION = 'v1'

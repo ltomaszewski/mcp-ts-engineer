@@ -128,13 +128,14 @@ describe('finalizeTestStepCapability', () => {
       ).toBe(true)
     })
 
-    it('has prompt registry with v1', () => {
+    it('has prompt registry with v1 and v2', () => {
       expect(finalizeTestStepCapability.promptRegistry).toBeDefined()
       expect(finalizeTestStepCapability.promptRegistry.v1).toBeDefined()
+      expect(finalizeTestStepCapability.promptRegistry.v2).toBeDefined()
     })
 
-    it('has current prompt version v1', () => {
-      expect(finalizeTestStepCapability.currentPromptVersion).toBe('v1')
+    it('has current prompt version v2', () => {
+      expect(finalizeTestStepCapability.currentPromptVersion).toBe('v2')
     })
   })
 
