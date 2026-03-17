@@ -171,7 +171,8 @@ done
 echo ""
 echo "--- Configuring .mcp.json ---"
 
-MCP_ENTRY="{\"type\":\"stdio\",\"command\":\"node\",\"args\":[\"$BIN_PATH\"],\"env\":{}}"
+WATCH_PATH="${SUBMODULE_REL}/build"
+MCP_ENTRY="{\"type\":\"stdio\",\"command\":\"mcpmon\",\"args\":[\"node\",\"$BIN_PATH\"],\"env\":{\"MCPMON_WATCH\":\"$WATCH_PATH\"}}"
 
 if [[ -f ".mcp.json" ]]; then
   # Merge: add ts-engineer entry if not present
@@ -184,13 +185,14 @@ if [[ -f ".mcp.json" ]]; then
     fi
   else
     # Fallback: use node with env vars to avoid injection
-    MCP_KEY_ENV="$MCP_KEY" BIN_PATH_ENV="$BIN_PATH" node -e "
+    MCP_KEY_ENV="$MCP_KEY" BIN_PATH_ENV="$BIN_PATH" WATCH_PATH_ENV="$WATCH_PATH" node -e "
       const fs = require('fs');
       const key = process.env.MCP_KEY_ENV;
       const binPath = process.env.BIN_PATH_ENV;
+      const watchPath = process.env.WATCH_PATH_ENV;
       const mcp = JSON.parse(fs.readFileSync('.mcp.json', 'utf8'));
       if (!mcp.mcpServers[key]) {
-        mcp.mcpServers[key] = {type:'stdio',command:'node',args:[binPath],env:{}};
+        mcp.mcpServers[key] = {type:'stdio',command:'mcpmon',args:['node',binPath],env:{MCPMON_WATCH:watchPath}};
         fs.writeFileSync('.mcp.json', JSON.stringify(mcp, null, 2) + '\n');
         console.log('  Merged ' + key + ' into .mcp.json');
       } else {
@@ -199,7 +201,7 @@ if [[ -f ".mcp.json" ]]; then
     "
   fi
 else
-  sed "s|{{BIN_PATH}}|$BIN_PATH|g" "$TEMPLATE_DIR/mcp.json.template" > .mcp.json
+  sed -e "s|{{BIN_PATH}}|$BIN_PATH|g" -e "s|{{WATCH_PATH}}|$WATCH_PATH|g" "$TEMPLATE_DIR/mcp.json.template" > .mcp.json
   echo "  Created: .mcp.json"
 fi
 
@@ -594,6 +596,15 @@ echo "--- Installing root dependencies ---"
 
 npm install
 echo "  Root dependencies installed"
+
+# --- Ensure mcpmon is available (MCP hot-reload proxy) ---
+if ! command -v mcpmon &>/dev/null; then
+  echo "  Installing mcpmon (MCP hot-reload proxy)..."
+  npm install -g mcpmon
+  echo "  mcpmon installed"
+else
+  echo "  mcpmon already installed"
+fi
 
 # =============================================================================
 # Step 20: Build submodule

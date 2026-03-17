@@ -2,9 +2,11 @@
   "mcpServers": {
     "ts-engineer": {
       "type": "stdio",
-      "command": "node",
-      "args": ["{{BIN_PATH}}"],
-      "env": {}
+      "command": "mcpmon",
+      "args": ["node", "{{BIN_PATH}}"],
+      "env": {
+        "MCPMON_WATCH": "{{WATCH_PATH}}"
+      }
     }
   }
 }
