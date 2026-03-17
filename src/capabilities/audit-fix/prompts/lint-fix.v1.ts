@@ -90,7 +90,8 @@ If you could not fix the issues:
 - ONLY modify files listed in files_with_lint_errors
 - Keep changes minimal — fix lint issues, nothing more
 - Do NOT introduce new lint violations
-- If unsure about a fix, skip it and note it in the summary${cwd ? `\n- WORKING DIRECTORY: All file operations must use absolute paths rooted at \`${cwd}\`` : ''}
+- If unsure about a fix, skip it and note it in the summary
+- If any command appears to stall or produce no output, move on — do not wait indefinitely${cwd ? `\n- WORKING DIRECTORY: All file operations must use absolute paths rooted at \`${cwd}\`` : ''}
 </rules>`
 
     return {

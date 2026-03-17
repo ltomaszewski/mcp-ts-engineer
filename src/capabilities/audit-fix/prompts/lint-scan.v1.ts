@@ -92,6 +92,7 @@ If no lint script is available:
 <rules>
 - ALWAYS check package.json before running any commands
 - Capture BOTH stdout and stderr from lint command
+- If a lint command appears to produce no output or stalls, set lint_available: false and move on — do not wait indefinitely
 - Extract file paths from lint output (they usually appear at the start of error lines)
 - If lint command fails to run (not found, etc.), set lint_available: false
 - Include the FULL lint output in lint_report for debugging

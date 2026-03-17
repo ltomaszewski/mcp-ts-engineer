@@ -34,7 +34,9 @@ ${workspacesList}
 Your responsibilities:
 1. For each workspace in the list:
    - Navigate to the workspace directory
-   - Run: npm test
+   - First, check package.json to detect the test runner (jest or vitest)
+   - For jest projects, run: npm test -- --forceExit
+   - For vitest projects, run: npx vitest run
    - Capture the test results (pass/fail counts)
    - Record any test failures with details
 
@@ -64,9 +66,11 @@ Your responsibilities:
 
 Important guidelines:
 - Run tests sequentially (one workspace at a time)
+- ALWAYS use --forceExit with jest to prevent hanging on open handles (jest does not exit when async handles remain open)
+- NEVER run npm test without --forceExit for jest projects — this is the #1 cause of stuck audit runs
+- To detect the runner: check if package.json devDependencies contains "jest" or "jest-expo" (use --forceExit) vs "vitest" (use npx vitest run)
 - If a workspace has no tests, note that in failure_summary but count tests_total as 0 for that workspace
 - Extract test counts from npm test output (e.g., "Tests: 5 passed, 5 total")
-- Include test duration in failure_summary if available
 - Be specific about which workspace had which failures
 - If npm test command fails completely, set passed=false and explain in failure_summary
 
