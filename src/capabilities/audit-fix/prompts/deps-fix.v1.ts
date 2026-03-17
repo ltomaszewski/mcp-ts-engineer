@@ -130,7 +130,7 @@ If npm audit fix fails to run:
 - Run post-verification npm audit --json to get accurate remaining count
 - Calculate vulnerabilities_fixed = initial (${vulnerabilitiesFound}) - remaining
 - If npm audit fix fails to run, set fix_ran: false
-- If npm audit fix does not return within 3 minutes, consider it hung — kill it and set fix_ran: false
+- If npm audit fix appears to stall or produce no output, set fix_ran: false and move on — do not wait indefinitely
 - Include concise fix summary with counts (e.g., "Fixed 5/10 vulnerabilities, 5 remain")
 - Extract file names from git status output (look for modified files)
 </rules>`
