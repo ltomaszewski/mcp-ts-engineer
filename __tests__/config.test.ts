@@ -187,10 +187,10 @@ describe('CONFIG', () => {
       expect(MAX_TURNS).toBe(100)
     })
 
-    it('MAX_QUERY_BUDGET_USD is defined and equals 5.0', () => {
+    it('MAX_QUERY_BUDGET_USD is defined and equals 8.0', () => {
       expect(MAX_QUERY_BUDGET_USD).toBeDefined()
       expect(typeof MAX_QUERY_BUDGET_USD).toBe('number')
-      expect(MAX_QUERY_BUDGET_USD).toBe(5.0)
+      expect(MAX_QUERY_BUDGET_USD).toBe(8.0)
     })
 
     it('MAX_TIMEOUT_MS is defined and equals 600000', () => {

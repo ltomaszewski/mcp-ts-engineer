@@ -7,12 +7,14 @@
  * @internal Exported for audit-fix orchestrator use
  */
 
+import { execFileSync } from 'node:child_process'
 import { AUDIT_FIX_PROJECT_TIMEOUT_MS } from '../../config/constants.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import {
   AUDIT_STEP_RESULT_FALLBACK,
   DEPS_FIX_STEP_RESULT_FALLBACK,
   DEPS_SCAN_STEP_RESULT_FALLBACK,
+  ENG_FIX_RESULT_FALLBACK,
   invokeAuditStep,
   invokeCommitStep,
   invokeDepsFixStep,
@@ -27,10 +29,42 @@ import type {
   CommitResult,
   DepsFixStepResult,
   DepsScanStepResult,
+  EngFixResult,
   LintScanResult,
   ProjectResult,
   TestResult,
 } from './audit-fix.schema.js'
+
+/** Maximum retries for eng step when agent dies (e.g. context compaction) */
+const MAX_ENG_RETRIES = 1
+
+/**
+ * Detects files changed on disk via git, independent of agent self-reporting.
+ * Catches both tracked modifications and untracked new files within a project.
+ */
+function detectChangedFiles(cwd: string, projectPath: string): string[] {
+  try {
+    const diffOutput = execFileSync('git', ['diff', '--name-only', 'HEAD', '--', projectPath], {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 10_000,
+    }).trim()
+
+    const untrackedOutput = execFileSync(
+      'git',
+      ['ls-files', '--others', '--exclude-standard', '--', projectPath],
+      { cwd, encoding: 'utf-8', timeout: 10_000 },
+    ).trim()
+
+    const files = [
+      ...diffOutput.split('\n').filter(Boolean),
+      ...untrackedOutput.split('\n').filter(Boolean),
+    ]
+    return [...new Set(files)]
+  } catch {
+    return []
+  }
+}
 
 /**
  * Derives workspace list from project path for test execution.
@@ -168,16 +202,45 @@ export async function processProject(
         break
       }
 
-      const engResult = await invokeEngStep(
-        projectPath,
-        auditResult.summary,
-        auditResult.files_with_issues,
-        projectIterations,
-        cwd,
-        context,
-        testResult?.failure_summary,
-        specPath,
-      )
+      // Eng step with retry + git diff recovery
+      let engResult: EngFixResult = ENG_FIX_RESULT_FALLBACK
+      for (let attempt = 0; attempt <= MAX_ENG_RETRIES; attempt++) {
+        try {
+          engResult = await invokeEngStep(
+            projectPath,
+            auditResult.summary,
+            auditResult.files_with_issues,
+            projectIterations,
+            cwd,
+            context,
+            testResult?.failure_summary,
+            specPath,
+          )
+
+          if (engResult.files_modified.length > 0) break
+
+          // Agent returned empty — recover via git diff (e.g. after context compaction)
+          if (cwd) {
+            const gitFiles = detectChangedFiles(cwd, projectPath)
+            if (gitFiles.length > 0) {
+              engResult = {
+                status: 'success',
+                files_modified: gitFiles,
+                summary: `${engResult.summary} [recovered ${gitFiles.length} file(s) via git diff]`,
+              }
+              break
+            }
+          }
+
+          if (attempt < MAX_ENG_RETRIES) {
+            await new Promise((r) => setTimeout(r, 1000))
+          }
+        } catch {
+          if (attempt < MAX_ENG_RETRIES) {
+            await new Promise((r) => setTimeout(r, 1000))
+          }
+        }
+      }
 
       if (engResult.files_modified.length === 0) {
         break
@@ -187,11 +250,20 @@ export async function processProject(
       totalFixes += auditResult.fixes_applied
     }
 
+    // Deterministic commit: merge AI-reported files with actual git changes
+    let commitFiles = [...new Set(allFilesModified)]
+    if (cwd) {
+      const gitChangedFiles = detectChangedFiles(cwd, projectPath)
+      if (gitChangedFiles.length > 0) {
+        commitFiles = [...new Set([...commitFiles, ...gitChangedFiles])]
+      }
+    }
+
     let commitResult: CommitResult | null = null
-    if (allFilesModified.length > 0) {
+    if (commitFiles.length > 0) {
       commitResult = await invokeCommitStep(
         projectPath,
-        [...new Set(allFilesModified)],
+        commitFiles,
         lastAuditResult.summary,
         cwd,
         context,
@@ -206,7 +278,7 @@ export async function processProject(
         iterations: projectIterations,
         total_fixes: allPhaseFixes,
         final_audit_status: lastAuditResult.status,
-        files_modified: [...new Set(allFilesModified)],
+        files_modified: commitResult?.files_changed ?? [...new Set(commitFiles)],
         commit_sha: commitResult?.commit_sha ?? null,
         summary: lastAuditResult.summary,
         tests_passed: lastTestResult?.passed ?? null,

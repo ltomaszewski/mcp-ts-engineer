@@ -366,6 +366,7 @@ async function executePreflight(
   const result = (await context.invokeCapability('pr_preflight_step', {
     pr: input.pr,
     incremental: input.incremental,
+    cwd: input.cwd,
   })) as PreflightStepOutput
 
   if (!result.proceed || !result.pr_context) {

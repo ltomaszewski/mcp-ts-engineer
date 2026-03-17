@@ -46,6 +46,8 @@ export interface AIToolDefinition {
 
 /** AI model identifier */
 export type AIModel =
+  | 'claude-sonnet-4-6-20250415'
+  | 'claude-opus-4-6-20250415'
   | 'claude-3-5-sonnet-20241022'
   | 'claude-3-5-haiku-20241022'
   | 'claude-opus-4-20250514'

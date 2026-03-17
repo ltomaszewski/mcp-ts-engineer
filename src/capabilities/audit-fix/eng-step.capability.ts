@@ -118,7 +118,7 @@ export const auditFixEngStepCapability: CapabilityDefinition<EngStepInput, EngFi
   defaultRequestOptions: {
     model: 'sonnet',
     maxTurns: 100,
-    maxBudgetUsd: 5.0,
+    maxBudgetUsd: 8.0,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

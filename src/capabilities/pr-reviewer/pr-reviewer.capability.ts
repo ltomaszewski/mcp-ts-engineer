@@ -96,11 +96,12 @@ export const prReviewerCapability: CapabilityDefinition<PrReviewerInput, PrRevie
         errorName: error instanceof Error ? error.name : 'Error',
       })
 
-      // Return fallback with session cost
+      // Return fallback with session cost and error details
       const sessionCost = context.getSessionCost()
       return {
         ...PR_REVIEWER_OUTPUT_FALLBACK,
         cost_usd: sessionCost.totalCostUsd,
+        summary: `Orchestration failed: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
   },

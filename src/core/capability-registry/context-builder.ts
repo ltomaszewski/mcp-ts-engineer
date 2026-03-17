@@ -107,7 +107,7 @@ function propagateChildCost(
       deps.costTracker.recordChildCost(sessionId, invocationId, childCapabilityName, {
         id: `cost_child_${childSessionId}`,
         sid: sessionId,
-        model: (typeof model === 'string' ? model : 'claude-3-5-sonnet-20241022') as AIModel,
+        model: (typeof model === 'string' ? model : 'claude-sonnet-4-6-20250415') as AIModel,
         inputTokens,
         outputTokens,
         costUsd,

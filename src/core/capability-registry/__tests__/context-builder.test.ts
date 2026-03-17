@@ -154,7 +154,7 @@ describe('createCapabilityContext - model extraction', () => {
       'test-invocation-id',
       'child-capability',
       expect.objectContaining({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-6-20250415',
       }),
     )
   })
@@ -196,7 +196,7 @@ describe('createCapabilityContext - model extraction', () => {
       'test-invocation-id',
       'child-capability',
       expect.objectContaining({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-6-20250415',
       }),
     )
   })
