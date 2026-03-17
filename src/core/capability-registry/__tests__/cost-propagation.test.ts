@@ -708,7 +708,7 @@ describe('Cost Propagation Integration', () => {
       // Verify child cost entry uses default model (since _model was omitted)
       const childEntries = costTracker.getChildCostEntries(resultData.session_id as string)
       expect(childEntries.length).toBe(1)
-      expect(childEntries[0]?.model).toBe('claude-3-5-sonnet-20241022') // Fallback model
+      expect(childEntries[0]?.model).toBe('claude-sonnet-4-6-20250415') // Fallback model
     })
   })
 

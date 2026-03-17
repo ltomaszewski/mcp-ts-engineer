@@ -57,6 +57,7 @@ export const PrReviewerOutputSchema = z.object({
   worktree_path: z.string().optional(),
   round: z.number().min(1).optional(),
   last_reviewed_sha: z.string().optional(),
+  summary: z.string().optional(),
 })
 
 export type PrReviewerOutput = z.infer<typeof PrReviewerOutputSchema>

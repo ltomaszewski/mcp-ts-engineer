@@ -25,7 +25,7 @@ const PREFLIGHT_PROMPT_V1: PromptVersion = {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
       userPrompt: `# PR Preflight Checks
 
-You are performing preflight checks for PR "${data.pr}".
+You are performing preflight checks for PR "${data.pr}".${data.cwd ? `\n\nIMPORTANT: Run all git/gh commands from: ${data.cwd}` : ''}
 
 ## Tasks
 
@@ -108,7 +108,10 @@ export const prPreflightStepCapability: CapabilityDefinition<
     settingSources: ['user', 'project'],
     outputSchema: PREFLIGHT_OUTPUT_JSON_SCHEMA,
   },
-  preparePromptInput: (input: PreflightStepInput, _context: CapabilityContext) => input,
+  preparePromptInput: (input: PreflightStepInput, _context: CapabilityContext) => ({
+    ...input,
+    cwd: input.cwd,
+  }),
   processResult: (
     _input: PreflightStepInput,
     aiResult: AIQueryResult,
