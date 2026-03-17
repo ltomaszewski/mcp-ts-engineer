@@ -7,6 +7,7 @@
 
 import type { PhasePlan } from '../../capabilities/todo-code-writer/todo-code-writer.schema.js'
 import { resolveCwd } from '../../core/utils/cwd.js'
+import { buildTestCommand } from '../test-command.js'
 import { buildDevContext } from './dev-context.js'
 import {
   COMPONENT_CHECK_RULES,
@@ -221,7 +222,7 @@ ${skillLoadingSection}
 - WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${resolveCwd(input.cwd)}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
-- VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.
+- VERIFICATION: You MAY run tests but MUST use: cd <workspace> && ${buildTestCommand('jest')} (or Vitest equivalent). Run ONCE per workspace. NEVER re-run. NEVER use bare \`npm test\`.
 </rules>
 
 ${engineeringRulesSection}
@@ -323,8 +324,10 @@ ${skillLoadingSection}
    - Apply fixes according to audit findings
    - Verify fixes don't break functionality
 
-4. Run tests to verify fixes:
-   - npm test
+4. Run tests to verify fixes (detect runner from package.json devDependencies first):
+   - Jest (has "jest"/"jest-expo"): ${buildTestCommand('jest')}
+   - Vitest (has "vitest"): ${buildTestCommand('vitest')}
+   - Run ONCE. NEVER re-run. NEVER parse stdout text. Determine pass/fail from numFailedTests === 0. NEVER use the success field.
 
 5. Output result in JSON format:
 
@@ -347,7 +350,7 @@ ${skillLoadingSection}
 - WORKING DIRECTORY: Use absolute paths for all file operations. The monorepo root is at \`${resolveCwd(input.cwd)}\`.
 - PATH FORMAT: Use absolute paths or paths relative to the monorepo root starting with \`apps/\` or \`packages/\`.
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
-- VERIFICATION: You MAY use \`cd apps/X && npm test\` for running tests, but file paths must still be absolute or monorepo-rooted.
+- VERIFICATION: You MAY run tests but MUST use: cd <workspace> && ${buildTestCommand('jest')} (or Vitest equivalent). Run ONCE per workspace. NEVER re-run. NEVER use bare \`npm test\`.
 </rules>
 
 ${engineeringRulesSection}

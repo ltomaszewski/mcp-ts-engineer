@@ -7,25 +7,12 @@
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
 import { shellQuote } from '../../../core/utils/shell-safe.js'
 import { cwdPath, resolveCwd } from '../../../core/utils/cwd.js'
+import { buildTestCommand } from '../../../shared/test-command.js'
 
 interface TestPromptInput {
   project_path: string
   workspaces: string[]
   cwd?: string
-}
-
-/**
- * Builds the exact test command for a workspace based on runner type.
- * Jest: npm test -- --forceExit --json --outputFile=...
- * Vitest: npx vitest run --reporter=json --outputFile=...
- */
-function buildTestCommand(runner: 'jest' | 'vitest', outputFile: string): string {
-  const pythonExtract = `python3 -c "import json; d=json.load(open('${outputFile}')); print(json.dumps({'numFailedTests':d['numFailedTests'],'numPassedTests':d['numPassedTests'],'numTotalTests':d['numTotalTests'],'numFailedTestSuites':d['numFailedTestSuites'],'numTotalTestSuites':d['numTotalTestSuites']}))"`;
-
-  if (runner === 'jest') {
-    return `npm test -- --forceExit --json --outputFile=${outputFile} 2>/dev/null; ${pythonExtract}`
-  }
-  return `npx vitest run --reporter=json --outputFile=${outputFile} 2>/dev/null; ${pythonExtract}`
 }
 
 const testPromptV2: PromptVersion = {

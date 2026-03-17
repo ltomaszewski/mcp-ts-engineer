@@ -10,6 +10,7 @@ import type {
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { isValidPath, parseJsonSafe, shellQuote } from '../../core/utils/index.js'
+import { buildTestCommand } from '../../shared/test-command.js'
 import type { FixerValidateStepOutput } from './pr-fixer.schema.js'
 import {
   FIXER_VALIDATE_OUTPUT_JSON_SCHEMA,
@@ -108,9 +109,19 @@ Do NOT run \`npx tsc --noEmit\` at the monorepo root — this will use the root 
 ### 3. Run tests per workspace
 
 For each affected workspace:
-\`\`\`bash
-cd ${shellQuote(data.worktree_path)} && npm test -w <workspace> 2>&1 | tail -30
-\`\`\`
+1. Read \`<workspace>/package.json\` devDependencies to detect runner:
+   - "jest" or "jest-expo" → Jest
+   - "vitest" → Vitest
+2. Run tests ONCE per workspace (NEVER re-run, NEVER parse stdout text):
+
+   Jest:
+   \`\`\`bash
+   cd ${shellQuote(data.worktree_path)}/<workspace> && ${buildTestCommand('jest')}
+   \`\`\`
+   Vitest:
+   \`\`\`bash
+   cd ${shellQuote(data.worktree_path)}/<workspace> && ${buildTestCommand('vitest')}
+   \`\`\`
 
 ### 4. Determine results
 
