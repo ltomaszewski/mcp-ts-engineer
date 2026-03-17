@@ -46,7 +46,7 @@ describe('AuditFixInputSchema', () => {
     const result = AuditFixInputSchema.safeParse(input)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.max_iteration_per_project).toBe(3)
+      expect(result.data.max_iteration_per_project).toBe(2)
       expect(result.data.max_total_cap).toBe(10)
     }
   })

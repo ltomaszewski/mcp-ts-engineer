@@ -7,6 +7,7 @@
  * @internal Exported for audit-fix orchestrator use
  */
 
+import { AUDIT_FIX_PROJECT_TIMEOUT_MS } from '../../config/constants.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
 import {
   AUDIT_STEP_RESULT_FALLBACK,
@@ -136,7 +137,18 @@ export async function processProject(
 
     // PHASE 3: AUDIT (separate - no lint data mixed in)
     // --------------------------------------------------
+    const projectStartTime = Date.now()
     while (projectIterations < maxIterPerProject && projectIterations < remainingCap) {
+      // Wall-clock guard: abort loop if project exceeds time limit
+      const elapsed = Date.now() - projectStartTime
+      if (elapsed > AUDIT_FIX_PROJECT_TIMEOUT_MS) {
+        lastAuditResult = {
+          ...lastAuditResult,
+          summary: `${lastAuditResult.summary} [Aborted: project exceeded ${AUDIT_FIX_PROJECT_TIMEOUT_MS / 60_000}min wall-clock limit]`,
+        }
+        break
+      }
+
       projectIterations++
 
       const auditResult = await invokeAuditStep(projectPath, cwd, context)

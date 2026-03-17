@@ -125,6 +125,7 @@ If package-lock.json is missing in both locations or npm audit fails:
 - Parse "metadata.vulnerabilities" object from JSON output for severity counts
 - If npm audit returns non-zero exit code, it's OK - it means vulnerabilities were found
 - If npm audit fails to run (command not found, corrupted lock file), set audit_ran: false
+- If npm audit does not return within 3 minutes, consider it hung — kill it and set audit_ran: false
 - Include the FULL npm audit JSON output in audit_json field (escape quotes properly)
 - Total vulnerabilities = critical + high + moderate + low
 </rules>`

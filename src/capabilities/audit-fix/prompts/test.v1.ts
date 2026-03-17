@@ -34,7 +34,9 @@ ${workspacesList}
 Your responsibilities:
 1. For each workspace in the list:
    - Navigate to the workspace directory
-   - Run: npm test
+   - Run: npm test -- --forceExit
+   - If the test runner is vitest, use: npx vitest run instead (vitest exits cleanly by default)
+   - IMPORTANT: Always use --forceExit with jest to prevent hanging on open handles
    - Capture the test results (pass/fail counts)
    - Record any test failures with details
 
@@ -64,6 +66,8 @@ Your responsibilities:
 
 Important guidelines:
 - Run tests sequentially (one workspace at a time)
+- ALWAYS use --forceExit flag with jest to prevent processes from hanging on open handles
+- If a test command does not return within 5 minutes, consider it hung — kill it and report as failed
 - If a workspace has no tests, note that in failure_summary but count tests_total as 0 for that workspace
 - Extract test counts from npm test output (e.g., "Tests: 5 passed, 5 total")
 - Include test duration in failure_summary if available

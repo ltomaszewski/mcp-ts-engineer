@@ -6,7 +6,11 @@
  * Error response logic lives in invocation-handler.error.ts.
  */
 
-import { INVOCATION_HARD_TIMEOUT_MS, MAX_DAILY_BUDGET_USD } from '../../config/constants.js'
+import {
+  INVOCATION_HARD_TIMEOUT_MS,
+  MAX_DAILY_BUDGET_USD,
+  PROCESS_RESULT_TIMEOUT_MS,
+} from '../../config/constants.js'
 import type { AIModel, AIQueryResult } from '../ai-provider/ai-provider.types.js'
 import type { CostEntry } from '../cost/cost.types.js'
 import {
@@ -174,7 +178,13 @@ async function executeCapability(
   const costEntry = buildCostEntry(context.session.id, context.invocation.id, aiResult)
   deps.costTracker.recordCost(context.session.id, context.invocation.id, capabilityName, costEntry)
 
-  const output = await capability.processResult(validatedInput, aiResult, context)
+  const output = await Promise.race([
+    capability.processResult(validatedInput, aiResult, context),
+    rejectAfterTimeout(
+      PROCESS_RESULT_TIMEOUT_MS,
+      `Capability ${capabilityName} processResult exceeded ${PROCESS_RESULT_TIMEOUT_MS}ms timeout`,
+    ),
+  ])
 
   return { output, aiResult, costEntry }
 }
