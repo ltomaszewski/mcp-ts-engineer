@@ -598,13 +598,25 @@ npm install
 echo "  Root dependencies installed"
 
 # --- Ensure Bun is available (required by mcpmon) ---
+# NOTE: We use b17z/mcpmon (npm: mcpmon) — a Bun-based MCP hot-reload proxy.
+# This is NOT the same as neilopet/mcpmon (Node.js-based, different CLI syntax).
+# b17z/mcpmon requires Bun runtime because its entry point is a .ts file with
+# #!/usr/bin/env bun shebang. It uses --watch/--ext flags with -- separator:
+#   mcpmon --watch <dir> --ext js,json -- node server.js
+# The Node.js-based neilopet/mcpmon uses MCPMON_WATCH env var and no -- separator.
 if ! command -v bun &>/dev/null; then
   echo "  Installing Bun (required by mcpmon)..."
   curl -fsSL https://bun.sh/install | bash
-  # Source shell profile to pick up bun in PATH for this session
+  # Make bun available for this session
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$BUN_INSTALL/bin:$PATH"
-  echo "  Bun installed"
+  # Ensure bun is in PATH for login shells (needed by Claude Code MCP spawning)
+  PROFILE_FILE="${ZDOTDIR:-$HOME}/.zprofile"
+  if [ -f "$PROFILE_FILE" ] && ! grep -q 'BUN_INSTALL' "$PROFILE_FILE"; then
+    printf '\n# bun\nexport BUN_INSTALL="$HOME/.bun"\nexport PATH="$BUN_INSTALL/bin:$PATH"\n' >> "$PROFILE_FILE"
+    echo "  Added bun to $PROFILE_FILE for login shell PATH"
+  fi
+  echo "  Bun installed ($(bun --version))"
 else
   echo "  Bun already installed ($(bun --version))"
 fi
