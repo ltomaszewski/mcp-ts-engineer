@@ -30,6 +30,8 @@ Parse Knip output and identify safe removals:
 - **DO NOT** remove test files or test utilities
 - **DO NOT** remove types used only in type definitions (even if unused at runtime)
 - **DO NOT** remove files with side effects (e.g., polyfills, global setup)
+- **DO NOT** flag or remove files in \`.maestro/\`, \`scripts/\`, or config files (\`*.config.ts\`, \`*.config.js\`, \`metro.config.js\`, etc.)
+- **DO NOT** flag or remove standalone \`.js\`/\`.mjs\` files outside \`src/\` — these are infrastructure scripts invoked by tooling, not TypeScript imports
 
 ## Output Format
 Return a JSON object with this structure:

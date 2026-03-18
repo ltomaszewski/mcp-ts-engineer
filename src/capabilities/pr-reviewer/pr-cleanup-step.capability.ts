@@ -56,6 +56,19 @@ Changed workspaces: ${workspaces.length > 0 ? workspaces.join(', ') : 'unknown'}
 - **NEVER create files in the main repo root** (parent of .worktrees/)
 - If a tool or config file is missing in the worktree, skip that step — do NOT create it
 
+## Scope: TypeScript files ONLY
+
+This step focuses exclusively on **TypeScript source files** (.ts, .tsx).
+**NEVER delete or modify** any of the following — even if knip reports them as unused:
+- \`.maestro/\` directories and all contents (E2E test helpers)
+- \`scripts/\` directories and all contents (build/CI scripts)
+- Config files: \`*.config.ts\`, \`*.config.js\`, \`*.config.mjs\`, \`metro.config.js\`, \`knip.config.ts\`, \`babel.config.*\`, \`jest.config.*\`, \`vitest.config.*\`
+- Standalone \`.js\` / \`.mjs\` files not part of the TypeScript build graph
+- Validation/phase files (e.g. \`validate-*.ts\`)
+- Any file outside \`src/\` directories
+
+These files are infrastructure — invoked by tooling, CI, or test runners, not imported by app code.
+
 ## Tasks
 
 1. **Run knip** (dead code detector) scoped to changed workspaces:
@@ -65,13 +78,14 @@ Changed workspaces: ${workspaces.length > 0 ? workspaces.join(', ') : 'unknown'}
    If knip fails (missing config, module errors), skip it and report 0 unused exports.
 
 2. **Analyze knip output** (only if step 1 succeeded):
-   - Unused exports
+   - Unused exports in TypeScript source files
    - Unused dependencies
-   - Unreachable code
+   - **Ignore** any knip findings for files listed in the "Scope" section above
 
 3. **Remove dead code** (if safe):
-   - Unused imports
-   - Unused variables
+   - Unused imports in .ts/.tsx files
+   - Unused variables in .ts/.tsx files
+   - **NEVER delete entire files** — only remove unused exports/imports within files
    - DO NOT remove if unsure
 
 4. **Run type check** in the affected workspace:
