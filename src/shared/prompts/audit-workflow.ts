@@ -6,6 +6,7 @@
  */
 
 import { resolveCwd } from '../../core/utils/cwd.js'
+import { buildTestInstruction } from '../test-command.js'
 import {
   AUDIT_PHASE_KB_AND_SKILLS,
   MAESTRO_RULES,
@@ -159,8 +160,8 @@ FOR each autoFixable violation:
 Bash("npx tsc --noEmit")
   IF fail: fix up to 3x, then record failure and proceed
 
-Bash("npm test")
-  IF fail: list failures
+${buildTestInstruction()}
+  IF fail: list failures from the JSON output
 
 ---
 

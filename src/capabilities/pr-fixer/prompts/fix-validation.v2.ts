@@ -3,6 +3,8 @@
  * Sonnet-optimized: XML-structured, project-context-aware.
  */
 
+import { buildTestCommand } from '../../../shared/test-command.js'
+
 export function buildFixValidationPromptV2(
   worktreePath: string,
   errorSummary: string,
@@ -39,7 +41,9 @@ Fix these errors while preserving the intent of the original fixes.
    - Test failures: update tests to match new behavior, OR fix code if the test was correct
    - Lint errors: run the project linter with auto-fix (e.g. \`npx biome check --write\`)
 4. Verify fixes:
-   - Run \`npm test -w <workspace>\` to confirm tests pass
+   - Run tests ONCE per workspace (NEVER re-run, NEVER parse stdout text): detect runner from devDependencies ("jest"/"jest-expo" → Jest, "vitest" → Vitest), then:
+     Jest: \`cd <workspace> && ${buildTestCommand('jest')}\`
+     Vitest: \`cd <workspace> && ${buildTestCommand('vitest')}\`
    - Run \`npx tsc --noEmit -p <workspace>/tsconfig.json\` to confirm types pass
 5. Track all files you modified
 </instructions>

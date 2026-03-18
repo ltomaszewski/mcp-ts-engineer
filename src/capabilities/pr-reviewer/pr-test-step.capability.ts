@@ -5,6 +5,7 @@ import type {
 } from '../../core/capability-registry/capability-registry.types.js'
 import type { PromptRegistry, PromptVersion } from '../../core/prompt/prompt.types.js'
 import { parseJsonSafe, parseXmlBlock, shellQuote } from '../../core/utils/index.js'
+import { buildTestCommand } from '../../shared/test-command.js'
 import type { TestStepInput, TestStepOutput } from './pr-reviewer.schema.js'
 import {
   TEST_OUTPUT_JSON_SCHEMA,
@@ -38,10 +39,17 @@ ${data.files_changed.map((f) => `- ${f}`).join('\n')}
    - Parse file paths to identify apps/packages
    - Examples: apps/my-server, packages/types
 
-2. **Run tests for each workspace**:
+2. **Run tests for each workspace** — detect runner from package.json first:
+   Read \`<workspace>/package.json\` devDependencies: "jest"/"jest-expo" → Jest, "vitest" → Vitest.
+   Run ONCE per workspace (NEVER re-run, NEVER parse stdout text):
+
+   Jest:
    \`\`\`bash
-   cd ${shellQuote(data.worktree_path)}
-   npm test -w <workspace>
+   cd ${shellQuote(data.worktree_path)}/<workspace> && ${buildTestCommand('jest')}
+   \`\`\`
+   Vitest:
+   \`\`\`bash
+   cd ${shellQuote(data.worktree_path)}/<workspace> && ${buildTestCommand('vitest')}
    \`\`\`
 
 3. **Analyze results**:
