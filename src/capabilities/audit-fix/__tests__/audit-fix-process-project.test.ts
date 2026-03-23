@@ -2,10 +2,11 @@ import { type MockInstance, vi } from 'vitest'
 
 /**
  * Integration tests for processProject orchestration.
- * Tests lint phase execution, counter accuracy, and fix tracking across all phases.
+ * Tests lint phase execution, counter accuracy, fix tracking, and fatal error propagation.
  */
 
 import type { CapabilityContext } from '../../../core/capability-registry/capability-registry.types.js'
+import { CapabilityError, ServerShuttingDownError } from '../../../core/errors.js'
 import type {
   AuditStepResult,
   DepsFixStepResult,
@@ -680,5 +681,171 @@ describe('Process Project - Lint Integration', () => {
       expect(result.final_audit_status).toBe('fail')
       expect(result.total_fixes).toBe(1)
     })
+  })
+})
+
+describe('Process Project - Fatal Error Propagation', () => {
+  let mockContext: CapabilityContext
+  let invokeSpy: MockInstance<typeof mockContext.invokeCapability>
+
+  beforeEach(() => {
+    invokeSpy = vi.fn<typeof mockContext.invokeCapability>()
+    mockContext = {
+      invokeCapability: invokeSpy,
+    } as unknown as CapabilityContext
+  })
+
+  it('re-throws ServerShuttingDownError from deps scan (catch #1)', async () => {
+    invokeSpy.mockRejectedValueOnce(new ServerShuttingDownError('shutting down'))
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow(ServerShuttingDownError)
+  })
+
+  it('re-throws fatal "aborted by user" from deps fix (catch #2)', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 3,
+      vulnerabilities_by_severity: { critical: 1, high: 1, moderate: 1, low: 0 },
+      audit_json: '{}',
+    }
+    invokeSpy
+      .mockResolvedValueOnce(depsScan) // deps scan succeeds
+      .mockRejectedValueOnce(new Error('Claude Code process aborted by user')) // deps fix fatal
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow('aborted by user')
+  })
+
+  it('re-throws fatal error from lint scan (catch #3)', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 0,
+      vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+      audit_json: '',
+    }
+    invokeSpy
+      .mockResolvedValueOnce(depsScan)
+      .mockRejectedValueOnce(new ServerShuttingDownError('shutting down'))
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow(ServerShuttingDownError)
+  })
+
+  it('re-throws CapabilityError wrapping fatal message from lint fix (catch #4)', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 0,
+      vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+      audit_json: '',
+    }
+    const lintScan: LintScanResult = {
+      lint_available: true,
+      lint_passed: false,
+      error_count: 1,
+      warning_count: 0,
+      lint_report: 'errors',
+      files_with_lint_errors: ['a.ts'],
+    }
+    invokeSpy
+      .mockResolvedValueOnce(depsScan)
+      .mockResolvedValueOnce(lintScan)
+      .mockRejectedValueOnce(
+        new CapabilityError('Child capability lint_fix failed: Claude Code process aborted by user'),
+      )
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow('aborted by user')
+  })
+
+  it('re-throws fatal error from outer catch (audit step throws fatal)', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 0,
+      vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+      audit_json: '',
+    }
+    const lintScan: LintScanResult = {
+      lint_available: false,
+      lint_passed: true,
+      error_count: 0,
+      warning_count: 0,
+      lint_report: '',
+      files_with_lint_errors: [],
+    }
+    invokeSpy
+      .mockResolvedValueOnce(depsScan)
+      .mockResolvedValueOnce(lintScan)
+      .mockRejectedValueOnce(new ServerShuttingDownError('shutting down')) // audit step
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow(ServerShuttingDownError)
+  })
+
+  it('swallows transient error and returns graceful fallback', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 0,
+      vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+      audit_json: '',
+    }
+    const lintScan: LintScanResult = {
+      lint_available: false,
+      lint_passed: true,
+      error_count: 0,
+      warning_count: 0,
+      lint_report: '',
+      files_with_lint_errors: [],
+    }
+    invokeSpy
+      .mockResolvedValueOnce(depsScan)
+      .mockResolvedValueOnce(lintScan)
+      .mockRejectedValueOnce(new Error('network timeout')) // transient audit error
+
+    const { result } = await processProject('apps/test', 5, 10, '/cwd', mockContext, undefined)
+    expect(result.final_audit_status).toBe('fail')
+    expect(result.summary).toContain('network timeout')
+  })
+
+  it('logs WARN to stderr when step error is caught', async () => {
+    // Fresh spy within the test to avoid interference
+    const localSpy = vi.spyOn(process.stderr, 'write')
+    const lintScan: LintScanResult = {
+      lint_available: false,
+      lint_passed: true,
+      error_count: 0,
+      warning_count: 0,
+      lint_report: '',
+      files_with_lint_errors: [],
+    }
+    const auditResult: AuditStepResult = {
+      status: 'pass',
+      issues_remaining: 0,
+      files_with_issues: [],
+      fixes_applied: 0,
+      tsc_passed: true,
+      summary: 'All clean',
+    }
+    const testResult = { passed: true, tests_total: 1, tests_failed: 0, failure_summary: '', workspaces_tested: ['apps/test'] }
+
+    // deps scan throws transient, then lint scan + audit succeed
+    invokeSpy
+      .mockRejectedValueOnce(new Error('some transient error'))
+      .mockResolvedValueOnce(lintScan)
+      .mockResolvedValueOnce(auditResult)
+      .mockResolvedValueOnce(testResult)
+
+    await processProject('apps/test', 5, 10, '/cwd', mockContext, undefined)
+
+    expect(localSpy).toHaveBeenCalled()
+    const logged = localSpy.mock.calls.find((c) => String(c[0]).includes('WARN'))
+    expect(logged).toBeDefined()
+    expect(String(logged?.[0])).toContain('deps_scan')
+    localSpy.mockRestore()
   })
 })

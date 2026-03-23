@@ -167,36 +167,50 @@ async function executeCapability(
 
   const mergedRequest = mergeAndValidateAIQueryRequest(capability, builtPrompt, validatedInput)
 
-  const aiResult = await Promise.race([
-    deps.aiProvider.query(mergedRequest),
-    rejectAfterTimeout(
-      INVOCATION_HARD_TIMEOUT_MS,
-      `Capability ${capabilityName} exceeded ${INVOCATION_HARD_TIMEOUT_MS}ms hard timeout`,
-    ),
-  ])
+  const queryTimeout = createClearableTimeout(
+    INVOCATION_HARD_TIMEOUT_MS,
+    `Capability ${capabilityName} exceeded ${INVOCATION_HARD_TIMEOUT_MS}ms hard timeout`,
+  )
+  let aiResult: AIQueryResult
+  try {
+    aiResult = await Promise.race([deps.aiProvider.query(mergedRequest), queryTimeout.promise])
+  } finally {
+    queryTimeout.clear()
+  }
 
   const costEntry = buildCostEntry(context.session.id, context.invocation.id, aiResult)
   deps.costTracker.recordCost(context.session.id, context.invocation.id, capabilityName, costEntry)
 
-  const output = await Promise.race([
-    capability.processResult(validatedInput, aiResult, context),
-    rejectAfterTimeout(
-      PROCESS_RESULT_TIMEOUT_MS,
-      `Capability ${capabilityName} processResult exceeded ${PROCESS_RESULT_TIMEOUT_MS}ms timeout`,
-    ),
-  ])
+  const processTimeout = createClearableTimeout(
+    PROCESS_RESULT_TIMEOUT_MS,
+    `Capability ${capabilityName} processResult exceeded ${PROCESS_RESULT_TIMEOUT_MS}ms timeout`,
+  )
+  let output: unknown
+  try {
+    output = await Promise.race([
+      capability.processResult(validatedInput, aiResult, context),
+      processTimeout.promise,
+    ])
+  } finally {
+    processTimeout.clear()
+  }
 
   return { output, aiResult, costEntry }
 }
 
 /**
- * Returns a promise that rejects after the given timeout.
- * Used with Promise.race as a hard timeout for capability execution.
+ * Creates a clearable timeout for use with Promise.race.
+ * The timer MUST be cleared after the race resolves to prevent event loop leaks.
  */
-function rejectAfterTimeout(ms: number, message: string): Promise<never> {
-  return new Promise((_, reject) => {
-    setTimeout(() => reject(new AIProviderError(message)), ms)
+function createClearableTimeout(
+  ms: number,
+  message: string,
+): { promise: Promise<never>; clear: () => void } {
+  let timer: ReturnType<typeof setTimeout>
+  const promise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new AIProviderError(message)), ms)
   })
+  return { promise, clear: () => clearTimeout(timer) }
 }
 
 /**
