@@ -76,7 +76,7 @@ export const CUSTOM_TOOL_TIMEOUT_MS = 10000
 export const SDK_IDLE_TIMEOUT_MS = 900_000 // 15 min — no SDK message = assume dead (max query 7.6m + API stall buffer)
 export const SDK_HARD_TIMEOUT_MS = 1_800_000 // 30 min — absolute max per query
 export const INVOCATION_HARD_TIMEOUT_MS = 2_700_000 // 45 min — max per capability invocation (P99=37.8m + 20%)
-export const PROCESS_RESULT_TIMEOUT_MS = 36_000_000 // 10 hr — safety net only; per-project timeout is the real guard
+export const PROCESS_RESULT_TIMEOUT_MS = 10_800_000 // 3 hr — safety net; per-project timeout is the real guard
 
 /** Per-project wall-clock timeout for audit-fix (all phases: deps, lint, audit loop, commit) */
 export const AUDIT_FIX_PROJECT_TIMEOUT_MS = 3_600_000 // 60 min — max elapsed time per project in audit-fix

@@ -10,6 +10,7 @@
 import { execFileSync } from 'node:child_process'
 import { AUDIT_FIX_PROJECT_TIMEOUT_MS } from '../../config/constants.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { isFatalError } from '../../core/errors.js'
 import {
   AUDIT_STEP_RESULT_FALLBACK,
   DEPS_FIX_STEP_RESULT_FALLBACK,
@@ -37,6 +38,40 @@ import type {
 
 /** Maximum retries for eng step when agent dies (e.g. context compaction) */
 const MAX_ENG_RETRIES = 1
+
+/** Check wall-clock timeout and throw if exceeded */
+function checkProjectTimeout(projectStartTime: number, projectPath: string): void {
+  const elapsed = Date.now() - projectStartTime
+  if (elapsed > AUDIT_FIX_PROJECT_TIMEOUT_MS) {
+    throw new Error(
+      `Project ${projectPath} exceeded ${AUDIT_FIX_PROJECT_TIMEOUT_MS / 60_000}min wall-clock limit (elapsed: ${Math.round(elapsed / 60_000)}min)`,
+    )
+  }
+}
+
+/** Log error context and re-throw if fatal */
+function handleStepError(
+  error: unknown,
+  projectPath: string,
+  phase: string,
+  step: string,
+  projectStartTime: number,
+): void {
+  const elapsed = Math.round((Date.now() - projectStartTime) / 1000)
+  const msg = error instanceof Error ? error.message : String(error)
+  // Structured WARN log to stderr (no logger available in processProject scope)
+  process.stderr.write(
+    JSON.stringify({
+      level: 'WARN',
+      msg: `audit-fix step error: ${msg}`,
+      project: projectPath,
+      phase,
+      step,
+      elapsed_s: elapsed,
+    }) + '\n',
+  )
+  if (isFatalError(error)) throw error
+}
 
 /**
  * Detects files changed on disk via git, independent of agent self-reporting.
@@ -118,11 +153,12 @@ export async function processProject(
   try {
     // PHASE 1: DEPS (first - before any other steps)
     // --------------------------------------------------
+    checkProjectTimeout(projectStartTime, projectPath)
     let depsScanResult: DepsScanStepResult = DEPS_SCAN_STEP_RESULT_FALLBACK
     try {
       depsScanResult = await invokeDepsScanStep(projectPath, cwd, context)
-    } catch {
-      // Non-blocking: continue with fallback if deps scan fails
+    } catch (error) {
+      handleStepError(error, projectPath, 'deps', 'deps_scan', projectStartTime)
       depsScanResult = DEPS_SCAN_STEP_RESULT_FALLBACK
     }
 
@@ -139,18 +175,19 @@ export async function processProject(
         // Track modified files (prefixed with projectPath) and fix count
         allFilesModified.push(...depsFixResult.files_modified.map((f) => `${projectPath}/${f}`))
         depsFixCount += depsFixResult.vulnerabilities_fixed
-      } catch {
-        // Non-blocking: deps fix failure doesn't stop workflow
+      } catch (error) {
+        handleStepError(error, projectPath, 'deps', 'deps_fix', projectStartTime)
       }
     }
 
     // PHASE 2: LINT (after deps, before audit)
     // --------------------------------------------------
+    checkProjectTimeout(projectStartTime, projectPath)
     let lintScanResult: LintScanResult = LINT_SCAN_RESULT_FALLBACK
     try {
       lintScanResult = await invokeLintScanStep(projectPath, cwd, context)
-    } catch {
-      // Non-blocking: continue with fallback if lint scan fails
+    } catch (error) {
+      handleStepError(error, projectPath, 'lint', 'lint_scan', projectStartTime)
       lintScanResult = LINT_SCAN_RESULT_FALLBACK
     }
 
@@ -166,21 +203,15 @@ export async function processProject(
         )
         allFilesModified.push(...lintFixResult.files_modified)
         lintFixCount += lintFixResult.files_modified.length
-      } catch {
-        // Non-blocking: lint fix failure doesn't stop audit
+      } catch (error) {
+        handleStepError(error, projectPath, 'lint', 'lint_fix', projectStartTime)
       }
     }
 
     // PHASE 3: AUDIT (separate - no lint data mixed in)
     // --------------------------------------------------
     while (projectIterations < maxIterPerProject && projectIterations < remainingCap) {
-      // Wall-clock guard: crash if project exceeds time limit
-      const elapsed = Date.now() - projectStartTime
-      if (elapsed > AUDIT_FIX_PROJECT_TIMEOUT_MS) {
-        throw new Error(
-          `Project ${projectPath} exceeded ${AUDIT_FIX_PROJECT_TIMEOUT_MS / 60_000}min wall-clock limit (elapsed: ${Math.round(elapsed / 60_000)}min)`,
-        )
-      }
+      checkProjectTimeout(projectStartTime, projectPath)
 
       projectIterations++
 
@@ -234,7 +265,8 @@ export async function processProject(
           if (attempt < MAX_ENG_RETRIES) {
             await new Promise((r) => setTimeout(r, 1000))
           }
-        } catch {
+        } catch (error) {
+          handleStepError(error, projectPath, 'audit', 'eng_fix', projectStartTime)
           if (attempt < MAX_ENG_RETRIES) {
             await new Promise((r) => setTimeout(r, 1000))
           }
@@ -285,6 +317,9 @@ export async function processProject(
       iterationsUsed: projectIterations,
     }
   } catch (error) {
+    // CRITICAL: re-throw fatal errors before building fallback result
+    if (isFatalError(error)) throw error
+
     const allPhaseFixes = totalFixes + depsFixCount + lintFixCount
     const errorMsg = error instanceof Error ? error.message : String(error)
     return {

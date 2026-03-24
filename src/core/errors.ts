@@ -147,6 +147,27 @@ export class SubagentError extends FrameworkError {
   }
 }
 
+/**
+ * Determines if an error is fatal and should stop the orchestrator immediately.
+ * Uses instanceof for typed errors and regex fallback for errors that cross
+ * the MCP serialization boundary (where CapabilityError wrapping loses type info).
+ */
+export function isFatalError(error: unknown): boolean {
+  if (error == null) return false
+
+  // Typed checks (internal errors we control)
+  if (error instanceof ServerShuttingDownError) return true
+
+  // Walk cause chain
+  if (error instanceof Error && error.cause) {
+    if (isFatalError(error.cause)) return true
+  }
+
+  // Regex fallback (SDK errors crossing MCP serialization boundary)
+  const msg = error instanceof Error ? error.message : String(error)
+  return /aborted by user|process exited|server.*shutting down/i.test(msg)
+}
+
 /** Server is shutting down, cannot accept new requests */
 export class ServerShuttingDownError extends FrameworkError {
   constructor(message: string, options?: { cause?: unknown }) {

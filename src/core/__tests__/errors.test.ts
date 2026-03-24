@@ -14,11 +14,13 @@ import {
   PromptError,
   ResourceError,
   SandboxError,
+  ServerShuttingDownError,
   SessionError,
   SubagentError,
   TimeoutError,
   ToolError,
   ValidationError,
+  isFatalError,
 } from '../errors.js'
 
 describe('FrameworkError', () => {
@@ -174,5 +176,74 @@ describe('SubagentError', () => {
     expect(error.message).toBe('Subagent execution failed')
     expect(error.name).toBe('SubagentError')
     expect(error).toBeInstanceOf(FrameworkError)
+  })
+})
+
+describe('isFatalError', () => {
+  describe('returns true for fatal errors', () => {
+    it('ServerShuttingDownError (instanceof)', () => {
+      expect(isFatalError(new ServerShuttingDownError('shutting down'))).toBe(true)
+    })
+
+    it('error message containing "aborted by user"', () => {
+      expect(isFatalError(new Error('Claude Code process aborted by user'))).toBe(true)
+    })
+
+    it('error message containing "process exited"', () => {
+      expect(isFatalError(new Error('process exited unexpectedly'))).toBe(true)
+    })
+
+    it('error message containing "shutting down"', () => {
+      expect(isFatalError(new Error('Server is shutting down'))).toBe(true)
+    })
+
+    it('CapabilityError wrapping fatal message (MCP serialization boundary)', () => {
+      const wrapped = new CapabilityError(
+        'Child capability lint_fix_step failed: Claude Code process aborted by user',
+      )
+      expect(isFatalError(wrapped)).toBe(true)
+    })
+
+    it('nested cause chain with fatal error at depth 2', () => {
+      const root = new ServerShuttingDownError('shutting down')
+      const mid = new AIProviderError('query failed', { cause: root })
+      const outer = new CapabilityError('child failed', { cause: mid })
+      expect(isFatalError(outer)).toBe(true)
+    })
+
+    it('case-insensitive matching', () => {
+      expect(isFatalError(new Error('ABORTED BY USER'))).toBe(true)
+      expect(isFatalError(new Error('Process Exited'))).toBe(true)
+    })
+  })
+
+  describe('returns false for transient/non-fatal errors', () => {
+    it('generic Error', () => {
+      expect(isFatalError(new Error('network timeout'))).toBe(false)
+    })
+
+    it('FrameworkError without fatal message', () => {
+      expect(isFatalError(new FrameworkError('something broke'))).toBe(false)
+    })
+
+    it('null', () => {
+      expect(isFatalError(null)).toBe(false)
+    })
+
+    it('undefined', () => {
+      expect(isFatalError(undefined)).toBe(false)
+    })
+
+    it('string (non-fatal)', () => {
+      expect(isFatalError('random error string')).toBe(false)
+    })
+
+    it('ETIMEDOUT (transient network error)', () => {
+      expect(isFatalError(new Error('ETIMEDOUT'))).toBe(false)
+    })
+
+    it('CapabilityError with non-fatal message', () => {
+      expect(isFatalError(new CapabilityError('Child capability failed: lint errors'))).toBe(false)
+    })
   })
 })
