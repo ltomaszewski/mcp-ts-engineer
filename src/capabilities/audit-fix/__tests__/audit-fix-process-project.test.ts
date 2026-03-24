@@ -787,6 +787,43 @@ describe('Process Project - Fatal Error Propagation', () => {
     ).rejects.toThrow(ServerShuttingDownError)
   })
 
+  it('re-throws fatal error from eng step retry loop (catch #6)', async () => {
+    const depsScan: DepsScanStepResult = {
+      audit_ran: true,
+      vulnerabilities_found: 0,
+      vulnerabilities_by_severity: { critical: 0, high: 0, moderate: 0, low: 0 },
+      audit_json: '',
+    }
+    const lintScan: LintScanResult = {
+      lint_available: false,
+      lint_passed: true,
+      error_count: 0,
+      warning_count: 0,
+      lint_report: '',
+      files_with_lint_errors: [],
+    }
+    const failAudit: AuditStepResult = {
+      status: 'fail',
+      issues_remaining: 3,
+      files_with_issues: ['src/a.ts'],
+      fixes_applied: 0,
+      tsc_passed: false,
+      summary: '3 issues',
+    }
+    const failTest = { passed: false, tests_total: 1, tests_failed: 1, failure_summary: 'fail', workspaces_tested: ['apps/test'] }
+
+    invokeSpy
+      .mockResolvedValueOnce(depsScan)
+      .mockResolvedValueOnce(lintScan)
+      .mockResolvedValueOnce(failAudit) // audit step
+      .mockResolvedValueOnce(failTest)  // test step
+      .mockRejectedValueOnce(new Error('Claude Code process aborted by user')) // eng step fatal
+
+    await expect(
+      processProject('apps/test', 5, 10, '/cwd', mockContext, undefined),
+    ).rejects.toThrow('aborted by user')
+  })
+
   it('swallows transient error and returns graceful fallback', async () => {
     const depsScan: DepsScanStepResult = {
       audit_ran: true,

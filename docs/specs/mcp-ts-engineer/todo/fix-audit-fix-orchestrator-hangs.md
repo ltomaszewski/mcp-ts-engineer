@@ -2,7 +2,7 @@
 project: mcp-ts-engineer
 path: packages/mcp-ts-engineer
 type: fix
-status: DRAFT
+status: READY
 created: 2026-03-24
 appetite: 1-2 days
 shaped: true

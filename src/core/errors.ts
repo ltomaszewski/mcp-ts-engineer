@@ -165,7 +165,7 @@ export function isFatalError(error: unknown): boolean {
 
   // Regex fallback (SDK errors crossing MCP serialization boundary)
   const msg = error instanceof Error ? error.message : String(error)
-  return /aborted by user|process exited|shutting down/i.test(msg)
+  return /aborted by user|process exited|server.*shutting down/i.test(msg)
 }
 
 /** Server is shutting down, cannot accept new requests */
