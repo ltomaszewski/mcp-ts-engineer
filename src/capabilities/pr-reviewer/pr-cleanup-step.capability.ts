@@ -31,12 +31,14 @@ const CLEANUP_PROMPT_V1: PromptVersion = {
     ]
 
     const quotedPath = shellQuote(data.worktree_path)
+    // Read workspace name from package.json at runtime — knip -W expects
+    // a package name (e.g. @mellow/app), not a directory path.
     const knipCommands =
       workspaces.length > 0
         ? workspaces
             .map(
               (ws) =>
-                `cd ${quotedPath} && npx knip --workspace './${ws}' --no-exit-code 2>&1 || true`,
+                `cd ${quotedPath} && WS_NAME=$(node -e "console.log(require('./${ws}/package.json').name)") && npx knip -W "$WS_NAME" --no-exit-code 2>&1 || true`,
             )
             .join('\n   ')
         : `cd ${quotedPath} && npx knip --no-exit-code 2>&1 || true`
@@ -122,7 +124,7 @@ export const prCleanupStepCapability: CapabilityDefinition<CleanupStepInput, Cle
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'haiku',
+    model: 'sonnet',
     maxTurns: 30,
     maxBudgetUsd: 1.0,
     tools: { type: 'preset', preset: 'claude_code' },

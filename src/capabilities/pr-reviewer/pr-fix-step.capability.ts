@@ -52,6 +52,14 @@ ${data.issues
   )
   .join('\n\n')}
 
+## CRITICAL CONSTRAINTS
+
+- ONLY modify files listed in the issues above — do not touch other files
+- NEVER delete entire files (rm, git rm) — only edit file contents
+- NEVER "clean up" or refactor code unrelated to the specific issue being fixed
+- Each fix must be scoped EXACTLY to the issue described — no side-effect changes
+- If fixing an issue requires changes to files not listed, skip that fix and report it as failed
+
 ## Instructions
 
 1. **Work in the worktree** (${data.worktree_path})

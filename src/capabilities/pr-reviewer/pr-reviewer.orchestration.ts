@@ -11,6 +11,7 @@
 
 import { getProjectConfig } from '../../config/project-config.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { revertDeletedProtectedFiles } from '../../shared/git-safety.js'
 import { generateIssueId } from '../../core/utils/issue-id.js'
 import { parseReviewIssuesFromComment } from '../pr-fixer/pr-fixer.helpers.js'
 import {
@@ -332,6 +333,16 @@ async function executePhase(
       break
 
     case 'test':
+      // Safety net: revert any protected file deletions from fix/cleanup phases
+      if (state.worktreePath) {
+        const reverted = revertDeletedProtectedFiles(state.worktreePath)
+        if (reverted.length > 0) {
+          context.logger.warn('Reverted protected file deletions before test phase', {
+            files: reverted,
+            count: reverted.length,
+          })
+        }
+      }
       await executeTest(state, input, context)
       break
 
