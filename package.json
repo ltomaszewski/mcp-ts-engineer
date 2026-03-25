@@ -18,7 +18,7 @@
     "postinstall": "bash scripts/patch-sdk-cache.sh"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.77",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.83",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^4.0.0"
   },
