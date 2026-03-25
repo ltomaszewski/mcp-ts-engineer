@@ -166,9 +166,9 @@ describe('shared eng prompt builder', () => {
 
       const result = buildEngPromptV2(input)
 
-      expect(result.userPrompt).toContain('monorepo-rooted')
-      expect(result.userPrompt).toContain('starting with `apps/` or `packages/`')
       expect(result.userPrompt).toContain('WORKING DIRECTORY')
+      expect(result.userPrompt).toContain('starting with `apps/` or `packages/`')
+      expect(result.userPrompt).toContain('PATH FORMAT')
     })
 
     it('fix mode contains monorepo-rooted path rule', () => {
@@ -182,9 +182,9 @@ describe('shared eng prompt builder', () => {
 
       const result = buildEngPromptV2(input)
 
-      expect(result.userPrompt).toContain('monorepo-rooted')
-      expect(result.userPrompt).toContain('starting with `apps/` or `packages/`')
       expect(result.userPrompt).toContain('WORKING DIRECTORY')
+      expect(result.userPrompt).toContain('starting with `apps/` or `packages/`')
+      expect(result.userPrompt).toContain('PATH FORMAT')
     })
 
     it('spec mode uses cwd in WORKING DIRECTORY when provided (FR-1)', () => {
@@ -302,9 +302,9 @@ describe('shared eng prompt builder', () => {
       const fixResult = buildEngPromptV2(fixInput)
 
       expect(specResult.userPrompt).toContain('VERIFICATION')
-      expect(specResult.userPrompt).toContain('cd apps/X && npm test')
+      expect(specResult.userPrompt).toContain('cd <workspace>')
       expect(fixResult.userPrompt).toContain('VERIFICATION')
-      expect(fixResult.userPrompt).toContain('cd apps/X && npm test')
+      expect(fixResult.userPrompt).toContain('cd <workspace>')
     })
   })
 })
