@@ -318,19 +318,11 @@ describe('CONFIG', () => {
   })
 
   describe('getMaxPromptLength', () => {
-    it('returns default for standard models', () => {
-      expect(getMaxPromptLength('sonnet')).toBe(200000)
-      expect(getMaxPromptLength(undefined)).toBe(200000)
-    })
-
-    it('returns 800K for 1M full model IDs', () => {
-      expect(getMaxPromptLength('claude-sonnet-4-6-20250415[1m]')).toBe(800000)
-      expect(getMaxPromptLength('claude-opus-4-6-20250415[1m]')).toBe(800000)
-    })
-
-    it('returns default for non-1M models', () => {
-      expect(getMaxPromptLength('haiku')).toBe(200000)
-      expect(getMaxPromptLength('opus')).toBe(200000)
+    it('always returns 800K since all current models have 1M context', () => {
+      expect(getMaxPromptLength('sonnet')).toBe(800000)
+      expect(getMaxPromptLength('opus')).toBe(800000)
+      expect(getMaxPromptLength('haiku')).toBe(800000)
+      expect(getMaxPromptLength(undefined)).toBe(800000)
     })
   })
 

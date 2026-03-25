@@ -62,12 +62,9 @@ export const MAX_TIMEOUT_MS = 600000 // 10 minutes
 export const MAX_PROMPT_LENGTH = 200000
 export const MAX_SYSTEM_PROMPT_LENGTH = 50000
 
-/** Get model-aware max prompt length. 1M models get 800K char budget. */
-export function getMaxPromptLength(model?: string): number {
-  if (model && model.includes('[1m]')) {
-    return 800_000
-  }
-  return MAX_PROMPT_LENGTH
+/** Get model-aware max prompt length. Sonnet 4.6 and Opus 4.6 have 1M context by default. */
+export function getMaxPromptLength(_model?: string): number {
+  return 800_000
 }
 
 /** Shutdown cost aggregation waits */
