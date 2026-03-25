@@ -27,7 +27,7 @@ export const auditFixLintFixStepCapability: CapabilityDefinition<LintFixInput, L
   promptRegistry: lintFixPrompts,
   currentPromptVersion: LINT_FIX_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 80,
     maxBudgetUsd: 4.0,
     tools: { type: 'preset', preset: 'claude_code' },

@@ -60,7 +60,7 @@ export const phaseEngStepCapability: CapabilityDefinition<PhaseEngStepInput, Pha
   promptRegistry: PHASE_ENG_PROMPT_VERSIONS,
   currentPromptVersion: PHASE_ENG_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet', // Default, can be overridden with opus/haiku from orchestrator
+    model: 'sonnet-1m', // Default, can be overridden with opus/haiku from orchestrator
     maxTurns: 100,
     maxBudgetUsd: 5.0,
     tools: { type: 'preset', preset: 'claude_code' },

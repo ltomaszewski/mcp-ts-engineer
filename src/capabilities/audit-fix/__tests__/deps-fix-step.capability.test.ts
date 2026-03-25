@@ -20,7 +20,7 @@ describe('auditFixDepsFixStepCapability', () => {
 
   describe('defaultRequestOptions', () => {
     it('uses correct model, budget, and turns', () => {
-      expect(auditFixDepsFixStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+      expect(auditFixDepsFixStepCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
       expect(auditFixDepsFixStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
       expect(auditFixDepsFixStepCapability.defaultRequestOptions?.maxTurns).toBe(30)
     })

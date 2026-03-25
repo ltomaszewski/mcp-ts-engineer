@@ -54,7 +54,7 @@ export const todoCodeWriterCapability: CapabilityDefinition<
   promptRegistry: PLANNER_PROMPT_VERSIONS,
   currentPromptVersion: PLANNER_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 100,
     maxBudgetUsd: 5.0,
     tools: { type: 'preset', preset: 'claude_code' },

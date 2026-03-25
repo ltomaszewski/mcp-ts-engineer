@@ -96,7 +96,7 @@ describe('finalizeCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(finalizeCapability.defaultRequestOptions?.model).toBe('sonnet')
+      expect(finalizeCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
     })
 
     it('defaults to 50 maxTurns', () => {

@@ -32,7 +32,7 @@ export const finalizeTestStepCapability: CapabilityDefinition<TestStepInput, Tes
   promptRegistry: testPrompts,
   currentPromptVersion: TEST_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 30,
     maxBudgetUsd: 2.0,
     tools: { type: 'preset', preset: 'claude_code' },

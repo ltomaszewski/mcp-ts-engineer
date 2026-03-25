@@ -13,6 +13,7 @@ import {
   MAX_SYSTEM_PROMPT_LENGTH,
   MAX_TIMEOUT_MS,
   MAX_TURNS,
+  getMaxPromptLength,
 } from '../../config/constants.js'
 import { getProjectConfig } from '../../config/project-config.js'
 import type { AIQueryRequest } from '../ai-provider/ai-provider.types.js'
@@ -37,9 +38,10 @@ export function mergeAndValidateAIQueryRequest(
   const maxBudgetUsd = Math.min(defaults.maxBudgetUsd || MAX_QUERY_BUDGET_USD, MAX_QUERY_BUDGET_USD)
   const timeout = Math.min(defaults.timeout || MAX_TIMEOUT_MS, MAX_TIMEOUT_MS)
 
-  if (builtPrompt.userPrompt.length > MAX_PROMPT_LENGTH) {
+  const promptLimit = getMaxPromptLength(defaults.model)
+  if (builtPrompt.userPrompt.length > promptLimit) {
     throw new ValidationError(
-      `User prompt exceeds maximum length: ${builtPrompt.userPrompt.length} > ${MAX_PROMPT_LENGTH}`,
+      `User prompt exceeds maximum length: ${builtPrompt.userPrompt.length} > ${promptLimit}`,
     )
   }
 

@@ -97,7 +97,7 @@ describe('auditFixTestStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(auditFixTestStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+      expect(auditFixTestStepCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
     })
 
     it('defaults to 30 maxTurns', () => {

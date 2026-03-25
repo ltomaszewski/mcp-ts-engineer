@@ -59,8 +59,16 @@ export const LOCK_JITTER_MS = 25
 export const MAX_TURNS = 100
 export const MAX_QUERY_BUDGET_USD = 8.0
 export const MAX_TIMEOUT_MS = 600000 // 10 minutes
-export const MAX_PROMPT_LENGTH = 100000
+export const MAX_PROMPT_LENGTH = 200000
 export const MAX_SYSTEM_PROMPT_LENGTH = 50000
+
+/** Get model-aware max prompt length. 1M models get 800K char budget. */
+export function getMaxPromptLength(model?: string): number {
+  if (model && (model.includes('[1m]') || model.endsWith('-1m'))) {
+    return 800_000
+  }
+  return MAX_PROMPT_LENGTH
+}
 
 /** Shutdown cost aggregation waits */
 export const SHUTDOWN_COST_WAIT_MS = 100

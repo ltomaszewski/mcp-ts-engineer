@@ -18,6 +18,7 @@ import {
   chunkFiles,
   filterReviewableFiles,
   getDiffForFiles,
+  groupFilesByProject,
   splitDiffByFile,
 } from './pr-reviewer.helpers.js'
 import type {
@@ -535,41 +536,44 @@ async function executeReview(
     return
   }
 
-  // 2. Split diff by file for targeted chunks
   const diffByFile = splitDiffByFile(state.prContext.diff_content)
-
-  // 3. Chunk files into groups
-  const chunks = chunkFiles(reviewableFiles, 10)
-
-  // 4. Load project context once
-  const contextResult = await loadProjectContext(getProjectConfig(), reviewableFiles)
-  state.projectContextString = contextResult.context
+  const projectGroups = groupFilesByProject(reviewableFiles)
 
   context.logger.info('Starting chunked review', {
     totalFiles: state.prContext.files_changed.length,
     reviewableFiles: reviewableFiles.length,
-    chunks: chunks.length,
+    projects: projectGroups.size,
   })
 
-  // 5. Review each chunk sequentially
-  for (const chunk of chunks) {
-    const chunkDiff = getDiffForFiles(diffByFile, chunk, 30000)
-    const chunkContext = {
-      ...state.prContext,
-      files_changed: chunk,
+  for (const [_projectDir, projectFiles] of projectGroups) {
+    const contextResult = await loadProjectContext(getProjectConfig(), projectFiles)
+    const projectContextString = contextResult.context
+
+    const chunks = chunkFiles(projectFiles, 10)
+
+    for (const chunk of chunks) {
+      const chunkDiff = getDiffForFiles(diffByFile, chunk, 30000)
+      const chunkContext = {
+        ...state.prContext,
+        files_changed: chunk,
+      }
+
+      const result = (await context.invokeCapability('pr_review_step', {
+        pr_context: chunkContext,
+        diff_content: chunkDiff,
+        worktree_path: state.worktreePath,
+        project_context: projectContextString,
+        cwd: input.cwd,
+      })) as ReviewStepOutput
+
+      const results = Array.isArray(result) ? result : [result]
+      state.agentResults.push(...results)
     }
-
-    const result = (await context.invokeCapability('pr_review_step', {
-      pr_context: chunkContext,
-      diff_content: chunkDiff,
-      worktree_path: state.worktreePath,
-      project_context: state.projectContextString,
-      cwd: input.cwd,
-    })) as ReviewStepOutput
-
-    const results = Array.isArray(result) ? result : [result]
-    state.agentResults.push(...results)
   }
+
+  // Set broadest context for fix phase
+  const fullContextResult = await loadProjectContext(getProjectConfig(), reviewableFiles)
+  state.projectContextString = fullContextResult.context
 }
 
 /**

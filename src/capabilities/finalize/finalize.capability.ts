@@ -188,7 +188,7 @@ export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOut
   promptRegistry: orchestratorPrompts,
   currentPromptVersion: ORCHESTRATOR_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 50,
     maxBudgetUsd: 3.0,
     tools: { type: 'preset', preset: 'claude_code' },

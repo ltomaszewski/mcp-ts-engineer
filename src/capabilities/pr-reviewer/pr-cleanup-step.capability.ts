@@ -124,7 +124,7 @@ export const prCleanupStepCapability: CapabilityDefinition<CleanupStepInput, Cle
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 30,
     maxBudgetUsd: 1.0,
     tools: { type: 'preset', preset: 'claude_code' },

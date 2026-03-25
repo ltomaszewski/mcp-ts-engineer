@@ -233,6 +233,19 @@ export async function loadProjectContext(
     sections.push(`### CLAUDE.md\n\n${truncate(claudeMdContent, CLAUDE_MD_MAX_CHARS)}`)
   }
 
+  // 1b. Load per-app CLAUDE.md files (e.g., apps/mellow-server/CLAUDE.md)
+  const appDirs = new Set(
+    filesChanged
+      .map((f) => f.match(/^((?:apps|packages)\/[^/]+)/)?.[1])
+      .filter((d): d is string => d !== undefined),
+  )
+  for (const appDir of appDirs) {
+    const appClaudeMd = await readFileSafe(path.join(config.monorepoRoot, appDir, 'CLAUDE.md'))
+    if (appClaudeMd !== null) {
+      sections.push(`### ${appDir}/CLAUDE.md\n\n${truncate(appClaudeMd, CLAUDE_MD_MAX_CHARS)}`)
+    }
+  }
+
   // 2. Load .claude/rules/*.md from submodule path
   const rulesDir = path.join(config.submodulePath, '.claude', 'rules')
   const rulesMap = await loadMarkdownDir(rulesDir, RULE_MAX_CHARS)

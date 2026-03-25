@@ -66,7 +66,7 @@ export const prFixerDirectFixStepCapability: CapabilityDefinition<
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 50,
     maxBudgetUsd: 2.0,
     tools: { type: 'preset', preset: 'claude_code' },

@@ -61,7 +61,7 @@ export const phaseAuditStepCapability: CapabilityDefinition<PhaseAuditStepInput,
     promptRegistry: PHASE_AUDIT_PROMPT_VERSIONS,
     currentPromptVersion: PHASE_AUDIT_CURRENT_VERSION,
     defaultRequestOptions: {
-      model: 'sonnet',
+      model: 'sonnet-1m',
       maxTurns: 50,
       maxBudgetUsd: 2.0,
       tools: { type: 'preset', preset: 'claude_code' },

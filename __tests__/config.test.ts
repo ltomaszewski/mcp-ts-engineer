@@ -10,6 +10,7 @@ import {
   CUSTOM_TOOL_TIMEOUT_MS,
   getCommitTag,
   getDefaultLogDir,
+  getMaxPromptLength,
   getServerInfo,
   HOOK_TIMEOUT_MS,
   LOCK_JITTER_MS,
@@ -199,10 +200,10 @@ describe('CONFIG', () => {
       expect(MAX_TIMEOUT_MS).toBe(600000)
     })
 
-    it('MAX_PROMPT_LENGTH is defined and equals 100000', () => {
+    it('MAX_PROMPT_LENGTH is defined and equals 200000', () => {
       expect(MAX_PROMPT_LENGTH).toBeDefined()
       expect(typeof MAX_PROMPT_LENGTH).toBe('number')
-      expect(MAX_PROMPT_LENGTH).toBe(100000)
+      expect(MAX_PROMPT_LENGTH).toBe(200000)
     })
 
     it('MAX_SYSTEM_PROMPT_LENGTH is defined and equals 50000', () => {
@@ -313,6 +314,24 @@ describe('CONFIG', () => {
       // Runtime verification that properties exist
       expect(Object.keys(PROVIDER_CONFIG)).toContain('defaultProvider')
       expect(Object.keys(PROVIDER_CONFIG)).toContain('availableProviders')
+    })
+  })
+
+  describe('getMaxPromptLength', () => {
+    it('returns default for standard models', () => {
+      expect(getMaxPromptLength('sonnet')).toBe(200000)
+      expect(getMaxPromptLength('sonnet-1m')).toBe(800000)
+      expect(getMaxPromptLength(undefined)).toBe(200000)
+    })
+
+    it('returns 800K for 1M full model IDs', () => {
+      expect(getMaxPromptLength('claude-sonnet-4-6-20250415[1m]')).toBe(800000)
+      expect(getMaxPromptLength('claude-opus-4-6-20250415[1m]')).toBe(800000)
+    })
+
+    it('returns default for non-1M models', () => {
+      expect(getMaxPromptLength('haiku')).toBe(200000)
+      expect(getMaxPromptLength('opus')).toBe(200000)
     })
   })
 

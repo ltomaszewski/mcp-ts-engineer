@@ -72,7 +72,7 @@ describe('todoReviewerCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(todoReviewerCapability.defaultRequestOptions?.model).toBe('sonnet')
+      expect(todoReviewerCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
     })
 
     it('defaults to 80 maxTurns', () => {

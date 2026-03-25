@@ -63,7 +63,7 @@ export const prFixerCapability: CapabilityDefinition<PrFixerInput, PrFixerOutput
   currentPromptVersion: CURRENT_VERSION,
 
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'sonnet-1m',
     maxTurns: 1,
     maxBudgetUsd: 5.0,
   },

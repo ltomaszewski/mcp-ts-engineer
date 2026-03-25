@@ -17,7 +17,7 @@ describe('Lint Fix Step Capability', () => {
   it('has correct default options (model, turns, budget, tools)', () => {
     const options = auditFixLintFixStepCapability.defaultRequestOptions
 
-    expect(options?.model).toBe('sonnet')
+    expect(options?.model).toBe('sonnet-1m')
     expect(options?.maxTurns).toBe(80)
     expect(options?.maxBudgetUsd).toBe(4.0)
     expect(options?.tools).toMatchObject({

@@ -8,6 +8,33 @@ import type { PrContext } from './pr-reviewer.schema.js'
 import { PrContextSchema } from './pr-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
+// Project directory helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the top-level project directory from a file path.
+ * Returns 'apps/foo' or 'packages/bar', or 'root' for top-level files.
+ */
+export function getProjectDir(filePath: string): string {
+  const match = filePath.match(/^((?:apps|packages)\/[^/]+)/)
+  return match ? match[1] : 'root'
+}
+
+/**
+ * Group files by their project directory, preserving order within groups.
+ */
+export function groupFilesByProject(files: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>()
+  for (const file of files) {
+    const project = getProjectDir(file)
+    const group = groups.get(project) ?? []
+    group.push(file)
+    groups.set(project, group)
+  }
+  return groups
+}
+
+// ---------------------------------------------------------------------------
 // File filtering, diff splitting, and chunking helpers
 // ---------------------------------------------------------------------------
 

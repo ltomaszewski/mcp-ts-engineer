@@ -96,7 +96,7 @@ describe('finalizeCodemapStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(finalizeCodemapStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+      expect(finalizeCodemapStepCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
     })
 
     it('defaults to 50 maxTurns', () => {
