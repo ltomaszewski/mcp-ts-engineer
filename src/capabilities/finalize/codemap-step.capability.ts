@@ -35,7 +35,7 @@ export const finalizeCodemapStepCapability: CapabilityDefinition<CodemapStepInpu
     promptRegistry: codemapPrompts,
     currentPromptVersion: CODEMAP_CURRENT_VERSION,
     defaultRequestOptions: {
-      model: 'sonnet-1m',
+      model: 'sonnet[1m]',
       maxTurns: 50,
       maxBudgetUsd: 3.0,
       tools: { type: 'preset', preset: 'claude_code' },

@@ -54,7 +54,7 @@ export const finalAuditStepCapability: CapabilityDefinition<FinalAuditStepInput,
     promptRegistry: FINAL_AUDIT_PROMPT_VERSIONS,
     currentPromptVersion: FINAL_AUDIT_CURRENT_VERSION,
     defaultRequestOptions: {
-      model: 'sonnet-1m',
+      model: 'sonnet[1m]',
       maxTurns: 50,
       maxBudgetUsd: 3.0,
       tools: { type: 'preset', preset: 'claude_code' },

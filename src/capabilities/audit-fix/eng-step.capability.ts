@@ -116,7 +116,7 @@ export const auditFixEngStepCapability: CapabilityDefinition<EngStepInput, EngFi
   promptRegistry: engStepPrompts,
   currentPromptVersion: 'v1',
   defaultRequestOptions: {
-    model: 'sonnet-1m',
+    model: 'sonnet[1m]',
     maxTurns: 100,
     maxBudgetUsd: 8.0,
     tools: { type: 'preset', preset: 'claude_code' },

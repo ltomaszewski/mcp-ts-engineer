@@ -146,7 +146,7 @@ describe('phaseEngStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(phaseEngStepCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
+      expect(phaseEngStepCapability.defaultRequestOptions?.model).toBe('sonnet[1m]')
     })
 
     it('defaults to 100 maxTurns', () => {

@@ -64,7 +64,7 @@ export const MAX_SYSTEM_PROMPT_LENGTH = 50000
 
 /** Get model-aware max prompt length. 1M models get 800K char budget. */
 export function getMaxPromptLength(model?: string): number {
-  if (model && (model.includes('[1m]') || model.endsWith('-1m'))) {
+  if (model && model.includes('[1m]')) {
     return 800_000
   }
   return MAX_PROMPT_LENGTH

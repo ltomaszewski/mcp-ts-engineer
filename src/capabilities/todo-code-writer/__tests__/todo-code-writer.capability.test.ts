@@ -156,7 +156,7 @@ describe('todoCodeWriterCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(todoCodeWriterCapability.defaultRequestOptions?.model).toBe('sonnet-1m')
+      expect(todoCodeWriterCapability.defaultRequestOptions?.model).toBe('sonnet[1m]')
     })
 
     it('defaults to 100 maxTurns', () => {
@@ -191,7 +191,7 @@ describe('todoCodeWriterCapability', () => {
     it('extracts specPath, maxPhases from input', () => {
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
       const context = createMockContext()
@@ -208,7 +208,7 @@ describe('todoCodeWriterCapability', () => {
     it('passes cwd from input', () => {
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
         cwd: '/some/path',
       }
@@ -254,7 +254,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -309,7 +309,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -341,7 +341,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -361,7 +361,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -392,7 +392,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -423,7 +423,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -461,7 +461,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -490,7 +490,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -518,7 +518,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -546,7 +546,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -573,7 +573,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -606,7 +606,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -634,7 +634,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -665,7 +665,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -706,7 +706,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 
@@ -738,7 +738,7 @@ describe('todoCodeWriterCapability', () => {
 
       const input: TodoCodeWriterInput = {
         spec_path: 'docs/specs/feature.md',
-        model: 'sonnet-1m',
+        model: 'sonnet[1m]',
         max_phases: 5,
       }
 

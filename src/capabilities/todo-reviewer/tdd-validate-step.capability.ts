@@ -53,7 +53,7 @@ export const tddValidateStepCapability: CapabilityDefinition<TddValidateStepInpu
   promptRegistry: TDD_VALIDATE_PROMPT_VERSIONS,
   currentPromptVersion: TDD_VALIDATE_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet-1m',
+    model: 'sonnet[1m]',
     maxTurns: 40,
     maxBudgetUsd: 2.0,
     tools: { type: 'preset', preset: 'claude_code' },

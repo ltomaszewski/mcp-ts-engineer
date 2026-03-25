@@ -54,8 +54,8 @@ export type AIModel =
   | 'haiku'
   | 'sonnet'
   | 'opus'
-  | 'sonnet-1m'
-  | 'opus-1m'
+  | 'sonnet[1m]'
+  | 'opus[1m]'
   | 'claude-sonnet-4-6-20250415[1m]'
   | 'claude-opus-4-6-20250415[1m]'
 
