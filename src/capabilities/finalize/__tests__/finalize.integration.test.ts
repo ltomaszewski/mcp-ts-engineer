@@ -152,15 +152,15 @@ describe('Finalize Integration', () => {
     })
 
     it('all capabilities use correct models', () => {
-      expect(registry.getCapability('finalize')?.defaultRequestOptions?.model).toBe('sonnet[1m]')
+      expect(registry.getCapability('finalize')?.defaultRequestOptions?.model).toBe('sonnet')
       expect(registry.getCapability('finalize_audit_step')?.defaultRequestOptions?.model).toBe(
-        'sonnet[1m]',
+        'sonnet',
       )
       expect(registry.getCapability('finalize_test_step')?.defaultRequestOptions?.model).toBe(
-        'sonnet[1m]',
+        'sonnet',
       )
       expect(registry.getCapability('finalize_codemap_step')?.defaultRequestOptions?.model).toBe(
-        'sonnet[1m]',
+        'sonnet',
       )
       expect(registry.getCapability('finalize_readme_step')?.defaultRequestOptions?.model).toBe(
         'haiku',

@@ -57,7 +57,7 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
   promptRegistry: plannerPrompts,
   currentPromptVersion: PLANNER_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet[1m]',
+    model: 'sonnet',
     maxTurns: 10,
     maxBudgetUsd: 1.0,
     tools: { type: 'preset', preset: 'claude_code' },

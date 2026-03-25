@@ -75,7 +75,7 @@ export const todoReviewerCapability: CapabilityDefinition<TodoReviewerInput, Tod
   promptRegistry: REVIEW_PROMPT_VERSIONS,
   currentPromptVersion: REVIEW_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet[1m]',
+    model: 'sonnet',
     maxTurns: 80,
     maxBudgetUsd: 5.0,
     tools: { type: 'preset', preset: 'claude_code' },

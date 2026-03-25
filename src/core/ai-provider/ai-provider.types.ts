@@ -54,10 +54,6 @@ export type AIModel =
   | 'haiku'
   | 'sonnet'
   | 'opus'
-  | 'sonnet[1m]'
-  | 'opus[1m]'
-  | 'claude-sonnet-4-6-20250415[1m]'
-  | 'claude-opus-4-6-20250415[1m]'
 
 /** Permission mode for agent execution (mirrors Claude Agent SDK values) */
 export type PermissionMode =

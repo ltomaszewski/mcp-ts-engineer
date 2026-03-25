@@ -30,7 +30,7 @@ describe('tddValidateStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(tddValidateStepCapability.defaultRequestOptions?.model).toBe('sonnet[1m]')
+      expect(tddValidateStepCapability.defaultRequestOptions?.model).toBe('sonnet')
     })
 
     it('has prompt registry with v1', () => {

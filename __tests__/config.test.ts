@@ -320,7 +320,6 @@ describe('CONFIG', () => {
   describe('getMaxPromptLength', () => {
     it('returns default for standard models', () => {
       expect(getMaxPromptLength('sonnet')).toBe(200000)
-      expect(getMaxPromptLength('sonnet[1m]')).toBe(800000)
       expect(getMaxPromptLength(undefined)).toBe(200000)
     })
 

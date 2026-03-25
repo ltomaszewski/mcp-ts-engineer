@@ -37,7 +37,7 @@ export const prReviewerCapability: CapabilityDefinition<PrReviewerInput, PrRevie
   promptRegistry: PR_REVIEWER_PROMPT_VERSIONS,
   currentPromptVersion: PR_REVIEWER_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet[1m]',
+    model: 'sonnet',
     maxTurns: 80,
     maxBudgetUsd: 10.0,
     tools: { type: 'preset', preset: 'claude_code' },

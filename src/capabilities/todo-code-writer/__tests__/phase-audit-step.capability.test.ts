@@ -129,7 +129,7 @@ describe('phaseAuditStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(phaseAuditStepCapability.defaultRequestOptions?.model).toBe('sonnet[1m]')
+      expect(phaseAuditStepCapability.defaultRequestOptions?.model).toBe('sonnet')
     })
 
     it('defaults to 50 maxTurns', () => {

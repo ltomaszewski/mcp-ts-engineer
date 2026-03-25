@@ -102,7 +102,7 @@ export const auditFixAuditStepCapability: CapabilityDefinition<AuditStepInput, A
   promptRegistry: auditStepPrompts,
   currentPromptVersion: 'v1',
   defaultRequestOptions: {
-    model: 'sonnet[1m]',
+    model: 'sonnet',
     maxTurns: 120,
     maxBudgetUsd: 6.0,
     tools: { type: 'preset', preset: 'claude_code' },

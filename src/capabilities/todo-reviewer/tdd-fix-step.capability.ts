@@ -56,7 +56,7 @@ export const tddFixStepCapability: CapabilityDefinition<TddFixStepInput, TddFixS
   promptRegistry: TDD_FIX_PROMPT_VERSIONS,
   currentPromptVersion: TDD_FIX_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet[1m]',
+    model: 'sonnet',
     maxTurns: 60,
     maxBudgetUsd: 2.0,
     tools: { type: 'preset', preset: 'claude_code' },

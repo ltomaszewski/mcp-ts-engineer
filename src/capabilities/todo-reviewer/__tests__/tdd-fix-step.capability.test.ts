@@ -48,7 +48,7 @@ describe('tddFixStepCapability', () => {
     })
 
     it('defaults to sonnet model', () => {
-      expect(tddFixStepCapability.defaultRequestOptions?.model).toBe('sonnet[1m]')
+      expect(tddFixStepCapability.defaultRequestOptions?.model).toBe('sonnet')
     })
 
     it('has prompt registry with v1', () => {
