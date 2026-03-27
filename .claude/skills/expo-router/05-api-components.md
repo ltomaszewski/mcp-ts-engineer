@@ -1,4 +1,4 @@
-# Components Reference -- Expo Router 6.x
+# Components Reference -- Expo Router v7 (~55.0.7)
 
 Navigation and layout components for building app structure: Stack, Tabs, Drawer, Link, Redirect, Slot, ErrorBoundary.
 
@@ -102,7 +102,7 @@ Groups screens with shared options without adding navigation structure.
 
 ---
 
-### Stack.Protected (SDK 54)
+### Stack.Protected
 
 Conditionally show/hide screens based on a guard condition.
 
@@ -462,4 +462,4 @@ export default function AppLayout() {
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/

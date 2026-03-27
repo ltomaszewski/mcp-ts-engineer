@@ -1,6 +1,6 @@
-# 01 -- Framework Overview & SDK 54
+# 01 -- Framework Overview & SDK 55
 
-Expo is a framework built on React Native for developing universal iOS, Android, and web apps from a single TypeScript codebase. SDK 54 ships with React Native 0.81.5, React 19.1, and New Architecture enabled by default.
+Expo is a framework built on React Native for developing universal iOS, Android, and web apps from a single TypeScript codebase. SDK 55 ships with React Native 0.83.4, React 19.2, New Architecture MANDATORY, and React Compiler enabled by default.
 
 ---
 
@@ -15,51 +15,65 @@ Expo provides:
 
 ---
 
-## SDK 54 Release Highlights
+## SDK 55 Release Highlights
 
 ### Version Matrix
 
 | Dependency | Version |
 |------------|---------|
-| Expo SDK | ~54.0.33 |
-| React Native | 0.81.5 |
-| React | 19.1.0 |
-| Metro | 0.83 |
+| Expo SDK | ~55.0.8 |
+| React Native | 0.83.4 |
+| React | 19.2.0 |
 | Hermes | Default JS engine (JSC removed) |
 | Minimum Node | 20.19.4 |
 | Minimum Xcode | 16.1 (Xcode 26 recommended) |
 | Android target | API 36 (Android 16) |
+| expo-splash-screen | ~55.0.12 |
+| expo-constants | ~55.0.9 |
+| expo-font | ~55.0.4 |
+| expo-linking | ~55.0.8 |
+| expo-system-ui | ~55.0.10 (NEW) |
+| expo-router | ~55.0.7 (versioned with SDK) |
 
 ### Breaking Changes
 
 | Change | Migration |
 |--------|-----------|
-| New Architecture default | Reanimated v4 required (v3 for legacy). JSC no longer built-in |
-| `expo-file-system` default is new OOP API | Legacy API available via `expo-file-system/legacy` |
+| **New Architecture MANDATORY** | `newArchEnabled: false` no longer works; all code must be New Architecture compatible |
+| **React Compiler default** | `experiments.reactCompiler: true` in app.config.ts; avoid manual `useMemo`/`useCallback` |
+| `expo-av` removed | Migrate to `expo-audio` and `expo-video` (deprecated since SDK 54) |
+| `expo-file-system` OOP API is default | Legacy API still at `expo-file-system/legacy` |
 | Android edge-to-edge mandatory | Cannot disable; use `react-native-safe-area-context` |
 | React Native `<SafeAreaView>` deprecated | Use `<SafeAreaView>` from `react-native-safe-area-context` |
-| `expo-av` deprecated (removed in SDK 55) | Migrate to `expo-audio` and `expo-video` |
-| Metro internal imports changed | `metro/src/..` becomes `metro/private/..` |
-| `@expo/vector-icons` updated | May affect TypeScript type checks |
+| expo-router versioning | Now `~55.0.7` instead of `~6.x` semver |
+| headless tabs `reset` prop | Renamed to `resetOnFocus` |
+| `ExpoRequest`/`ExpoResponse` | Removed from expo-router server exports |
 
 ### New and Stabilized APIs
 
 | API | Status | Description |
 |-----|--------|-------------|
-| `expo-file-system` (OOP) | Stable | Object-oriented File/Directory/Paths API, formerly `/next` |
-| `expo-glass-effect` | New | `<GlassView>` and `<GlassContainer>` for iOS Liquid Glass |
-| `expo-app-integrity` | New | DeviceCheck (iOS) and Play Integrity (Android) verification |
-| `expo/blob` | Beta | W3C-compliant binary object handling |
-| `expo-sqlite` extensions | New | `loadExtensionAsync()` for SQLite extensions |
-| `expo-sqlite` localStorage | New | Drop-in `localStorage` web API implementation |
-| `expo-maps` styling | New | JSON and Google Cloud map styling support |
+| `expo-system-ui` | New (55.0.10) | Manage system UI background color and navigation bar styling |
+| `expo-file-system` (OOP) | Stable | Object-oriented File/Directory/Paths API |
+| `expo-glass-effect` | Stable | `<GlassView>` and `<GlassContainer>` for iOS Liquid Glass |
+| `expo-app-integrity` | Stable | DeviceCheck (iOS) and Play Integrity (Android) |
+| `expo/blob` | Stable | W3C-compliant binary object handling |
 
-### Performance Improvements
+### React Compiler (New Default)
 
-- **Precompiled XCFrameworks**: iOS clean build times reduced from ~120s to ~10s on M4 Max
-- **React Compiler**: Enabled in default template for automatic memoization
-- **Import stack traces**: Enabled by default for easier debugging
-- **`experimentalImportSupport`**: Default on for tree-shaking and React Compiler
+SDK 55 enables React Compiler by default for automatic memoization:
+
+```typescript
+// app.config.ts — already included in new projects
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  experiments: {
+    reactCompiler: true, // enabled by default in SDK 55
+  },
+});
+```
+
+With React Compiler active: avoid manual `useMemo`, `useCallback`, and `memo()` unless profiling shows a need. The compiler handles memoization automatically.
 
 ---
 
@@ -87,7 +101,7 @@ Code (TypeScript)
 
 ## Core Concepts
 
-### File-Based Routing (Expo Router v6)
+### File-Based Routing (Expo Router ~55.0.7 / v7)
 
 ```
 app/
@@ -101,11 +115,13 @@ app/
     signup.tsx         # /signup
 ```
 
-Each file in `app/` automatically becomes a route. Expo Router v6 (SDK 54) adds:
-- iOS view controller previews and context menus on `<Link>`
-- Native tabs beta with Liquid Glass support
-- Web modals emulating iPad/iPhone behavior
-- Experimental server middleware
+Each file in `app/` automatically becomes a route. Expo Router v7 (SDK 55) adds:
+- Declarative `<Stack.Header>` and `<Stack.Screen.Title>` components
+- Native tabs with Material Design 3 (Android) and SF Symbols (iOS)
+- Apple Zoom transition via `withAppleZoom`
+- `typedRoutes: true` enabled by default
+- `reset` prop on headless tabs renamed to `resetOnFocus`
+- `ExpoRequest`/`ExpoResponse` removed from server exports
 
 ### App Configuration
 
@@ -120,24 +136,27 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: 'MyApp',
   slug: 'my-app',
   version: '1.0.0',
-  newArchEnabled: true, // default in SDK 54
-  plugins: ['expo-router', 'expo-secure-store'],
+  // newArchEnabled: true is no longer needed — New Architecture is MANDATORY in SDK 55
+  plugins: ['expo-router', 'expo-secure-store', 'expo-system-ui'],
+  experiments: { reactCompiler: true, typedRoutes: true }, // both enabled by default in SDK 55
 });
 ```
 
 Dynamic configs cannot use Promises -- all resolution must be synchronous.
 
-### New Architecture (Default in SDK 54)
+### New Architecture (MANDATORY in SDK 55)
 
-SDK 54 enables New Architecture by default (`newArchEnabled: true`). This includes:
+SDK 55 makes New Architecture **mandatory**. `newArchEnabled: false` is no longer supported. This includes:
 - **TurboModules**: Lazy-loaded native modules with JSI (no bridge)
-- **Fabric Renderer**: Concurrent rendering with React 19.1
+- **Fabric Renderer**: Concurrent rendering with React 19.2
 - **Codegen**: Type-safe native module interfaces from TypeScript specs
 
 Impact:
 - Reanimated v4 is required (v3 only supports old architecture)
 - JSC is no longer bundled -- Hermes is the only JS engine
 - All Expo SDK modules support New Architecture
+- Third-party libraries that haven't migrated will not work
+- React Compiler (`experiments.reactCompiler: true`) is enabled by default alongside New Architecture
 
 ### Platform-Specific Code
 
@@ -207,4 +226,4 @@ my-app/
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/get-started/introduction/, https://expo.dev/changelog/sdk-54
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/get-started/introduction/, https://expo.dev/changelog/sdk-55

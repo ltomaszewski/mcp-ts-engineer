@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Hermes Engine & Build Optimization
+# React Native 0.83.4 -- Hermes Engine & Build Optimization
 
 Hermes engine details, bytecode precompilation, ProGuard/R8, bundle analysis, and size reduction.
 
@@ -6,7 +6,7 @@ Hermes engine details, bytecode precompilation, ProGuard/R8, bundle analysis, an
 
 ## Hermes Overview
 
-Hermes is Meta's JavaScript engine optimized for React Native. It is the **default engine** in RN 0.81.5 -- no configuration needed.
+Hermes is Meta's JavaScript engine optimized for React Native. It is the **default engine** in RN 0.83.4 -- no configuration needed.
 
 ### Performance Comparison
 
@@ -43,9 +43,9 @@ function HermesCheck(): React.ReactElement {
 
 ---
 
-## JavaScriptCore Removal (RN 0.81)
+## JavaScriptCore Removal (RN 0.81+)
 
-In React Native 0.81, the built-in JavaScriptCore (JSC) has been removed. If you need JSC:
+The built-in JavaScriptCore (JSC) was removed in React Native 0.81 and is not available in 0.83.4. If you need JSC:
 
 ```bash
 npm install @react-native-community/javascriptcore
@@ -55,9 +55,9 @@ Most apps should stay on Hermes. JSC is only needed for specific debugging scena
 
 ---
 
-## Precompiled iOS Builds (Experimental)
+## Precompiled iOS Builds
 
-RN 0.81 introduces precompiled builds that can reduce iOS compile times by up to 10x.
+RN 0.81+ introduced precompiled builds that can reduce iOS compile times by up to 10x.
 
 Enable during pod install:
 
@@ -261,5 +261,5 @@ if (__DEV__) {
 
 ---
 
-**Version:** React Native 0.81.5 | Hermes (default engine)
+**Version:** React Native 0.83.4 | Hermes (default engine)
 **Source:** https://reactnative.dev/docs/hermes | https://hermesengine.dev

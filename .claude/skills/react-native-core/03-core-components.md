@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Core Components API Reference
+# React Native 0.83.4 -- Core Components API Reference
 
 All essential components with prop tables, usage patterns, and performance guidance.
 
@@ -501,5 +501,5 @@ Alert.alert(
 
 ---
 
-**Version:** React Native 0.81.5 | React 19.1.0
+**Version:** React Native 0.83.4 | React 19.2.0
 **Source:** https://reactnative.dev/docs/components-and-apis

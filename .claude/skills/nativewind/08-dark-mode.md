@@ -1,8 +1,8 @@
-# Dark Mode & Theme Management - NativeWind v4.2.x
+# Dark Mode & Theme Management - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode
-**Last Verified:** February 2026
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -279,7 +279,7 @@ export const HookExample = () => {
 };
 ```
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode
+**Source:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -493,4 +493,4 @@ export const App = () => {
 - **Custom Values:** `09-custom-values.md` - CSS variables for themes
 - **Best Practices:** `11-best-practices.md` - Theme patterns
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/dark-mode
+**Source:** https://www.nativewind.dev/v5/

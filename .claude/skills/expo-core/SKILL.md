@@ -1,11 +1,11 @@
 ---
 name: expo-core
-description: Expo SDK 54 framework - project setup, app.json config, Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font. Use when creating Expo projects, configuring apps, or using Expo SDK modules.
+description: Expo SDK 55 framework - project setup, app.json config, Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font. Use when creating Expo projects, configuring apps, or using Expo SDK modules.
 ---
 
 # Expo Core
 
-Managed React Native framework for building universal iOS, Android, and web apps from a single TypeScript codebase with Expo SDK 54.
+Managed React Native framework for building universal iOS, Android, and web apps from a single TypeScript codebase with Expo SDK 55.
 
 ---
 
@@ -15,7 +15,7 @@ LOAD THIS SKILL when user is:
 - Creating or configuring Expo projects (app.json, app.config.ts, plugins)
 - Using Expo SDK modules (Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font)
 - Setting up project structure, environment variables, or build configuration
-- Working with the New Architecture (enabled by default in SDK 54)
+- Working with the New Architecture (now MANDATORY in SDK 55 — cannot be disabled)
 - Managing OTA updates via expo-updates or EAS Update
 
 ---
@@ -32,7 +32,7 @@ LOAD THIS SKILL when user is:
 1. Hardcode API keys in app.json or source -- they ship in the app bundle and are extractable
 2. Use the legacy `expo-file-system` import path for new code -- import from `expo-file-system` which is now the stable OOP API (formerly `/next`)
 3. Skip permission checks before device access -- causes crashes or silent failures on iOS/Android
-4. Disable New Architecture without cause -- SDK 54 defaults to New Architecture and Reanimated v4 requires it
+4. Attempt to disable New Architecture -- SDK 55 makes it MANDATORY; `newArchEnabled: false` is no longer supported
 
 ---
 
@@ -51,8 +51,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'myapp',
   ios: { bundleIdentifier: 'com.company.myapp' },
   android: { package: 'com.company.myapp' },
-  plugins: ['expo-router', 'expo-secure-store'],
+  plugins: ['expo-router', 'expo-secure-store', 'expo-system-ui'],
   extra: { apiUrl: process.env.EXPO_PUBLIC_API_URL },
+  experiments: { reactCompiler: true, typedRoutes: true }, // Both enabled by default in SDK 55
 });
 ```
 
@@ -142,7 +143,7 @@ file.write('data');
 
 | When you need | Load |
 |---------------|------|
-| Architecture, mental model, SDK 54 changes | [01-framework-overview.md](01-framework-overview.md) |
+| Architecture, mental model, SDK 55 changes | [01-framework-overview.md](01-framework-overview.md) |
 | Project setup, app.json/app.config.ts, env vars | [02-quickstart-setup.md](02-quickstart-setup.md) |
 | Constants, SplashScreen, Linking, Updates APIs | [03-api-app-lifecycle.md](03-api-app-lifecycle.md) |
 | FileSystem, SecureStore, Asset, Font APIs | [04-api-data-storage.md](04-api-data-storage.md) |
@@ -150,4 +151,4 @@ file.write('data');
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev

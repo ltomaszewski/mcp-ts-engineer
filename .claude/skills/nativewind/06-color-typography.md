@@ -1,8 +1,8 @@
-# Color & Typography System - NativeWind v4.2.x
+# Color & Typography System - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -206,25 +206,19 @@ export const ColorExamples = () => {
 
 ### System Fonts
 
-Default fonts depend on platform:
+Default fonts depend on platform. In v5, font families are defined in `global.css` using `@theme`:
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      fontFamily: {
-        // System UI font stack
-        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont'],
-        
-        // Serif fonts
-        serif: ['Georgia', 'serif'],
-        
-        // Monospace
-        mono: ['Courier New', 'monospace'],
-      },
-    },
-  },
+```css
+/* global.css */
+@theme {
+  /* System UI font stack */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Serif fonts */
+  --font-serif: Georgia, serif;
+
+  /* Monospace */
+  --font-mono: 'Courier New', monospace;
 }
 ```
 
@@ -246,18 +240,13 @@ module.exports = {
 
 #### Custom Font Files
 
-1. **Add font files** to your project
-2. **Configure** in Tailwind config
+1. **Add font files** to your project (via `expo-font` or bundled assets)
+2. **Configure** in `global.css` using `@theme`:
 
-```javascript
-module.exports = {
-  theme: {
-    extend: {
-      fontFamily: {
-        custom: ['MyCustomFont'],
-      },
-    },
-  },
+```css
+/* global.css */
+@theme {
+  --font-custom: 'MyCustomFont';
 }
 ```
 
@@ -459,4 +448,4 @@ const COLORS = {
 - **Dark Mode:** `08-dark-mode.md` - Color scheme switching
 - **Best Practices:** `11-best-practices.md` - Production patterns
 
-**Source:** https://www.nativewind.dev/docs
+**Source:** https://www.nativewind.dev/v5/

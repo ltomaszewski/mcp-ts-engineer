@@ -1,11 +1,11 @@
 ---
 name: react-native-core
-description: React Native 0.81.5 fundamentals - core components, native modules, navigation, Fabric, TurboModules, best practices. Use when working with RN basics, platform-specific code, or performance optimization.
+description: React Native 0.83.4 fundamentals - core components, native modules, navigation, Fabric, TurboModules, best practices. Use when working with RN basics, platform-specific code, or performance optimization.
 ---
 
 # React Native Core
 
-Cross-platform mobile development with native performance using React Native 0.81.5, Fabric renderer, TurboModules, and Hermes engine.
+Cross-platform mobile development with native performance using React Native 0.83.4, Fabric renderer, TurboModules, and Hermes engine.
 
 ---
 
@@ -28,13 +28,13 @@ LOAD THIS SKILL when user is:
 3. Memoize `renderItem` callbacks with `useCallback` and item components with `React.memo` -- prevents re-renders on every frame
 4. Specify `width` and `height` for `Image` components -- required for remote images to render
 5. Use `Pressable` over `TouchableOpacity` -- modern API with `pressed`/`hovered` state callbacks
-6. Target New Architecture (Fabric + TurboModules) -- legacy architecture is frozen since RN 0.80
+6. New Architecture (Fabric + TurboModules) is mandatory since SDK 55/RN 0.83 -- legacy architecture is removed
 
 **NEVER:**
 1. Create inline functions in `renderItem` -- causes item re-creation every render cycle
 2. Skip `removeClippedSubviews={true}` on Android FlatLists -- leads to memory leaks with large lists
 3. Block the JS thread with synchronous heavy computation -- use `InteractionManager.runAfterInteractions` or offload to native
-4. Use deprecated `SafeAreaView` from react-native -- use `react-native-safe-area-context` instead (deprecated in 0.81)
+4. Use deprecated `SafeAreaView` from react-native -- use `react-native-safe-area-context` instead (removed in 0.83)
 
 ---
 
@@ -190,11 +190,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 | Performance, security, accessibility patterns | [07-best-practices.md](07-best-practices.md) |
 | Hermes engine, bundle optimization, ProGuard | [08-hermes-optimization.md](08-hermes-optimization.md) |
 | Testing (Jest, RNTL, Detox), DevTools, debugging | [09-testing-devtools.md](09-testing-devtools.md) |
-| Version upgrade guide (0.80 to 0.81) | [10-upgrade-guide.md](10-upgrade-guide.md) |
+| Version upgrade guide (0.81 to 0.83) | [10-upgrade-guide.md](10-upgrade-guide.md) |
 | Project architecture patterns for monorepo apps | [11-project-architecture.md](11-project-architecture.md) |
 | iOS TextInput text clipping fix | [12-ios-text-clipping.md](12-ios-text-clipping.md) |
 
 ---
 
-**Version:** React Native 0.81.5 | React 19.1.0 | Hermes (default) | New Architecture (default)
+**Version:** React Native 0.83.4 | React 19.2.0 | Hermes (default) | New Architecture (mandatory)
 **Source:** https://reactnative.dev/docs/components-and-apis

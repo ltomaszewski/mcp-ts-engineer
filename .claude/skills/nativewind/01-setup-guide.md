@@ -1,173 +1,137 @@
-# Setup Guide - NativeWind v4
+# Setup Guide - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs/getting-started/installation  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
 ## Table of Contents
-1. [Installation with Expo](#installation-with-expo)
-2. [Manual Setup for Framework-less React Native](#manual-setup-for-framework-less-react-native)
-3. [Tailwind CSS Configuration](#tailwind-css-configuration)
-4. [TypeScript Setup](#typescript-setup)
-5. [Editor Configuration](#editor-configuration)
-6. [Verification & Testing](#verification--testing)
+1. [Prerequisites](#prerequisites)
+2. [Installation with Expo](#installation-with-expo)
+3. [Manual Setup for Framework-less React Native](#manual-setup-for-framework-less-react-native)
+4. [Configuration Files Reference](#configuration-files-reference)
+5. [TypeScript Setup](#typescript-setup)
+6. [Theme Configuration (CSS @theme)](#theme-configuration-css-theme)
+7. [Editor Configuration](#editor-configuration)
+8. [Verification & Testing](#verification--testing)
+
+---
+
+## Prerequisites
+
+NativeWind v5 requires:
+- **New Architecture** (mandatory — bridgeless Fabric renderer)
+- **Expo SDK 55+** or React Native 0.83+
+- Node.js 20+
+
+**New Architecture is automatically enabled in Expo SDK 55.** No opt-in needed.
 
 ---
 
 ## Installation with Expo
 
-Expo provides the most streamlined setup experience. This is the recommended approach for most projects.
-
 ### Quick Start Command
-
-If you want the fastest setup possible:
 
 ```bash
 npx create-expo-app --template with-nativewind
 ```
 
-This initializes a complete Expo project with NativeWind and Tailwind CSS pre-configured.
+This initializes a complete Expo project with NativeWind v5 and Tailwind CSS v4 pre-configured.
 
 ### Step-by-Step Manual Setup
 
-If you're adding NativeWind to an existing Expo project, follow these steps:
-
 #### Step 1: Install Dependencies
 
-Install NativeWind and its peer dependencies:
-
 ```bash
-npm install nativewind react-native-reanimated react-native-safe-area-context
-npm install --dev tailwindcss@^3.4.17 prettier-plugin-tailwindcss@0.5.11
+npm install nativewind@5.0.0-preview.3 react-native-css@^3.0.5 react-native-reanimated react-native-safe-area-context
+npm install --save-dev tailwindcss@^4.1.0 @tailwindcss/postcss@^4.1.0
 ```
 
-**Dependency Versions (as of Feb 2026):**
-- `nativewind`: ^4.2.2
-- `tailwindcss`: ^3.4.17 (devDependency)
-- `prettier-plugin-tailwindcss`: ^0.5.11 (devDependency)
-- `react-native-reanimated`: ^4.2.2
-- `react-native-safe-area-context`: ^4.0.0+
+**Add the lightningcss override** to `package.json` (required for Tailwind v4):
 
-#### Step 2: Setup Tailwind CSS
-
-Initialize Tailwind configuration:
-
-```bash
-npx tailwindcss init
-```
-
-This creates a `tailwind.config.js` file in your project root.
-
-Configure the content paths (critical for Tailwind to find your components):
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+```json
+{
+  "overrides": {
+    "lightningcss": "1.30.1"
+  }
 }
 ```
 
-**Important Notes:**
-- **content array:** Must include all files where you use Tailwind classes
-- **Path patterns:** Use glob patterns to match your file structure
-- **Failure mode:** If classes don't appear, check content paths first
+**Dependency Versions (as of March 2026):**
+- `nativewind`: 5.0.0-preview.3
+- `react-native-css`: ^3.0.5 (replaces `react-native-css-interop`)
+- `tailwindcss`: ^4.1.0 (devDependency)
+- `@tailwindcss/postcss`: ^4.1.0 (devDependency)
+- `react-native-reanimated`: 4.2.1+
 
-#### Step 3: Create Global CSS File
+**Key change from v4:** `react-native-css-interop` is replaced by `react-native-css`. Do NOT install `react-native-css-interop` separately.
 
-Create a `global.css` file in your project root:
+#### Step 2: Create Global CSS File
+
+Create `global.css` in your project root with the v5 4-line import block:
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
 ```
 
-**File Location:** Typically at project root or in `app/` directory
+**Important:** This replaces the v4 `@tailwind base; @tailwind components; @tailwind utilities;` directives. Do NOT use `@tailwind` directives in v5.
 
-**Alternative locations:**
-```
-app/
-├── global.css          ← Option 1: Root
-├── styles/
-│   └── global.css      ← Option 2: Styles folder
-```
-
-#### Step 4: Add Babel Preset
-
-Configure Babel to use NativeWind's preset. Update or create `babel.config.js`:
-
-```javascript
-module.exports = function(api) {
-  api.cache(true);
-  return {
-    presets: [
-      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
-      'nativewind/babel',
-    ],
-  };
-};
-```
-
-**What This Does:**
-- `jsxImportSource: 'nativewind'` enables the JSX transform for className support
-- `nativewind/babel` registers NativeWind's style compilation hooks
-- Required for build-time style optimization
-
-#### Step 5: Configure Metro Bundler
+#### Step 3: Configure Metro Bundler
 
 Create or modify `metro.config.js` in your project root:
 
 ```javascript
 const { getDefaultConfig } = require('expo/metro-config');
+const { withNativewind } = require('nativewind/metro');
 
 const config = getDefaultConfig(__dirname);
 
-const { withNativeWind } = require('nativewind/metro');
-
-module.exports = withNativeWind(config, { input: './global.css' });
+module.exports = withNativewind(config);
 ```
 
-**What This Does:**
-- Integrates NativeWind with Expo's Metro bundler
-- `input` option specifies the path to your global CSS file
-- Enables CSS processing and style compilation
-- Must wrap your Metro config
+**Key changes from v4:**
+- `withNativewind` is lowercase `w` in the import path (same path `nativewind/metro`)
+- No second argument — do NOT pass `{ input: './global.css' }` in v5
+- The global.css is auto-discovered
 
-**withNativeWind Options:**
+#### Step 4: Configure Babel
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `input` | `string` | `undefined` | Path to the global CSS file |
-| `disableTypeScriptGeneration` | `boolean` | `false` | Disable auto-generation of `nativewind-env.d.ts` |
+Create or update `babel.config.js`:
 
-**File Structure After This Step:**
+```javascript
+module.exports = (api) => {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [['module-resolver', { alias: { '@': './src' } }]],
+  };
+};
 ```
-project-root/
-├── app.json
-├── babel.config.js
-├── metro.config.js          ← New
-├── tailwind.config.js       ← New
-├── global.css               ← New
-├── package.json
-└── app/
-    └── index.js
+
+**Key changes from v4:**
+- Remove `nativewind/babel` from presets — it no longer exists
+- Remove `jsxImportSource: 'nativewind'` from babel-preset-expo options
+- Plain `babel-preset-expo` is all that's needed
+
+#### Step 5: Add PostCSS Config
+
+Create `postcss.config.mjs` (new file, required in v5):
+
+```javascript
+const config = { plugins: { "@tailwindcss/postcss": {} } };
+export default config;
 ```
 
 #### Step 6: Import Global CSS
 
-Import your CSS file in your app's root component (usually `app/index.js` or `app.js`):
+Import your CSS file in your app's root component (usually `app/_layout.tsx` or `app/index.tsx`):
 
-```javascript
-import './global.css';  // Must be at the very top
+```typescript
+import '../global.css';  // Must be at the very top
 
 import { View, Text } from 'react-native';
 
@@ -180,136 +144,79 @@ export default function App() {
 }
 ```
 
-**Important:** 
-- Import must be **before** any other imports
-- Should be in the same file as `AppRegistry.registerComponent()` or your root component
-- **DO NOT** import in multiple files
-
-#### Step 7: Update app.json
-
-Ensure your `app.json` uses Metro as the bundler:
-
-```json
-{
-  "expo": {
-    "name": "my-app",
-    "slug": "my-app",
-    "version": "1.0.0",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "plugins": [
-      "expo-router"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
-  }
-}
+**File Structure After Setup:**
 ```
-
-The Metro bundler is the default for Expo projects, so usually no changes needed.
+project-root/
+├── app.json
+├── babel.config.js
+├── metro.config.js          ← Updated (no second arg)
+├── postcss.config.mjs       ← NEW
+├── global.css               ← Updated (new import block)
+├── nativewind-env.d.ts      ← Updated (new type reference)
+├── package.json
+└── app/
+    └── _layout.tsx          ← Imports global.css
+```
 
 ---
 
 ## Manual Setup for Framework-less React Native
 
-If you're using React Native without Expo, the setup is similar but requires more manual configuration.
+If using React Native CLI without Expo:
 
-### Prerequisites
-- React Native CLI
-- Node.js LTS version
-- Watchman (macOS) or Node.js build tools (Windows/Linux)
-
-### Installation Steps
-
-#### Step 1: Install Dependencies
+### Step 1: Install Dependencies
 
 ```bash
-npm install nativewind tailwindcss react-native-reanimated react-native-safe-area-context
+npm install nativewind@5.0.0-preview.3 react-native-css@^3.0.5 react-native-reanimated react-native-safe-area-context
+npm install --save-dev tailwindcss@^4.1.0 @tailwindcss/postcss@^4.1.0
 ```
 
-#### Step 2: Initialize Tailwind
-
-```bash
-npx tailwindcss init
-```
-
-Edit `tailwind.config.js`:
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-```
-
-#### Step 3: Create Global CSS
+### Step 2: Create Global CSS
 
 Create `global.css`:
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
 ```
 
-#### Step 4: Configure Babel
+### Step 3: Configure Babel
 
 Update `babel.config.js`:
 
 ```javascript
 module.exports = {
-  presets: ['module:metro-react-native-babel-preset', ['nativewind/babel']],
+  presets: ['module:metro-react-native-babel-preset'],
 };
 ```
 
-#### Step 5: Configure Metro
+No `nativewind/babel` preset. No `jsxImportSource`.
+
+### Step 4: Configure Metro
 
 Create/update `metro.config.js`:
 
 ```javascript
 const { getDefaultConfig } = require('metro-config');
-const { withNativeWind } = require('nativewind/metro');
+const { withNativewind } = require('nativewind/metro');
 
-module.exports = withNativeWind(getDefaultConfig(__dirname), { input: './global.css' });
+module.exports = withNativewind(getDefaultConfig(__dirname));
 ```
 
-Or if using custom config:
+### Step 5: Add PostCSS Config
+
+Create `postcss.config.mjs`:
 
 ```javascript
-const { withNativeWind } = require('nativewind/metro');
-const config = require('./metro.config');
-
-module.exports = withNativeWind(config, { input: './global.css' });
+const config = { plugins: { "@tailwindcss/postcss": {} } };
+export default config;
 ```
 
-#### Step 6: Handle CSS Processing
+### Step 6: Import in Root Component
 
-For web bundling (if using React Native Web):
-
-```bash
-npm install -D @tailwindcss/cli
-```
-
-Generate CSS:
-
-```bash
-npx tailwindcss -i ./global.css -o ./dist/output.css
-```
-
-#### Step 7: Import in Root Component
-
-In your app entry point:
-
-```javascript
+```typescript
 import './global.css';
 
 import { AppRegistry } from 'react-native';
@@ -320,92 +227,71 @@ AppRegistry.registerComponent('MyApp', () => App);
 
 ---
 
-## Tailwind CSS Configuration
+## Configuration Files Reference
 
-### Minimal Configuration
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ['./app/**/*.{js,jsx,ts,tsx}'],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-```
-
-### Extended Configuration with Custom Theme
+### metro.config.js (v5)
 
 ```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-    './screens/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: '#3498db',
-        secondary: '#2ecc71',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['Georgia', 'serif'],
-      },
-      spacing: {
-        '128': '32rem',
-      },
-    },
-  },
-  plugins: [
-    require('@tailwindcss/container-queries'),
-  ],
-}
+const { getDefaultConfig } = require('expo/metro-config');
+const { withNativewind } = require('nativewind/metro');
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = withNativewind(config);
+// Note: no { input: './global.css' } in v5
 ```
 
-### Important Settings for React Native
+### babel.config.js (v5)
 
 ```javascript
-module.exports = {
-  // ... other config
-  corePlugins: {
-    preflight: false, // Disable web resets
-  },
-  // Only include used utilities (critical for performance)
-  safelist: [
-    // Pre-include dynamic classes here if not in content
-  ],
-}
+module.exports = (api) => {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    // No nativewind/babel
+    // No jsxImportSource: 'nativewind'
+  };
+};
 ```
 
-**Source:** https://www.nativewind.dev/docs/getting-started/installation
+### global.css (v5)
+
+```css
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+```
+
+### postcss.config.mjs (v5 — new file)
+
+```javascript
+const config = { plugins: { "@tailwindcss/postcss": {} } };
+export default config;
+```
 
 ---
 
 ## TypeScript Setup
 
-NativeWind extends React Native types via declaration merging. This setup is **optional but recommended** for type safety.
-
-### Step 1: Create Type Declaration File
+### nativewind-env.d.ts (v5)
 
 Create `nativewind-env.d.ts` in your project root:
 
 ```typescript
-/// <reference types="nativewind" />
+/// <reference types="react-native-css/types" />
 ```
 
+**Breaking change from v4:** The type reference changed from `/// <reference types="nativewind" />` to `/// <reference types="react-native-css/types" />`.
+
 **Important Naming Rules:**
-- ✅ Name it: `nativewind-env.d.ts`
-- ❌ DO NOT name it: `nativewind.d.ts` (conflicts with package)
-- ❌ DO NOT name it: `app.d.ts` (if you have `/app` folder)
-- ❌ DO NOT name it: `react.d.ts` (if in node_modules)
+- Name it: `nativewind-env.d.ts`
+- DO NOT name it: `nativewind.d.ts` (conflicts with package)
+- DO NOT name it: `app.d.ts` (if you have `/app` folder)
 
-### Step 2: TypeScript Configuration
+### TypeScript Configuration
 
-Ensure your `tsconfig.json` includes type roots:
+Ensure your `tsconfig.json` includes:
 
 ```json
 {
@@ -416,36 +302,94 @@ Ensure your `tsconfig.json` includes type roots:
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "types": ["nativewind/native"],
+    "moduleResolution": "node"
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", "nativewind-env.d.ts"],
   "exclude": ["node_modules"]
 }
 ```
 
-### Step 3: Component Type Example
+---
 
-```typescript
-import { View, Text } from 'react-native';
+## Theme Configuration (CSS @theme)
 
-interface CardProps {
-  title: string;
-  children: React.ReactNode;
+In v5, all theme customization is done via CSS `@theme` blocks in `global.css`. There is no `tailwind.config.js`.
+
+### Custom Colors
+
+```css
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-primary: #3498db;
+  --color-secondary: #2ecc71;
+  --color-brand-light: #85c1e9;
+  --color-brand-dark: #1a5276;
 }
-
-export const Card: React.FC<CardProps> = ({ title, children }) => {
-  return (
-    <View className="bg-white p-4 rounded-lg shadow-sm">
-      <Text className="text-lg font-bold text-gray-900">{title}</Text>
-      {children}
-    </View>
-  );
-};
 ```
 
-**Note:** Type support for `className` is automatic with `nativewind-env.d.ts`
+Usage:
+```typescript
+<View className="bg-primary text-secondary" />
+```
+
+### Custom Spacing
+
+```css
+@theme {
+  --spacing-18: 4.5rem;
+  --spacing-128: 32rem;
+}
+```
+
+### Custom Font Families
+
+```css
+@theme {
+  --font-family-display: 'Inter', system-ui, sans-serif;
+  --font-family-mono: 'Courier New', monospace;
+}
+```
+
+### Dark Mode Variables
+
+```css
+@theme {
+  --color-surface: #ffffff;
+  --color-on-surface: #000000;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-surface: #1a1a1a;
+    --color-on-surface: #ffffff;
+  }
+}
+```
+
+### Platform-Specific CSS Variables
+
+```css
+/* global.css */
+@theme {
+  --font-sans: 'Segoe UI', sans-serif;
+}
+
+@media ios {
+  @theme {
+    --font-sans: -apple-system, BlinkMacSystemFont;
+  }
+}
+
+@media android {
+  @theme {
+    --font-sans: 'Roboto', sans-serif;
+  }
+}
+```
 
 ---
 
@@ -456,13 +400,6 @@ export const Card: React.FC<CardProps> = ({ title, children }) => {
 #### 1. Install Tailwind CSS IntelliSense
 
 Extension ID: `bradlc.vscode-tailwindcss`
-
-```bash
-# Command line install
-code --install-extension bradlc.vscode-tailwindcss
-```
-
-Or install from Extensions marketplace in VS Code.
 
 #### 2. Configure VS Code Settings
 
@@ -482,30 +419,7 @@ Create or edit `.vscode/settings.json`:
 }
 ```
 
-#### 3. Enable Class Completion
-
-The extension should auto-detect your `tailwind.config.js`.
-
-If not detected:
-1. Open Command Palette (`Cmd+Shift+P`)
-2. Type "Tailwind CSS: Show Output"
-3. Check for errors
-4. Verify `tailwind.config.js` path
-
-### WebStorm/JetBrains IDE Setup
-
-1. Go to **Settings** → **Languages & Frameworks** → **Tailwind CSS**
-2. Enable Tailwind CSS support
-3. Set configuration file path to `tailwind.config.js`
-4. Enable code completion
-
-### Cursor/Zed Setup
-
-Most modern editors auto-detect Tailwind configuration. If not:
-
-1. Create `tailwind.config.js` at project root
-2. Restart the editor
-3. Restart language server (if needed)
+**Note:** With Tailwind v4, the extension auto-detects via `postcss.config.mjs` instead of `tailwind.config.js`.
 
 ---
 
@@ -522,28 +436,14 @@ export const HelloNativeWind = () => {
   return (
     <View className="flex-1 items-center justify-center bg-white">
       <Text className="text-xl font-bold text-blue-500">
-        NativeWind is Working! ✅
+        NativeWind Works!
       </Text>
     </View>
   );
 };
 ```
 
-### Test 2: Test in App
-
-Update your main app file:
-
-```typescript
-import './global.css';
-
-import { HelloNativeWind } from './components/Hello';
-
-export default function App() {
-  return <HelloNativeWind />;
-}
-```
-
-### Test 3: Run on Device/Simulator
+### Test 2: Run on Device/Simulator
 
 ```bash
 # iOS
@@ -556,41 +456,28 @@ npm run android
 npm run web
 ```
 
-### Expected Result
-
-You should see:
-- ✅ White background
-- ✅ Centered text
-- ✅ Text "NativeWind is Working! ✅"
-- ✅ Blue-colored text
-
-If styles don't appear:
-
-#### Troubleshooting Checklist
+### Troubleshooting Checklist
 
 1. **Styles not appearing?**
-   - [ ] Check `content` array in `tailwind.config.js`
-   - [ ] Verify `global.css` is imported
-   - [ ] Ensure Babel preset is added
-   - [ ] Confirm Metro config uses `withNativewind`
+   - [ ] Verify `global.css` uses the v5 `@import` block (not `@tailwind` directives)
+   - [ ] Verify `global.css` is imported in app root
+   - [ ] Ensure `metro.config.js` uses `withNativewind(config)` with no second argument
+   - [ ] Ensure `postcss.config.mjs` exists
+   - [ ] Ensure `babel.config.js` does NOT have `nativewind/babel` or `jsxImportSource`
    - [ ] Clear cache: `npm start -- --reset-cache`
 
-2. **Build errors?**
-   - [ ] Verify all peer dependencies are installed
-   - [ ] Check `babel.config.js` syntax
-   - [ ] Check `metro.config.js` syntax
-   - [ ] Try reinstalling: `npm install && npm start -- --reset-cache`
+2. **Build errors about nativewind/babel?**
+   - Remove `'nativewind/babel'` from your Babel presets — it was removed in v5
 
-3. **Type errors in TypeScript?**
-   - [ ] Create `nativewind-env.d.ts` file
-   - [ ] Verify TypeScript compiler includes it
-   - [ ] Check `tsconfig.json` settings
-   - [ ] Restart TypeScript server in editor
+3. **Build errors about react-native-css-interop?**
+   - Replace with `react-native-css@^3.0.5` in your dependencies
 
-4. **IntelliSense not working?**
-   - [ ] Install VS Code Tailwind CSS extension
-   - [ ] Restart VS Code completely
-   - [ ] Check extension output for errors
+4. **Type errors on className prop?**
+   - Create/update `nativewind-env.d.ts`: `/// <reference types="react-native-css/types" />`
+   - Verify `tsconfig.json` includes the file
+
+5. **lightningcss version errors?**
+   - Add `"overrides": { "lightningcss": "1.30.1" }` to `package.json`
 
 ---
 
@@ -601,7 +488,8 @@ After successful setup, you're ready to:
 1. **Learn Styling:** See `03-styling-system.md`
 2. **Build Layouts:** See `04-layout-utilities.md`
 3. **Responsive Design:** See `05-responsive-design.md`
-4. **Best Practices:** See `11-best-practices.md`
+4. **Theme Customization:** See this file, Theme Configuration section
+5. **Best Practices:** See `11-best-practices.md`
 
 ---
 
@@ -615,9 +503,10 @@ After successful setup, you're ready to:
 
 ## Version Information
 
-- **NativeWind Version:** 4.2.2+
-- **Tailwind CSS Version:** 3.4.17
+- **NativeWind Version:** 5.0.0-preview.3
+- **Tailwind CSS Version:** ^4.1.0
+- **react-native-css Version:** ^3.0.5
 - **Minimum Node Version:** 20
-- **Last Updated:** February 2026
+- **Last Updated:** March 2026
 
-**Source:** https://www.nativewind.dev/docs/getting-started/installation
+**Source:** https://www.nativewind.dev/v5/

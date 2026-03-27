@@ -1,8 +1,8 @@
-# Best Practices & Production Patterns - NativeWind v4.2.x
+# Best Practices & Production Patterns - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs
-**Last Verified:** February 2026
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -114,30 +114,16 @@ const BestComponent = ({ size }: { size: number }) => {
 
 ### 4. Optimize Content Scanning
 
-Tailwind scans files to find used classes. Optimize your content paths:
+In Tailwind CSS v4 (used by NativeWind v5), content scanning is automatic — no `content` array needed. Tailwind v4 scans files automatically based on your project structure.
 
-```javascript
-// tailwind.config.js
+For dynamic classes that Tailwind cannot detect statically, use `@source inline` in `global.css`:
 
-module.exports = {
-  // ✅ GOOD: Specific paths
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-    './screens/**/*.{js,jsx,ts,tsx}',
-  ],
-  
-  // ❌ AVOID: Overly broad patterns
-  content: [
-    './**/*.{js,jsx,ts,tsx}', // Scans everything!
-  ],
-  
-  // ⚠️ Consider: Safelist for dynamic classes
-  safelist: [
-    { pattern: /w-(1\/2|1\/3|1\/4)/ },
-    { pattern: /bg-(red|blue|green)-[0-9]+/ },
-  ],
-};
+```css
+/* global.css */
+
+/* ✅ Safelist dynamic patterns using @source inline */
+@source inline("w-1/2 w-1/3 w-1/4");
+@source inline("bg-{red,blue,green}-{100,200,300,400,500,600,700,800,900}");
 ```
 
 ### 5. Lazy Loading and Code Splitting
@@ -259,24 +245,19 @@ export const COLORS = {
 
 ## Common Pitfalls
 
-### 1. Missing Content Paths
+### 1. Missing global.css Import
 
 **Problem:** Classes don't appear in built app
 
-```javascript
-// ❌ BAD: Missing pattern
-module.exports = {
-  content: [
-    './app/**/*.js',  // Missing .tsx, .ts
-  ],
-};
+In NativeWind v5, there is no `tailwind.config.js` content array — Tailwind v4 scans automatically. The most common cause of missing styles is forgetting to import `global.css`:
 
-// ✅ GOOD: Complete pattern
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-  ],
-};
+```typescript
+// ❌ BAD: global.css not imported at app root
+// app/_layout.tsx (nothing imports global.css)
+
+// ✅ GOOD: Import global.css at root entry
+// app/_layout.tsx
+import '../global.css';
 ```
 
 ### 2. Dynamic Class Names
@@ -296,11 +277,8 @@ const colorMap = {
 };
 <View className={colorMap[color]} />
 
-// Or use safelist
-// tailwind.config.js
-safelist: [
-  { pattern: /bg-(red|blue|green)-500/ },
-]
+// Or use @source inline in global.css
+// @source inline("bg-{red,blue,green}-500");
 ```
 
 ### 3. Mixing Style and className
@@ -426,11 +404,12 @@ This logs compiled style objects to the console, helping identify when classes a
 
 **Checklist:**
 
-- [ ] Is the file in `tailwind.config.js` content paths?
+- [ ] Did you import `global.css` at app root (e.g., `import '../global.css'` in `_layout.tsx`)?
+- [ ] Does `global.css` have the correct v5 4-line import block?
+- [ ] Is Metro config wrapped with `withNativewind(config)` (no second argument)?
+- [ ] Is `babel.config.js` free of `nativewind/babel` and `jsxImportSource`?
+- [ ] Is `postcss.config.mjs` present with `@tailwindcss/postcss`?
 - [ ] Did you save the file?
-- [ ] Did you import global.css at app root?
-- [ ] Is Babel preset configured with `jsxImportSource: 'nativewind'`?
-- [ ] Is Metro config wrapped with `withNativeWind({ input: './global.css' })`?
 - [ ] Try: `npm start -- --reset-cache`
 - [ ] Try: `DEBUG=nativewind npx expo start` to see compiled output
 
@@ -481,7 +460,7 @@ export const Debug = () => {
 ### 5. Media Query Not Triggering
 
 ```typescript
-// Check breakpoint values in tailwind.config.js
+// Check breakpoint values (defined in @theme in global.css or Tailwind defaults)
 <View className="p-4 sm:p-6">
   {/* 
     Issue: On device where width < 640px, sm: doesn't apply
@@ -665,4 +644,4 @@ Before shipping to production:
 - **Dark Mode:** `08-dark-mode.md` - Theme implementation
 - **Custom Values:** `09-custom-values.md` - Dynamic theming
 
-**Source:** https://www.nativewind.dev/docs
+**Source:** https://www.nativewind.dev/v5/

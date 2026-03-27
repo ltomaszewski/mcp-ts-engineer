@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Quickstart & Environment Setup
+# React Native 0.83.4 -- Quickstart & Environment Setup
 
 Complete platform setup (macOS/Windows/Linux), project creation, and first run.
 
@@ -242,5 +242,5 @@ rm -rf node_modules && npm install
 
 ---
 
-**Version:** React Native 0.81.5 | Node.js 20.19.4+ | Xcode 16.1+ | JDK 17
+**Version:** React Native 0.83.4 | Node.js 20.19.4+ | Xcode 16.1+ | JDK 17
 **Source:** https://reactnative.dev/docs/set-up-your-environment

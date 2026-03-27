@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Testing & DevTools
+# React Native 0.83.4 -- Testing & DevTools
 
 React Native DevTools, Jest, React Native Testing Library, Detox E2E, and debugging.
 
@@ -15,7 +15,7 @@ React Native DevTools, Jest, React Native Testing Library, Detox E2E, and debugg
 | Physical device | Shake device |
 | Metro terminal | Press `d` |
 
-### DevTools Features (RN 0.81)
+### DevTools Features (RN 0.83)
 
 - **Component Inspector** -- view component tree, props, state
 - **Performance Profiler** -- measure render times, identify bottlenecks
@@ -23,9 +23,9 @@ React Native DevTools, Jest, React Native Testing Library, Detox E2E, and debugg
 - **Console** -- view logs from JS runtime
 - **Error display** -- original message, stack trace, Owner Stack, and error cause
 
-### Improved Error Reporting (0.81)
+### Improved Error Reporting (0.81+)
 
-RN 0.81 DevTools now shows:
+RN 0.81+ DevTools shows:
 - Original error message and stack trace
 - Error's `cause` property if present
 - Owner Stack for component errors (traces which component rendered the error)
@@ -370,5 +370,5 @@ npm test -- -u
 
 ---
 
-**Version:** React Native 0.81.5 | Jest | @testing-library/react-native | Detox
+**Version:** React Native 0.83.4 | Jest | @testing-library/react-native | Detox
 **Source:** https://reactnative.dev/docs/testing-overview

@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Turbo Native Modules
+# React Native 0.83.4 -- Turbo Native Modules
 
 Type-safe native integration via JSI, Codegen, and platform implementations.
 
@@ -373,5 +373,5 @@ function useMyEvent(handler: (data: unknown) => void): void {
 
 ---
 
-**Version:** React Native 0.81.5 | New Architecture (default)
+**Version:** React Native 0.83.4 | New Architecture (mandatory)
 **Source:** https://reactnative.dev/docs/turbo-native-modules-introduction

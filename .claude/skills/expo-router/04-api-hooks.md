@@ -1,4 +1,4 @@
-# Hooks Reference -- Expo Router 6.x
+# Hooks Reference -- Expo Router v7 (~55.0.7)
 
 All navigation and state hooks with typed return values and practical examples.
 
@@ -392,4 +392,4 @@ export default function DynamicHeader() {
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/

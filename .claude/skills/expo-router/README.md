@@ -1,8 +1,8 @@
-# Expo Router 6.x -- Modular Knowledge Base
+# Expo Router v7 -- Modular Knowledge Base
 
-File-based routing for React Native and web. Production-grade reference for Expo SDK 54.
+File-based routing for React Native and web. Production-grade reference for Expo SDK 55.
 
-**Version:** ~6.0.23 (SDK 54) | React Native 0.81.5, React 19.1.0, TypeScript ^5.9.3
+**Version:** ~55.0.7 (SDK 55) | React Native 0.83.4, React 19.2.0, TypeScript ^5.9.3
 
 ---
 

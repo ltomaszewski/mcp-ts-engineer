@@ -1,8 +1,8 @@
-# Advanced Features - NativeWind v4.2.x
+# Advanced Features - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs/api/css-interop
-**Last Verified:** February 2026
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -96,7 +96,7 @@ Enabling `cssInterop` on a component adds runtime overhead -- NativeWind must re
 
 ## Theme Helper Functions
 
-NativeWind 4.2.x provides theme helper functions from `nativewind/theme` for platform-aware values in `tailwind.config.js`.
+NativeWind v5 provides theme helper functions from `nativewind/theme` for platform-aware values. These are used in `global.css` via the `@theme` plugin or directly in components.
 
 ### Available Helpers
 
@@ -112,44 +112,33 @@ NativeWind 4.2.x provides theme helper functions from `nativewind/theme` for pla
 | `getPixelSizeForLayoutSize(size)` | Layout size to pixel size |
 | `roundToNearestPixel(size)` | Round to nearest pixel boundary |
 
-### Usage in tailwind.config.js
+### Usage in global.css with @theme
 
-```javascript
-const {
-  hairlineWidth,
-  platformSelect,
-  platformColor,
-  pixelRatio,
-  fontScale,
-} = require('nativewind/theme');
+In v5, custom design tokens go in `global.css` using `@theme`:
 
-module.exports = {
-  theme: {
-    extend: {
-      borderWidth: {
-        hairline: hairlineWidth(),
-      },
-      fontSize: {
-        // Scale font size with device font scale setting
-        'body-scaled': fontScale(16),
-      },
-      colors: {
-        // Use native platform colors
-        label: platformColor('label', '@android:color/primary_text_dark'),
-        // Platform-specific color values
-        link: platformSelect({
-          ios: '#007AFF',
-          android: '#1976D2',
-          default: '#0066CC',
-        }),
-      },
-      spacing: {
-        'pixel-2': pixelRatio(2),
-      },
-    },
-  },
-};
+```css
+/* global.css */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  /* Custom border width for hairline */
+  --border-width-hairline: 0.5px;
+
+  /* Font size that should be adjusted by platform */
+  --font-size-body-scaled: 16px;
+
+  /* Platform-specific link color (override per platform) */
+  --color-link: #0066CC;
+
+  /* Custom spacing */
+  --spacing-pixel-2: 2px;
+}
 ```
+
+**Note:** For truly dynamic platform values (hairlineWidth, pixelRatio, platformColor), use the nativewind/theme helpers from JavaScript and pass the result via `vars()` or inline styles, since `global.css` is static CSS at compile time.
 
 ### Usage in Components
 
@@ -239,7 +228,7 @@ export function SafeScreen() {
 
 **How it works:** On native, these use CSS `env()` functions with values from `react-native-safe-area-context`. On web, standard CSS `env(safe-area-inset-*)` variables are used.
 
-**Source:** https://www.nativewind.dev/docs/tailwind/new-concepts/safe-area-insets
+**Source:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -283,16 +272,13 @@ Use any value not in the Tailwind design system with bracket syntax.
 
 ### Safelist for Dynamic Patterns
 
-When classes are generated dynamically and Tailwind cannot detect them, add a safelist:
+When classes are generated dynamically and Tailwind cannot detect them, add a safelist in `global.css` using `@source`:
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  safelist: [
-    { pattern: /bg-(red|blue|green)-[0-9]+/ },
-    { pattern: /w-(1\/2|1\/3|1\/4)/ },
-  ],
-};
+```css
+/* global.css */
+/* Safelist dynamic patterns using @source inline */
+@source inline("bg-{red,blue,green}-{100,200,300,400,500,600,700,800,900}");
+@source inline("w-1/2 w-1/3 w-1/4");
 ```
 
 ---
@@ -301,16 +287,7 @@ module.exports = {
 
 ### Container Queries Plugin
 
-```bash
-npm install -D @tailwindcss/container-queries
-```
-
-```javascript
-// tailwind.config.js
-module.exports = {
-  plugins: [require('@tailwindcss/container-queries')],
-};
-```
+In Tailwind CSS v4, container queries are built-in — no separate package needed:
 
 ```typescript
 <View className="@container p-4">
@@ -331,25 +308,19 @@ module.exports = {
 | `@xl:` | 576px |
 | `@2xl:` | 672px |
 
-### Custom Plugin
+### Custom Utilities
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  plugins: [
-    function ({ addUtilities }) {
-      addUtilities({
-        '.card-shadow': {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 3,
-        },
-      });
-    },
-  ],
-};
+In v5 (Tailwind CSS v4), add custom utilities via `@utility` in `global.css` — no `tailwind.config.js` plugins:
+
+```css
+/* global.css */
+@utility card-shadow {
+  shadowColor: #000;
+  shadowOffset: 0 2px;
+  shadowOpacity: 0.1;
+  shadowRadius: 8px;
+  elevation: 3;
+}
 ```
 
 Usage: `<View className="card-shadow p-4 rounded-lg" />`
@@ -386,49 +357,57 @@ export function AdaptiveCard({ title, desc }: { title: string; desc: string }) {
 
 ### Theme Extension
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  content: ['./app/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}'],
-  theme: {
-    extend: {
-      colors: {
-        brand: { DEFAULT: '#3498db', dark: '#2980b9' },
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui'],
-      },
-      spacing: { '128': '32rem' },
-      fontSize: { xxs: '10px' },
-      borderRadius: { xl: '20px' },
-    },
-  },
-  corePlugins: {
-    preflight: false, // Disable web resets for React Native
-  },
-};
+In v5, all theme extensions go in `global.css` using `@theme`. No `tailwind.config.js`:
+
+```css
+/* global.css */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  /* Custom colors */
+  --color-brand: #3498db;
+  --color-brand-dark: #2980b9;
+
+  /* Custom font families */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Custom spacing */
+  --spacing-128: 32rem;
+
+  /* Custom font size */
+  --font-size-xxs: 10px;
+
+  /* Custom border radius */
+  --radius-xl: 20px;
+}
 ```
 
 ### Brand-Specific Builds
 
-```javascript
-const brands = {
-  acme: { primary: '#ff6b6b', secondary: '#339af0' },
-  tech: { primary: '#1976d2', secondary: '#00bcd4' },
-};
-const brand = process.env.REACT_APP_BRAND || 'acme';
+Swap brand tokens at build time by using separate CSS files per brand:
 
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        'brand-primary': brands[brand].primary,
-        'brand-secondary': brands[brand].secondary,
-      },
-    },
-  },
-};
+```css
+/* global-acme.css */
+@import "./global.css";
+@theme {
+  --color-brand-primary: #ff6b6b;
+  --color-brand-secondary: #339af0;
+}
 ```
+
+```css
+/* global-tech.css */
+@import "./global.css";
+@theme {
+  --color-brand-primary: #1976d2;
+  --color-brand-secondary: #00bcd4;
+}
+```
+
+Then conditionally import the right file based on `REACT_APP_BRAND` in your entry point.
 
 ### Platform-Specific CSS Variables
 
@@ -457,4 +436,4 @@ module.exports = {
 
 ---
 
-**Version:** NativeWind v4.2.x | **Source:** https://www.nativewind.dev/docs/api/css-interop
+**Version:** NativeWind v5.0.0-preview.3 | **Source:** https://www.nativewind.dev/v5/

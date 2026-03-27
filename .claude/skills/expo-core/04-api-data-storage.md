@@ -1,12 +1,12 @@
 # 04 -- API Reference: Data & Assets (FileSystem, SecureStore, Asset, Font)
 
-File I/O with the new OOP API, encrypted key-value storage, asset management, and font loading for Expo SDK 54.
+File I/O with the new OOP API, encrypted key-value storage, asset management, and font loading for Expo SDK 55.
 
 ---
 
 ## FileSystem (New OOP API)
 
-SDK 54 promotes the formerly `/next` object-oriented API to the default import. The legacy string-based API is available at `expo-file-system/legacy`.
+SDK 54+ promotes the formerly `/next` object-oriented API to the default import. The legacy string-based API is available at `expo-file-system/legacy`.
 
 ### Installation
 
@@ -141,8 +141,8 @@ import { File, Directory, Paths } from 'expo-file-system';
 // Write and read a text file
 const file = new File(Paths.document, 'notes.txt');
 file.create();
-file.write('Hello, Expo SDK 54!');
-console.log(file.textSync()); // "Hello, Expo SDK 54!"
+file.write('Hello, Expo SDK 55!');
+console.log(file.textSync()); // "Hello, Expo SDK 55!"
 console.log(file.size);       // 19
 
 // Write JSON data
@@ -468,4 +468,4 @@ Fonts can be embedded at build time via the config plugin in app.json, eliminati
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/filesystem/, https://docs.expo.dev/versions/latest/sdk/securestore/, https://docs.expo.dev/versions/latest/sdk/asset/, https://docs.expo.dev/versions/latest/sdk/font/
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/filesystem/, https://docs.expo.dev/versions/latest/sdk/securestore/, https://docs.expo.dev/versions/latest/sdk/asset/, https://docs.expo.dev/versions/latest/sdk/font/

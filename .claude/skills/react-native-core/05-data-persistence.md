@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Data Persistence & Storage
+# React Native 0.83.4 -- Data Persistence & Storage
 
 AsyncStorage, SecureStore, and SQLite solutions with comparison and security guidance.
 
@@ -316,5 +316,5 @@ Need to store data?
 
 ---
 
-**Version:** React Native 0.81.5
+**Version:** React Native 0.83.4
 **Source:** https://reactnative.dev/docs/asyncstorage | https://docs.expo.dev/versions/latest/sdk/secure-store/ | https://docs.expo.dev/versions/latest/sdk/sqlite/

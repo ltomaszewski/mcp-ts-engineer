@@ -1,8 +1,8 @@
-# Styling System - NativeWind v4
+# Styling System - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -547,4 +547,4 @@ export const Button = ({ variant = 'primary' }) => {
 - **Avoid conflicts:** Choose one approach per property
 - **Use composition:** Extract common patterns into components/hooks
 
-**Source:** https://www.nativewind.dev/docs
+**Source:** https://www.nativewind.dev/v5/

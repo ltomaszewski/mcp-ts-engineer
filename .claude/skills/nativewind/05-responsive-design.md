@@ -1,8 +1,8 @@
-# Responsive Design & Platform-Specific Styling - NativeWind v4.2.x
+# Responsive Design & Platform-Specific Styling - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -448,4 +448,4 @@ export const ContactForm = () => {
 - **Core Concepts:** `02-core-concepts.md` - Architecture
 - **Best Practices:** `11-best-practices.md` - Optimization patterns
 
-**Source:** https://www.nativewind.dev/docs
+**Source:** https://www.nativewind.dev/v5/

@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Navigation & Routing
+# React Native 0.83.4 -- Navigation & Routing
 
 React Navigation patterns: Stack, Tab, Drawer, Deep Linking, and Auth flows.
 
@@ -349,5 +349,5 @@ function ProfileScreen(): React.ReactElement {
 
 ---
 
-**Version:** React Native 0.81.5 | React Navigation 7.x
+**Version:** React Native 0.83.4 | React Navigation 7.x
 **Source:** https://reactnavigation.org/docs/getting-started

@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Project Architecture
+# React Native 0.83.4 -- Project Architecture
 
 Monorepo mobile app architecture patterns: feature modules, state management, styling, and file organization.
 
@@ -8,16 +8,16 @@ Monorepo mobile app architecture patterns: feature modules, state management, st
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Framework | Expo | ~54.x |
+| Framework | Expo | ~55.x |
 | Language | TypeScript | ^5.9.x |
 | State | Zustand | ^5.x |
 | Server State | TanStack Query | ^5.x |
 | API Client | graphql-request | ^7.x |
-| Styling | NativeWind + Tailwind CSS v3 | ^4.1.x / ^3.4.x |
+| Styling | NativeWind + Tailwind CSS v4 | ^5.x / ^4.x |
 | Forms | React Hook Form + Zod | ^7.x / ^4.x |
 | Storage | MMKV | ^4.x |
 | Animations | Reanimated | ^4.2.x |
-| Navigation | Expo Router | ^6.x |
+| Navigation | Expo Router | ^7.x |
 | Testing | Jest + Testing Library + Maestro | -- |
 | Linting | Biome | -- |
 
@@ -89,8 +89,7 @@ apps/<app-name>/
 │
 ├── .maestro/                 # E2E test flows
 ├── assets/                   # Static assets
-├── global.css                # Tailwind entry
-├── tailwind.config.js        # Tailwind configuration
+├── global.css                # Tailwind entry (CSS-first, v4 syntax)
 └── package.json
 ```
 
@@ -436,56 +435,36 @@ export function cn(...inputs: ClassValue[]): string {
 
 ## Configuration Files
 
-### tailwind.config.js
-
-```typescript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './src/**/*.{js,jsx,ts,tsx}',
-  ],
-  presets: [require('nativewind/preset')],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          50: '#EEF2FF',
-          500: '#6366F1',
-          600: '#4F46E5',
-        },
-      },
-    },
-  },
-  plugins: [],
-};
-```
-
 ### babel.config.js
 
 ```typescript
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: [
-      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
-      'nativewind/babel',
-    ],
+    presets: ['babel-preset-expo'],
     plugins: [
       ['module-resolver', { root: ['./'], alias: { '@': './src' } }],
-      'react-native-reanimated/plugin', // MUST be last
     ],
   };
 };
+// NativeWind v5: no nativewind/babel preset, no jsxImportSource
+// react-native-reanimated/plugin is auto-included by babel-preset-expo@55
 ```
 
 ### global.css
 
-```typescript
-/* IMPORTANT: Use Tailwind v3 syntax, NOT v4 */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+```css
+/* NativeWind v5 + Tailwind v4 CSS-first imports */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-primary-50: #EEF2FF;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+}
 ```
 
 ---
@@ -576,5 +555,5 @@ npm install react-native-nitro-modules
 
 ---
 
-**Version:** React Native 0.81.5 | Expo ~54.x | NativeWind ^4.1.x | Zustand ^5.x | TanStack Query ^5.x
+**Version:** React Native 0.83.4 | Expo ~55.x | NativeWind ^5.x | Zustand ^5.x | TanStack Query ^5.x
 **Source:** Project monorepo architecture standards

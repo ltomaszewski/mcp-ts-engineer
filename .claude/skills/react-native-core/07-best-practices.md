@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Best Practices
+# React Native 0.83.4 -- Best Practices
 
 Performance optimization, security, accessibility, and common pitfalls.
 
@@ -319,7 +319,7 @@ InteractionManager.runAfterInteractions(() => {
 ### 6: Deprecated SafeAreaView
 
 ```typescript
-// BAD -- deprecated in RN 0.81
+// BAD -- removed in RN 0.83
 import { SafeAreaView } from 'react-native';
 
 // GOOD -- community package
@@ -355,5 +355,5 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 ---
 
-**Version:** React Native 0.81.5
+**Version:** React Native 0.83.4
 **Source:** https://reactnative.dev/docs/performance | https://reactnative.dev/docs/accessibility

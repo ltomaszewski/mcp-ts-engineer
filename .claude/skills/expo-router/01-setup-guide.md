@@ -1,6 +1,6 @@
-# Setup Guide -- Expo Router 6.x
+# Setup Guide -- Expo Router v7 (~55.0.7)
 
-Complete initialization and configuration for Expo Router projects with SDK 54.
+Complete initialization and configuration for Expo Router projects with SDK 55.
 
 ---
 
@@ -22,7 +22,8 @@ This creates a new Expo project with Expo Router pre-installed, `app/_layout.tsx
 
 ```bash
 npx expo install expo-router react-native-safe-area-context \
-  react-native-screens expo-linking expo-constants expo-status-bar
+  react-native-screens expo-linking expo-constants expo-status-bar \
+  expo-system-ui
 ```
 
 | Dependency | Purpose |
@@ -33,6 +34,7 @@ npx expo install expo-router react-native-safe-area-context \
 | `expo-linking` | Deep linking support |
 | `expo-constants` | App constants (scheme, name, version) |
 | `expo-status-bar` | Status bar styling |
+| `expo-system-ui` | SDK 55 required for splash screen background color on iOS |
 
 ### Step 2: Update Entry Point
 
@@ -146,7 +148,17 @@ Update `package.json`:
 
 ## TypeScript Setup
 
-Expo Router generates automatic type definitions. No additional setup required.
+Expo Router generates automatic type definitions. Enable typed routes in `app.json`:
+
+```json
+{
+  "experiments": {
+    "typedRoutes": true
+  }
+}
+```
+
+`typedRoutes: true` is enabled by default in SDK 55. It adds compile-time route validation, autocomplete for `href`, and type-safe `useLocalSearchParams`.
 
 ```typescript
 // app/[id].tsx
@@ -238,4 +250,4 @@ Clear cache: `rm -rf .expo && npx expo start --clear`
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/router/installation/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/router/installation/

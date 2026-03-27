@@ -1,6 +1,6 @@
 # 03 -- API Reference: App Lifecycle (Constants, SplashScreen, Linking, Updates)
 
-Runtime system information, splash screen management, deep linking, and OTA update APIs for Expo SDK 54.
+Runtime system information, splash screen management, deep linking, and OTA update APIs for Expo SDK 55.
 
 ---
 
@@ -439,4 +439,4 @@ export function UpdateChecker() {
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/constants/, https://docs.expo.dev/versions/latest/sdk/splash-screen/, https://docs.expo.dev/versions/latest/sdk/linking/, https://docs.expo.dev/versions/latest/sdk/updates/
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/constants/, https://docs.expo.dev/versions/latest/sdk/splash-screen/, https://docs.expo.dev/versions/latest/sdk/linking/, https://docs.expo.dev/versions/latest/sdk/updates/

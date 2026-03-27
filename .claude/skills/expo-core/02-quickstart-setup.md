@@ -1,6 +1,6 @@
 # 02 -- Project Setup & Configuration
 
-Step-by-step project creation, app.json/app.config.ts configuration reference, environment variables, CLI commands, and development workflow for Expo SDK 54.
+Step-by-step project creation, app.json/app.config.ts configuration reference, environment variables, CLI commands, and development workflow for Expo SDK 55.
 
 ---
 
@@ -61,7 +61,10 @@ my-app/
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "myapp",
-    "newArchEnabled": true,
+    "experiments": {
+      "reactCompiler": true,
+      "typedRoutes": true
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -86,7 +89,7 @@ my-app/
       "output": "single",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": ["expo-router", "expo-secure-store", "expo-system-ui"],
     "extra": {}
   }
 }
@@ -104,7 +107,7 @@ my-app/
 | `userInterfaceStyle` | enum | `"light"` | `"light"`, `"dark"`, or `"automatic"` (follows system) |
 | `scheme` | string/array | -- | URL scheme(s) for deep linking (e.g., `"myapp"` for `myapp://`) |
 | `backgroundColor` | string | `"#ffffff"` | Root view background color (hex) |
-| `newArchEnabled` | boolean | `true` | Enable React Native New Architecture (default in SDK 54) |
+| `newArchEnabled` | boolean | `true` | New Architecture is MANDATORY in SDK 55; this field is ignored — it cannot be disabled |
 | `platforms` | array | `["ios","android"]` | Target platforms |
 | `plugins` | array | -- | Config plugins for native module configuration |
 | `extra` | object | -- | Custom data accessible via `Constants.expoConfig.extra` |
@@ -348,4 +351,4 @@ my-app/
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/get-started/create-a-project/, https://docs.expo.dev/versions/latest/config/app/, https://docs.expo.dev/workflow/configuration/
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/get-started/create-a-project/, https://docs.expo.dev/versions/latest/config/app/, https://docs.expo.dev/workflow/configuration/

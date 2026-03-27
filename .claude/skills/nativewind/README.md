@@ -1,7 +1,7 @@
-# NativeWind v4 - Modular Knowledge Base
+# NativeWind v5 - Modular Knowledge Base
 
-**Framework:** NativeWind v4 (^4.2.2) + Tailwind CSS 3.4.17
-**Target:** React Native 0.81.5, Expo SDK 54, TypeScript ^5.9.3
+**Framework:** NativeWind v5.0.0-preview.3 + Tailwind CSS 4.1.x
+**Target:** React Native 0.83.4, Expo SDK 55, TypeScript ^5.9.3
 
 ---
 
@@ -11,7 +11,7 @@
 |--------|------|---------|
 | **SKILL** | `SKILL.md` | Quick reference, rules, core patterns |
 | **Setup** | `01-setup-guide.md` | Installation, Expo/CLI config, TypeScript, editor |
-| **Core Concepts** | `02-core-concepts.md` | Architecture, compilation model, v2 migration |
+| **Core Concepts** | `02-core-concepts.md` | Architecture, compilation model, v4 migration |
 | **Styling System** | `03-styling-system.md` | className, dynamic styles, clsx, precedence |
 | **Layout** | `04-layout-utilities.md` | Flexbox, grid, gap, aspect-ratio, media queries, container queries |
 | **Responsive** | `05-responsive-design.md` | Breakpoints, platform selectors (ios/android/web/native) |
@@ -38,6 +38,7 @@
 
 ## Official Sources
 
-- **Docs:** https://www.nativewind.dev/docs
+- **Docs:** https://www.nativewind.dev/v5/
 - **GitHub:** https://github.com/nativewind/nativewind
 - **Tailwind CSS:** https://tailwindcss.com/docs
+- **react-native-css:** https://github.com/nativewind/react-native-css

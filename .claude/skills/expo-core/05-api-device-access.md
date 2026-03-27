@@ -1,12 +1,12 @@
 # 05 -- API Reference: Device Access (Camera, ImagePicker, Location, Sensors)
 
-Camera capture, photo selection, GPS location, geocoding, and motion sensor APIs with per-module permission handling for Expo SDK 54.
+Camera capture, photo selection, GPS location, geocoding, and motion sensor APIs with per-module permission handling for Expo SDK 55.
 
 ---
 
 ## Permission Pattern
 
-The standalone `expo-permissions` package is deprecated in SDK 54. Each module provides its own permission hooks and methods.
+The standalone `expo-permissions` package is deprecated. Each module provides its own permission hooks and methods.
 
 ### Universal Pattern
 
@@ -504,4 +504,4 @@ export function SensorScreen() {
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/camera/, https://docs.expo.dev/versions/latest/sdk/imagepicker/, https://docs.expo.dev/versions/latest/sdk/location/, https://docs.expo.dev/versions/latest/sdk/accelerometer/
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/camera/, https://docs.expo.dev/versions/latest/sdk/imagepicker/, https://docs.expo.dev/versions/latest/sdk/location/, https://docs.expo.dev/versions/latest/sdk/accelerometer/

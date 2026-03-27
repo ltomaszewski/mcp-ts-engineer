@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Framework Overview & Architecture
+# React Native 0.83.4 -- Framework Overview & Architecture
 
 Core concepts, New Architecture (Fabric, TurboModules, JSI), Hermes engine, and development model.
 
@@ -24,7 +24,7 @@ React Native is a framework for building native iOS and Android apps using React
 
 ## Architecture: New Architecture (Default)
 
-React Native 0.81.5 runs the New Architecture by default. The legacy architecture was frozen in RN 0.80 and fully removed as an option in RN 0.82.
+React Native 0.83.4 runs the New Architecture as the only architecture. The legacy architecture was frozen in RN 0.80 and fully removed in RN 0.82. Since SDK 55, New Architecture is mandatory.
 
 ### The Four Pillars
 
@@ -82,7 +82,7 @@ The React Native Codegen tool generates type-safe native code from your TypeScri
 
 ## Hermes Engine (Default)
 
-Hermes is Meta's JavaScript engine optimized for React Native. It is the default engine in RN 0.81.5.
+Hermes is Meta's JavaScript engine optimized for React Native. It is the default engine in RN 0.83.4.
 
 | Metric | Without Hermes | With Hermes | Improvement |
 |--------|---------------|-------------|-------------|
@@ -104,7 +104,7 @@ const isHermes = (): boolean => !!global.HermesInternal;
 console.log('Using Hermes:', isHermes());
 ```
 
-**Note:** In RN 0.81, the built-in JavaScriptCore has been removed. Apps requiring JSC must use the community package `@react-native-community/javascriptcore`.
+**Note:** The built-in JavaScriptCore was removed in RN 0.81. Apps requiring JSC must use the community package `@react-native-community/javascriptcore`.
 
 ---
 
@@ -215,7 +215,7 @@ import { MyComponent } from './MyComponent'; // auto-resolves per platform
 
 ## TypeScript Setup
 
-RN 0.81.5 ships with TypeScript support by default. Key configuration:
+RN 0.83.4 ships with TypeScript support by default. Key configuration:
 
 ```json
 {
@@ -299,5 +299,5 @@ cd ios && xcodebuild -workspace MyProject.xcworkspace -scheme MyProject -configu
 
 ---
 
-**Version:** React Native 0.81.5 | React 19.1.0 | Hermes (default) | New Architecture (default)
+**Version:** React Native 0.83.4 | React 19.2.0 | Hermes (default) | New Architecture (mandatory since SDK 55)
 **Source:** https://reactnative.dev/docs/getting-started | https://reactnative.dev/architecture/landing-page

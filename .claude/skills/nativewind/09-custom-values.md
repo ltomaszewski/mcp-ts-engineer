@@ -1,8 +1,8 @@
-# Custom Values & Advanced Styling - NativeWind v4.2.x
+# Custom Values & Advanced Styling - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/functions-and-directives
-**Last Verified:** February 2026
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## vars() Function (Recommended)
 
-NativeWind 4.2.x provides a `vars()` helper function as the preferred way to set CSS variables from JavaScript. It returns a properly typed style object.
+NativeWind v5 provides a `vars()` helper function as the preferred way to set CSS variables from JavaScript. It returns a properly typed style object.
 
 ### Basic Usage
 
@@ -84,7 +84,7 @@ import { vars } from 'nativewind';
 
 ## CSS Variable Shorthand
 
-NativeWind 4.2.x supports a shorthand syntax for referencing CSS variables without `var()`:
+NativeWind v5 supports a shorthand syntax for referencing CSS variables without `var()`:
 
 ```typescript
 // ✅ SHORTHAND (4.2.x): Omit var() wrapper
@@ -150,31 +150,28 @@ export const InlineVariables = () => {
 };
 ```
 
-#### 2. Theme Configuration
+#### 2. Theme Configuration via CSS
 
-Define variables in your `tailwind.config.js`:
+In v5, define design tokens in `global.css` using `@theme`:
 
-```javascript
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        primary: 'var(--color-primary, #3498db)',
-        secondary: 'var(--color-secondary, #2ecc71)',
-      },
-      spacing: {
-        unit: 'var(--spacing-unit, 8px)',
-      },
-    },
-  },
+```css
+/* global.css */
+@theme {
+  --color-primary: #3498db;
+  --color-secondary: #2ecc71;
+  --spacing-unit: 8px;
+  --border-radius: 8px;
 }
 ```
 
-#### 3. Global CSS File
+Usage: `<View className="bg-primary p-[--spacing-unit]" />`
 
-Define in `global.css`:
+#### 3. Runtime CSS Variables in Global CSS
+
+For variables that change at runtime (e.g., dark mode), define in `@layer base`:
 
 ```css
+/* global.css */
 @layer base {
   :root {
     --color-primary: #3498db;
@@ -182,7 +179,7 @@ Define in `global.css`:
     --spacing-unit: 8px;
     --border-radius: 8px;
   }
-  
+
   /* Dark mode variables */
   @media (prefers-color-scheme: dark) {
     :root {
@@ -666,4 +663,4 @@ const Component = ({ theme }: any) => {
 - **Styling System:** `03-styling-system.md` - Dynamic styles
 - **Best Practices:** `11-best-practices.md` - Production patterns
 
-**Source:** https://www.nativewind.dev/docs/core-concepts/functions-and-directives
+**Source:** https://www.nativewind.dev/v5/

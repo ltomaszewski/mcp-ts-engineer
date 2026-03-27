@@ -1,4 +1,4 @@
-# Routing Fundamentals -- Expo Router 6.x
+# Routing Fundamentals -- Expo Router v7 (~55.0.7)
 
 File-based routing conventions, directory structure, and core routing concepts.
 
@@ -307,4 +307,4 @@ app/
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/router/basics/common-navigation-patterns/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/router/basics/common-navigation-patterns/

@@ -1,6 +1,6 @@
 # Expo Core: Master Index & Navigation Hub
 
-Complete engineering reference for Expo SDK 54 (React Native 0.81.5, React 19.1.0). Load specific modules based on task requirements.
+Complete engineering reference for Expo SDK 55 (React Native 0.83.4, React 19.2.0). Load specific modules based on task requirements.
 
 ---
 
@@ -10,7 +10,7 @@ Complete engineering reference for Expo SDK 54 (React Native 0.81.5, React 19.1.
 
 | Module | Scope | When to Load |
 |--------|-------|--------------|
-| [01-framework-overview.md](01-framework-overview.md) | Architecture, SDK 54 changes, New Architecture, development loop | Understanding Expo's mental model or SDK 54 migration |
+| [01-framework-overview.md](01-framework-overview.md) | Architecture, SDK 55 changes, New Architecture (mandatory), development loop | Understanding Expo's mental model or SDK 55 migration |
 | [02-quickstart-setup.md](02-quickstart-setup.md) | Project creation, app.json config, env vars, CLI commands | Setting up projects or configuring app settings |
 
 ### SDK API References
@@ -74,19 +74,21 @@ Complete engineering reference for Expo SDK 54 (React Native 0.81.5, React 19.1.
 
 ---
 
-## SDK 54 Key Changes
+## SDK 55 Key Changes
 
 | Area | Change | Impact |
 |------|--------|--------|
-| React Native | 0.81.5 with precompiled XCFrameworks | ~10s clean iOS builds (was ~120s) |
-| React | 19.1 with React Compiler | Concurrent features, automatic memoization |
-| New Architecture | Enabled by default | Reanimated v4 requires it; JSC removed |
-| FileSystem | `/next` API promoted to default | Import from `expo-file-system` directly |
-| Android | Targets API 36 (Android 16) | Edge-to-edge mandatory, cannot disable |
-| expo-updates | `downloadProgress` in `useUpdates()` | Track asset download progress 0-1 |
-| SplashScreen | `hide()` method added | Synchronous alternative to `hideAsync()` |
-| Minimum Node | 20.19.4 | Older Node versions unsupported |
-| Minimum Xcode | 16.1 | Required for iOS builds |
+| React Native | 0.83.4 | Performance improvements, bug fixes |
+| React | 19.2.0 | Improved concurrent features |
+| New Architecture | **MANDATORY** (cannot be disabled) | `newArchEnabled: false` no longer works |
+| React Compiler | Enabled by default (`experiments.reactCompiler: true`) | Automatic memoization, no manual `useMemo`/`useCallback` needed |
+| expo-system-ui | New: ~55.0.10 | Manage system UI colors and background |
+| expo-splash-screen | Updated to ~55.0.12 | Enhanced splash configuration |
+| expo-constants | Updated to ~55.0.9 | Latest platform constants |
+| expo-font | Updated to ~55.0.4 | Font loading improvements |
+| expo-linking | Updated to ~55.0.8 | Deep linking enhancements |
+| expo-router | Now versioned with SDK (~55.0.7) | Expo Router v7 internals |
+| FileSystem | `/next` API is default (since SDK 54) | Import from `expo-file-system` directly |
 
 ---
 
@@ -101,5 +103,5 @@ Each API module follows a consistent structure:
 
 ---
 
-**Version:** Expo SDK 54 (~54.0.33) | React Native 0.81.5 | React 19.1.0
+**Version:** Expo SDK 55 (~55.0.8) | React Native 0.83.4 | React 19.2.0
 **Source:** https://docs.expo.dev

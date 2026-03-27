@@ -1,4 +1,4 @@
-# React Native 0.81.5 -- Master Index
+# React Native 0.83.4 -- Master Index
 
 Navigation hub for the react-native-core skill knowledge base.
 
@@ -7,7 +7,7 @@ Navigation hub for the react-native-core skill knowledge base.
 ## Quick Navigation
 
 ### Foundation
-- **[01-framework-overview.md](01-framework-overview.md)** -- Architecture (JSI, Fabric, TurboModules), New Architecture as default, Hermes engine, Metro bundler, platform support.
+- **[01-framework-overview.md](01-framework-overview.md)** -- Architecture (JSI, Fabric, TurboModules), New Architecture as mandatory, Hermes engine, Metro bundler, platform support.
 - **[02-quickstart-setup.md](02-quickstart-setup.md)** -- Environment setup (macOS/Windows/Linux), project creation via CLI, first run, device configuration.
 
 ### Core Components & UI
@@ -30,7 +30,7 @@ Navigation hub for the react-native-core skill knowledge base.
 - **[09-testing-devtools.md](09-testing-devtools.md)** -- React Native DevTools, Jest + React Native Testing Library, Detox E2E, performance profiling.
 
 ### Maintenance
-- **[10-upgrade-guide.md](10-upgrade-guide.md)** -- Upgrade from 0.80 to 0.81, breaking changes (SafeAreaView deprecated, JSC removed), React 19.1 features.
+- **[10-upgrade-guide.md](10-upgrade-guide.md)** -- Upgrade from 0.81 to 0.83, breaking changes (New Architecture mandatory, Bridgeless mode), React 19.2 features.
 
 ### Project Patterns
 - **[11-project-architecture.md](11-project-architecture.md)** -- Monorepo patterns: NativeWind, Zustand, TanStack Query, Expo Router, feature modules, One Hook Per Screen.
@@ -82,13 +82,14 @@ Navigation hub for the react-native-core skill knowledge base.
 
 | Dependency | Version |
 |------------|---------|
-| React Native | 0.81.5 |
-| React | 19.1.0 |
+| React Native | 0.83.4 |
+| React | 19.2.0 |
 | TypeScript | ^5.9.3 |
 | Node.js | 24+ (minimum 20.19.4) |
 | Hermes | Default engine |
-| New Architecture | Default (legacy frozen) |
+| New Architecture | Mandatory (legacy removed) |
 
 ---
 
+**Version:** React Native 0.83.4 | React 19.2.0 | Hermes (default) | New Architecture (mandatory)
 **Source:** https://reactnative.dev/docs/components-and-apis

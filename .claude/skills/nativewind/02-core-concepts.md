@@ -1,8 +1,8 @@
-# Core Concepts - NativeWind v4
+# Core Concepts - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -12,7 +12,7 @@
 3. [Compilation Model](#compilation-model)
 4. [How It Differs from StyleSheet.create](#how-it-differs-from-stylesheetcreate)
 5. [Key Features](#key-features)
-6. [Breaking Changes from v2](#breaking-changes-from-v2)
+6. [Breaking Changes from v4](#breaking-changes-from-v4)
 
 ---
 
@@ -30,7 +30,7 @@ NativeWind is a styling framework that brings **Tailwind CSS to React Native**. 
 - Enhanced component performance
 - Better code maintainability
 
-**Official Documentation:** https://www.nativewind.dev/docs
+**Official Documentation:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -350,153 +350,160 @@ Use custom values without pre-defined classes:
 
 ---
 
-## Breaking Changes from v2
+## Breaking Changes from v4
 
-### Removal of `styled()` Function
+### Removed: Babel Integration
 
-**v2 (Old):**
+**v4 (Old):**
 ```javascript
-import { styled } from 'nativewind';
-
-const StyledView = styled(View)`
-  flex-1 bg-white
-`;
-```
-
-**v4 (Current):**
-```javascript
-// Direct className prop - no wrapper needed
-<View className="flex-1 bg-white" />
-```
-
-**Reason for Removal:**
-- New JSX transform eliminates need for wrappers
-- Works directly on all components (3rd-party included)
-- Simpler mental model
-- Better performance
-
-### Base Scaling Modifications
-
-The `rem` unit default has changed:
-
-| Setting | v2 | v4 |
-|---------|----|----|
-| Default `rem` value | 16px | 14px |
-| Calculation | Matched Tailwind | Aligned with mobile |
-
-**Migration:**
-```javascript
-// v2
-<View className="p-4" /> // 16px padding
-
-// v4 (equivalent)
-<View className="p-4" /> // 14px padding (default)
-
-// Or override in tailwind.config.js
+// babel.config.js
 module.exports = {
-  theme: {
-    fontSize: {
-      base: '16px', // Override default
-    }
-  }
-}
+  presets: [
+    ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+    'nativewind/babel',
+  ],
+};
 ```
 
-### New fontFamily Defaults
-
-Default font families have changed:
-
-**v4 Defaults:**
+**v5 (Current):**
 ```javascript
-// iOS default system font
-// Android default system font
-// Web default system font
+// babel.config.js
+module.exports = (api) => {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    // No nativewind/babel, no jsxImportSource
+  };
+};
 ```
 
-**Override in `tailwind.config.js`:**
+**Reason:** v5 uses a different JSX transform path that no longer needs the Babel preset.
+
+### Removed: tailwind.config.js
+
+**v4 (Old):**
 ```javascript
+// tailwind.config.js
 module.exports = {
+  content: ['./app/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Inter', 'system-ui'],
-        mono: ['Courier New'],
-      }
-    }
+      colors: { primary: '#3498db' },
+    },
+  },
+}
+```
+
+**v5 (Current) — CSS @theme:**
+```css
+/* global.css */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-primary: #3498db;
+}
+```
+
+**Reason:** Tailwind v4 adopted CSS-first config. No `tailwind.config.js` is needed or supported.
+
+### Replaced: react-native-css-interop → react-native-css
+
+**v4:** `react-native-css-interop` was a peer dependency
+**v5:** Replaced by `react-native-css@^3.0.5`
+
+Update `package.json`:
+```json
+{
+  "dependencies": {
+    "react-native-css": "^3.0.5"
   }
 }
 ```
 
-### Removed APIs
+### Changed: TypeScript Reference
 
-| API | v2 | v4 | Alternative |
-|-----|----|----|-------------|
-| `setVariables()` | ✅ Supported | ❌ Removed | Use `vars()` function |
-| `useUnsafeVariable` | ✅ Supported | ❌ Removed | Use `useUnstableNativeVariables` |
-| `setDirection()` | ✅ Supported | ❌ Removed | Use `I18nManager.forceRTL` |
-| `odd/even/first/last` | ✅ Supported | ⏳ Temporary | Planned for future |
+**v4 (Old):**
+```typescript
+// nativewind-env.d.ts
+/// <reference types="nativewind" />
+```
 
-### Migration Checklist
+**v5 (Current):**
+```typescript
+// nativewind-env.d.ts
+/// <reference types="react-native-css/types" />
+```
 
-If upgrading from v2:
+### Changed: Metro Config
 
-- [ ] Replace `styled()` wrapper with direct `className`
-- [ ] Update `rem` base size in `tailwind.config.js` if needed
-- [ ] Change `setVariables()` calls to `vars()` function
-- [ ] Replace `useUnsafeVariable` with `useUnstableNativeVariables`
-- [ ] Update RTL logic from `setDirection()` to `I18nManager.forceRTL`
-- [ ] Note: `odd/even/first/last` modifiers unavailable in v4.0 (coming later)
-- [ ] Test responsive behavior (breakpoints unchanged)
-- [ ] Verify dark mode implementation using new hook
+**v4 (Old):**
+```javascript
+module.exports = withNativeWind(config, { input: './global.css' });
+```
+
+**v5 (Current):**
+```javascript
+module.exports = withNativewind(config); // no second argument
+```
+
+### Changed: global.css Imports
+
+**v4 (Old):**
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**v5 (Current):**
+```css
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+```
+
+### New Requirement: New Architecture
+
+v5 requires the New Architecture (Fabric renderer + TurboModules). This is mandatory in Expo SDK 55+, so no additional configuration is needed.
+
+### Migration Checklist (v4 → v5)
+
+- [ ] Remove `nativewind/babel` from presets
+- [ ] Remove `jsxImportSource: 'nativewind'` from babel options
+- [ ] Remove second argument from `withNativewind(config)` in metro.config.js
+- [ ] Replace `tailwind.config.js` with `@theme` blocks in `global.css`
+- [ ] Update `global.css` imports to v5 format
+- [ ] Add `postcss.config.mjs` with `@tailwindcss/postcss`
+- [ ] Replace `react-native-css-interop` dep with `react-native-css@^3.0.5`
+- [ ] Update `nativewind-env.d.ts` type reference
+- [ ] Add `lightningcss: "1.30.1"` override in `package.json`
+- [ ] Verify New Architecture is enabled (auto in Expo SDK 55)
 
 ---
 
 ## Configuration Overview
 
-### Minimal tailwind.config.js
+### global.css (v5 — replaces tailwind.config.js for theme)
 
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+```css
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-primary: #3498db;
+  --font-family-sans: 'Inter', system-ui, sans-serif;
 }
 ```
 
-### With NativeWind Extensions
+**Note:** The `className` prop API is unchanged from v4 — component usage is fully backward compatible.
 
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: '#3498db',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui'],
-      }
-    },
-  },
-  plugins: [],
-  // NativeWind-specific options
-  corePlugins: {
-    preflight: false, // Disable web resets for React Native
-  }
-}
-```
-
-**Source:** https://www.nativewind.dev/docs/getting-started/installation
+**Source:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -511,13 +518,14 @@ module.exports = {
 
 ## Summary
 
-NativeWind v4 represents a fundamental shift from manual React Native styling to declarative Tailwind-based styling. Key takeaways:
+NativeWind v5 continues the Tailwind-in-React-Native paradigm with a major infrastructure overhaul. Key takeaways:
 
-1. **Unified API** - Single `className` prop across all platforms
+1. **Unified API** - Single `className` prop across all platforms (unchanged from v4)
 2. **Build-Time Optimization** - Most styles compiled away, zero runtime cost
 3. **Full Feature Parity** - Media queries, dark mode, pseudo-classes, CSS variables
-4. **Breaking Changes** - Removal of `styled()`, API updates, but modern and simpler
-5. **Production Ready** - Used in production apps with excellent performance
+4. **Tailwind v4 CSS-first** - No `tailwind.config.js`; use `@theme` in `global.css`
+5. **New Architecture Required** - Mandatory Fabric renderer (auto in Expo SDK 55+)
+6. **Component API Unchanged** - `className` usage is fully backward compatible
 
 **Next Steps:**
 - Read `01-setup-guide.md` for installation

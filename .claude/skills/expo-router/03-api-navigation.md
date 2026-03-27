@@ -1,4 +1,4 @@
-# Navigation API Reference -- Expo Router 6.x
+# Navigation API Reference -- Expo Router v7 (~55.0.7)
 
 Complete imperative navigation API with typed parameters.
 
@@ -76,7 +76,7 @@ const handleLogin = async (credentials: Credentials) => {
 
 ### navigate(href, options?)
 
-Navigate to a route. In Expo Router v6, `navigate()` always pushes a new route onto the stack (same behavior as `push()`).
+Navigate to a route. In Expo Router v7, `navigate()` always pushes a new route onto the stack (same behavior as `push()`).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -363,4 +363,4 @@ export default function SplashScreen() {
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/versions/latest/sdk/router/

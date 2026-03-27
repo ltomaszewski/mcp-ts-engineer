@@ -1,6 +1,6 @@
 ---
 name: nativewind
-description: NativeWind v4 Tailwind CSS styling - className prop, responsive breakpoints, dark mode, platform selectors, cssInterop, safe area utilities. Use when styling React Native components with Tailwind utilities, configuring themes, or integrating third-party components.
+description: NativeWind v5 Tailwind CSS styling - className prop, responsive breakpoints, dark mode, platform selectors, cssInterop, safe area utilities. Use when styling React Native components with Tailwind utilities, configuring themes, or integrating third-party components.
 ---
 
 # NativeWind
@@ -26,15 +26,18 @@ LOAD THIS SKILL when user is:
 1. Use `className` prop directly on RN components -- JSX transform handles it, no wrapper needed
 2. Use `dark:` prefix for dark mode -- automatically responds to system or manual theme
 3. Use `active:` for touch feedback on native -- `hover:` only works on web
-4. Wrap Metro config with `withNativeWind` -- required for style compilation
+4. Wrap Metro config with `withNativewind` -- required for style compilation
 5. Import `global.css` once at app root -- before any other imports
+6. Use `react-native-css` peer dep (replaces `react-native-css-interop` from v4)
+7. New Architecture is required (mandatory in Expo SDK 55+)
 
 **NEVER:**
 1. Use `hover:` on native without web fallback -- no pointer events on touch devices
 2. Construct class names dynamically with string interpolation -- Tailwind scanner cannot detect `bg-${color}-500`; use lookup objects instead
-3. Omit `content` paths in `tailwind.config.js` -- styles will silently be missing
-4. Mix `style` and `className` for the same property -- `style` wins, causing confusion
-5. Use NativeWind `text-*` classes on `TextInput` for fontSize -- sets lineHeight too, causing iOS descender clipping; use `style={{ fontSize: N }}` instead
+3. Use `tailwind.config.js` -- v5 uses CSS `@theme` blocks in `global.css`
+4. Add `nativewind/babel` preset to `babel.config.js` -- removed in v5
+5. Mix `style` and `className` for the same property -- `style` wins, causing confusion
+6. Use NativeWind `text-*` classes on `TextInput` for fontSize -- sets lineHeight too, causing iOS descender clipping; use `style={{ fontSize: N }}` instead
 
 ---
 
@@ -150,6 +153,25 @@ const colorMap = { blue: 'bg-blue-500', red: 'bg-red-500' };
 <TextInput className="text-white" style={{ fontSize: 18 }} />
 ```
 
+**BAD** -- v4 tailwind.config.js theme extension:
+```javascript
+// tailwind.config.js -- REMOVED in v5
+module.exports = { theme: { extend: { colors: { primary: '#3498db' } } } }
+```
+
+**GOOD** -- v5 CSS @theme block:
+```css
+/* global.css */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-primary: #3498db;
+}
+```
+
 ---
 
 ## Quick Reference
@@ -195,4 +217,4 @@ const colorMap = { blue: 'bg-blue-500', red: 'bg-red-500' };
 
 ---
 
-**Version:** 4.2.x (^4.2.2) + Tailwind 3.4.17 | **Source:** https://www.nativewind.dev/
+**Version:** 5.0.0-preview.3 + Tailwind 4.1.x | **Source:** https://www.nativewind.dev/v5/

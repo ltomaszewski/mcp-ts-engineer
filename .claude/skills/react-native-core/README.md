@@ -1,6 +1,6 @@
-# React Native 0.81.5 -- Knowledge Base
+# React Native 0.83.4 -- Knowledge Base
 
-Complete engineering reference for React Native 0.81.5 with React 19.1.0, New Architecture (default), and Hermes engine.
+Complete engineering reference for React Native 0.83.4 with React 19.2.0, New Architecture (mandatory), and Hermes engine.
 
 ---
 
@@ -31,7 +31,7 @@ Complete engineering reference for React Native 0.81.5 with React 19.1.0, New Ar
 | [07-best-practices.md](07-best-practices.md) | Performance, security, accessibility, pitfalls | Writing production-quality code |
 | [08-hermes-optimization.md](08-hermes-optimization.md) | Hermes engine, ProGuard/R8, bundle size, startup | Optimizing app performance and size |
 | [09-testing-devtools.md](09-testing-devtools.md) | Jest, RNTL, Detox, DevTools, debugging | Testing and debugging apps |
-| [10-upgrade-guide.md](10-upgrade-guide.md) | 0.80 to 0.81 migration, React 19.1 features | Upgrading React Native version |
+| [10-upgrade-guide.md](10-upgrade-guide.md) | 0.81 to 0.83 migration, React 19.2 features | Upgrading React Native version |
 
 ### Project Architecture
 
@@ -45,10 +45,10 @@ Complete engineering reference for React Native 0.81.5 with React 19.1.0, New Ar
 
 | Dependency | Version |
 |------------|---------|
-| React Native | 0.81.5 |
-| React | 19.1.0 |
+| React Native | 0.83.4 |
+| React | 19.2.0 |
 | Hermes | Default engine |
-| New Architecture | Default (Fabric + TurboModules) |
+| New Architecture | Mandatory (Fabric + TurboModules, legacy removed) |
 | Node.js | 20.19.4+ required |
 | Xcode | 16.1+ required |
 | TypeScript | ^5.9.3 |
@@ -115,4 +115,4 @@ All content sourced from official documentation:
 
 ---
 
-**Version:** React Native 0.81.5 | React 19.1.0 | Hermes (default) | New Architecture (default)
+**Version:** React Native 0.83.4 | React 19.2.0 | Hermes (default) | New Architecture (mandatory since SDK 55)

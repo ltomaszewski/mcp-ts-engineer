@@ -1,6 +1,6 @@
-# Authentication and Protected Routes -- Expo Router 6.x
+# Authentication and Protected Routes -- Expo Router v7 (~55.0.7)
 
-Implementing secure authentication flows with Stack.Protected guards (SDK 54).
+Implementing secure authentication flows with Stack.Protected guards.
 
 ---
 
@@ -359,4 +359,4 @@ function RootNavigator() {
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/router/advanced/authentication/
+**Version:** v7 (~55.0.7, SDK 55) | **Source:** https://docs.expo.dev/router/advanced/authentication/

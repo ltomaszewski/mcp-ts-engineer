@@ -1,8 +1,8 @@
-# Layout Utilities & Responsive Design - NativeWind v4.2.x
+# Layout Utilities & Responsive Design - NativeWind v5
 
-**Source:** https://www.nativewind.dev/docs  
-**Last Verified:** February 2026  
-**Version:** NativeWind v4.2.x
+**Source:** https://www.nativewind.dev/v5/
+**Last Verified:** March 2026
+**Version:** NativeWind v5.0.0-preview.3
 
 ---
 
@@ -500,9 +500,9 @@ Gap controls spacing between flex/grid children without margins.
 </View>
 ```
 
-**Note:** In NativeWind v4, `gap` compiles to native `columnGap` and `rowGap` styles. The previous `space-*` utilities were temporarily removed in v4 -- use `gap-*` instead.
+**Note:** In NativeWind v5, `gap` compiles to native `columnGap` and `rowGap` styles. Use `gap-*` utilities for consistent cross-platform spacing.
 
-**Source:** https://www.nativewind.dev/docs/tailwind/flexbox/gap
+**Source:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -532,7 +532,7 @@ Control the aspect ratio of elements.
 <View className="w-full aspect-[4/3] bg-gray-200 rounded-lg" />
 ```
 
-**Source:** https://www.nativewind.dev/docs/tailwind/layout/aspect-ratio
+**Source:** https://www.nativewind.dev/v5/
 
 ---
 
@@ -543,4 +543,4 @@ Control the aspect ratio of elements.
 - **Safe Area:** `10-advanced-features.md` - Safe area utilities
 - **Best Practices:** `11-best-practices.md` - Optimization patterns
 
-**Source:** https://www.nativewind.dev/docs
+**Source:** https://www.nativewind.dev/v5/

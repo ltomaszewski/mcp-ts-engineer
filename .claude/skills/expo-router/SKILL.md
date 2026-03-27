@@ -1,11 +1,11 @@
 ---
 name: expo-router
-description: Expo Router v6.x file-based navigation - routes, layouts, tabs, stacks, drawers, typed navigation, modals, error boundaries. Use when implementing navigation, creating screens, handling deep links, or building auth flows in Expo apps.
+description: Expo Router v7 (~55.0.7) file-based navigation - routes, layouts, tabs, stacks, drawers, typed navigation, modals, error boundaries. Use when implementing navigation, creating screens, handling deep links, or building auth flows in Expo apps.
 ---
 
 # Expo Router
 
-File-based routing for React Native and web with Expo SDK 54. Routes are files in the `app/` directory.
+File-based routing for React Native and web with Expo SDK 55. Routes are files in the `app/` directory.
 
 ---
 
@@ -115,7 +115,7 @@ router.dismiss();           // Pop current screen
 router.dismissTo('/home');  // Dismiss until reaching /home
 ```
 
-### Auth with Stack.Protected (SDK 54)
+### Auth with Stack.Protected
 
 ```typescript
 // app/_layout.tsx
@@ -200,4 +200,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** 6.x (~6.0.23, SDK 54) | **Source:** https://docs.expo.dev/router/introduction/
+**Version:** v7 (~55.0.7, SDK 55) | React Native 0.83.4, React 19.2.0 | **Source:** https://docs.expo.dev/router/introduction/
