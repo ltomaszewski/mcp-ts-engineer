@@ -54,7 +54,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
 
 | Type | Label | Test Runner | Key Stack |
 |------|-------|-------------|-----------|
-| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
+| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 55, NativeWind v5, Expo Router, Zustand, TanStack Query |
 | `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth |
 | `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
 | `next-app` | Next.js Web App | Vitest (`jsdom`) | Next.js 15, React 19, TanStack Query, Better Auth, shadcn/ui, Tailwind v4 |

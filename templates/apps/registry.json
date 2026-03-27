@@ -2,7 +2,7 @@
   "appTypes": {
     "expo-app": {
       "label": "React Native (Expo)",
-      "description": "Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query"
+      "description": "Expo SDK 55, NativeWind v5, Expo Router, Zustand, TanStack Query"
     },
     "nestjs-server": {
       "label": "NestJS Backend",

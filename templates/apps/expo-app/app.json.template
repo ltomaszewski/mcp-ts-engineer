@@ -30,6 +30,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-system-ui",
       [
         "expo-splash-screen",
         {
@@ -43,6 +44,10 @@
       "router": {
         "origin": false
       }
+    },
+    "experiments": {
+      "reactCompiler": true,
+      "typedRoutes": true
     }
   }
 }
