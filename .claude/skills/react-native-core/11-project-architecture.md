@@ -435,6 +435,8 @@ export function cn(...inputs: ClassValue[]): string {
 
 ## Configuration Files
 
+> **NativeWind v5 full setup** (metro.config.js, postcss.config.mjs, nativewind-env.d.ts, global.css): load the **nativewind** skill for complete configuration.
+
 ### babel.config.js
 
 ```typescript
