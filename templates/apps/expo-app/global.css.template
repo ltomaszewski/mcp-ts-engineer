@@ -1,4 +1,35 @@
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "tailwindcss/utilities.css";
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/preflight" layer(base);
+@import "tailwindcss/utilities" layer(utilities);
 @import "nativewind/theme";
+
+@theme {
+  /* Add your custom theme tokens here. Example:
+   * --color-primary: #6670FF;
+   * --color-background: #141924;
+   *
+   * Safe area spacing — available via pt-safe-t, pb-safe-b, etc.
+   */
+  --spacing-safe-t: var(--safe-area-inset-top);
+  --spacing-safe-b: var(--safe-area-inset-bottom);
+  --spacing-safe-l: var(--safe-area-inset-left);
+  --spacing-safe-r: var(--safe-area-inset-right);
+}
+
+/* Fix: NativeWind v5's leading-* (line-height) rem-to-unitless conversion is broken.
+   Without this, leading-9 produces 2.25 instead of 36.
+   This override produces correct pixel values (spacing base = 4px). */
+@utility leading-* {
+  line-height: calc(4 * --value(integer));
+}
+
+/* Custom font utilities — react-native-css can't inline @theme font variables
+   in font-family. Define @utility rules with direct font-family values instead.
+   Example:
+   @utility font-custom {
+     font-family: YourCustomFont;
+   }
+   @utility font-custom-bold {
+     font-family: YourCustomFontBold;
+   }
+*/

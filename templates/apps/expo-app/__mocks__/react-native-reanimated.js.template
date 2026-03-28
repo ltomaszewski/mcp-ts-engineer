@@ -1,0 +1,152 @@
+const React = require('react');
+const { View, Text, Image, ScrollView, FlatList } = require('react-native');
+
+// Helper to create a shared value mock
+const createSharedValue = (initialValue) => {
+  const sv = {
+    value: initialValue,
+    _isReanimatedSharedValue: true,
+    modify: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+  };
+  // Make .value settable
+  let current = initialValue;
+  Object.defineProperty(sv, 'value', {
+    get: () => current,
+    set: (v) => {
+      current = v;
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  return sv;
+};
+
+// Layout animation mock — returns empty config object
+const createLayoutAnimation = () => {
+  const animation = {
+    duration: () => animation,
+    delay: () => animation,
+    springify: () => animation,
+    damping: () => animation,
+    mass: () => animation,
+    stiffness: () => animation,
+    overshootClamping: () => animation,
+    restDisplacementThreshold: () => animation,
+    restSpeedThreshold: () => animation,
+    withInitialValues: () => animation,
+    withCallback: () => animation,
+    build: () => ({}),
+  };
+  return animation;
+};
+
+// Create Animated component wrapper
+const createAnimatedComponent = (Component) => {
+  const AnimatedComponent = React.forwardRef((props, ref) => {
+    // Strip Reanimated-specific props
+    const { entering, exiting, layout, animatedProps, ...rest } = props;
+    return React.createElement(Component, { ...rest, ref });
+  });
+  AnimatedComponent.displayName = `Animated(${Component.displayName || Component.name || 'Component'})`;
+  return AnimatedComponent;
+};
+
+const Animated = {
+  View: createAnimatedComponent(View),
+  Text: createAnimatedComponent(Text),
+  Image: createAnimatedComponent(Image),
+  ScrollView: createAnimatedComponent(ScrollView),
+  FlatList: createAnimatedComponent(FlatList),
+  createAnimatedComponent,
+};
+
+const exports = {
+  default: Animated,
+  ...Animated,
+  useSharedValue: (initialValue) => createSharedValue(initialValue),
+  makeMutable: (initialValue) => createSharedValue(initialValue),
+  useDerivedValue: (callback) => {
+    try {
+      const value = callback();
+      return createSharedValue(value);
+    } catch (_error) {
+      return createSharedValue(0);
+    }
+  },
+  useAnimatedStyle: (callback) => {
+    try {
+      return callback();
+    } catch (_error) {
+      return {};
+    }
+  },
+  useAnimatedReaction: () => {},
+  useAnimatedScrollHandler: () => ({}),
+  useAnimatedRef: () => ({ current: null }),
+  useScrollViewOffset: () => createSharedValue(0),
+  withTiming: (targetValue, _config, callback) => {
+    if (callback) callback(true);
+    return targetValue;
+  },
+  withSpring: (targetValue, _config, callback) => {
+    if (callback) callback(true);
+    return targetValue;
+  },
+  withSequence: (...animations) => animations[animations.length - 1],
+  withDelay: (_delay, animation) => animation,
+  withRepeat: (animation) => animation,
+  cancelAnimation: () => {},
+  runOnUI: (callback) => callback,
+  runOnJS: (callback) => callback,
+  interpolate: (value, inputRange, outputRange) => {
+    const ratio = (value - inputRange[0]) / (inputRange[1] - inputRange[0]);
+    return outputRange[0] + ratio * (outputRange[1] - outputRange[0]);
+  },
+  Extrapolate: {
+    EXTEND: 'extend',
+    CLAMP: 'clamp',
+    IDENTITY: 'identity',
+  },
+  Easing: {
+    linear: 'linear',
+    ease: 'ease',
+    quad: 'quad',
+    cubic: 'cubic',
+    sin: 'sin',
+    circle: 'circle',
+    exp: 'exp',
+    poly: 'poly',
+    elastic: 'elastic',
+    back: 'back',
+    bounce: 'bounce',
+    bezier: () => 'bezier',
+    in: (easing) => easing,
+    out: (easing) => easing,
+    inOut: (easing) => easing,
+  },
+  // Layout animations
+  FadeIn: createLayoutAnimation(),
+  FadeOut: createLayoutAnimation(),
+  FadeInDown: createLayoutAnimation(),
+  FadeInUp: createLayoutAnimation(),
+  FadeOutDown: createLayoutAnimation(),
+  FadeOutUp: createLayoutAnimation(),
+  SlideInLeft: createLayoutAnimation(),
+  SlideInRight: createLayoutAnimation(),
+  SlideOutLeft: createLayoutAnimation(),
+  SlideInDown: createLayoutAnimation(),
+  SlideInUp: createLayoutAnimation(),
+  SlideOutDown: createLayoutAnimation(),
+  SlideOutUp: createLayoutAnimation(),
+  SlideOutRight: createLayoutAnimation(),
+  ZoomIn: createLayoutAnimation(),
+  ZoomOut: createLayoutAnimation(),
+  Layout: createLayoutAnimation(),
+  LinearTransition: createLayoutAnimation(),
+  SequencedTransition: createLayoutAnimation(),
+  FadingTransition: createLayoutAnimation(),
+};
+
+module.exports = exports;

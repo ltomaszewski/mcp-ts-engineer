@@ -1,1 +1,93 @@
 /// <reference types="react-native-css/types" />
+
+// NativeWind v5 className type augmentation for React Native 0.83+
+//
+// The react-native-css module augmentation (via react-native-css/types)
+// doesn't fully apply with RN 0.83's restructured type definitions.
+// View.d.ts imports ViewProps from the local file path, not from the
+// "react-native" module, so module augmentation doesn't propagate.
+//
+// This file re-declares the className prop on all RN components that
+// NativeWind's cssInterop wraps at runtime.
+
+import type { ReactNode } from "react";
+
+declare module "react-native" {
+  interface ViewProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface TextProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface ImageProps {
+    className?: string;
+  }
+  interface ImagePropsBase {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface ScrollViewProps {
+    className?: string;
+    contentContainerClassName?: string;
+    indicatorClassName?: string;
+  }
+  interface TextInputProps {
+    className?: string;
+    placeholderClassName?: string;
+  }
+  interface PressableProps {
+    className?: string;
+  }
+  interface TouchableOpacityProps {
+    className?: string;
+  }
+  interface SwitchProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface ActivityIndicatorProps {
+    className?: string;
+  }
+  interface ImageBackgroundProps {
+    className?: string;
+    imageClassName?: string;
+  }
+  interface KeyboardAvoidingViewProps {
+    className?: string;
+    contentContainerClassName?: string;
+  }
+  interface ModalBaseProps {
+    className?: string;
+    presentationClassName?: string;
+  }
+  interface StatusBarProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface InputAccessoryViewProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+  interface TouchableWithoutFeedbackProps {
+    className?: string;
+    cssInterop?: boolean;
+  }
+}
+
+// Fix GestureHandlerRootViewProps missing children in React 19.2+
+// PropsWithChildren resolution fails across monorepo node_modules boundaries
+// (react-native-gesture-handler hoisted to root, @types/react in app node_modules).
+// Re-export the component with correct props.
+declare module "react-native-gesture-handler" {
+  import type { ViewProps } from "react-native";
+
+  export interface GestureHandlerRootViewProps extends ViewProps {
+    children?: ReactNode;
+  }
+
+  export function GestureHandlerRootView(
+    props: GestureHandlerRootViewProps
+  ): React.JSX.Element;
+}

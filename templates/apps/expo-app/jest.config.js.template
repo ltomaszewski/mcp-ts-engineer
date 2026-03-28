@@ -1,17 +1,61 @@
+// Skip react-test-renderer version check in @testing-library/react-native v13+
+// (react-test-renderer is deprecated in React 19.2 and resolution fails in Jest)
+process.env.RNTL_SKIP_DEPS_CHECK = '1';
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+// Git worktrees have .git as a file containing "gitdir: .../worktrees/..."
+// Watchman's .watchmanconfig ignores .worktrees/, breaking Jest file discovery.
+// Disable watchman in worktrees so Jest uses Node's fs crawler instead.
+function isGitWorktree() {
+  let dir = __dirname;
+  while (dir !== path.dirname(dir)) {
+    const gitPath = path.join(dir, '.git');
+    try {
+      const stat = fs.statSync(gitPath);
+      if (stat.isDirectory()) return false;
+      if (stat.isFile()) return fs.readFileSync(gitPath, 'utf8').includes('/worktrees/');
+    } catch {
+      /* walk up */
+    }
+    dir = path.dirname(dir);
+  }
+  return false;
+}
+
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
   testTimeout: 30000,
-  forceExit: true,
+  roots: ['<rootDir>/src'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // Ensure hoisted packages (e.g. @testing-library/react-native) can resolve
+  // react-native and react from the app's node_modules in this monorepo.
+  modulePaths: ['<rootDir>/node_modules', '<rootDir>/../../node_modules'],
+  reporters: [['jest-silent-reporter', { useDots: true, showPaths: true }]],
+  verbose: false,
+  watchman: !isGitWorktree(),
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   moduleNameMapper: {
+    '^react-native-reanimated$': '<rootDir>/__mocks__/react-native-reanimated.js',
+    '^react-native-gesture-handler$': '<rootDir>/__mocks__/react-native-gesture-handler.js',
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^zod$': require.resolve('zod'),
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|native-base|react-native-svg|nativewind|react-native-worklets|react-native-css|react-native-reanimated|react-native-gesture-handler|react-native-safe-area-context|react-native-screens|zod)',
+    'node_modules/(?!(' +
+      'jest-expo|react-native|@react-native|expo|@expo|' +
+      '@unimodules|unimodules|' +
+      'nativewind|react-native-css|' +
+      'react-native-reanimated|react-native-gesture-handler|' +
+      'react-native-safe-area-context|react-native-screens|' +
+      '@expo-google-fonts|' +
+      '@mellow/.*|' +
+      'zod|tailwind-merge|clsx' +
+    ')/)',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',

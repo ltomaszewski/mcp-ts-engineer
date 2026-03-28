@@ -13,5 +13,10 @@ module.exports = (api) => {
         },
       ],
     ],
+    env: {
+      production: {
+        plugins: [['transform-remove-console', { exclude: ['error', 'warn'] }]],
+      },
+    },
   };
 };

@@ -17,4 +17,4 @@ config.resolver.blockList = [
 // Enable monorepo package resolution
 config.watchFolders = [monorepoRoot];
 
-module.exports = withNativewind(config);
+module.exports = withNativewind(config, { input: './global.css' });

@@ -1,12 +1,16 @@
-// Enable built-in @testing-library/react-native matchers
+// Enable built-in @testing-library/react-native matchers (toBeOnTheScreen, etc.)
 import '@testing-library/react-native';
 
-// Set up react-native-reanimated v4 test utilities
-import { setUpTests } from 'react-native-reanimated';
-setUpTests();
+// react-native-reanimated mocked via __mocks__/ directory + moduleNameMapper
 
-// Mock react-native-worklets
-jest.mock('react-native-worklets', () => require('react-native-worklets/mock'));
+// Mock react-native-worklets (Reanimated v4 dependency)
+jest.mock('react-native-worklets', () => ({
+  createSerializable: (val) => ({
+    value: val,
+    set: () => {},
+    get: () => val,
+  }),
+}));
 
 // Mock expo-router
 jest.mock('expo-router', () => ({
@@ -14,19 +18,28 @@ jest.mock('expo-router', () => ({
     push: jest.fn(),
     replace: jest.fn(),
     back: jest.fn(),
+    navigate: jest.fn(),
+    dismiss: jest.fn(),
+    canGoBack: jest.fn(() => false),
   },
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
     back: jest.fn(),
+    navigate: jest.fn(),
+    dismiss: jest.fn(),
+    canGoBack: jest.fn(() => false),
   }),
   useLocalSearchParams: () => ({}),
+  useGlobalSearchParams: () => ({}),
   usePathname: () => '/',
   useSegments: () => [],
+  useFocusEffect: jest.fn(),
   Redirect: () => null,
   Stack: ({ children }) => children,
   Tabs: ({ children }) => children,
   Link: ({ children }) => children,
+  Slot: ({ children }) => children,
 }));
 
 // Mock expo-constants
@@ -51,21 +64,6 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(() => Promise.resolve()),
 }));
 
-// Mock react-native-gesture-handler
-jest.mock('react-native-gesture-handler', () => {
-  const { View } = require('react-native');
-  return {
-    GestureHandlerRootView: View,
-    GestureDetector: ({ children }) => children,
-    Gesture: {
-      Tap: () => ({}),
-      Pan: () => ({}),
-    },
-    Directions: {},
-    State: {},
-  };
-});
-
 // Mock react-native-safe-area-context
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
@@ -73,11 +71,45 @@ jest.mock('react-native-safe-area-context', () => {
     SafeAreaProvider: ({ children }) => children,
     SafeAreaView: View,
     useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
-    initialWindowMetrics: { insets: { top: 0, right: 0, bottom: 0, left: 0 }, frame: { x: 0, y: 0, width: 0, height: 0 } },
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
+    initialWindowMetrics: {
+      insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      frame: { x: 0, y: 0, width: 390, height: 844 },
+    },
   };
 });
 
 // Mock react-native-screens
 jest.mock('react-native-screens', () => ({
   enableScreens: jest.fn(),
+  enableFreeze: jest.fn(),
 }));
+
+// Silence console warnings in tests
+const originalWarn = console.warn;
+const originalError = console.error;
+beforeAll(() => {
+  console.warn = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Animated') || args[0].includes('NativeWind'))
+    ) {
+      return;
+    }
+    originalWarn.call(console, ...args);
+  };
+
+  // Suppress act() warnings - these come from internal async updates in
+  // FlashList, Icon, and other components during test environment
+  console.error = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('not wrapped in act(')) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.warn = originalWarn;
+  console.error = originalError;
+});

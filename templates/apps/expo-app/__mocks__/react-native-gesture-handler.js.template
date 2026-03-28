@@ -1,0 +1,132 @@
+const React = require('react');
+const { View, Pressable } = require('react-native');
+
+// Mock Gesture API
+const createGesture = () => ({
+  onStart: function () {
+    return this;
+  },
+  onUpdate: function () {
+    return this;
+  },
+  onEnd: function (callback) {
+    this._onEnd = callback;
+    return this;
+  },
+  onFinalize: function () {
+    return this;
+  },
+  enabled: function () {
+    return this;
+  },
+  withRef: function () {
+    return this;
+  },
+  simultaneousWithExternalGesture: function () {
+    return this;
+  },
+  blocksExternalGesture: function () {
+    return this;
+  },
+  maxDuration: function () {
+    return this;
+  },
+  maxDistance: function () {
+    return this;
+  },
+  minDistance: function () {
+    return this;
+  },
+  numberOfTaps: function () {
+    return this;
+  },
+  _onEnd: null,
+});
+
+const Gesture = {
+  Tap: () => createGesture(),
+  Pan: () => createGesture(),
+  Pinch: () => createGesture(),
+  Rotation: () => createGesture(),
+  Fling: () => createGesture(),
+  LongPress: () => createGesture(),
+  ForceTouch: () => createGesture(),
+  Native: () => createGesture(),
+  Manual: () => createGesture(),
+  Hover: () => createGesture(),
+  Race: (..._gestures) => createGesture(),
+  Simultaneous: (..._gestures) => createGesture(),
+  Exclusive: (..._gestures) => createGesture(),
+};
+
+// GestureDetector renders children and simulates tap via Pressable
+const GestureDetector = ({ gesture, children }) => {
+  // Wrap children in a Pressable to simulate tap behavior
+  const handlePress = () => {
+    if (gesture?._onEnd) {
+      gesture._onEnd({}, { state: 5 }); // State.END = 5
+    }
+  };
+
+  return React.createElement(Pressable, { onPress: handlePress }, children);
+};
+
+// Gesture handler components
+const gestureHandlerRootHOC = (Component) => Component;
+const GestureHandlerRootView = ({ children, ...props }) =>
+  React.createElement(View, props, children);
+
+// State enum
+const State = {
+  UNDETERMINED: 0,
+  FAILED: 1,
+  BEGAN: 2,
+  CANCELLED: 3,
+  ACTIVE: 4,
+  END: 5,
+};
+
+// Direction enum
+const Directions = {
+  RIGHT: 1,
+  LEFT: 2,
+  UP: 4,
+  DOWN: 8,
+};
+
+module.exports = {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+  gestureHandlerRootHOC,
+  State,
+  Directions,
+  // Legacy components
+  PanGestureHandler: View,
+  TapGestureHandler: View,
+  PinchGestureHandler: View,
+  RotationGestureHandler: View,
+  FlingGestureHandler: View,
+  LongPressGestureHandler: View,
+  ForceTouchGestureHandler: View,
+  NativeViewGestureHandler: View,
+  // Utilities
+  ScrollView: View,
+  FlatList: View,
+  Switch: View,
+  TextInput: View,
+  DrawerLayoutAndroid: View,
+  // TouchableOpacity and other touchables
+  TouchableOpacity: Pressable,
+  TouchableHighlight: Pressable,
+  TouchableWithoutFeedback: Pressable,
+  TouchableNativeFeedback: Pressable,
+  // RectButton and other buttons
+  RectButton: Pressable,
+  BorderlessButton: Pressable,
+  BaseButton: Pressable,
+  // Swipeable
+  Swipeable: View,
+  // Gesture state manager
+  GestureStateManager: {},
+};
