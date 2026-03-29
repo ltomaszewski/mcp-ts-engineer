@@ -8,7 +8,7 @@
 
 ```bash
 # React Native (New Architecture required)
-yarn add @shopify/flash-list@^2.0.0
+yarn add @shopify/flash-list@^2.3.0
 cd ios && pod install && cd ..
 
 # Expo (SDK 54+)
@@ -254,4 +254,4 @@ import { FlashList } from '@shopify/flash-list';
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/

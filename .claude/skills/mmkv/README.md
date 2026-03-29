@@ -1,6 +1,6 @@
 # MMKV Knowledge Base
 
-**react-native-mmkv v4.1.x**
+**react-native-mmkv v4.3.0**
 
 ## Structure
 
@@ -31,4 +31,4 @@ mmkv/
 
 ---
 
-**Version:** 4.1.x | **Last Updated:** February 2026
+**Version:** 4.3.0 | **Last Updated:** March 2026

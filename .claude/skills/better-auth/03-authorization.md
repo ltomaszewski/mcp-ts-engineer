@@ -1082,4 +1082,64 @@ export function PermissionGate({
 </PermissionGate>
 ```
 
-**Version:** 1.4.x | **Source:** https://www.better-auth.com/docs
+---
+
+## SSO Plugin with SAML Single Logout (New in v1.5)
+
+The SSO plugin supports OIDC, OAuth2, and SAML 2.0 with full Single Logout support:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { sso } from "@better-auth/sso";
+
+export const auth = betterAuth({
+  plugins: [
+    sso({
+      saml: {
+        enableSingleLogout: true,            // SP-initiated and IdP-initiated logout
+        wantLogoutRequestSigned: true,       // require signed logout requests
+        wantLogoutResponseSigned: true,      // require signed logout responses
+      },
+    }),
+  ],
+});
+```
+
+The plugin supports signed SAML AuthnRequests with configurable signature and digest algorithms, plus optional security features to protect against common SAML vulnerabilities.
+
+---
+
+## Seat-Based Billing with Stripe (New in v1.5)
+
+The Stripe plugin now supports per-seat billing for organizations, with member changes automatically syncing seat quantity with Stripe:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { stripe } from "@better-auth/stripe";
+import { organization } from "better-auth/plugins";
+
+export const auth = betterAuth({
+  plugins: [
+    organization(),
+    stripe({
+      stripeClient,
+      stripeWebhookSecret: "whsec_...",
+      subscription: {
+        enabled: true,
+        plans: [
+          {
+            name: "team",
+            priceId: "price_base_monthly",
+            seatPriceId: "price_per_seat", // per-seat pricing
+          },
+        ],
+      },
+      organization: { enabled: true },
+    }),
+  ],
+});
+```
+
+The `seatPriceId` and `lineItems` enable flexible subscription checkouts supporting per-seat and usage-based billing models.
+
+**Version:** 1.5.6 | **Source:** https://www.better-auth.com/docs

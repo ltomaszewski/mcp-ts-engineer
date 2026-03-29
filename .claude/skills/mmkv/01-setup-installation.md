@@ -122,4 +122,4 @@ Ensure MMKVCore dependency is v2.2.4+ or add `:modular_headers => true` to Podfi
 
 ---
 
-**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.3.0 | **Source:** https://github.com/mrousavy/react-native-mmkv

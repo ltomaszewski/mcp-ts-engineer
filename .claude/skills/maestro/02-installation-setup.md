@@ -231,4 +231,4 @@ export MAESTRO_DRIVER_STARTUP_TIMEOUT=180000  # 3 minutes
 
 **See Also:** [03-core-concepts.md](03-core-concepts.md) for Flow fundamentals, Commands, and Selectors.
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli

@@ -147,4 +147,4 @@ function NewForm() {
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

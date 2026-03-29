@@ -243,6 +243,67 @@ export function registerCapabilities(server: McpServer): void {
 
 ---
 
+## Sampling (Server-Initiated LLM Requests)
+
+Servers can request the connected client to perform an LLM completion via `requestSampling()`:
+
+```typescript
+server.tool(
+  "summarize",
+  "Summarize a document using the client's LLM",
+  { content: z.string() },
+  async ({ content }, extra) => {
+    // Request the client's LLM to summarize
+    const result = await extra.requestSampling({
+      messages: [
+        { role: "user", content: { type: "text", text: `Summarize: ${content}` } }
+      ],
+      maxTokens: 500
+    });
+
+    return {
+      content: [{ type: "text", text: result.content[0].text }],
+    };
+  },
+);
+```
+
+The client must handle `sampling/createMessage` requests for this to work.
+
+---
+
+## Elicitation (User Input Requests)
+
+Servers can request user input via structured forms using `elicitInput()`:
+
+```typescript
+server.tool(
+  "configure",
+  "Configure settings with user input",
+  { setting: z.string() },
+  async ({ setting }, extra) => {
+    const result = await extra.elicitInput({
+      message: `Please provide a value for ${setting}:`,
+      requestedSchema: {
+        type: "object",
+        properties: {
+          value: { type: "string", description: "Setting value" }
+        },
+        required: ["value"]
+      }
+    });
+
+    return {
+      content: [{ type: "text", text: `Set ${setting} = ${result.content.value}` }],
+    };
+  },
+);
+```
+
+The client must support `elicitation/create` requests for this to work.
+
+---
+
 ## Graceful Shutdown
 
 ```typescript
@@ -299,4 +360,4 @@ For an MCP server that runs via `node`:
 
 **See Also**: [02-tools.md](02-tools.md), [03-resources.md](03-resources.md), [05-transports.md](05-transports.md)
 **Source**: https://modelcontextprotocol.io/docs/develop/build-server and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/README.md
-**Version**: 1.x
+**Version**: 1.28.0

@@ -7,7 +7,7 @@ Display installed Maestro CLI version.
 ```bash
 maestro --version
 maestro -v
-# Output: Maestro 2.2.0
+# Output: Maestro 2.3.1
 ```
 
 ---
@@ -201,7 +201,7 @@ maestro doctor
 ```bash
 maestro doctor
 # Output:
-# Maestro CLI Version: 2.2.0
+# Maestro CLI Version: 2.3.1
 # Java JDK: 17.0.x
 # Android SDK: 34.0.0
 # Android Emulator: Available
@@ -319,4 +319,4 @@ executionOrder:
 
 **See Also:** [06-yaml-syntax.md](06-yaml-syntax.md) for YAML command reference.
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/

@@ -106,6 +106,17 @@ If you are upgrading from Maestro 1.x, be aware of these breaking changes:
 | `setPermissions` | 2.1.0 | Set app permissions outside launchApp |
 | `setClipboard` | 2.1.0 | Set clipboard content without copying from element |
 | `assertScreenshot` | 2.2.0 | Visual regression testing |
+| `clearState` (web) | 2.3.0 | `clearState` now works for web flows |
+
+### New in v2.3.x
+
+| Feature | Version | Description |
+|---------|---------|-------------|
+| `cropOn` for `takeScreenshot` | 2.3.0 | Crop screenshots to a specific element using a selector |
+| `assertScreenshot` improvements | 2.3.0 | No file extension required, relative path support for reference images |
+| `inputRandomPersonName` format | 2.3.0 | Now generates predictable "FirstName LastName" format |
+| iPad landscape fix | 2.3.0 | Fixed iPad landscape orientation support |
+| Web iframe hierarchy | 2.3.1 | Access to hierarchy in iframes when testing web flows |
 
 ### New CLI Commands (pre-v2 but notable)
 
@@ -215,4 +226,4 @@ Maestro **automatically waits** for UI elements to appear and animations to comp
 
 ---
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/

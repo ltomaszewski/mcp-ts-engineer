@@ -1,13 +1,13 @@
 ---
 name: shadcn-ui
-description: shadcn/ui component library - CLI installation, Radix primitives, CVA variants, Tailwind v4 theming, accessible components. Use when adding UI components, building forms, or customizing design tokens.
+description: shadcn/ui component library - CLI v4, AI agent skills, design presets, unified radix-ui, Radix + Base UI primitives, CVA variants, Tailwind v4 theming, RTL support, accessible components. Use when adding UI components, building forms, or customizing design tokens.
 ---
 
 # shadcn/ui
 
-> Copy-paste component library built on Radix primitives with Tailwind CSS styling and full source ownership.
+> Copy-paste component library built on Radix or Base UI primitives with Tailwind CSS styling, AI agent skills, design presets, and full source ownership.
 
-**Stack:** shadcn/ui latest | Radix UI | Tailwind v4 | CVA | TypeScript
+**Stack:** shadcn/ui CLI v4 | Radix UI (unified `radix-ui`) or Base UI | Tailwind v4 | CVA | TypeScript
 
 ---
 
@@ -19,8 +19,13 @@ description: shadcn/ui component library - CLI installation, Radix primitives, C
 - Customizing theme colors, dark mode, or design tokens in globals.css
 - Creating component variants with CVA (class-variance-authority)
 - Installing or configuring shadcn/ui CLI (`npx shadcn@latest`)
-- Composing Radix primitives into custom components
+- Composing Radix or Base UI primitives into custom components
 - Setting up toast notifications with Sonner
+- Using design presets to scaffold design systems
+- Migrating from individual `@radix-ui/react-*` to unified `radix-ui` package
+- Setting up RTL (right-to-left) support for Arabic, Hebrew, Persian
+- Configuring registries for components, fonts, or design system distribution
+- Using shadcn/skills for AI agent integration
 
 ---
 
@@ -34,7 +39,10 @@ description: shadcn/ui component library - CLI installation, Radix primitives, C
 5. Use `@theme inline` directive for Tailwind v4 -- maps CSS variables to Tailwind utility classes
 6. Use OKLCH color format for v4 projects -- perceptually uniform, better accessibility
 7. Wrap forms with react-hook-form `Controller` + `Field` components -- provides validation and accessibility
-8. Add `data-slot` attributes when building custom components -- follows shadcn/ui v4 convention
+8. Add `data-slot` attributes when building custom components -- follows shadcn/ui convention
+9. Use unified `radix-ui` package for new-york style -- replaces individual `@radix-ui/react-*` packages
+10. Use `--dry-run` flag to preview changes before writing files
+11. Use `--diff` flag to check for registry updates before overwriting
 
 **NEVER:**
 1. Install shadcn/ui as an npm package -- it is NOT a dependency; components are source files you own
@@ -43,6 +51,7 @@ description: shadcn/ui component library - CLI installation, Radix primitives, C
 4. Use `forwardRef` in v4 projects -- removed; use direct function components with `data-slot`
 5. Modify components in `node_modules` -- components live in `src/components/ui/`, edit them directly
 6. Skip the `htmlFor`/`id` association on Label+Input -- breaks accessibility
+7. Use individual `@radix-ui/react-*` packages in new projects -- use unified `radix-ui` instead
 
 ---
 
@@ -54,12 +63,24 @@ description: shadcn/ui component library - CLI installation, Radix primitives, C
 # Initialize shadcn/ui in a Next.js project
 npx shadcn@latest init
 
+# Initialize with a preset (design system config in one code)
+npx shadcn@latest init --preset <name-or-code>
+
 # Add individual components
 npx shadcn@latest add button
 npx shadcn@latest add card dialog form input select
 
 # Add all components at once
 npx shadcn@latest add --all
+
+# Preview changes without writing (new in CLI v4)
+npx shadcn@latest add button --dry-run
+
+# Show diff for registry updates (new in CLI v4)
+npx shadcn@latest add button --diff
+
+# Show file contents (new in CLI v4)
+npx shadcn@latest add button --view
 
 # Overwrite existing components with latest
 npx shadcn@latest add --all --overwrite
@@ -263,6 +284,15 @@ npx shadcn@latest add button  # => src/components/ui/button.tsx
 :root { --primary: oklch(0.21 0.034 264.66); }
 ```
 
+**BAD** -- Individual Radix packages (legacy):
+```typescript
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+```
+**GOOD** -- Unified Radix package:
+```typescript
+import { Dialog as DialogPrimitive } from "radix-ui"
+```
+
 ---
 
 ## Quick Reference
@@ -270,7 +300,13 @@ npx shadcn@latest add button  # => src/components/ui/button.tsx
 | Task | Command / API | Example |
 |------|--------------|---------|
 | Init project | `npx shadcn@latest init` | Interactive setup with components.json |
+| Init with preset | `npx shadcn@latest init --preset` | `npx shadcn@latest init -p <code>` |
 | Add component | `npx shadcn@latest add` | `npx shadcn@latest add button card dialog` |
+| Preview changes | `--dry-run` | `npx shadcn@latest add button --dry-run` |
+| Check updates | `--diff` | `npx shadcn@latest add button --diff` |
+| View file | `--view` | `npx shadcn@latest add button --view` |
+| Migrate to radix-ui | `npx shadcn@latest migrate radix` | Updates imports to unified package |
+| Enable RTL | `npx shadcn@latest init --rtl` | Or `migrate rtl` for existing projects |
 | Merge classes | `cn()` | `cn("base", condition && "active", className)` |
 | Button variants | `variant` prop | `<Button variant="outline" size="sm">` |
 | Dark mode | next-themes | `<ThemeProvider attribute="class" defaultTheme="system">` |
@@ -281,6 +317,7 @@ npx shadcn@latest add button  # => src/components/ui/button.tsx
 | Theme colors | CSS variables | `--primary: oklch(0.21 0.034 264.66)` |
 | Sheet side | `side` prop | `<SheetContent side="left">` |
 | asChild | Render as child element | `<Button asChild><Link href="/">Home</Link></Button>` |
+| Project info | `npx shadcn@latest info` | JSON output of project config |
 
 ---
 
@@ -290,10 +327,10 @@ Load additional context when needed:
 
 | When you need | Load |
 |---------------|------|
-| Installation, CLI, components.json, project structure, dependencies | [01-setup.md](01-setup.md) |
+| Installation, CLI v4, components.json, presets, registries, RTL, radix-ui migration | [01-setup.md](01-setup.md) |
 | Component APIs: Button, Card, Dialog, Select, Table, Tabs, Toast, Sheet | [02-components.md](02-components.md) |
 | Theme customization, CSS variables, OKLCH, dark mode, CVA, cn() | [03-customization.md](03-customization.md) |
 
 ---
 
-**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs
+**Version:** CLI v4 (March 2026) | **Source:** https://ui.shadcn.com/docs

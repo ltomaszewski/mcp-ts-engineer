@@ -17,9 +17,9 @@ FlashList v2 requires **React Native New Architecture** (Fabric). It does not ru
 **Step 1: Upgrade package**
 
 ```bash
-npm install @shopify/flash-list@^2.0.0
+npm install @shopify/flash-list@^2.3.0
 # or
-yarn add @shopify/flash-list@^2.0.0
+yarn add @shopify/flash-list@^2.3.0
 ```
 
 **Step 2: Remove size estimation props**
@@ -173,7 +173,7 @@ const [isExpanded, setIsExpanded] = useRecyclingState(false, [item.id]);
 **Step 1: Install FlashList**
 
 ```bash
-npm install @shopify/flash-list@^2.0.0
+npm install @shopify/flash-list@^2.3.0
 # Expo
 npx expo install @shopify/flash-list
 ```
@@ -366,7 +366,7 @@ Other causes:
 ### From v1 to v2
 
 - [ ] React Native New Architecture enabled
-- [ ] Package upgraded to `@shopify/flash-list@^2.0.0`
+- [ ] Package upgraded to `@shopify/flash-list@^2.3.0`
 - [ ] `estimatedItemSize` removed
 - [ ] `estimatedListSize` removed
 - [ ] `estimatedFirstItemOffset` removed
@@ -382,7 +382,7 @@ Other causes:
 
 ### From FlatList to FlashList v2
 
-- [ ] Install `@shopify/flash-list@^2.0.0`
+- [ ] Install `@shopify/flash-list@^2.3.0`
 - [ ] Replace `FlatList` import with `FlashList`
 - [ ] Remove unsupported FlatList props
 - [ ] Ensure parent has `flex: 1` or explicit height
@@ -403,4 +403,4 @@ Other causes:
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/v2-migration/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/v2-migration/

@@ -285,12 +285,27 @@ export const ANIMATION = {
 
 ---
 
+## Animated Styles Type Safety (v4.3.0+)
+
+Starting with Reanimated 4.3.0, TypeScript definitions for animated styles prevent accidental usage with non-animated components at compile time. Previously this was a runtime check that could produce false positives.
+
+```typescript
+// v4.3.0+: TypeScript error at compile time
+<View style={animatedStyle} />
+// Error: Type 'AnimatedStyleProp' is not assignable to type 'StyleProp<ViewStyle>'
+
+// Correct: Use Animated.View
+<Animated.View style={animatedStyle} />
+```
+
+---
+
 ## Common Pitfalls
 
 | Pitfall | Symptom | Fix |
 |---|---|---|
 | Mutating shared value in useAnimatedStyle | Infinite loop, frozen UI | Move mutations to event handlers |
-| Passing animated style to regular View | No animation visible | Use `Animated.View` |
+| Passing animated style to regular View | No animation visible (TS error in v4.3.0+) | Use `Animated.View` |
 | Missing GestureHandlerRootView (Android) | Gestures not recognized | Wrap app root |
 | Capturing large closures | Memory spikes, jank | Extract primitives before capture |
 | Reading `.value` during render | Stale data, no updates | Read in effects/worklets/callbacks |

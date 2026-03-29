@@ -473,4 +473,4 @@ mcpServers: {
 
 ---
 
-**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

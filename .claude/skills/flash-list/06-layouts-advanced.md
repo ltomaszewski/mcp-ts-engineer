@@ -222,9 +222,61 @@ const HorizontalCarousel = ({ items }: { items: CarouselItem[] }): React.ReactEl
 
 ---
 
-## Chat App Pattern (maintainVisibleContentPosition)
+## Chat App Pattern (inverted or maintainVisibleContentPosition)
 
-In v2, `inverted` is deprecated. Use `maintainVisibleContentPosition` with reversed data for chat-style lists. This approach is more robust and avoids the scale transform issues of `inverted`.
+In v2.3.0, the `inverted` prop was re-added using CSS transforms (`scaleY(-1)` on iOS/web, `rotate(180deg)` on Android). You can use either `inverted` for simplicity or `maintainVisibleContentPosition` for more control over scroll behavior. Do not combine both approaches.
+
+### Simple Chat with inverted (v2.3.0+)
+
+```typescript
+import React, { useCallback } from 'react';
+import { View, Text } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+
+interface Message {
+  id: string;
+  text: string;
+  isOwn: boolean;
+}
+
+const SimpleChatList = ({ messages }: { messages: Message[] }): React.ReactElement => {
+  const renderItem = useCallback(({ item }: { item: Message }) => (
+    <View
+      style={{
+        padding: 8,
+        flexDirection: 'row',
+        justifyContent: item.isOwn ? 'flex-end' : 'flex-start',
+      }}
+    >
+      <View
+        style={{
+          maxWidth: '75%',
+          backgroundColor: item.isOwn ? '#007AFF' : '#e5e5ea',
+          borderRadius: 16,
+          padding: 12,
+        }}
+      >
+        <Text style={{ color: item.isOwn ? '#fff' : '#000' }}>{item.text}</Text>
+      </View>
+    </View>
+  ), []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlashList
+        data={messages}
+        inverted={true}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        onEndReached={() => { /* load older messages */ }}
+        onEndReachedThreshold={0.5}
+      />
+    </View>
+  );
+};
+```
+
+### Advanced Chat with maintainVisibleContentPosition
 
 ```typescript
 import React, { useCallback } from 'react';
@@ -435,4 +487,4 @@ import Animated from 'react-native-reanimated';
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/usage
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/usage

@@ -368,4 +368,4 @@ const style = useAnimatedStyle(() => ({
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/

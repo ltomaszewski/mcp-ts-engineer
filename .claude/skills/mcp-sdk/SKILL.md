@@ -1,6 +1,6 @@
 ---
 name: mcp-sdk
-version: "1.x"
+version: "1.28.0"
 description: Model Context Protocol SDK v1.x - MCP servers, tools, resources, prompts, transports, Zod schema validation. Use when building MCP servers, defining tools, exposing resources, creating prompts, or configuring stdio/HTTP transports.
 ---
 
@@ -140,6 +140,8 @@ server.tool("hello", async () => ({
 | Resource template | `ResourceTemplate` | `new ResourceTemplate("u://{id}", { list: undefined })` |
 | Tool annotations | `ToolAnnotations` | `server.tool("name", "desc", schema, annotations, handler)` |
 | Send log | `server.server.sendLoggingMessage()` | See [01-server-basics.md](01-server-basics.md) |
+| Sampling (LLM) | `ctx.mcpReq.requestSampling()` | Request LLM completion from client inside tool handler |
+| Elicitation | `ctx.mcpReq.elicitInput()` | Request user input via structured form inside tool handler |
 | Close server | `server.close()` | `await server.close()` |
 
 ---
@@ -151,13 +153,19 @@ Load additional context when needed:
 | When you need | Load |
 |---------------|------|
 | Server creation, lifecycle, logging, shutdown | [01-server-basics.md](01-server-basics.md) |
-| Tool registration, schemas, annotations, errors | [02-tools.md](02-tools.md) |
+| Tool registration, schemas, annotations, output schemas, errors | [02-tools.md](02-tools.md) |
 | Resources, URI templates, subscriptions | [03-resources.md](03-resources.md) |
 | Prompt registration, arguments, messages | [04-prompts.md](04-prompts.md) |
 | Transports: stdio, SSE, Streamable HTTP | [05-transports.md](05-transports.md) |
 | MCP Client: connecting, calling tools/resources | [06-client.md](06-client.md) |
-| Advanced: low-level Server, middleware, sampling | *(not yet created)* |
+| Advanced: sampling, elicitation, tasks (experimental) | Server docs at GitHub |
 
 ---
 
-**Version:** 1.x (latest: 1.27.0) | **Source:** https://modelcontextprotocol.io/ and https://github.com/modelcontextprotocol/typescript-sdk
+### v2 Migration Note
+
+A stable v2 release is anticipated in Q1 2026 with separate packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/client`). Until then, v1.x remains the recommended version for production use. v1.x will continue to receive bug fixes and security updates for at least 6 months after v2 ships. For v1.x, continue using `@modelcontextprotocol/sdk` as the single package import.
+
+---
+
+**Version:** 1.28.0 | **Source:** https://modelcontextprotocol.io/ and https://github.com/modelcontextprotocol/typescript-sdk

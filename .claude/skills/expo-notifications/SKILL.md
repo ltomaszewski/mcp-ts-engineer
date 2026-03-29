@@ -19,6 +19,7 @@ description: Expo push notifications - tokens, scheduling, handlers, permissions
 - Configuring Android notification channels
 - Implementing interactive notification actions
 - Processing notifications in background
+- Subscribing to FCM topics (Android)
 
 ---
 
@@ -31,13 +32,16 @@ description: Expo push notifications - tokens, scheduling, handlers, permissions
 4. Store push tokens on backend -- needed for server-initiated push delivery
 5. Handle both foreground and background notification states -- different code paths required
 6. Clean up event listeners in useEffect return -- prevents memory leaks
+7. Use the `expo-notifications` config plugin in `app.json` plugins array -- the root-level `notification` field is removed in SDK 55 and throws on prebuild
 
 **NEVER:**
 1. Assume permissions are granted -- always check status first
 2. Skip notification handler configuration -- foreground notifications will not display
-3. Use hardcoded project IDs -- use `Constants.expoConfig.extra.eas.projectId`
+3. Use hardcoded project IDs -- use `Constants.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId`
 4. Forget to clean up listeners -- causes memory leaks in useEffect
-5. Use `shouldShowAlert` -- use `shouldShowBanner` and `shouldShowList` instead (SDK 54)
+5. Use `shouldShowAlert` -- deprecated since SDK 54; use `shouldShowBanner` and `shouldShowList` instead
+6. Use the root-level `notification` field in app.json -- removed in SDK 55, throws error on prebuild
+7. Test push notifications in Expo Go on Android -- throws an error in SDK 55; use a development build
 
 ---
 
@@ -65,11 +69,22 @@ Notifications.setNotificationHandler({
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
     console.warn('Push notifications require physical device');
     return null;
+  }
+
+  // Android: create channel before requesting permissions
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -84,9 +99,13 @@ async function registerForPushNotifications(): Promise<string | null> {
     return null;
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const token = await Notifications.getExpoPushTokenAsync({ projectId });
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
 
+  if (!projectId) throw new Error('Project ID not found');
+
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
   return token.data; // "ExponentPushToken[xxxxx]"
 }
 ```
@@ -186,6 +205,9 @@ const token = await Notifications.getExpoPushTokenAsync(); // May fail!
 ```typescript
 const { status } = await Notifications.requestPermissionsAsync();
 if (status === 'granted') {
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
   const token = await Notifications.getExpoPushTokenAsync({ projectId });
 }
 ```
@@ -194,7 +216,7 @@ if (status === 'granted') {
 ```typescript
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true, // DEPRECATED in SDK 54
+    shouldShowAlert: true, // DEPRECATED since SDK 54
   }),
 });
 ```
@@ -209,6 +231,32 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+```
+
+**BAD** -- Using root-level notification config in app.json (SDK 55):
+```json
+{
+  "expo": {
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#ffffff"
+    }
+  }
+}
+```
+
+**GOOD** -- Using the config plugin:
+```json
+{
+  "expo": {
+    "plugins": [
+      ["expo-notifications", {
+        "icon": "./assets/notification-icon.png",
+        "color": "#ffffff"
+      }]
+    ]
+  }
+}
 ```
 
 **BAD** -- Not cleaning up listeners:
@@ -246,6 +294,9 @@ useEffect(() => {
 | Create Android channel | `setNotificationChannelAsync()` | `await Notifications.setNotificationChannelAsync('id', config)` |
 | Set category | `setNotificationCategoryAsync()` | `await Notifications.setNotificationCategoryAsync('id', actions)` |
 | Last response hook | `useLastNotificationResponse()` | `const response = Notifications.useLastNotificationResponse()` |
+| Subscribe to topic | `subscribeToTopicAsync()` | `await Notifications.subscribeToTopicAsync('news')` |
+| Unsubscribe topic | `unsubscribeFromTopicAsync()` | `await Notifications.unsubscribeFromTopicAsync('news')` |
+| Unregister device | `unregisterForNotificationsAsync()` | `await Notifications.unregisterForNotificationsAsync()` |
 
 ---
 
@@ -268,4 +319,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | React Native 0.83.4 | React 19.2.0 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

@@ -1,7 +1,7 @@
 # Setup & Installation
 
 **Source:** https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/
-**Version:** react-native-reanimated ^4.2.2 | react-native-worklets ^0.7.x
+**Version:** react-native-reanimated ^4.3.0 | react-native-worklets ^0.7.x
 
 ---
 
@@ -92,6 +92,18 @@ npm start -- --reset-cache
 ---
 
 ## Version Compatibility
+
+### Reanimated 4.3.x
+
+| React Native | Supported |
+|---|---|
+| 0.80 | Yes |
+| 0.81 | Yes |
+| 0.82 | Yes |
+| 0.83 | Yes |
+| 0.84 | Yes |
+
+**Required worklets version:** react-native-worklets ^0.8.0
 
 ### Reanimated 4.2.x
 

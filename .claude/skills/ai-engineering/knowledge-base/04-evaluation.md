@@ -505,4 +505,4 @@ tests:
 
 ---
 
-**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview
+**Version:** SDK ~0.2.86 | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

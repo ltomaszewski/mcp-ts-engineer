@@ -17,6 +17,7 @@ LOAD THIS SKILL when user is:
 - Implementing gesture-driven animations with react-native-gesture-handler
 - Building entering/exiting transitions or layout transitions
 - Optimizing animation performance on the UI thread
+- Animating SVG components (Path morphing, gradients, patterns) with CSS animations
 
 ---
 
@@ -281,7 +282,10 @@ Key changes from Reanimated 3.x:
 - **Removed**: `useAnimatedGestureHandler` (use Gesture Handler v2 API)
 - **Spring defaults changed**: `damping: 120`, `stiffness: 900`, `mass: 4` (use `Reanimated3DefaultSpringConfig` for old defaults)
 - **React Compiler support**: `.get()`/`.set()` pattern recommended
+- **CSS SVG Animations** (4.3.0): Animate SVG components (Path, Image, LinearGradient, RadialGradient, Pattern, Text) with CSS animations, including path morphing
+- **Animated Styles type safety** (4.3.0): TypeScript compile-time checks prevent animated styles on non-animated components
+- **Worklets 0.8.0**: `Shareable` type, `runOnRuntimeSync`, `runOnRuntimeAsync`, `strictGlobal` Babel option
 - **Minimum versions**: React Native 0.80+, Expo SDK 54+
 
 ---
-**Version:** Reanimated 4.x (^4.2.2) | **Source:** https://docs.swmansion.com/react-native-reanimated/
+**Version:** Reanimated 4.x (^4.3.0) | **Source:** https://docs.swmansion.com/react-native-reanimated/

@@ -1,12 +1,12 @@
 # shadcn/ui Setup and Installation
 
-> Complete setup guide for shadcn/ui with Next.js 15 and Tailwind v4.
+> Complete setup guide for shadcn/ui CLI v4 with Next.js 15, Tailwind v4, and unified radix-ui.
 
 ---
 
 ## Overview
 
-shadcn/ui is NOT an npm package. It is a CLI tool that copies component source files into your project. You own the code, can modify it directly, and have full control over styling and behavior. Components are built on Radix UI primitives and styled with Tailwind CSS.
+shadcn/ui is NOT an npm package. It is a CLI tool that copies component source files into your project. You own the code, can modify it directly, and have full control over styling and behavior. Components are built on Radix UI or Base UI primitives and styled with Tailwind CSS. CLI v4 (March 2026) adds AI agent skills, design presets, `registry:base`, first-class fonts, and inspection flags.
 
 ---
 
@@ -44,10 +44,40 @@ bunx shadcn@latest init
 
 The CLI will prompt for:
 - Style preference (new-york is default)
-- Base color (neutral, gray, slate, stone, zinc)
+- Base color (neutral, gray, slate, stone, zinc, mauve, olive, mist, taupe)
 - CSS variables for theming (recommended: yes)
 - React Server Components support
 - Import alias paths
+
+### Initialize with a Preset (New in CLI v4)
+
+A preset packs your entire design system config into a short code -- colors, theme, icon library, fonts, and radius:
+
+```bash
+# Initialize with a preset code
+npx shadcn@latest init --preset <preset-code>
+
+# Short form
+npx shadcn@latest init -p <preset-code>
+```
+
+Build your preset on `shadcn/create` (https://ui.shadcn.com/create), preview it live, and grab the code when ready.
+
+### Initialize with RTL Support
+
+```bash
+npx shadcn@latest init --rtl
+```
+
+Or for a new project:
+
+```bash
+npx shadcn@latest create --rtl
+```
+
+### Project Templates
+
+`shadcn init` now scaffolds full project templates for: Next.js, Vite, Laravel, React Router, Astro, and TanStack Start (with dark mode included for Next.js and Vite).
 
 ### Step 2: Verify Generated Files
 
@@ -108,6 +138,9 @@ The `components.json` file controls how the CLI adds components:
 | `tailwind.prefix` | Utility class prefix | e.g., `"tw-"` for `tw-bg-primary` |
 | `aliases.ui` | UI component directory | Where `add` command places files |
 | `aliases.utils` | Utility functions path | Where `cn()` lives |
+| `rtl` | RTL support | `true` converts physical to logical CSS classes |
+| `registries` | Custom registries | Configure private/third-party component sources |
+| `iconLibrary` | Icon library | e.g., `"lucide"` |
 
 ---
 
@@ -142,12 +175,25 @@ npx shadcn@latest add button --overwrite
 npx shadcn@latest add --all --overwrite
 ```
 
+### Inspect Before Writing (New in CLI v4)
+
+```bash
+# Preview what will be added without writing files
+npx shadcn@latest add button --dry-run
+
+# Show diff for registry updates
+npx shadcn@latest add button --diff
+
+# Show file contents
+npx shadcn@latest add button --view
+```
+
 ### What Happens on `add`
 
 1. CLI reads `components.json` for paths and config
 2. Downloads component source from the shadcn registry
 3. Copies `.tsx` file to `src/components/ui/<name>.tsx`
-4. Installs required npm dependencies (Radix packages, etc.)
+4. Installs required npm dependencies (unified `radix-ui` package, etc.)
 5. Adds `"use client"` directive if `rsc: true` and component needs client features
 
 ---
@@ -178,14 +224,15 @@ src/
 | `tailwind-merge` | Merges Tailwind classes, resolves conflicts |
 | `clsx` | Conditional class string builder |
 | `class-variance-authority` | Type-safe component variants (CVA) |
-| `lucide-react` | Icon library used by components |
+| `lucide-react` | Icon library used by components (configurable via `iconLibrary`) |
 | `tw-animate-css` | Animation utilities for Tailwind v4 |
 | `sonner` | Toast notification library (used by shadcn Toast) |
 | `next-themes` | Dark mode / theme switching for Next.js |
+| `radix-ui` | Unified Radix UI primitives package (replaces individual `@radix-ui/react-*`) |
 
 ### Installed per Component
 
-Each component auto-installs its Radix UI primitives (e.g., `@radix-ui/react-dialog` for Dialog/Sheet, `@radix-ui/react-select` for Select). Form components require: `react-hook-form`, `@hookform/resolvers`, `zod`. Toast requires: `sonner`.
+Components use the unified `radix-ui` package (for new-york style). Form components require: `react-hook-form`, `@hookform/resolvers`, `zod`. Toast requires: `sonner`.
 
 ---
 
@@ -381,16 +428,154 @@ Ensure `tsconfig.json` paths match `components.json` aliases:
 
 ---
 
+## Unified radix-ui Package
+
+The new-york style now uses the unified `radix-ui` package instead of individual `@radix-ui/react-*` packages:
+
+```typescript
+// New (unified package)
+import { Dialog as DialogPrimitive } from "radix-ui"
+
+// Old (individual packages -- legacy)
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+```
+
+### Migration from Individual Packages
+
+```bash
+# Migrate all UI components
+npx shadcn@latest migrate radix
+
+# Migrate a specific file
+npx shadcn@latest migrate radix src/components/ui/dialog.tsx
+
+# Migrate files matching a glob
+npx shadcn@latest migrate radix "src/components/ui/**"
+
+# Migrate components outside ui directory
+npx shadcn@latest migrate radix src/components/custom/
+```
+
+After migration, remove unused `@radix-ui/react-*` packages from `package.json`.
+
+---
+
+## RTL Support
+
+shadcn/ui has first-class RTL support. When `rtl: true` is set in `components.json`, the CLI automatically converts physical CSS classes to logical equivalents:
+
+| Physical | Logical (RTL-safe) |
+|---|---|
+| `ml-4` / `mr-4` | `ms-4` / `me-4` |
+| `pl-2` / `pr-2` | `ps-2` / `pe-2` |
+| `left-0` / `right-0` | `start-0` / `end-0` |
+| `text-left` / `text-right` | `text-start` / `text-end` |
+| `slide-in-from-left` | `slide-in-from-start` |
+
+Icons are automatically flipped using `rtl:rotate-180`.
+
+Migrate existing projects:
+
+```bash
+npx shadcn@latest migrate rtl
+```
+
+---
+
+## Custom Registries
+
+Configure multiple component registries in `components.json`:
+
+```json
+{
+  "registries": {
+    "@v0": "https://v0.dev/chat/b/{name}",
+    "@acme": {
+      "url": "https://registry.acme.com/r/{name}",
+      "headers": {
+        "Authorization": "Bearer ${ACME_REGISTRY_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Install from a namespaced registry:
+
+```bash
+npx shadcn@latest add @acme/data-table
+```
+
+### registry:base (New in CLI v4)
+
+Distribute an entire design system as a single payload -- components, dependencies, CSS vars, fonts, and config:
+
+```bash
+npx shadcn@latest add @acme/design-system
+```
+
+### registry:font (New in CLI v4)
+
+Fonts are a first-class registry type:
+
+```bash
+npx shadcn@latest add @acme/custom-font
+```
+
+---
+
+## shadcn/skills (New in CLI v4)
+
+shadcn/skills gives coding agents the context they need to work with components and registries correctly. The skill covers:
+- Both Radix and Base UI primitives and updated APIs
+- Component patterns and composition rules (FieldGroup for forms, ToggleGroup for option sets, semantic colors)
+- Registry workflows and CLI commands with correct flags
+- Project detection via `components.json`
+
+The skill runs `shadcn info --json` to inject project config into the agent's context.
+
+---
+
+## shadcn MCP Server
+
+The MCP server lets AI assistants browse, search, and install components from registries:
+
+```json
+// .mcp.json (for Claude Code)
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "shadcn@latest", "mcp"]
+    }
+  }
+}
+```
+
+Supports multiple registries through your project's `components.json`.
+
+---
+
 ## Common CLI Commands
 
 | Command | Purpose |
 |---------|---------|
 | `npx shadcn@latest init` | Initialize project config |
+| `npx shadcn@latest init --preset <code>` | Initialize with design preset |
+| `npx shadcn@latest init --rtl` | Initialize with RTL support |
 | `npx shadcn@latest add <name>` | Add component(s) |
 | `npx shadcn@latest add --all` | Add all available components |
 | `npx shadcn@latest add <name> --overwrite` | Update existing component |
-| `npx shadcn@latest diff <name>` | Show changes from upstream |
+| `npx shadcn@latest add <name> --dry-run` | Preview changes without writing |
+| `npx shadcn@latest add <name> --diff` | Show diff from registry |
+| `npx shadcn@latest add <name> --view` | Show file contents |
+| `npx shadcn@latest migrate radix` | Migrate to unified radix-ui package |
+| `npx shadcn@latest migrate rtl` | Convert physical to logical CSS classes |
+| `npx shadcn@latest info` | Show project config as JSON |
+| `npx shadcn@latest search <query>` | Search for components |
+| `npx shadcn@latest docs <name>` | Show component documentation |
+| `npx shadcn@latest build` | Build registry for distribution |
 
 ---
 
-**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs
+**Version:** CLI v4 (March 2026) | **Source:** https://ui.shadcn.com/docs

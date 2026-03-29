@@ -1,4 +1,4 @@
-# Event Listeners -- Expo Notifications SDK 54
+# Event Listeners -- Expo Notifications SDK 55
 
 Notification event listeners, deep linking from notifications, and lifecycle management.
 
@@ -106,7 +106,7 @@ export function usePushTokenListener(
 
 ### addNotificationsDroppedListener(listener)
 
-Listen for when notifications are dropped (e.g., device received too many).
+Listen for when notifications are dropped (e.g., device received too many). Android/Firebase only.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -164,6 +164,8 @@ Clear the stored last notification response.
 await Notifications.clearLastNotificationResponseAsync();
 ```
 
+Note: The synchronous `clearLastNotificationResponse()` is deprecated; use the async version.
+
 ---
 
 ### useLastNotificationResponse()
@@ -171,6 +173,10 @@ await Notifications.clearLastNotificationResponseAsync();
 React hook that returns the last notification response. Re-renders when a new response arrives.
 
 **Returns:** `NotificationResponse | null | undefined`
+
+- `undefined` -- not yet loaded
+- `null` -- loaded, no response
+- `NotificationResponse` -- user interacted with a notification
 
 ```typescript
 import * as Notifications from 'expo-notifications';
@@ -208,10 +214,22 @@ interface Notification {
       title: string | null;
       subtitle: string | null;
       body: string | null;
-      sound: string | null;
+      sound: 'default' | 'defaultCritical' | 'custom' | 'defaultRingtone' | null;
       badge: number | null;
       data: Record<string, unknown>;
       categoryIdentifier: string | null;
+      // iOS-specific:
+      launchImageName: string | null;
+      threadIdentifier: string | null;
+      attachments: NotificationContentAttachmentIos[];
+      interruptionLevel?: InterruptionLevel;
+      summaryArgument?: string | null;
+      summaryArgumentCount?: number;
+      targetContentIdentifier?: string;
+      // Android-specific:
+      color?: string;
+      priority?: AndroidNotificationPriority;
+      vibrationPattern?: number[];
     };
     trigger: NotificationTrigger | null;
   };
@@ -325,4 +343,4 @@ Notifications.addNotificationResponseReceivedListener(async () => {
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

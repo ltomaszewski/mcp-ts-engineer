@@ -241,4 +241,4 @@ const styles = StyleSheet.create({
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/views/
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/views/

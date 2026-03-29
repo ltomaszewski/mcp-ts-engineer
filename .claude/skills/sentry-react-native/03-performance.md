@@ -387,4 +387,4 @@ Sentry.init({
 
 ---
 
-**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/
+**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/

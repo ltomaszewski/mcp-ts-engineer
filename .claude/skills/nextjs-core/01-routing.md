@@ -1,4 +1,4 @@
-# Next.js 15 App Router -- Routing
+# Next.js 15.5 App Router -- Routing
 
 File-system based routing using the `app/` directory. Folders define route segments, special files define UI.
 
@@ -454,6 +454,62 @@ export function Navigation() {
 }
 ```
 
+### `onNavigate` Prop (15.3+)
+
+Event handler called during client-side (SPA) navigations only. Supports `preventDefault()` for navigation guards.
+
+```typescript
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+
+export function UnsavedFormLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const [isDirty, setIsDirty] = useState(false);
+
+  return (
+    <Link
+      href={href}
+      onNavigate={(e) => {
+        if (isDirty && !window.confirm('Discard unsaved changes?')) {
+          e.preventDefault();
+        }
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+```
+
+**Note:** `onNavigate` does not fire for links with the `download` attribute. Use `onClick` for those.
+
+### `useLinkStatus` Hook (15.3+)
+
+Returns a `pending` boolean during navigation. Use for inline loading feedback on the clicked link.
+
+```typescript
+'use client';
+
+import Link from 'next/link';
+import { useLinkStatus } from 'next/link';
+
+function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href}>
+      <NavItemContent>{children}</NavItemContent>
+    </Link>
+  );
+}
+
+function NavItemContent({ children }: { children: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return <span className={pending ? 'opacity-50' : ''}>{children}</span>;
+}
+```
+
+**Must be used inside a `<Link>` component's subtree.** Useful when prefetching is disabled, in progress, or the destination has no `loading.tsx`.
+
 ### `useRouter` Hook (Client Components)
 
 ```typescript
@@ -563,4 +619,4 @@ export async function generateMetadata({
 
 ---
 
-**Version:** 15.x | **Source:** https://nextjs.org/docs
+**Version:** 15.5.x | **Source:** https://nextjs.org/docs

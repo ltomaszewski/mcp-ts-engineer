@@ -1,6 +1,6 @@
-# Next.js 15 App Router -- Configuration
+# Next.js 15.5 App Router -- Configuration
 
-Configuration files, middleware, environment variables, Image/Font optimization, and TypeScript setup.
+Configuration files, middleware, environment variables, Image/Font optimization, TypeScript setup, typed routes, and Turbopack.
 
 ---
 
@@ -90,6 +90,8 @@ export default nextConfig;
 | `trailingSlash` | `boolean` | `false` | Add trailing slash to URLs |
 | `typescript.ignoreBuildErrors` | `boolean` | `false` | Skip type checking during build |
 | `serverExternalPackages` | `string[]` | `[]` | Packages to keep as Node.js imports |
+| `typedRoutes` | `boolean` | `false` | Enable compile-time typed routes (stable 15.5) |
+| `turbopack` | `object` | -- | Turbopack configuration (top-level since 15.3) |
 
 ### Redirects
 
@@ -167,21 +169,56 @@ const nextConfig: NextConfig = {
 
 Creates a self-contained output in `.next/standalone` that can be deployed without `node_modules`.
 
-### Turbopack
+### Turbopack (15.3+)
 
 ```typescript
 const nextConfig: NextConfig = {
-  // Turbopack is enabled via CLI: next dev --turbopack
-  // Configure Turbopack-specific options:
+  // Turbopack config is now a top-level key (moved from experimental.turbo in 15.3)
   turbopack: {
+    rules: {
+      // Additional webpack loaders for file transformations
+    },
     resolveAlias: {
       // Custom module aliases for Turbopack
     },
+    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js'],
   },
 };
 ```
 
-Turbopack is Next.js's Rust-based bundler for development. Enable with `next dev --turbopack`.
+Turbopack is Next.js's Rust-based bundler. Enable with CLI flags:
+
+| Command | Status | Description |
+|---------|--------|-------------|
+| `next dev --turbopack` | Stable | Development mode with Turbopack |
+| `next build --turbopack` | Beta (15.5) | Production builds with Turbopack |
+
+**Migration:** `experimental.turbo` is deprecated since 15.3 and removed in 16. Use top-level `turbopack` key.
+
+### Typed Routes (Stable 15.5)
+
+Compile-time type safety for route links. Generates types from your file structure into `.next/types`.
+
+```typescript
+const nextConfig: NextConfig = {
+  typedRoutes: true, // Stable since 15.5 (was experimental.typedRoutes)
+};
+```
+
+With `typedRoutes` enabled, `<Link href="...">` gets compile-time validation:
+
+```typescript
+import Link from 'next/link';
+
+// TypeScript catches invalid routes at compile time
+<Link href="/about">About</Link>        // Valid
+<Link href="/nonexistent">Bad</Link>     // Type error
+
+// Dynamic routes work too
+<Link href={`/blog/${slug}`}>Post</Link>
+```
+
+**Requirement:** Ensure `.next/types/**/*.ts` is in your `tsconfig.json` `include` array. Works with both Webpack and Turbopack.
 
 ---
 
@@ -189,7 +226,27 @@ Turbopack is Next.js's Rust-based bundler for development. Enable with `next dev
 
 Runs before every request. Located at the project root (same level as `app/`).
 
-**Note:** In Next.js 16+, `middleware.ts` is being renamed to `proxy.ts`. For Next.js 15, use `middleware.ts`.
+**Note:** In Next.js 16, `middleware.ts` is renamed to `proxy.ts` with Node.js runtime only. For Next.js 15.5, use `middleware.ts`.
+
+### Node.js Runtime for Middleware (Stable 15.5)
+
+Middleware defaults to the Edge runtime, but you can opt into Node.js runtime for access to Node.js APIs:
+
+```typescript
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export const config = {
+  runtime: 'nodejs', // Stable since 15.5 (experimental in 15.2)
+  matcher: ['/dashboard/:path*'],
+};
+
+export function middleware(request: NextRequest): NextResponse {
+  // Full Node.js API access (fs, crypto, etc.)
+  return NextResponse.next();
+}
+```
 
 ### Basic Middleware
 
@@ -675,6 +732,36 @@ const nextConfig: NextConfig = {
 
 ---
 
+## Deprecation Warnings (15.5 -- Preparing for Next.js 16)
+
+Next.js 15.5 logs deprecation warnings in dev and build to help prepare for Next.js 16.
+
+| Deprecated Feature | Action Required | Removed In |
+|--------------------|-----------------|------------|
+| `next lint` command | Use Biome or ESLint CLI directly | 16 |
+| `experimental.turbo` config | Use top-level `turbopack` key | 16 |
+| `experimental.typedRoutes` | Use top-level `typedRoutes` | 16 |
+| Link `legacyBehavior` prop | Remove prop and child `<a>` elements | 16 |
+| Auto-linting during `next build` | Run linter separately in CI | 16 |
+| Unrestricted `quality` on `<Image>` | Configure `images.qualities` in next.config.ts | 16 |
+| Query strings on local image `src` | Configure `images.localPatterns` | 16 |
+| Synchronous `params`/`searchParams` | Always `await` (already required in 15) | 16 |
+
+### Image qualities Configuration (Prepare for 16)
+
+```typescript
+const nextConfig: NextConfig = {
+  images: {
+    qualities: [25, 50, 75, 100], // Required in 16 if using quality != 75
+    localPatterns: [
+      { pathname: '/images/**' }, // Required in 16 for local images with query strings
+    ],
+  },
+};
+```
+
+---
+
 ## Quick Reference
 
 | Config Task | Where | Example |
@@ -690,7 +777,10 @@ const nextConfig: NextConfig = {
 | Local Font | `next/font/local` | `localFont({ src: './fonts/MyFont.woff2' })` |
 | Standalone build | `next.config.ts` | `output: 'standalone'` |
 | Turbopack dev | CLI | `next dev --turbopack` |
+| Turbopack build | CLI (beta) | `next build --turbopack` |
+| Typed routes | `next.config.ts` | `typedRoutes: true` |
+| Node.js middleware | `middleware.ts` config | `runtime: 'nodejs'` |
 
 ---
 
-**Version:** 15.x | **Source:** https://nextjs.org/docs
+**Version:** 15.5.x | **Source:** https://nextjs.org/docs

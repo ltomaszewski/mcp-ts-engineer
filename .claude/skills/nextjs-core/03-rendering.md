@@ -1,4 +1,4 @@
-# Next.js 15 App Router -- Rendering
+# Next.js 15.5 App Router -- Rendering
 
 Server Components render on the server by default. Client Components opt-in with `"use client"`. Understanding the boundary between them is critical for performance and correctness.
 
@@ -514,4 +514,4 @@ export function PostHeader() {
 
 ---
 
-**Version:** 15.x | **Source:** https://nextjs.org/docs
+**Version:** 15.5.x | **Source:** https://nextjs.org/docs

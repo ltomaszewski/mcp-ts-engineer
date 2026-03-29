@@ -248,4 +248,4 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
 
 ---
 
-**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs
+**Version:** CLI v4 (March 2026) | **Source:** https://ui.shadcn.com/docs

@@ -1,6 +1,6 @@
 ---
 name: ai-engineering
-version: "SDK 0.2.x"
+version: "SDK ~0.2.86"
 description: AI engineering with Claude Agent SDK - agent architecture, orchestration, performance optimization, security hardening, production deployment. Use when building AI agents, designing multi-agent systems, optimizing cost/latency, or hardening agent security.
 ---
 
@@ -14,7 +14,7 @@ Production-grade AI agent systems: architecture, performance, security, reliabil
 
 ## When to Use
 
-Load when user is:
+**LOAD THIS SKILL** when user is:
 - Designing multi-agent architectures or orchestration
 - Optimizing agent cost, latency, or token usage
 - Hardening security for production deployment
@@ -38,7 +38,7 @@ Load when user is:
 8. Match model to task — Haiku for workers, Sonnet for orchestrators, Opus for critical reasoning
 
 **NEVER:**
-1. `bypassPermissions` in production — propagates to ALL subagents
+1. `bypassPermissions` in production — propagates to ALL subagents; requires `allowDangerouslySkipPermissions: true` since v0.2.45
 2. Expose credentials to agents — use proxy pattern outside security boundary
 3. Skip error handling in hooks — failed hooks crash the agent loop
 4. Give subagents the `Task` tool — they cannot spawn sub-subagents
@@ -201,6 +201,35 @@ Does it require multi-step reasoning?
 const prodOptions   = { maxTurns: 30,  maxBudgetUsd: 2.0,  model: "sonnet" };
 const ciOptions     = { maxTurns: 10,  maxBudgetUsd: 0.50, model: "haiku"  };
 const researchOpts  = { maxTurns: 100, maxBudgetUsd: 10.0, model: "opus"   };
+```
+
+### Effort Level Control (v0.2.68+)
+
+The `EffortLevel` type (`"low" | "medium" | "high" | "max"`) controls reasoning depth. Since v0.2.68, default effort for Sonnet 4.6 changed from `"high"` to `"medium"`. Override explicitly when needed:
+
+```typescript
+import type { EffortLevel } from "@anthropic-ai/claude-agent-sdk";
+
+// High-effort for complex tasks
+const complexOpts = { model: "sonnet", maxThinkingTokens: 16000 };
+
+// Low-effort for simple workers
+const workerOpts  = { model: "haiku" };
+```
+
+### Strict Tool Allowlists (v0.2.65+)
+
+Use the `tools` option (distinct from `allowedTools`) for strict control over built-in tools:
+
+```typescript
+// Only Bash and Read — no Edit, no Write, no Glob
+const readOnlyRunner = { tools: ["Bash", "Read"] };
+
+// Disable ALL built-in tools — only MCP tools available
+const mcpOnly = { tools: [] };
+
+// All default tools explicitly
+const allTools = { tools: { type: "preset", preset: "claude_code" } };
 ```
 
 ---
@@ -522,4 +551,4 @@ Long-running agents degrade without context management:
 
 ---
 
-**Version:** SDK ^0.2.45 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** SDK ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

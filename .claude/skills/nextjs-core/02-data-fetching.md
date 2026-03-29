@@ -1,4 +1,4 @@
-# Next.js 15 App Router -- Data Fetching
+# Next.js 15.5 App Router -- Data Fetching
 
 Server-first data fetching with extended `fetch()`, caching, revalidation, Server Actions for mutations, and streaming with Suspense.
 
@@ -625,4 +625,4 @@ export default async function ItemPage({
 
 ---
 
-**Version:** 15.x | **Source:** https://nextjs.org/docs
+**Version:** 15.5.x | **Source:** https://nextjs.org/docs

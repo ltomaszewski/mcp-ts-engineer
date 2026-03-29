@@ -329,4 +329,4 @@ To disable if causing unwanted item movement during data reordering:
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/recycling
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/recycling

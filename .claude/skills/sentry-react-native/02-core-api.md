@@ -408,6 +408,7 @@ const user = await safeApiCall(
 |-------------|---------|
 | `mobileReplayIntegration()` | Session replay for mobile |
 | `reactNavigationIntegration()` | React Navigation performance tracing |
+| `expoUpdatesListenerIntegration()` | Track Expo Updates lifecycle events as breadcrumbs (v8.5+). Enabled by default in Expo apps. |
 | `browserReplayIntegration()` | Session replay for web |
 | Redux integration | Track Redux state |
 | Component tracking | Monitor component lifecycle |
@@ -417,6 +418,36 @@ const user = await safeApiCall(
 | HttpClient | Enhanced HTTP error capture |
 | RewriteFrames | Modify stack frame URLs |
 
+### Expo Image and Asset Instrumentation (v8.4+)
+
+Instrument `expo-image` and `expo-asset` for performance monitoring of image/asset loading:
+
+```typescript
+import { Image } from 'expo-image';
+import { Asset } from 'expo-asset';
+import * as Sentry from '@sentry/react-native';
+
+// Instruments Image.prefetch and Image.loadAsync
+Sentry.wrapExpoImage(Image);
+
+// Instruments Asset.loadAsync
+Sentry.wrapExpoAsset(Asset);
+```
+
+### Shake-to-Report Feedback (v8.5+)
+
+Enable the shake gesture to open the user feedback widget:
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+// Start listening for shake gestures
+Sentry.enableFeedbackOnShake();
+
+// Stop listening
+Sentry.disableFeedbackOnShake();
+```
+
 ---
 
-**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/
+**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/

@@ -1,8 +1,8 @@
 # Expo Notifications -- Modular Knowledge Base
 
-Push and local notifications for React Native Expo apps. Production-grade reference for Expo SDK 54.
+Push and local notifications for React Native Expo apps. Production-grade reference for Expo SDK 55.
 
-**Version:** SDK 54 | React Native 0.81.5, React 19.1.0, TypeScript ^5.9.3
+**Version:** Expo SDK 55 (~55.0.14) | React Native 0.83.4 | React 19.2.0
 
 ---
 
@@ -41,12 +41,23 @@ Push and local notifications for React Native Expo apps. Production-grade refere
 
 ---
 
+## SDK 55 Migration Notes
+
+- The root-level `notification` field in app.json is **removed** -- use the `expo-notifications` config plugin
+- Push notifications in Expo Go on Android now **throws an error** -- use a development build
+- Updated to latest Android Firebase notifications dependency with important bug fixes
+- New Architecture is **mandatory** in SDK 55 -- cannot be disabled
+
+---
+
 ## Official Resources
 
 - **API Reference:** https://docs.expo.dev/versions/latest/sdk/notifications/
 - **Push Overview:** https://docs.expo.dev/push-notifications/overview/
+- **Push Setup:** https://docs.expo.dev/push-notifications/push-notifications-setup/
+- **Receiving Notifications:** https://docs.expo.dev/push-notifications/receiving-notifications/
 - **Sending Push:** https://docs.expo.dev/push-notifications/sending-notifications/
 
 ---
 
-**Last Updated:** February 2026
+**Last Updated:** March 2026

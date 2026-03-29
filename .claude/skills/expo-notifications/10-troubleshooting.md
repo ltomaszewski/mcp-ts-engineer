@@ -1,4 +1,4 @@
-# Troubleshooting -- Expo Notifications SDK 54
+# Troubleshooting -- Expo Notifications SDK 55
 
 Common issues, debugging techniques, platform-specific problems, and known limitations.
 
@@ -23,6 +23,19 @@ if (!Device.isDevice) {
 
 ---
 
+### Push notifications throw error in Expo Go (Android)
+
+**Cause:** SDK 55 changed this from a warning to an error. Push notifications are not supported in Expo Go on Android.
+
+**Solution:** Use a development build instead of Expo Go.
+
+```bash
+npx expo prebuild --clean
+npx expo run:android
+```
+
+---
+
 ### "Project ID not found"
 
 **Cause:** `projectId` not configured in app.json.
@@ -41,15 +54,48 @@ if (!Device.isDevice) {
 }
 ```
 
-**Solution 2:** Read from Constants:
+**Solution 2:** Read from Constants (with fallback):
 
 ```typescript
 import Constants from 'expo-constants';
 
-const projectId = Constants.expoConfig?.extra?.eas?.projectId
-  ?? Constants.easConfig?.projectId;
+const projectId =
+  Constants.expoConfig?.extra?.eas?.projectId ??
+  Constants?.easConfig?.projectId;
 
 if (!projectId) throw new Error('Project ID not configured');
+```
+
+---
+
+### "notification" config error on prebuild (SDK 55)
+
+**Cause:** The root-level `notification` field was removed from app.json schema in SDK 55.
+
+**Solution:** Migrate to the config plugin:
+
+```json
+// BEFORE (throws error in SDK 55)
+{
+  "expo": {
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#ffffff"
+    }
+  }
+}
+
+// AFTER (correct for SDK 55)
+{
+  "expo": {
+    "plugins": [
+      ["expo-notifications", {
+        "icon": "./assets/notification-icon.png",
+        "color": "#ffffff"
+      }]
+    ]
+  }
+}
 ```
 
 ---
@@ -58,7 +104,7 @@ if (!projectId) throw new Error('Project ID not configured');
 
 **Cause:** Notification handler not configured or returning incorrect behavior.
 
-**Solution:** Configure handler with correct properties (SDK 54):
+**Solution:** Configure handler with correct properties:
 
 ```typescript
 Notifications.setNotificationHandler({
@@ -71,7 +117,7 @@ Notifications.setNotificationHandler({
 });
 ```
 
-**Note:** `shouldShowAlert` is deprecated. Use `shouldShowBanner` and `shouldShowList`.
+**Note:** `shouldShowAlert` is deprecated since SDK 54. Use `shouldShowBanner` and `shouldShowList`.
 
 ---
 
@@ -96,11 +142,11 @@ const { status } = await Notifications.requestPermissionsAsync();
 
 ### Custom sounds not playing
 
-**Cause:** Sound file not declared in app.json or wrong format.
+**Cause:** Sound file not declared in config plugin or wrong format.
 
 **Solution:**
 
-1. Declare in app.json:
+1. Declare in app.json config plugin:
 ```json
 {
   "expo": {
@@ -124,6 +170,7 @@ await Notifications.scheduleNotificationAsync({
 
 3. Sound must be .wav format.
 4. Rebuild after adding sounds (`npx expo prebuild --clean`).
+5. SDK 55 validates sound file existence at build time -- check build logs for errors.
 
 ---
 
@@ -143,7 +190,7 @@ const { status } = await Notifications.requestPermissionsAsync({
 });
 ```
 
-On Android, badge management is manual via `setBadgeCountAsync()`.
+On Android, not all launchers support badge display. Badge management is manual via `setBadgeCountAsync()`.
 
 ---
 
@@ -169,6 +216,18 @@ Check:
 
 ---
 
+### Background tasks not executing
+
+**Cause:** Task not defined at module scope, or missing config.
+
+**Solution:**
+1. Define task at top-level module scope (e.g., in `index.ts`), not inside a component
+2. iOS: Ensure `enableBackgroundRemoteNotifications: true` in config plugin
+3. Android: Ensure FCM is properly configured
+4. SDK 55 fixed a bug where background tasks were not executing in some cases -- upgrade to latest
+
+---
+
 ## Platform-Specific Issues
 
 ### iOS
@@ -182,11 +241,15 @@ Check:
 - Must set `shouldShowBanner: true` in handler
 - Handler must be configured before notifications arrive
 
+**Android splash screen issue:**
+- ~70% failure rate when launching from notification in debug builds
+- Test in release mode: `npx expo run:android --variant release`
+
 ### Android
 
 **Notification icon wrong color:**
 - Icon must be all-white PNG with transparency (96x96)
-- Set `color` in app.json plugin for tint
+- Set `color` in config plugin for tint
 - Rebuild after changing icon
 
 **Notification appears then disappears:**
@@ -197,6 +260,10 @@ Check:
 - Channels are immutable after creation
 - Only `name` and `description` can be updated
 - To change importance/sound: delete channel, create new one (user prefs reset)
+
+**NotificationForwarderActivity crash (Android 11/12):**
+- Fixed in SDK 55 -- ensure you are using expo-notifications ~55.0.14
+- Crash occurred when Parcelable extras failed to deserialize
 
 ---
 
@@ -216,6 +283,7 @@ export async function diagnosticCheck(): Promise<void> {
 
   const perms = await Notifications.getPermissionsAsync();
   console.log('Permission granted:', perms.granted);
+  console.log('Can ask again:', perms.canAskAgain);
 
   if (Platform.OS === 'android') {
     const channels = await Notifications.getNotificationChannelsAsync();
@@ -266,10 +334,15 @@ export function setupNotificationLogging(): () => void {
     console.log('[TOKEN]', t.data);
   });
 
+  const s4 = Notifications.addNotificationsDroppedListener(() => {
+    console.log('[DROPPED] Notifications were dropped');
+  });
+
   return () => {
     s1.remove();
     s2.remove();
     s3.remove();
+    s4.remove();
   };
 }
 ```
@@ -279,18 +352,21 @@ export function setupNotificationLogging(): () => void {
 ## Testing Checklist
 
 - [ ] Using physical device (not emulator/simulator for push)
+- [ ] Using development build (not Expo Go for push on Android)
 - [ ] Notification handler configured at app startup
 - [ ] Android: channel created before requesting permissions
 - [ ] Push token successfully obtained
 - [ ] Token sent to backend server
 - [ ] App has notification permissions granted
 - [ ] Sound files are valid .wav format
+- [ ] Sound files declared in config plugin (not root `notification` field)
 - [ ] Android icon is 96x96 all-white PNG
 - [ ] Tested local notification first
 - [ ] Tested foreground, background, and terminated states
 - [ ] Listener cleanup in useEffect return functions
 - [ ] iOS: checked device notification settings
 - [ ] Android: checked app channel settings
+- [ ] Background tasks defined at module scope
 
 ---
 
@@ -298,14 +374,16 @@ export function setupNotificationLogging(): () => void {
 
 | Limitation | Impact | Workaround |
 |-----------|--------|-----------|
-| No push in Expo Go | Cannot test push in Expo Go | Use development build |
+| No push in Expo Go (Android) | Throws error in SDK 55 | Use development build |
 | Simulator no push | Cannot test push on simulator | Use physical device |
 | Handler 3s timeout | handleNotification must return quickly | Keep handler lightweight |
 | Android channel immutable | Cannot change importance after creation | Delete and recreate |
 | Background task 30s limit | Long-running tasks terminated | Split into smaller tasks |
 | Scheduled limit 64-128 | OS limits scheduled notifications | Clean up old schedules |
-| Android badge manual | getBadgeCountAsync returns 0 on Android | Manage badge manually |
+| Android badge manual | Not all launchers support badges | Manage badge manually |
+| Android splash screen ~70% failure | Debug build launches from notification | Test in release mode |
+| iOS repeating interval min 60s | TIME_INTERVAL repeats must be >= 60s | Use DAILY or CALENDAR for shorter |
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

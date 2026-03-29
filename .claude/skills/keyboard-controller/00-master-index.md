@@ -1,6 +1,6 @@
 # Keyboard Controller: Master Index
 
-**Complete Knowledge Base for react-native-keyboard-controller v1.20.x**
+**Complete Knowledge Base for react-native-keyboard-controller v1.21.x**
 
 ---
 
@@ -74,9 +74,11 @@ export default function App() {
 |-----------|---------|
 | `KeyboardProvider` | Root wrapper (required) |
 | `KeyboardToolbar` | Navigation and done buttons |
-| `KeyboardAwareScrollView` | Auto-scroll to focused input |
+| `KeyboardToolbar.Group` | Group toolbar items together (v1.21.0+) |
+| `KeyboardAwareScrollView` | Auto-scroll to focused input (uses `contentInset` in v1.21.0+) |
+| `KeyboardChatScrollView` | Purpose-built scroll view for chat interfaces (v1.21.0+) |
 | `KeyboardStickyView` | Sticky positioning above keyboard |
-| `KeyboardAvoidingView` | Avoid keyboard overlap (padding/height/position/translate) |
+| `KeyboardAvoidingView` | Avoid keyboard overlap (padding/height/position/translate) -- `automaticOffset` prop added in v1.21.0 |
 
 ### Views
 
@@ -107,4 +109,4 @@ export default function App() {
 
 ---
 
-**Version**: 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version**: 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

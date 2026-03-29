@@ -803,4 +803,4 @@ env:
 
 ---
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/api-reference/commands
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/api-reference/commands

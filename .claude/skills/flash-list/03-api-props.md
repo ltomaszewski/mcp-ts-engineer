@@ -56,6 +56,28 @@ const renderItem = useCallback(({ item, index, target }: {
 
 ## Layout Props
 
+### inverted (v2.3.0+)
+
+| Property | Type | Required | Default |
+|----------|------|----------|---------|
+| `inverted` | `boolean` | No | `false` |
+
+Reverses the direction of the list. Uses CSS transforms (`scaleY(-1)` on iOS/web, `rotate(180deg)` on Android) to flip the list and its contents. Useful for chat-style interfaces where newest content appears at the bottom.
+
+```typescript
+<FlashList
+  data={messages}
+  inverted={true}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}
+  onEndReached={loadOlderMessages}
+/>
+```
+
+**Note:** On Android, `rotate(180deg)` causes the scrollbar to appear on the left side. Do not combine with `maintainVisibleContentPosition` -- choose one approach.
+
+---
+
 ### horizontal
 
 | Property | Type | Required | Default |
@@ -475,10 +497,10 @@ These props existed in v1 but are **removed** in v2:
 | `estimatedItemSize` | Automatic sizing (remove prop) |
 | `estimatedListSize` | Automatic sizing (remove prop) |
 | `estimatedFirstItemOffset` | Automatic sizing (remove prop) |
-| `inverted` | Reverse data + `maintainVisibleContentPosition` |
+| `inverted` | **Re-added in v2.3.0** (uses CSS transforms); alternatively use `maintainVisibleContentPosition` |
 | `disableAutoLayout` | Removed (no replacement needed) |
 | `disableHorizontalListHeightMeasurement` | Removed (no replacement needed) |
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/usage/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/usage/

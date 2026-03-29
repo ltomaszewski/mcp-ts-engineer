@@ -470,4 +470,4 @@ This requires native initialization via `sentry.options.json` or the Expo `useNa
 
 ---
 
-**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/
+**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/

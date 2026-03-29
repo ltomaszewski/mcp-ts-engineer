@@ -1,6 +1,6 @@
 # FlashList v2.x - Knowledge Base
 
-**Package:** `@shopify/flash-list` v2.x (2.2.2)
+**Package:** `@shopify/flash-list` v2.x (2.3.1)
 **Target:** React Native New Architecture, TypeScript ^5.9.3
 
 ---
@@ -45,4 +45,4 @@
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/

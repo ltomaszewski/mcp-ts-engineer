@@ -1,11 +1,11 @@
 ---
 name: better-auth
-description: Better Auth v1.4 authentication - email/password, OAuth, sessions, RBAC, MFA, Next.js integration. Use when implementing auth, managing sessions, adding social login, or role-based access.
+description: Better Auth v1.5.6 authentication - email/password, OAuth, sessions, RBAC, MFA, i18n, MCP auth, OAuth 2.1 provider, test utilities, secret rotation. Use when implementing auth, managing sessions, adding social login, or role-based access.
 ---
 
 # Better Auth
 
-> Full-stack authentication with email/password, social login, MFA, and session management for Next.js apps.
+> Full-stack authentication with email/password, social login, MFA, session management, MCP auth, OAuth 2.1 provider, i18n, and test utilities.
 
 **Stack:** better-auth + @better-auth/react
 
@@ -26,6 +26,13 @@ LOAD THIS SKILL when user is:
 - Setting up organization/team multi-tenancy with custom permissions
 - Migrating from NextAuth/Auth.js to Better Auth
 - Protecting routes via middleware, server components, or server actions
+- Building an OAuth 2.1 authorization server or MCP auth provider
+- Adding i18n / translated error messages
+- Writing integration tests with Better Auth test utilities
+- Deploying to Cloudflare Workers with D1 database
+- Setting up Electron desktop authentication
+- Configuring secret key rotation for zero-downtime secret changes
+- Setting up seat-based billing with Stripe
 
 ---
 
@@ -37,12 +44,15 @@ LOAD THIS SKILL when user is:
 3. Use `toNextJsHandler` for Next.js App Router API route at `/api/auth/[...all]/route.ts`
 4. Pass `await headers()` from `next/headers` when calling `auth.api.getSession()` in Server Components
 5. Add `nextCookies()` plugin when calling auth functions from Server Actions that set cookies
-6. Run `npx @better-auth/cli migrate` or `npx @better-auth/cli generate` after adding plugins
+6. Run `npx auth@latest migrate` or `npx auth@latest generate` after adding plugins
 7. Use `createAuthClient` from `"better-auth/react"` for React/Next.js client
 8. Validate sessions server-side in protected routes; middleware cookie checks are optimistic only
 9. Use `authClient.useSession()` hook for reactive session state on the client
 10. Keep access control definitions (`createAccessControl`) in a shared file imported by both server and client
 11. Use typed `auth` export with `typeof auth` for client-side type inference with plugins
+12. Use `npx auth init` (new CLI) for scaffolding new projects; replaces `npx @better-auth/cli`
+13. Use versioned `secrets` array for secret key rotation instead of replacing `BETTER_AUTH_SECRET`
+14. Use separate adapter packages (e.g. `@better-auth/drizzle-adapter`) with `better-auth/minimal` for smaller bundles
 
 **NEVER:**
 1. Call `authClient.signIn.*` or `authClient.signUp.*` from server-side code; use `auth.api.*` instead
@@ -50,9 +60,10 @@ LOAD THIS SKILL when user is:
 3. Rely solely on middleware cookie checks for security; always validate sessions in route handlers
 4. Skip database migrations after adding or updating plugins
 5. Use `@ts-ignore` to suppress Better Auth type errors; fix the types instead
-6. Hardcode the `baseURL` in production; use `BETTER_AUTH_URL` environment variable
+6. Hardcode the `baseURL` in production; use `BETTER_AUTH_URL` or dynamic base URL with `allowedHosts`
 7. Expose backup codes or TOTP secrets in logs or error messages
 8. Trust `getSessionCookie()` in middleware as proof of authentication; it only checks cookie existence
+9. Use test utilities plugin in production; it is for test environments only
 
 ---
 
@@ -159,6 +170,37 @@ export const config = {
 };
 ```
 
+### Dynamic Base URL (Vercel / Multi-Domain)
+
+```typescript
+export const auth = betterAuth({
+  baseURL: {
+    allowedHosts: [
+      "myapp.com",
+      "www.myapp.com",
+      "*.vercel.app",        // all Vercel preview deployments
+      "preview-*.myapp.com", // custom preview pattern
+    ],
+  },
+});
+```
+
+The client auto-detects `VERCEL_URL` and `NEXTAUTH_URL` when no explicit `baseURL` is set.
+
+### Secret Key Rotation
+
+```typescript
+export const auth = betterAuth({
+  secrets: [
+    { version: 2, value: "new-secret-key-at-least-32-chars" }, // current (first = active)
+    { version: 1, value: "old-secret-key-still-used-to-decrypt" }, // previous
+  ],
+});
+// Or via env: BETTER_AUTH_SECRETS=2:new-secret-base64,1:old-secret-base64
+```
+
+No database migrations or downtime required. Legacy data encrypted before rotation remains decryptable.
+
 ---
 
 ## Anti-Patterns
@@ -167,11 +209,13 @@ export const config = {
 |---|---|
 | Calling `authClient.signIn.email()` in Server Component | Use `auth.api.signInEmail({ body: {...}, headers: await headers() })` |
 | Trusting middleware cookie check as full auth | Validate with `auth.api.getSession()` in the route handler |
-| Hardcoding `baseURL: "http://localhost:3000"` | Use `process.env.BETTER_AUTH_URL` |
-| Skipping `npx @better-auth/cli migrate` after adding plugin | Always run migrations when adding plugins |
+| Hardcoding `baseURL: "http://localhost:3000"` | Use `process.env.BETTER_AUTH_URL` or dynamic `allowedHosts` |
+| Skipping `npx auth@latest migrate` after adding plugin | Always run migrations when adding plugins |
 | Storing TOTP secret in client state | Keep secrets server-side; only expose `totpURI` for QR code |
 | Using `any` for auth client type | Use `typeof auth` generic: `createAuthClient<typeof auth>()` |
 | Not passing `headers` to `auth.api.getSession()` | Always pass `headers: await headers()` in Server Components |
+| Using `npx @better-auth/cli` (old CLI) | Use `npx auth@latest` (new standalone CLI since v1.5) |
+| Replacing `BETTER_AUTH_SECRET` directly | Use versioned `secrets` array for zero-downtime rotation |
 
 ---
 
@@ -215,11 +259,35 @@ Key plugins:
 - `nextCookies` -- Required for Server Actions that set cookies
 - `customSession` / `customSessionClient` -- Extend session response with custom fields
 
+New in v1.5:
+- `@better-auth/oauth-provider` -- OAuth 2.1 authorization server with OIDC compatibility
+- `@better-auth/i18n` -- Type-safe error message translations with locale detection
+- `@better-auth/sso` -- SSO with OIDC, OAuth2, and SAML 2.0 (now with Single Logout)
+- `@better-auth/stripe` -- Stripe billing with seat-based pricing support
+- MCP Auth -- MCP-ready authorization server for AI agents and tools
+- Electron plugin -- Desktop OAuth flow via system browser + custom protocol
+- Test Utils -- Factories, auth helpers, and OTP capture for testing
+
+---
+
+## CLI Commands (New in v1.5)
+
+The new standalone CLI `npx auth` replaces `@better-auth/cli`:
+
+| Command | Purpose |
+|---|---|
+| `npx auth init` | Scaffold complete auth setup (config, adapter, framework) |
+| `npx auth@latest migrate` | Apply schema to database (Kysely adapter) |
+| `npx auth@latest generate` | Generate schema for your ORM (Prisma, Drizzle, Kysely) |
+| `npx auth@latest generate --adapter` | Generate schema tailored to specific adapter |
+| `npx auth upgrade` | Upgrade Better Auth to latest version |
+| `npx auth info` | Diagnostic information about your setup |
+
 ---
 
 ## Database Schema
 
-Core tables (auto-created via `npx @better-auth/cli migrate`):
+Core tables (auto-created via `npx auth@latest migrate`):
 
 | Table | Key Fields |
 |---|---|
@@ -230,6 +298,30 @@ Core tables (auto-created via `npx @better-auth/cli migrate`):
 
 Plugins add their own tables/columns. Always run migrations after adding plugins.
 
+### Adapter Packages (v1.5 -- Separate Installs)
+
+For smaller bundles, install only the adapter you need:
+
+| Adapter | Package | Import |
+|---|---|---|
+| Drizzle | `@better-auth/drizzle-adapter` | `import { drizzleAdapter } from "@better-auth/drizzle-adapter"` |
+| Prisma | `@better-auth/prisma-adapter` | `import { prismaAdapter } from "@better-auth/prisma-adapter"` |
+| MongoDB | `@better-auth/mongodb-adapter` | `import { mongodbAdapter } from "@better-auth/mongodb-adapter"` |
+| Cloudflare D1 | Built-in | Pass `env.DB` directly -- auto-detected |
+
+Use `better-auth/minimal` instead of `better-auth` with separate adapters:
+
+```typescript
+import { betterAuth } from "better-auth/minimal";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: "pg" }),
+});
+```
+
+The main `better-auth` package re-exports all adapters, so existing imports continue to work.
+
 ---
 
 ## Deep Dive References
@@ -238,10 +330,10 @@ Load additional context when needed:
 
 | When you need | Load |
 |---------------|------|
-| Installation, database, env vars, Next.js setup | [01-setup.md](01-setup.md) |
-| Email/password, OAuth, sessions, password reset | [02-authentication.md](02-authentication.md) |
+| Installation, database, env vars, Next.js setup, CLI, adapters | [01-setup.md](01-setup.md) |
+| Email/password, OAuth, sessions, password reset, 2FA, i18n | [02-authentication.md](02-authentication.md) |
 | RBAC, admin plugin, organization plugin, permissions | [03-authorization.md](03-authorization.md) |
 
 ---
 
-**Version:** 1.4.x | **Source:** https://www.better-auth.com/docs
+**Version:** 1.5.6 | **Source:** https://www.better-auth.com/docs

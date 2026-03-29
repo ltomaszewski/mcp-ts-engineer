@@ -43,10 +43,14 @@ The `Query` object extends `AsyncGenerator<SDKMessage, void>` with additional me
 | `setMaxThinkingTokens(n)` | Set thinking token limit |
 | `supportedCommands()` | Get supported commands |
 | `supportedModels()` | Get available models |
-| `mcpServerStatus()` | Get MCP server status |
+| `supportedAgents()` | Get available subagent definitions (v0.2.75+) |
+| `mcpServerStatus()` | Get MCP server status with `capabilities` field |
 | `reconnectMcpServer(name)` | Reconnect a disconnected MCP server |
 | `toggleMcpServer(name, enabled)` | Enable/disable an MCP server |
+| `enableChannel(name)` | Enable an MCP server channel (v0.2.75+) |
 | `accountInfo()` | Get account information |
+| `getSettings()` | Get runtime-resolved settings including `applied` model and effort (v0.2.83+) |
+| `reloadPlugins()` | Reload plugins and refresh commands/agents/MCP status (v0.2.86+) |
 
 ---
 
@@ -482,6 +486,72 @@ for message in query(
 
 ---
 
+## Session History: `getSessionMessages()` (v0.2.80+)
+
+Read a session's conversation history from its transcript file.
+
+```typescript
+import { getSessionMessages } from "@anthropic-ai/claude-agent-sdk";
+
+// Read all messages from a session
+const messages = await getSessionMessages(sessionId);
+
+// With pagination
+const page = await getSessionMessages(sessionId, {
+  limit: 50,
+  offset: 0
+});
+
+for (const msg of page) {
+  console.log(msg.type, msg);
+}
+```
+
+**Note**: v0.2.81 fixed a bug where parallel tool results were dropped. Sessions with parallel tool calls now correctly return all `tool_use`/`tool_result` pairs.
+
+---
+
+## Strict Tool Configuration: `tools` Option (v0.2.65+)
+
+The `tools` option provides a strict allowlist of built-in tools, distinct from `allowedTools`:
+
+```typescript
+// Strict allowlist: ONLY these built-in tools are available
+query({
+  prompt: "...",
+  options: {
+    tools: ["Bash", "Read", "Edit"],  // Only these 3 built-in tools
+  }
+})
+
+// Disable all built-in tools (only custom/MCP tools available)
+query({
+  prompt: "...",
+  options: {
+    tools: [],  // No built-in tools
+    mcpServers: { myServer: { command: "..." } }
+  }
+})
+
+// All default tools
+query({
+  prompt: "...",
+  options: {
+    tools: { type: "preset", preset: "claude_code" }
+  }
+})
+
+// Opt-in to AskUserQuestion (v0.2.62+)
+query({
+  prompt: "...",
+  options: {
+    tools: ["Bash", "Read", "Edit", "AskUserQuestion"]
+  }
+})
+```
+
+---
+
 ## Best Practices
 
 1. **Always set `maxTurns`** for automated pipelines to prevent runaway costs
@@ -495,4 +565,4 @@ for message in query(
 
 ---
 
-**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

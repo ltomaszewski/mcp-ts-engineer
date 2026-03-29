@@ -14,7 +14,8 @@ Request → Middleware (Edge) → API Route (Node.js) → Markdown Response
 ```
 
 **Why this split:**
-- Middleware runs on Edge Runtime — no access to `linkedom`, `@mozilla/readability`, or `turndown`
+- Middleware defaults to Edge Runtime — no access to `linkedom`, `@mozilla/readability`, or `turndown`
+- As of 15.5, middleware can optionally use Node.js runtime (`config.runtime = 'nodejs'`), but keeping it thin is still recommended for performance
 - API route runs on Node.js Runtime — full DOM manipulation available
 - Thin middleware keeps per-request overhead minimal (~1ms UA check)
 

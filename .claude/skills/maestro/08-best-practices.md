@@ -294,4 +294,4 @@ TEST_EMAIL=john@company.com TEST_PASSWORD=ProdPassword maestro test login.yaml
 
 ---
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/

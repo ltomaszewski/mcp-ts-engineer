@@ -1,6 +1,6 @@
 ---
 name: claude-agent-sdk
-version: "^0.2.50"
+version: "~0.2.86"
 description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks, multi-turn conversations. Use when building agents, integrating Claude API, or implementing AI features programmatically.
 ---
 
@@ -28,11 +28,13 @@ description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming
 
 **ALWAYS:**
 1. Use async iteration for `query()` responses — it's an AsyncGenerator
-2. Handle all SDKMessage types — `assistant`, `result`, `user`, `system`, `partial`
+2. Handle all SDKMessage types — `assistant`, `result`, `user`, `system`, `stream_event`
 3. Set appropriate permission mode — don't use `bypassPermissions` in production
 4. Validate tool inputs with Zod schemas (TS) or type hints (Python)
 5. Handle errors gracefully — check `is_error` in result messages
-6. Use `systemPrompt: { preset: "claude_code" }` for full Claude Code capabilities
+6. Use `systemPrompt: { type: "preset", preset: "claude_code" }` for full Claude Code capabilities
+7. Set `maxTurns` and `maxBudgetUsd` for all automated/production queries
+8. Use `allowedTools` whitelist (not `disallowedTools`) for security-sensitive agents
 
 **NEVER:**
 1. Ignore result messages — they contain cost, duration, and error info
@@ -41,6 +43,8 @@ description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming
 4. Skip hook error handling — failed hooks can crash the agent
 5. Mix V1 and V2 interfaces in same session
 6. Expose MCP servers without authentication in production
+7. Include `Task` in subagent `tools` — subagents cannot spawn sub-subagents
+8. Use `bypassPermissions` without `allowDangerouslySkipPermissions: true` and container isolation
 
 ---
 
@@ -296,12 +300,12 @@ const results = await Promise.all(
 | `systemPrompt` | `string \| { type: "preset", preset: "claude_code", append?: string }` | minimal | System prompt |
 | `allowedTools` | `string[]` | all | Tools agent can use |
 | `disallowedTools` | `string[]` | `[]` | Tools to block |
+| `tools` | `string[] \| { type: "preset", preset: "claude_code" } \| []` | `undefined` | Strict tool set: `["Bash","Read"]` = allowlist; `[]` = none; preset = all |
 | `maxTurns` | `number` | `undefined` | Max conversation turns |
 | `maxBudgetUsd` | `number` | `undefined` | Max cost in USD |
 | `permissionMode` | `PermissionMode` | `"default"` | Permission behavior |
 | `cwd` | `string` | `process.cwd()` | Working directory |
 | `mcpServers` | `Record<string, McpServerConfig>` | `{}` | MCP server configs |
-| `tools` | `string[] \| { type: "preset", preset: "claude_code" }` | `undefined` | Tool configuration |
 | `agents` | `Record<string, AgentDefinition>` | `undefined` | Subagent definitions |
 | `settingSources` | `("user" \| "project" \| "local")[]` | `[]` | Settings to load from disk |
 | `enableFileCheckpointing` | `boolean` | `false` | Enable `rewindFiles()` |
@@ -310,7 +314,9 @@ const results = await Promise.all(
 | `plugins` | `SdkPluginConfig[]` | `[]` | Custom plugins |
 | `betas` | `SdkBeta[]` | `[]` | Beta features (e.g., `"context-1m-2025-08-07"`) |
 | `canUseTool` | `CanUseTool` | `undefined` | Custom permission function |
-| `includePartialMessages` | `boolean` | `false` | Include streaming partial messages |
+| `allowDangerouslySkipPermissions` | `boolean` | `false` | Required when using `bypassPermissions` |
+| `includePartialMessages` | `boolean` | `false` | Include streaming `stream_event` messages |
+| `agentProgressSummaries` | `boolean` | `false` | Enable periodic AI-generated progress summaries for subagents |
 
 ### Permission Modes
 
@@ -429,9 +435,10 @@ allowedTools: ["mcp__filesystem__*"]
 | `Grep` | Search file contents |
 | `WebFetch` | Fetch web content |
 | `WebSearch` | Search the web |
-| `Task` | Spawn subagents |
+| `Task` | Spawn subagents (orchestrator only, never in subagent tools) |
 | `TodoWrite` | Task tracking |
 | `NotebookEdit` | Jupyter notebooks |
+| `AskUserQuestion` | Request input from user (must opt-in via `tools` option) |
 
 ---
 
@@ -522,19 +529,22 @@ ANTHROPIC_API_KEY=your-api-key
 
 ---
 
-**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
 
-### v0.2.45-0.2.50 Changes
+### v0.2.50-0.2.86 Notable Changes
 
-- **v0.2.50**: Parity with Claude Code v2.1.50
-- **v0.2.49**: `ConfigChange` hook event for security auditing; model info now includes `supportsEffort`, `supportedEffortLevels`, `supportsAdaptiveThinking`; permission suggestions on safety checks
-- **v0.2.47**: `promptSuggestion()` method on `Query` for context-based prompt suggestions; `tool_use_id` field on `task_notification` events
-- **v0.2.45**: Claude Sonnet 4.6 support; `task_started` system message; fixed `Session.stream()` premature return with background subagents; improved memory for large shell output
-- **`subagents` renamed to `agents`**: Use `agents` property in options
-- **`settingSources`**: Settings NOT auto-loaded from disk; explicitly pass `["user", "project", "local"]`
-- **`systemPrompt` preset**: Use `{ type: "preset", preset: "claude_code" }` (old `{ preset: "claude_code" }` deprecated)
-- **`outputFormat`**: Use `{ type: "json_schema", schema: JSONSchema }` for structured outputs
-- **Sandbox settings**: Full `SandboxSettings` type with network controls, excluded commands, violation ignoring
-- **Plugins**: `plugins: [{ type: "local", path: "./my-plugin" }]`
-- **Betas**: `betas: ["context-1m-2025-08-07"]` for 1M context window
-- **`canUseTool`**: Custom permission callback for programmatic tool authorization
+- **v0.2.86**: `reloadPlugins()` SDK method to reload plugins and refresh commands/agents/MCP status; fixed `PreToolUse` hooks with `permissionDecision: "ask"` being ignored in SDK mode
+- **v0.2.84**: `seed_read_state` control subtype to seed `readFileState` with `{path, mtime}` so `Edit` works after the originating `Read` was removed from context; `session_state_changed` events now opt-in via `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`
+- **v0.2.83**: `agentProgressSummaries` option for periodic AI-generated progress summaries on `task_progress` events; `getSettings()` with `applied` section showing runtime-resolved model and effort values
+- **v0.2.81**: Fixed `getSessionMessages()` dropping parallel tool results — all `tool_use`/`tool_result` pairs now returned
+- **v0.2.80**: `getSessionMessages()` function for reading session conversation history from transcript files (supports pagination via `limit`/`offset`)
+- **v0.2.77**: `api_retry` system messages exposing attempt count, max retries, delay, and error status
+- **v0.2.75**: `supportedAgents()` method on `Query` to list available subagents; `enableChannel()` method + `capabilities` field on `McpServerStatus`
+- **v0.2.72**: `agent_id` and `agent_type` fields added to hook event `BaseHookInput` (populated for subagent hooks)
+- **v0.2.70**: Exported `EffortLevel` type (`"low" | "medium" | "high" | "max"`) for consumers
+- **v0.2.68**: Default effort changed to `"medium"` for Sonnet 4.6 (was `"high"`); use `maxThinkingTokens` or effort options to override
+- **v0.2.65**: `tools` option for strict tool allowlists: `["Bash","Read"]`, `[]` for none, or `{ type: "preset", preset: "claude_code" }` for all defaults
+- **v0.2.62**: `AskUserQuestion` tool support (opt-in via `tools` option)
+- **v0.2.55**: V2 session `receive()` renamed to `stream()` for consistency with Anthropic SDK patterns
+- **v0.2.50**: `ConfigChange` hook event; model info includes `supportsEffort`, `supportedEffortLevels`; `canUseTool` custom permission callback
+- **v0.2.45**: Claude Sonnet 4.6 support; `task_started` system message; `subagents` renamed to `agents`; `settingSources` must be explicitly passed; `systemPrompt` preset syntax: `{ type: "preset", preset: "claude_code" }`; `bypassPermissions` now requires `allowDangerouslySkipPermissions: true`

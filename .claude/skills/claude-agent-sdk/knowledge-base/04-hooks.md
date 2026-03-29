@@ -53,6 +53,33 @@ for await (const message of query({
 
 ---
 
+## Hook Callback Signature (v0.2.72+)
+
+```typescript
+type HookCallback = (
+  input: HookInput,
+  toolUseID: string | undefined,
+  options: { signal: AbortSignal }
+) => Promise<HookJSONOutput>;
+```
+
+### BaseHookInput (v0.2.72+)
+
+All hook inputs extend `BaseHookInput`, which now includes agent context:
+
+```typescript
+interface BaseHookInput {
+  session_id: string;
+  transcript_path: string;
+  cwd: string;
+  hook_event_name: string;
+  agent_id?: string;    // Populated when hook fires inside a subagent (v0.2.72+)
+  agent_type?: string;  // Agent type identifier for subagents (v0.2.72+)
+}
+```
+
+---
+
 ## PreToolUse Hook
 
 Intercept tool calls before execution.
@@ -60,34 +87,53 @@ Intercept tool calls before execution.
 ### Input Data
 
 ```typescript
-interface PreToolUseInput {
-  session_id: string;
+interface PreToolUseInput extends BaseHookInput {
+  hook_event_name: "PreToolUse";
   tool_name: string;
   tool_input: Record<string, unknown>;
+  tool_use_id: string;
 }
 ```
 
 ### Return Options
 
+PreToolUse hooks return hook-specific output via `hookSpecificOutput`:
+
 ```typescript
-// Approve the tool call
+// Approve (allow) the tool call
 return { decision: "approve" };
 
-// Block the tool call
+// Block (deny) the tool call
 return { decision: "block", reason: "Not allowed" };
+// Or using hookSpecificOutput format:
+return {
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "deny",           // "allow" | "deny" | "ask"
+    permissionDecisionReason: "Blocked: sensitive path"
+  }
+};
 
 // Modify the input
 return {
   decision: "approve",
   modified_input: { ...input, sanitized: true }
 };
-
-// Skip and provide result directly
+// Or via hookSpecificOutput:
 return {
-  decision: "skip",
-  tool_result: "Cached result here"
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    updatedInput: { ...tool_input, sanitized: true }
+  }
+};
+
+// Provide additional context to the agent
+return {
+  additionalContext: "Remember to validate the result"
 };
 ```
+
+**Note (v0.2.86 fix)**: `permissionDecision: "ask"` was previously ignored in SDK mode. Now correctly prompts for user approval.
 
 ### Examples
 
@@ -482,4 +528,4 @@ PreToolUse: async (data) => {
 
 ---
 
-**Version:** ^0.2.50 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

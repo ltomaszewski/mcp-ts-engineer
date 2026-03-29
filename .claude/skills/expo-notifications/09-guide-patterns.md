@@ -1,4 +1,4 @@
-# Implementation Patterns -- Expo Notifications SDK 54
+# Implementation Patterns -- Expo Notifications SDK 55
 
 Complete setup guides, token management, deep linking, and production patterns.
 
@@ -12,7 +12,7 @@ Complete setup guides, token management, deep linking, and production patterns.
 npx expo install expo-notifications expo-device expo-constants
 ```
 
-### Step 2: Configure app.json
+### Step 2: Configure app.json (Config Plugin)
 
 ```json
 {
@@ -30,6 +30,8 @@ npx expo install expo-notifications expo-device expo-constants
   }
 }
 ```
+
+Note: The root-level `notification` field in app.json is removed in SDK 55. Use the config plugin.
 
 ### Step 3: Create Notification Service
 
@@ -54,9 +56,10 @@ export async function setupAndroidChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'Default',
-    importance: Notifications.AndroidImportance.DEFAULT,
+    name: 'default',
+    importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#FF231F7C',
   });
 
   await Notifications.setNotificationChannelAsync('alerts', {
@@ -64,6 +67,11 @@ export async function setupAndroidChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     sound: 'default',
   });
+}
+
+function handleRegistrationError(errorMessage: string): void {
+  console.error(errorMessage);
+  throw new Error(errorMessage);
 }
 
 export async function registerForPushNotifications(): Promise<string | null> {
@@ -88,11 +96,21 @@ export async function registerForPushNotifications(): Promise<string | null> {
     return null;
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  if (!projectId) throw new Error('Project ID not found');
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
 
-  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
-  return data;
+  if (!projectId) {
+    handleRegistrationError('Project ID not found');
+  }
+
+  try {
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    return data;
+  } catch (e: unknown) {
+    handleRegistrationError(`${e}`);
+    return null;
+  }
 }
 ```
 
@@ -145,6 +163,7 @@ export default function RootLayout() {
 
 ```typescript
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 export async function registerTokenWithBackend(
   token: string,
@@ -205,6 +224,32 @@ function NotificationDeepLinkHandler(): null {
 
 ---
 
+## Sending Push Notifications (Server-Side)
+
+```typescript
+async function sendPushNotification(expoPushToken: string): Promise<void> {
+  const message = {
+    to: expoPushToken,
+    sound: 'default',
+    title: 'New Message',
+    body: 'You have a new message!',
+    data: { url: '/messages/123' },
+  };
+
+  await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(message),
+  });
+}
+```
+
+---
+
 ## Custom Notification Sounds
 
 ### Step 1: Add sound file to `assets/`
@@ -213,7 +258,7 @@ function NotificationDeepLinkHandler(): null {
 assets/notification-sound.wav
 ```
 
-### Step 2: Declare in app.json
+### Step 2: Declare in app.json config plugin
 
 ```json
 {
@@ -237,6 +282,8 @@ await Notifications.scheduleNotificationAsync({
   trigger: null,
 });
 ```
+
+SDK 55 validates that declared sound files exist at build time.
 
 ---
 
@@ -380,6 +427,8 @@ export async function sendDelayedTestNotification(
 }
 ```
 
+You can also test push notifications using the Expo push tool at `https://expo.dev/notifications` after generating a token from a development build.
+
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

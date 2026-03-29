@@ -406,4 +406,4 @@ Group tests by behavior: `describe('rendering')`, `describe('user interactions')
 
 ---
 
-**Version:** Vitest 4.x + Next.js 15.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest
+**Version:** Vitest 4.x + Next.js 15.5.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest

@@ -695,4 +695,102 @@ export const auth = betterAuth({
 });
 ```
 
-**Version:** 1.4.x | **Source:** https://www.better-auth.com/docs
+---
+
+## i18n Plugin (New in v1.5)
+
+Type-safe error message translations with automatic locale detection:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { i18n } from "@better-auth/i18n";
+
+export const auth = betterAuth({
+  plugins: [
+    i18n({
+      defaultLocale: "en",
+      detection: ["header", "cookie", "session"], // checked in order
+      translations: {
+        es: {
+          // Error codes are fully typed -- IDE autocompletes all available codes
+          "user-not-found": "Usuario no encontrado",
+          "invalid-password": "Contrasena invalida",
+          "email-not-verified": "Correo no verificado",
+        },
+        fr: {
+          "user-not-found": "Utilisateur non trouve",
+          "invalid-password": "Mot de passe invalide",
+        },
+      },
+    }),
+  ],
+});
+```
+
+### Locale Detection Strategies
+
+| Strategy | How it works |
+|---|---|
+| `"header"` | Uses `Accept-Language` HTTP header (default) |
+| `"cookie"` | Reads locale from a cookie (configurable name) |
+| `"session"` | Reads locale from user's session/profile |
+| Custom callback | Function receiving endpoint context, returns locale or null |
+
+Fallback behavior: if translation not found for detected locale, built-in English message is used.
+
+---
+
+## MCP Authentication (New in v1.5)
+
+Better Auth works as an authorization server for MCP tools and agents:
+
+```typescript
+import { betterAuth } from "better-auth";
+
+export const auth = betterAuth({
+  // Standard Better Auth config
+  // MCP auth is built-in, works out of the box
+});
+```
+
+For separate MCP servers, use the lightweight MCP Client (included in `better-auth`):
+
+```typescript
+import { createMcpAuthClient } from "better-auth";
+
+const mcpAuth = createMcpAuthClient({
+  authURL: "https://your-auth-server.com",
+});
+// Validates Bearer tokens against a remote Better Auth server
+```
+
+Framework-specific adapters available for Hono and Express for OAuth discovery endpoints and MCP route protection.
+
+---
+
+## OAuth 2.1 Provider (New in v1.5)
+
+Turn your Better Auth instance into a full OAuth 2.1 authorization server:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { oauthProvider } from "@better-auth/oauth-provider";
+
+export const auth = betterAuth({
+  plugins: [
+    oauthProvider({
+      loginPage: "/login", // custom login page URL
+    }),
+  ],
+});
+```
+
+Features:
+- JWT verifiable access tokens
+- OIDC-compatible endpoints
+- Public clients (mobile, AI agents) and confidential clients (web)
+- Custom login pages and consent screens
+- Signed query verification for redirect flow security
+- Replaces the previous OIDC Provider plugin (deprecated)
+
+**Version:** 1.5.6 | **Source:** https://www.better-auth.com/docs

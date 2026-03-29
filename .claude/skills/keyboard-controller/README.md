@@ -1,6 +1,6 @@
 # Keyboard Controller Knowledge Base
 
-**react-native-keyboard-controller v1.20.x**
+**react-native-keyboard-controller v1.21.x**
 
 ## Structure
 
@@ -36,4 +36,4 @@ keyboard-controller/
 
 ---
 
-**Version:** 1.20.x | **Last Updated:** February 2026
+**Version:** 1.21.x | **Last Updated:** March 2026

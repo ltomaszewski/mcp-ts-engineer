@@ -1,6 +1,6 @@
 # shadcn/ui Component Reference
 
-> Key component APIs, props, and usage patterns for the most-used shadcn/ui components.
+> Key component APIs, props, and usage patterns for the most-used shadcn/ui components. Components use the unified `radix-ui` package (for new-york style) and `data-slot` attributes instead of `forwardRef`.
 
 ---
 
@@ -393,4 +393,4 @@ Always pair with `htmlFor` matching the input's `id` for accessibility.
 
 ---
 
-**Version:** latest (2025) | **Source:** https://ui.shadcn.com/docs
+**Version:** CLI v4 (March 2026) | **Source:** https://ui.shadcn.com/docs

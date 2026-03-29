@@ -1,13 +1,13 @@
 ---
 name: nextjs-core
-description: Next.js 15 App Router - Server/Client Components, routing, data fetching, Server Actions, middleware. Use when building Next.js pages, fetching data, or configuring routes.
+description: Next.js 15.5 App Router - Server/Client Components, routing, data fetching, Server Actions, middleware, typed routes. Use when building Next.js pages, fetching data, or configuring routes.
 ---
 
-# Next.js 15 App Router
+# Next.js 15.5 App Router
 
-> Server-first React framework with file-system routing, Server Components by default, and built-in data fetching with caching and revalidation.
+> Server-first React framework with file-system routing, Server Components by default, built-in data fetching with caching and revalidation, typed routes, and Node.js middleware runtime.
 
-**Stack:** Next.js 15 App Router + React 19
+**Stack:** Next.js 15.5 App Router + React 19
 
 ---
 
@@ -21,6 +21,9 @@ LOAD THIS SKILL when user is:
 - Deciding between Server and Client Components
 - Setting up dynamic routes, route groups, or parallel routes
 - Optimizing images, fonts, or streaming with Suspense
+- Enabling typed routes for compile-time route safety
+- Configuring Turbopack for development or production builds
+- Using navigation hooks (`onNavigate`, `useLinkStatus`)
 
 ---
 
@@ -28,12 +31,14 @@ LOAD THIS SKILL when user is:
 
 **ALWAYS:**
 1. Keep pages and layouts as Server Components -- add `"use client"` only to interactive leaf components
-2. Await `params` and `searchParams` -- they are `Promise` in Next.js 15, not synchronous objects
+2. Await `params` and `searchParams` -- they are `Promise` in Next.js 15+, not synchronous objects (synchronous access fully removed in Next.js 16)
 3. Use `NEXT_PUBLIC_` prefix for browser-accessible env vars -- unprefixed vars are server-only
 4. Fetch data in Server Components with `fetch()` -- Next.js extends it with caching/revalidation
 5. Root layout must define `<html>` and `<body>` tags -- it is required and replaces `_document`
 6. Use Metadata API for `<head>` elements -- never add `<title>` or `<meta>` tags manually in layouts
 7. Mark error boundaries with `"use client"` -- React error boundaries must be Client Components
+8. Use top-level `turbopack` key in next.config.ts -- `experimental.turbo` is deprecated (removed in 16)
+9. Enable `typedRoutes: true` in next.config.ts for compile-time route safety -- stable since 15.5
 
 **NEVER:**
 1. Create API routes (`app/api/`) in BFF architecture -- all endpoints belong in the NestJS backend (exception: auth catch-all at `app/api/auth/[...all]/route.ts`)
@@ -42,6 +47,8 @@ LOAD THIS SKILL when user is:
 4. Pass non-serializable data from Server to Client Components -- only JSON-serializable props allowed
 5. Access `searchParams` in layouts -- layouts do not re-render on navigation; use `useSearchParams` in a Client Component
 6. Import server-only code in Client Components -- use `server-only` package to guard server modules
+7. Use `experimental.turbo` for Turbopack config -- use top-level `turbopack` key (since 15.3)
+8. Use `next lint` in new projects -- deprecated in 15.5, removed in 16; use Biome or ESLint CLI directly
 
 ---
 
@@ -202,6 +209,8 @@ export default async function Page({
 | Task | API | Example |
 |------|-----|---------|
 | Navigate | `<Link>` | `<Link href="/about">About</Link>` |
+| Nav guard | `<Link onNavigate>` | `<Link href="/x" onNavigate={(e) => { if (dirty) e.preventDefault(); }}>` |
+| Link pending state | `useLinkStatus()` | `const { pending } = useLinkStatus()` |
 | Programmatic nav | `useRouter()` | `router.push('/dashboard')` |
 | Read pathname | `usePathname()` | `const path = usePathname()` |
 | Read search params | `useSearchParams()` | `const q = searchParams.get('q')` |
@@ -214,6 +223,9 @@ export default async function Page({
 | Static generation | `generateStaticParams()` | `return posts.map(p => ({ slug: p.slug }))` |
 | Image | `<Image>` | `<Image src="/photo.jpg" width={800} height={600} alt="" />` |
 | Font | `next/font/google` | `const inter = Inter({ subsets: ['latin'] })` |
+| Typed routes | `next.config.ts` | `typedRoutes: true` |
+| Turbopack dev | CLI | `next dev --turbopack` |
+| Turbopack build | CLI (beta) | `next build --turbopack` |
 
 ---
 
@@ -230,4 +242,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** 15.x | **Source:** https://nextjs.org/docs
+**Version:** 15.5.x | **Source:** https://nextjs.org/docs

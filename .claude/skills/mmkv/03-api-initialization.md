@@ -16,7 +16,9 @@ Factory function to create an MMKV storage instance (v4 API).
 | `encryptionKey` | `string` | `undefined` | AES encryption key for data at rest (max 16 bytes) |
 | `path` | `string` | Platform default | Custom root directory for storage files |
 | `mode` | `'single-process' \| 'multi-process'` | `'single-process'` | Multi-process sync for app groups/extensions |
+| `encryptionType` | `'AES-128' \| 'AES-256'` | `'AES-128'` | Encryption algorithm (v4.2.0+) |
 | `readOnly` | `boolean` | `false` | Prevent write operations |
+| `compareBeforeSet` | `boolean` | `false` | Compare values before persisting; skip disk write if unchanged (v4.3.0+) |
 
 ### Default Paths
 
@@ -50,6 +52,19 @@ const storage = createMMKV({
 const storage = createMMKV({
   id: 'config.storage',
   readOnly: true,
+});
+
+// AES-256 encryption (v4.2.0+)
+const storage = createMMKV({
+  id: 'high-security',
+  encryptionKey: 'my-secret-key',
+  encryptionType: 'AES-256',
+});
+
+// Compare before set -- skip redundant writes (v4.3.0+)
+const storage = createMMKV({
+  id: 'frequent-writes',
+  compareBeforeSet: true,
 });
 ```
 
@@ -219,4 +234,4 @@ const s = createMMKV({ encryptionKey: key ?? undefined });
 
 ---
 
-**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.3.0 | **Source:** https://github.com/mrousavy/react-native-mmkv

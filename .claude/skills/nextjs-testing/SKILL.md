@@ -1,11 +1,11 @@
 ---
 name: nextjs-testing
-description: Next.js testing with Vitest - component testing, Server Component mocking, TanStack Query wrappers, jsdom environment, @testing-library/react. Use when writing tests for Next.js components, pages, or hooks.
+description: Next.js 15.5 testing with Vitest - component testing, Server Component mocking, TanStack Query wrappers, jsdom environment, @testing-library/react. Use when writing tests for Next.js components, pages, or hooks.
 ---
 
-# Next.js Testing with Vitest
+# Next.js 15.5 Testing with Vitest
 
-> Unit and integration testing for Next.js App Router using Vitest, @testing-library/react, and jsdom.
+> Unit and integration testing for Next.js 15.5 App Router using Vitest, @testing-library/react, and jsdom.
 
 **Stack:** Vitest + @vitejs/plugin-react + vite-tsconfig-paths + @testing-library/react + @testing-library/jest-dom
 
@@ -45,6 +45,7 @@ LOAD THIS SKILL when user is:
 5. Use `useEffect` + `setState` for data fetching in tests -- use TanStack Query with a test wrapper
 6. Test async Server Components directly with Vitest -- use E2E tests for `async` Server Components
 7. Forget to mock `next/navigation` -- `useRouter`, `usePathname`, `useSearchParams` crash without mocks
+8. Forget to mock `next/link` `useLinkStatus` hook (15.3+) -- components using `useLinkStatus` will crash without a mock returning `{ pending: false }`
 
 ---
 
@@ -322,4 +323,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** Vitest 4.x + Next.js 15.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest
+**Version:** Vitest 4.x + Next.js 15.5.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest

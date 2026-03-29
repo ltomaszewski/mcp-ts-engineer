@@ -1,4 +1,4 @@
-# Interactive Notifications -- Expo Notifications SDK 54
+# Interactive Notifications -- Expo Notifications SDK 55
 
 Notification categories, action buttons, text input, and handling user actions.
 
@@ -14,9 +14,9 @@ Create a notification category with action buttons.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `identifier` | `string` | Yes | Unique category ID |
+| `identifier` | `string` | Yes | Unique category ID (avoid `:` and `-` characters) |
 | `actions` | `NotificationAction[]` | Yes | Array of action definitions |
-| `options` | `NotificationCategoryOptions` | No | Category options |
+| `options` | `NotificationCategoryOptions` | No | Category options (iOS) |
 
 **Returns:** `Promise<NotificationCategory>`
 
@@ -32,6 +32,19 @@ Create a notification category with action buttons.
 | `textInput` | `object` | No | Enable text input |
 | `textInput.placeholder` | `string` | No | Placeholder text |
 | `textInput.submitButtonTitle` | `string` | No | Submit button label |
+
+### NotificationCategoryOptions (iOS)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `allowInCarPlay` | `boolean` | Allow in CarPlay |
+| `categorySummaryFormat` | `string` | Summary format string |
+| `customDismissAction` | `boolean` | Custom dismiss action |
+| `intentIdentifiers` | `string[]` | SiriKit intent identifiers |
+| `previewPlaceholder` | `string` | Preview placeholder text |
+| `showSubtitle` | `boolean` | Show subtitle |
+| `showTitle` | `boolean` | Show title |
+| `allowAnnouncement` | `boolean` | **Deprecated** -- ignored by system |
 
 ```typescript
 import * as Notifications from 'expo-notifications';
@@ -122,6 +135,8 @@ await Notifications.scheduleNotificationAsync({
 ### DEFAULT_ACTION_IDENTIFIER
 
 Constant returned when user taps the notification itself (not an action button).
+
+Value: `'expo.modules.notifications.actions.DEFAULT'`
 
 ```typescript
 import * as Notifications from 'expo-notifications';
@@ -304,7 +319,8 @@ function handleTodoActions(): void {
 - Text input support is limited
 - Actions appear in notification shade when expanded
 - Use Android notification channels for sound/vibration control
+- Avoid `:` and `-` in category identifiers
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

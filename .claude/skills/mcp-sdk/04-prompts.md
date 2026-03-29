@@ -372,4 +372,4 @@ server.sendPromptListChanged();
 
 **See Also**: [02-tools.md](02-tools.md), [03-resources.md](03-resources.md), [01-server-basics.md](01-server-basics.md)
 **Source**: https://modelcontextprotocol.io/specification/2025-06-18/server/prompts and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/src/server/mcp.ts
-**Version**: 1.x
+**Version**: 1.28.0

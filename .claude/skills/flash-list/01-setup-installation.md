@@ -22,10 +22,10 @@ FlashList v2 requires **React Native New Architecture** (Fabric). It does not ru
 
 ```bash
 # Using npm
-npm install @shopify/flash-list@^2.0.0
+npm install @shopify/flash-list@^2.3.0
 
 # Using Yarn
-yarn add @shopify/flash-list@^2.0.0
+yarn add @shopify/flash-list@^2.3.0
 
 # iOS: install pods
 cd ios && pod install && cd ..
@@ -161,7 +161,7 @@ const listRef = useRef<FlashListRef<Product>>(null);
 
 ## Verification Checklist
 
-- [ ] Package installed (`@shopify/flash-list@^2.0.0` in `node_modules`)
+- [ ] Package installed (`@shopify/flash-list@^2.3.0` in `node_modules`)
 - [ ] React Native New Architecture enabled
 - [ ] iOS pods installed (if applicable)
 - [ ] Parent `View` has `flex: 1` or explicit height
@@ -179,4 +179,4 @@ const listRef = useRef<FlashListRef<Product>>(null);
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/

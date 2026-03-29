@@ -1,6 +1,6 @@
 # Setup & Configuration - Sentry React Native
 
-Complete setup guide for @sentry/react-native v8.x in React Native and Expo projects.
+Complete setup guide for @sentry/react-native v8.6.0 in React Native and Expo projects.
 
 ---
 
@@ -231,6 +231,15 @@ Use the `useNativeInit` Expo plugin option:
 | `enableCaptureFailedRequests` | boolean | `false` | HTTP error capture |
 | `enableNativeNagger` | boolean | `true` | Show native nagger alert when SDK init fails |
 
+### New in v8.3+
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `nativeInit` | boolean | `true` | Explicit control over native SDK initialization (v8.3+) |
+| `onNativeLog` | function | -- | Callback to intercept and forward native SDK logs to JavaScript (v8.3+) |
+| `enableAnrFingerprinting` | boolean | -- | Enable ANR fingerprinting on Android (v8.5+) |
+| `captureScreenshots` | boolean | -- | Control screenshot capture behavior in mobile replay (v8.3+) |
+
 ### Logs Options (v7.7.0+)
 
 | Option | Type | Default | Description |
@@ -370,4 +379,4 @@ Check the Sentry dashboard for the event within 30 seconds.
 
 ---
 
-**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/
+**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/

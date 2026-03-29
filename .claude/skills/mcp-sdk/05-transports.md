@@ -305,4 +305,4 @@ Rules:
 
 **See Also**: [01-server-basics.md](01-server-basics.md), [06-client.md](06-client.md)
 **Source**: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/README.md
-**Version**: 1.x
+**Version**: 1.28.0

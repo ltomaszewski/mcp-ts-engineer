@@ -1,6 +1,6 @@
-# Core API Methods -- Expo Notifications SDK 54
+# Core API Methods -- Expo Notifications SDK 55
 
-Token retrieval, permissions, badges, notification handler, and presentation management.
+Token retrieval, permissions, badges, notification handler, presentation management, and topic subscription.
 
 ---
 
@@ -8,15 +8,18 @@ Token retrieval, permissions, badges, notification handler, and presentation man
 
 ### `getExpoPushTokenAsync(options?)`
 
-Get an Expo push token for use with Expo Push Service.
+Get an Expo push token for use with Expo Push Service. Makes requests to Expo servers; can reject due to network issues.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `options.projectId` | `string` | Yes | EAS project ID |
+| `options.projectId` | `string` | Recommended | EAS project ID (defaults to `Constants.expoConfig.extra.eas.projectId`) |
 | `options.devicePushToken` | `DevicePushToken` | No | Use specific device token |
 | `options.development` | `boolean` | No | iOS: use sandbox APNs |
 | `options.applicationId` | `string` | No | Override application ID |
+| `options.deviceId` | `string` | No | Override device ID |
 | `options.baseUrl` | `string` | No | Custom Expo push service URL |
+| `options.url` | `string` | No | Full custom URL |
+| `options.type` | `string` | No | Token type |
 
 **Returns:** `Promise<ExpoPushToken>` -- `{ data: string, type: 'expo' }`
 
@@ -25,7 +28,10 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
 async function getExpoPushToken(): Promise<string | undefined> {
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
+
   if (!projectId) {
     throw new Error('Project ID not configured');
   }
@@ -48,7 +54,7 @@ Get the native device push token (FCM on Android, APNs on iOS).
 ```typescript
 import * as Notifications from 'expo-notifications';
 
-async function getDeviceToken(): Promise<DevicePushToken> {
+async function getDeviceToken(): Promise<Notifications.DevicePushToken> {
   const token = await Notifications.getDevicePushTokenAsync();
   console.log('Platform:', token.type); // 'ios' or 'android'
   console.log('Token:', token.data);
@@ -81,11 +87,38 @@ async function checkPermissions(): Promise<boolean> {
     console.log('Alerts:', ios.allowsAlert);
     console.log('Badges:', ios.allowsBadge);
     console.log('Sounds:', ios.allowsSound);
+    console.log('Critical alerts:', ios.allowsCriticalAlerts);
+  }
+
+  if (android) {
+    console.log('Android importance:', android.importance);
   }
 
   return granted;
 }
 ```
+
+### NotificationPermissionsStatus
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `granted` | `boolean` | Whether permissions are granted |
+| `status` | `PermissionStatus` | `'granted'`, `'denied'`, `'undetermined'` |
+| `expires` | `'never' \| number` | Permission expiration |
+| `canAskAgain` | `boolean` | Whether user can be re-prompted |
+| `ios.status` | `IosAuthorizationStatus` | iOS-specific auth status |
+| `ios.allowsAlert` | `boolean \| null` | Alert display allowed |
+| `ios.allowsBadge` | `boolean \| null` | Badge display allowed |
+| `ios.allowsSound` | `boolean \| null` | Sound playback allowed |
+| `ios.allowsCriticalAlerts` | `boolean \| null` | Critical alerts allowed |
+| `ios.allowsDisplayInCarPlay` | `boolean \| null` | CarPlay display allowed |
+| `ios.allowsDisplayOnLockScreen` | `boolean \| null` | Lock screen display allowed |
+| `ios.allowsDisplayInNotificationCenter` | `boolean \| null` | Notification center display |
+| `ios.alertStyle` | `IosAlertStyle` | Alert display style |
+| `ios.allowsPreviews` | `IosAllowsPreviews \| null` | Preview behavior |
+| `ios.providesAppNotificationSettings` | `boolean \| null` | App provides settings UI |
+| `android.importance` | `number` | Android importance level |
+| `android.interruptionFilter` | `number` | Android interruption filter |
 
 ---
 
@@ -100,6 +133,9 @@ Request notification permissions. Shows native permission dialog.
 | `permissions.ios.allowSound` | `boolean` | No | Allow sounds (default: true) |
 | `permissions.ios.allowCriticalAlerts` | `boolean` | No | Critical alerts (default: false) |
 | `permissions.ios.allowProvisional` | `boolean` | No | Provisional auth (default: false) |
+| `permissions.ios.allowDisplayInCarPlay` | `boolean` | No | CarPlay display (default: false) |
+| `permissions.ios.provideAppNotificationSettings` | `boolean` | No | App provides settings UI |
+| `permissions.android` | `object` | No | Empty; all permissions granted by default |
 
 **Returns:** `Promise<NotificationPermissionsStatus>`
 
@@ -135,7 +171,7 @@ Get current app icon badge count.
 const count = await Notifications.getBadgeCountAsync();
 ```
 
-iOS returns accurate badge count. Android always returns 0 (badges not natively supported).
+iOS returns accurate badge count. Not all Android launchers support badges.
 
 ---
 
@@ -161,24 +197,25 @@ await Notifications.setBadgeCountAsync(0);  // Clear badge
 
 ### `setNotificationHandler(handler)`
 
-Define how the app handles incoming notifications when in the foreground.
+Define how the app handles incoming notifications when in the foreground. Must respond within 3 seconds or notification is discarded.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `handler` | `NotificationHandler \| null` | Handler object |
 | `handler.handleNotification` | `(notification) => Promise<NotificationBehavior>` | Return display behavior |
 | `handler.handleSuccess` | `(notificationId: string) => void` | Called after successful display |
-| `handler.handleError` | `(notificationId: string, error: Error) => void` | Called on display failure |
+| `handler.handleError` | `(notificationId: string, error: NotificationHandlingError) => void` | Called on display failure |
 
 ### NotificationBehavior
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `shouldShowBanner` | `boolean` | Show as banner notification |
-| `shouldShowList` | `boolean` | Show in notification list/center |
-| `shouldPlaySound` | `boolean` | Play notification sound |
-| `shouldSetBadge` | `boolean` | Update badge count (iOS) |
-| `priority` | `AndroidNotificationPriority` | Android priority override |
+| Property | Type | Platform | Description |
+|----------|------|----------|-------------|
+| `shouldShowBanner` | `boolean` | Both | Show as banner notification |
+| `shouldShowList` | `boolean` | Both | Show in notification list/center |
+| `shouldPlaySound` | `boolean` | Both | Play notification sound |
+| `shouldSetBadge` | `boolean` | iOS | Update badge count |
+| `priority` | `AndroidNotificationPriority` | Android | Priority override |
+| `shouldShowAlert` | `boolean` | Both | **Deprecated** -- use `shouldShowBanner` and `shouldShowList` |
 
 ```typescript
 import * as Notifications from 'expo-notifications';
@@ -199,15 +236,13 @@ Notifications.setNotificationHandler({
 });
 ```
 
-**Important:** `shouldShowAlert` is deprecated in SDK 54. Use `shouldShowBanner` and `shouldShowList` instead.
-
 ---
 
 ## Notification Presentation
 
 ### `getPresentedNotificationsAsync()`
 
-Get all currently displayed notifications in the notification center.
+Get all currently displayed notifications in the notification center. Android 6.0+ required.
 
 **Returns:** `Promise<Notification[]>`
 
@@ -246,27 +281,87 @@ await Notifications.dismissAllNotificationsAsync();
 
 ---
 
+## Device Registration
+
+### `unregisterForNotificationsAsync()`
+
+Unregister the device from receiving notifications.
+
+**Returns:** `Promise<void>`
+
+```typescript
+await Notifications.unregisterForNotificationsAsync();
+```
+
+---
+
+## FCM Topic Subscription (Android Only)
+
+### `subscribeToTopicAsync(topic)`
+
+Subscribe to an FCM topic for receiving topic-based push notifications.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `topic` | `string` | Topic name to subscribe to |
+
+**Returns:** `Promise<null>`
+
+```typescript
+await Notifications.subscribeToTopicAsync('news');
+await Notifications.subscribeToTopicAsync('promotions');
+```
+
+---
+
+### `unsubscribeFromTopicAsync(topic)`
+
+Unsubscribe from an FCM topic.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `topic` | `string` | Topic name to unsubscribe from |
+
+**Returns:** `Promise<null>`
+
+```typescript
+await Notifications.unsubscribeFromTopicAsync('promotions');
+```
+
+---
+
 ## NotificationContentInput
 
 Properties for notification content when scheduling:
 
 | Property | Type | Platform | Description |
 |----------|------|----------|-------------|
-| `title` | `string` | Both | Notification title |
-| `subtitle` | `string` | iOS | Subtitle below title |
-| `body` | `string` | Both | Notification body text |
+| `title` | `string \| null` | Both | Notification title |
+| `subtitle` | `string \| null` | iOS | Subtitle below title |
+| `body` | `string \| null` | Both | Notification body text |
 | `data` | `Record<string, unknown>` | Both | Custom data payload |
 | `badge` | `number` | iOS | Badge count to set |
-| `sound` | `boolean \| string` | Both | Sound to play (`'default'`, filename, or boolean) |
+| `sound` | `boolean \| 'default' \| 'defaultCritical' \| 'defaultRingtone' \| string` | Both | Sound to play |
 | `categoryIdentifier` | `string` | Both | Category for interactive actions |
-| `color` | `string` | Android | Notification accent color |
+| `color` | `string` | Android | Notification accent color (#AARRGGBB or #RRGGBB) |
 | `priority` | `AndroidNotificationPriority` | Android | Priority level |
 | `vibrate` | `number[]` | Android | Vibration pattern |
 | `sticky` | `boolean` | Android | Cannot be swiped away |
-| `autoDismiss` | `boolean` | Android | Auto-dismiss on tap |
-| `interruptionLevel` | `string` | iOS | `'passive'`, `'active'`, `'timeSensitive'`, `'critical'` |
+| `autoDismiss` | `boolean` | Android | Auto-dismiss on tap (default: true) |
+| `interruptionLevel` | `InterruptionLevel` | iOS | `'passive'`, `'active'`, `'timeSensitive'`, `'critical'` |
 | `attachments` | `NotificationContentAttachmentIos[]` | iOS | Media attachments |
+| `launchImageName` | `string` | iOS | Launch image name |
 | `threadIdentifier` | `string` | iOS | Thread ID for grouping |
+
+---
+
+## Constants
+
+### `DEFAULT_ACTION_IDENTIFIER`
+
+Value: `'expo.modules.notifications.actions.DEFAULT'`
+
+Returned as `actionIdentifier` when the user taps the notification body (not a custom action button).
 
 ---
 
@@ -298,8 +393,10 @@ export async function initializeNotifications(): Promise<string | null> {
   // Android: create channel before requesting permissions
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
     });
   }
 
@@ -315,7 +412,10 @@ export async function initializeNotifications(): Promise<string | null> {
     return null;
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
+
   if (!projectId) throw new Error('Project ID not found');
 
   const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
@@ -327,4 +427,53 @@ export async function initializeNotifications(): Promise<string | null> {
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+## Enums
+
+### IosAuthorizationStatus
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | `NOT_DETERMINED` | Not yet determined |
+| 1 | `DENIED` | Denied by user |
+| 2 | `AUTHORIZED` | Authorized |
+| 3 | `PROVISIONAL` | Provisional authorization |
+| 4 | `EPHEMERAL` | Ephemeral authorization |
+
+### IosAlertStyle
+
+| Value | Name |
+|-------|------|
+| 0 | `NONE` |
+| 1 | `BANNER` |
+| 2 | `ALERT` |
+
+### IosAllowsPreviews
+
+| Value | Name |
+|-------|------|
+| 0 | `ALWAYS` |
+| 1 | `WHEN_AUTHENTICATED` |
+| 2 | `NEVER` |
+
+### InterruptionLevel (iOS)
+
+| Value | Description |
+|-------|-------------|
+| `'passive'` | No light/sound |
+| `'active'` | Light + sound immediately |
+| `'timeSensitive'` | Breaks through system controls |
+| `'critical'` | Bypasses mute switch |
+
+### AndroidNotificationPriority
+
+| Value | Name |
+|-------|------|
+| -2 | `MIN` |
+| -1 | `LOW` |
+| 0 | `DEFAULT` |
+| 1 | `HIGH` |
+| 2 | `MAX` |
+
+---
+
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

@@ -457,4 +457,4 @@ export function ListWithScrollTop({ data }: { data: Item[] }): React.ReactElemen
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/usage/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/usage/

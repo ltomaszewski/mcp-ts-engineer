@@ -145,8 +145,8 @@ KeyboardController.preload();
 
 | RN Version | Keyboard Controller | Notes |
 |------------|-------------------|-------|
-| 0.81+ | 1.20+ | Recommended, Fabric default |
-| 0.73+ | 1.20+ | Supported |
+| 0.81+ | 1.21+ | Recommended, Fabric default |
+| 0.73+ | 1.21+ | Supported |
 | 0.70+ | 1.20.5+ | Compatibility patch |
 | 0.72 | 1.18.x | Legacy |
 
@@ -182,4 +182,4 @@ npm list react-native-reanimated
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/installation

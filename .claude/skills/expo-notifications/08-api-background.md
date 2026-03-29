@@ -1,4 +1,4 @@
-# Background Tasks -- Expo Notifications SDK 54
+# Background Tasks -- Expo Notifications SDK 55
 
 Headless notification processing, background task registration, and `expo-task-manager` integration.
 
@@ -18,6 +18,7 @@ Headless notifications allow JavaScript code to run when a notification arrives 
 - Maximum 30 seconds to complete
 - Cannot show UI or navigate
 - Cannot access camera or location
+- Task must be defined at module scope (e.g., in `index.ts`)
 
 ---
 
@@ -27,7 +28,7 @@ Headless notifications allow JavaScript code to run when a notification arrives 
 npx expo install expo-task-manager
 ```
 
-Enable background remote notifications in `app.json` (iOS):
+Enable background remote notifications in `app.json` config plugin (iOS):
 
 ```json
 {
@@ -64,6 +65,17 @@ Unregister a background notification task.
 | `taskName` | `string` | Task name to unregister |
 
 **Returns:** `Promise<null>`
+
+---
+
+## BackgroundNotificationResult
+
+Return values from background task to indicate result:
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | `NoData` | No new data was received |
+| 1 | `NewData` | New data was received and processed |
 
 ---
 
@@ -229,15 +241,17 @@ async function checkTaskStatus(taskName: string): Promise<boolean> {
 ## Platform-Specific Notes
 
 ### iOS
-- Requires `enableBackgroundRemoteNotifications: true` in plugin config
+- Requires `enableBackgroundRemoteNotifications: true` in config plugin
 - iOS may throttle background executions
 - Silent push notifications (content-available) trigger background task
+- Background task must be defined in module scope for execution when app is terminated
 
 ### Android
 - Background task support is automatic with FCM
 - Ensure FCM is properly configured
 - Data-only messages (no notification key) trigger background processing
+- SDK 55 fixes issue where background tasks were not executing in some cases
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

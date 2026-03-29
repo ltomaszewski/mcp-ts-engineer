@@ -1,4 +1,4 @@
-# Framework Overview -- Expo Notifications SDK 54
+# Framework Overview -- Expo Notifications SDK 55
 
 Architecture, mental model, and platform differences for push and local notifications.
 
@@ -29,7 +29,7 @@ Your App
     | (schedules notification)
 Device OS Scheduler
     | (waits for trigger)
-Trigger Fires (date, interval, calendar, daily, weekly)
+Trigger Fires (date, interval, calendar, daily, weekly, monthly, yearly)
     | (delivers to notification tray)
 Device OS
     | (shows notification)
@@ -129,6 +129,7 @@ Your App (handles interaction)
 - `addNotificationReceivedListener()` -- Incoming notifications
 - `addNotificationResponseReceivedListener()` -- User taps
 - `addPushTokenListener()` -- Token changes
+- `addNotificationsDroppedListener()` -- Dropped notifications
 - `getLastNotificationResponseAsync()` -- App opened from notification
 - `useLastNotificationResponse()` -- React hook for last response
 
@@ -141,6 +142,9 @@ Your App (handles interaction)
 - `setNotificationChannelAsync()` -- Android channels (Android 8+)
 - `setNotificationCategoryAsync()` -- Interactive actions
 - `registerTaskAsync()` -- Background headless task processing
+- `subscribeToTopicAsync()` -- FCM topic subscription (Android)
+- `unsubscribeFromTopicAsync()` -- FCM topic unsubscription (Android)
+- `unregisterForNotificationsAsync()` -- Unregister device from notifications
 
 ---
 
@@ -156,6 +160,8 @@ Your App (handles interaction)
 | Notification light | No | Yes |
 | Custom sounds | Yes (.wav) | Yes (.wav via channel) |
 | DND bypass | Critical alerts | bypassDnd channel option |
+| Lockscreen visibility | No | Yes (PUBLIC, PRIVATE, SECRET) |
+| FCM topic subscription | No | Yes |
 
 ### iOS Specifics
 
@@ -165,6 +171,7 @@ Your App (handles interaction)
 - No notification channels (categories instead)
 - Supports `interruptionLevel`: passive, active, timeSensitive, critical
 - Full text input in notification actions
+- APNs entitlement set to 'development' in builds; Xcode auto-switches to 'production' for release archives
 
 ### Android Specifics
 
@@ -174,27 +181,32 @@ Your App (handles interaction)
 - Users can mute/customize individual channels
 - `POST_NOTIFICATIONS` permission required on Android 13+ (API 33)
 - Channel must be created before requesting permission on Android 13+
+- `SCHEDULE_EXACT_ALARM` permission required for exact-time scheduling (Android 12+)
+- Supports FCM topic subscription via `subscribeToTopicAsync()`
+- Lockscreen visibility control via `AndroidNotificationVisibility`
 
 ---
 
 ## Setup Sequence
 
 ```
-1. Install expo-notifications
+1. Install expo-notifications (+ expo-device, expo-constants)
    |
-2. Configure app.json with plugin settings
+2. Configure app.json with config plugin (not root notification field)
    |
 3. Set up platform credentials (iOS APNs / Android FCM)
    |
 4. Call setNotificationHandler() at app startup
    |
-5. Request permissions with requestPermissionsAsync()
+5. Create Android channels (before requesting permissions)
    |
-6. Get tokens with getExpoPushTokenAsync()
+6. Request permissions with requestPermissionsAsync()
    |
-7. Register listeners for events
+7. Get tokens with getExpoPushTokenAsync()
    |
-8. Create development or EAS build
+8. Register listeners for events
+   |
+9. Create development build (push notifications require it)
 ```
 
 ---
@@ -226,7 +238,8 @@ Have a backend server?
 - **Scheduling limits**: OS limits usually 64-128 scheduled notifications
 - **Background tasks**: Maximum 30 seconds for headless task execution
 - **Handler speed**: `handleNotification` must return quickly (3-second timeout)
+- **Development builds**: Push notifications do not work in Expo Go on Android (SDK 55 throws error)
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

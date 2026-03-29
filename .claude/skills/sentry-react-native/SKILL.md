@@ -1,6 +1,6 @@
 ---
 name: sentry-react-native
-version: "8.x"
+version: "8.6.0"
 description: "@sentry/react-native v8 - error monitoring, crash reporting, performance tracing, session replay, native initialization, breadcrumbs, navigation instrumentation. Use when integrating Sentry, capturing errors, configuring performance monitoring, setting up error boundaries, or enabling native app start crash capture."
 ---
 
@@ -187,6 +187,11 @@ Sentry.captureFeedback({ name, email, message, associatedEventId });
 | `withScope()` | Isolated context | `Sentry.withScope(scope => {...})` |
 | `startSpan()` | Performance span | `Sentry.startSpan({ name }, callback)` |
 | `flush()` | Send pending events | `await Sentry.flush(2000)` |
+| `enableFeedbackOnShake()` | Shake-to-report feedback (v8.5+) | `Sentry.enableFeedbackOnShake()` |
+| `disableFeedbackOnShake()` | Stop shake listener | `Sentry.disableFeedbackOnShake()` |
+| `wrapExpoImage()` | Instrument expo-image (v8.4+) | `Sentry.wrapExpoImage(Image)` |
+| `wrapExpoAsset()` | Instrument expo-asset (v8.4+) | `Sentry.wrapExpoAsset(Asset)` |
+| `expoUpdatesListenerIntegration()` | Expo Updates breadcrumbs (v8.5+) | Enabled by default in Expo apps |
 
 ---
 
@@ -200,4 +205,4 @@ Sentry.captureFeedback({ name, email, message, associatedEventId });
 | ErrorBoundary, offline events, testing, fingerprinting | [04-advanced.md](04-advanced.md) |
 
 ---
-**Version:** 8.x | **Source:** https://docs.sentry.io/platforms/react-native/
+**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/

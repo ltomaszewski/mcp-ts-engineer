@@ -524,4 +524,4 @@ If a security issue is detected:
 
 ---
 
-**Version:** SDK 0.2.x | **Source:** https://platform.claude.com/docs/en/agent-sdk/secure-deployment
+**Version:** SDK ~0.2.86 | **Source:** https://platform.claude.com/docs/en/agent-sdk/secure-deployment

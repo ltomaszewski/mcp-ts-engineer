@@ -1,6 +1,6 @@
 # React Native Reanimated 4.x Knowledge Base
 
-**Version:** react-native-reanimated ^4.2.2 | react-native-worklets ^0.7.x
+**Version:** react-native-reanimated ^4.3.0 | react-native-worklets ^0.8.0
 **Architecture:** React Native New Architecture (Fabric) required
 **Official Docs:** https://docs.swmansion.com/react-native-reanimated/
 
@@ -109,5 +109,5 @@ Build issues, animation bugs, thread errors, gesture problems, layout animation 
 
 ---
 
-**Last Updated:** February 2026
+**Last Updated:** March 2026
 **All content sourced from:** https://docs.swmansion.com/react-native-reanimated/

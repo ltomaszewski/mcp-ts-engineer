@@ -214,6 +214,75 @@ const styles = StyleSheet.create({
 
 ---
 
+## KeyboardChatScrollView (v1.21.0+)
+
+Purpose-built scroll view for chat interfaces. Solves layout thrashing during keyboard animations by using cross-platform `contentInset` behavior. Dramatically simplifies building messenger and AI chat layouts.
+
+### Props
+
+Inherits all `ScrollView` props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `extraContentPadding` | `number` | `0` | Extra padding below content. Useful for spacing between last message and input bar. |
+| `blankSpace` | `number` | `0` | Blank space at the bottom of the scroll view. Useful for visual padding in short message lists. |
+
+### Example
+
+```typescript
+import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
+import { FlatList, TextInput, View, StyleSheet } from 'react-native';
+
+function ChatScreen() {
+  return (
+    <KeyboardChatScrollView extraContentPadding={16} blankSpace={100}>
+      <FlatList
+        data={messages}
+        renderItem={({ item }) => <MessageBubble message={item} />}
+        inverted
+      />
+      <View style={styles.inputRow}>
+        <TextInput placeholder="Type a message..." style={styles.input} />
+      </View>
+    </KeyboardChatScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  inputRow: { flexDirection: 'row', padding: 8 },
+  input: { flex: 1, padding: 10, borderWidth: 1, borderColor: '#ddd', borderRadius: 20 },
+});
+```
+
+---
+
+## KeyboardToolbar.Group (v1.21.0+)
+
+Groups toolbar items together within the `KeyboardToolbar` compound component. Useful for visually separating navigation controls from action buttons.
+
+### Example
+
+```typescript
+import { KeyboardToolbar } from 'react-native-keyboard-controller';
+
+function ToolbarWithGroups() {
+  return (
+    <KeyboardToolbar>
+      <KeyboardToolbar.Group>
+        <KeyboardToolbar.Prev />
+        <KeyboardToolbar.Next />
+      </KeyboardToolbar.Group>
+      <KeyboardToolbar.Content>
+        <Text>Step 2 of 5</Text>
+      </KeyboardToolbar.Content>
+      <KeyboardToolbar.Done text="Submit" />
+    </KeyboardToolbar>
+  );
+}
+```
+
+---
+
 ## KeyboardStickyView
 
 Sticks content to the keyboard -- follows keyboard position as it animates.
@@ -269,6 +338,7 @@ Inherits `View` props, plus:
 |------|------|---------|-------------|
 | `behavior` | `'translate-with-padding' \| 'padding' \| 'height' \| 'position'` | -- | How the view responds to keyboard |
 | `keyboardVerticalOffset` | `number` | `0` | Extra offset for headers/navigation bars above the view |
+| `automaticOffset` | `boolean` | `false` | Automatically detect and account for headers and modals, eliminating the need for manual `keyboardVerticalOffset` calculation (v1.21.0+) |
 | `enabled` | `boolean` | `true` | Enable/disable avoidance |
 | `contentContainerStyle` | `ViewStyle` | -- | Style for content container when `behavior="position"` |
 
@@ -307,4 +377,4 @@ const styles = StyleSheet.create({
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/docs/api/components/

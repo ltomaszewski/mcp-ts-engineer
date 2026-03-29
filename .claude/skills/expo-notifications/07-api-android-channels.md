@@ -1,4 +1,4 @@
-# Android Notification Channels -- Expo Notifications SDK 54
+# Android Notification Channels -- Expo Notifications SDK 55
 
 Android 8.0+ notification channel creation, configuration, groups, and management.
 
@@ -13,6 +13,7 @@ Notification channels are required on Android 8.0 (API 26) and higher. They let 
 - Users can mute/customize individual channels in system settings
 - Channels cannot be modified after creation (only name and description can change)
 - Each notification belongs to exactly one channel
+- On Android 13+, creating the first channel triggers the permission prompt
 
 ---
 
@@ -35,6 +36,9 @@ Create or update a notification channel.
 | `channel.enableLights` | `boolean` | No | Show notification light |
 | `channel.enableVibrate` | `boolean` | No | Vibrate on notification |
 | `channel.showBadge` | `boolean` | No | Show badge on app icon |
+| `channel.lockscreenVisibility` | `AndroidNotificationVisibility` | No | Lockscreen behavior |
+| `channel.groupId` | `string \| null` | No | Channel group ID |
+| `channel.audioAttributes` | `AudioAttributesInput` | No | Audio playback attributes |
 
 **Returns:** `Promise<NotificationChannel | null>`
 
@@ -111,14 +115,12 @@ await Notifications.deleteNotificationChannelAsync('old-channel');
 
 | Level | Value | Behavior |
 |-------|-------|----------|
-| `UNKNOWN` | 0 | Unknown importance |
-| `UNSPECIFIED` | 1 | Not specified |
-| `NONE` | 2 | No notifications shown |
-| `MIN` | 3 | No sound, no status bar icon |
-| `LOW` | 4 | No sound, appears in status bar |
-| `DEFAULT` | 5 | Sound and vibration |
-| `HIGH` | 6 | Heads-up notification (pops up) |
-| `MAX` | 7 | Urgent, full-screen intent possible |
+| `NONE` | 0 | No notifications shown |
+| `MIN` | 1 | No sound, no status bar icon |
+| `LOW` | 2 | No sound, appears in status bar |
+| `DEFAULT` | 3 | Sound and vibration |
+| `HIGH` | 4 | Heads-up notification (pops up) |
+| `MAX` | 5 | Urgent, full-screen intent possible |
 
 ```typescript
 // Most common levels
@@ -126,6 +128,26 @@ Notifications.AndroidImportance.DEFAULT  // Standard notifications
 Notifications.AndroidImportance.HIGH     // Heads-up/popup
 Notifications.AndroidImportance.LOW      // Silent, in shade only
 Notifications.AndroidImportance.MIN      // Background, minimal
+```
+
+---
+
+## AndroidNotificationVisibility Enum
+
+Controls how notifications appear on the lock screen.
+
+| Level | Value | Description |
+|-------|-------|-------------|
+| `PUBLIC` | 1 | Full content shown on lock screen |
+| `PRIVATE` | 0 | Hidden content on lock screen |
+| `SECRET` | -1 | Not shown on lock screen at all |
+
+```typescript
+await Notifications.setNotificationChannelAsync('private', {
+  name: 'Private Messages',
+  importance: Notifications.AndroidImportance.HIGH,
+  lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
+});
 ```
 
 ---
@@ -179,7 +201,7 @@ async function setupAllChannels(): Promise<void> {
 
 ### Custom Sound Channel
 
-Sound files must be declared in `app.json` plugin config:
+Sound files must be declared in `app.json` config plugin:
 
 ```json
 {
@@ -203,6 +225,8 @@ await Notifications.setNotificationChannelAsync('custom-sound', {
   sound: 'notification-sound', // filename without extension
 });
 ```
+
+SDK 55 validates that declared sound files exist at build time.
 
 ---
 
@@ -245,6 +269,13 @@ await Notifications.setNotificationChannelGroupAsync('communication', {
   name: 'Communication',
   description: 'Messages and calls',
 });
+
+// Assign channel to group
+await Notifications.setNotificationChannelAsync('messages', {
+  name: 'Messages',
+  importance: Notifications.AndroidImportance.HIGH,
+  groupId: 'communication',
+});
 ```
 
 ---
@@ -281,9 +312,32 @@ await Notifications.deleteNotificationChannelGroupAsync('old-group');
 
 ---
 
+## NotificationChannel (Read-Only Properties)
+
+Properties returned when reading a channel:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Channel identifier |
+| `name` | `string \| null` | Display name |
+| `description` | `string \| null` | Channel description |
+| `importance` | `AndroidImportance` | Importance level |
+| `enableVibrate` | `boolean` | Vibration enabled |
+| `enableLights` | `boolean` | LED light enabled |
+| `sound` | `'default' \| 'custom' \| null` | Sound setting |
+| `vibrationPattern` | `number[] \| null` | Vibration pattern |
+| `lightColor` | `string` | Light color |
+| `bypassDnd` | `boolean` | Bypasses Do Not Disturb |
+| `showBadge` | `boolean` | Badge display |
+| `lockscreenVisibility` | `AndroidNotificationVisibility` | Lock screen behavior |
+| `groupId` | `string \| null` | Channel group ID |
+| `audioAttributes` | `AudioAttributes` | Audio playback attributes |
+
+---
+
 ## Using Channels in Notifications
 
-Set the default channel in `app.json`:
+Set the default channel in `app.json` config plugin:
 
 ```json
 {
@@ -295,7 +349,18 @@ Set the default channel in `app.json`:
 }
 ```
 
-For push notifications from server, set `channelId` in the push payload. For local notifications, the channel is determined by the `defaultChannel` config or server-side specification.
+For push notifications from server, set `channelId` in the push payload. For local notifications, use the `channelId` property on the trigger:
+
+```typescript
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Alert', body: 'High priority' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: new Date(Date.now() + 5000),
+    channelId: 'alerts',
+  },
+});
+```
 
 ---
 
@@ -306,7 +371,8 @@ For push notifications from server, set `channelId` in the push payload. For loc
 - Deleting and recreating a channel does NOT reset user preferences
 - Create all channels at app startup before scheduling notifications
 - On Android 13+, creating the first channel triggers the permission prompt
+- Android 8.0+ requires both channel AND notification content sound config for cross-version consistency
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

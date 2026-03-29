@@ -390,4 +390,4 @@ screen.logTestingPlaygroundURL();
 
 ---
 
-**Version:** Vitest 4.x + Next.js 15.x | **Source:** https://testing-library.com/docs/react-testing-library/intro
+**Version:** Vitest 4.x + Next.js 15.5.x | **Source:** https://testing-library.com/docs/react-testing-library/intro

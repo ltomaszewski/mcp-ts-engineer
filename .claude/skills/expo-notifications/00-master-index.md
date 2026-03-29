@@ -1,6 +1,6 @@
 # Expo Notifications -- Master Index
 
-> Complete navigation hub for the Expo Notifications modular knowledge base. SDK 54.
+> Complete navigation hub for the Expo Notifications modular knowledge base. SDK 55.
 
 ---
 
@@ -9,7 +9,7 @@
 | # | Module | Purpose | Key APIs |
 |---|--------|---------|----------|
 | 01 | [Framework Overview](01-framework-overview.md) | Architecture, mental model | Concepts only |
-| 02 | [Quick Start Setup](02-quickstart-setup.md) | Installation, credentials | app.json config |
+| 02 | [Quick Start Setup](02-quickstart-setup.md) | Installation, credentials | app.json config plugin |
 | 03 | [Core API](03-api-core.md) | Tokens, permissions, handler | `getExpoPushTokenAsync`, `requestPermissionsAsync`, `setNotificationHandler` |
 | 04 | [Scheduling](04-api-scheduling.md) | Triggers, cancellation | `scheduleNotificationAsync`, trigger types |
 | 05 | [Listeners](05-api-listeners.md) | Events, deep linking | `addNotificationReceivedListener`, `addNotificationResponseReceivedListener` |
@@ -45,6 +45,9 @@
 
 ### "I need background processing"
 - [08-api-background.md](08-api-background.md) -- Headless tasks
+
+### "I need FCM topic subscriptions (Android)"
+- [03-api-core.md](03-api-core.md) -- `subscribeToTopicAsync`, `unsubscribeFromTopicAsync`
 
 ### "My notifications are not working"
 - [10-troubleshooting.md](10-troubleshooting.md) -- Common issues and debugging
@@ -82,7 +85,22 @@
 | Background Tasks | Yes | Yes | Requires expo-task-manager |
 | Custom Sounds | Yes | Yes | .wav format recommended |
 | Notification Light | No | Yes | Android only |
+| FCM Topic Subscription | No | Yes | Android only |
+| Lockscreen Visibility | No | Yes | Android only |
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+## SDK 55 Changes Summary
+
+| Change | Impact |
+|--------|--------|
+| Root-level `notification` field removed from app.json | Must use config plugin in plugins array |
+| Push in Expo Go (Android) throws error | Must use development build |
+| Updated Android Firebase dependency | Bug fixes for background tasks, crashes |
+| FCM intent origin validation | Security improvement |
+| Custom sound existence validation | Build-time validation |
+| New Architecture mandatory | Cannot disable with `newArchEnabled: false` |
+
+---
+
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

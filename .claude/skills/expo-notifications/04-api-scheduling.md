@@ -1,4 +1,4 @@
-# Scheduling & Cancellation API -- Expo Notifications SDK 54
+# Scheduling & Cancellation API -- Expo Notifications SDK 55
 
 Scheduling notifications, trigger types, cancellation, and retrieval.
 
@@ -46,6 +46,8 @@ const id = await Notifications.scheduleNotificationAsync({
 | `MONTHLY` | `'monthly'` | Fire monthly on specific day and time |
 | `YEARLY` | `'yearly'` | Fire yearly on specific date and time |
 
+All trigger types support an optional `channelId` property (Android) to specify which notification channel to use.
+
 ---
 
 ### TIME_INTERVAL Trigger
@@ -57,6 +59,9 @@ Fire after a delay or repeatedly at fixed intervals.
 | `type` | `SchedulableTriggerInputTypes.TIME_INTERVAL` | Yes | Trigger type |
 | `seconds` | `number` | Yes | Seconds until trigger |
 | `repeats` | `boolean` | No | Repeat at interval (default: false) |
+| `channelId` | `string` | No | Android notification channel ID |
+
+**iOS constraint:** When `repeats: true`, `seconds` must be >= 60.
 
 ```typescript
 // One-time delay (5 seconds)
@@ -90,6 +95,7 @@ Fire at a specific date and time. Does not repeat.
 |----------|------|----------|-------------|
 | `type` | `SchedulableTriggerInputTypes.DATE` | Yes | Trigger type |
 | `date` | `Date \| number` | Yes | Date object or Unix timestamp (ms) |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // Schedule for tomorrow at 9 AM
@@ -117,6 +123,7 @@ Fire every day at a specific time.
 | `type` | `SchedulableTriggerInputTypes.DAILY` | Yes | Trigger type |
 | `hour` | `number` | Yes | Hour (0-23) |
 | `minute` | `number` | Yes | Minute (0-59) |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // Daily at 9:00 AM
@@ -142,6 +149,7 @@ Fire every week on a specific day and time.
 | `weekday` | `number` | Yes | Day of week (1=Sunday, 7=Saturday) |
 | `hour` | `number` | Yes | Hour (0-23) |
 | `minute` | `number` | Yes | Minute (0-59) |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // Every Monday at 8:00 AM
@@ -168,6 +176,7 @@ Fire every month on a specific day and time.
 | `day` | `number` | Yes | Day of month (1-31) |
 | `hour` | `number` | Yes | Hour (0-23) |
 | `minute` | `number` | Yes | Minute (0-59) |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // 1st of every month at noon
@@ -195,6 +204,7 @@ Fire every year on a specific date and time.
 | `day` | `number` | Yes | Day of month (1-31) |
 | `hour` | `number` | Yes | Hour (0-23) |
 | `minute` | `number` | Yes | Minute (0-59) |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // Every January 1st at midnight
@@ -214,15 +224,24 @@ await Notifications.scheduleNotificationAsync({
 
 ### CALENDAR Trigger
 
-Fire based on date components with optional repeat. Most flexible trigger type.
+Fire based on date components with optional repeat. Most flexible trigger type. Primarily supported on iOS.
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
 | `type` | `SchedulableTriggerInputTypes.CALENDAR` | Yes | Trigger type |
-| `dateComponents` | `DateComponentsInput` | Yes | Date component fields |
 | `repeats` | `boolean` | No | Repeat (default: false) |
-
-Date components: `year`, `month`, `day`, `hour`, `minute`, `second`, `weekday`, `weekOfMonth`, `weekOfYear`, `weekdayOrdinal`
+| `year` | `number` | No | Year |
+| `month` | `number` | No | Month (0-11) |
+| `day` | `number` | No | Day of month (1-31) |
+| `hour` | `number` | No | Hour (0-23) |
+| `minute` | `number` | No | Minute (0-59) |
+| `second` | `number` | No | Second (0-59) |
+| `weekday` | `number` | No | Day of week (1=Sunday, 7=Saturday) |
+| `weekdayOrdinal` | `number` | No | Weekday ordinal |
+| `weekOfMonth` | `number` | No | Week of month |
+| `weekOfYear` | `number` | No | Week of year |
+| `timezone` | `string` | No | Timezone identifier |
+| `channelId` | `string` | No | Android notification channel ID |
 
 ```typescript
 // Every weekday at 8 AM (weekday values: 1=Sunday, 2=Monday...7=Saturday)
@@ -230,7 +249,9 @@ await Notifications.scheduleNotificationAsync({
   content: { title: 'Work Reminder', body: 'Time to start' },
   trigger: {
     type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-    dateComponents: { weekday: 2, hour: 8, minute: 0 }, // Monday
+    weekday: 2, // Monday
+    hour: 8,
+    minute: 0,
     repeats: true,
   },
 });
@@ -352,6 +373,20 @@ async function scheduleReminders(prefs: ReminderPrefs): Promise<string[]> {
 }
 ```
 
+### Channel-Specific Scheduling (Android)
+
+```typescript
+// Schedule to a specific Android channel
+await Notifications.scheduleNotificationAsync({
+  content: { title: 'Alert', body: 'High priority alert' },
+  trigger: {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: new Date(Date.now() + 5000),
+    channelId: 'alerts', // Must match a created channel
+  },
+});
+```
+
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

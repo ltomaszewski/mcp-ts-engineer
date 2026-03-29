@@ -158,6 +158,48 @@ function AnimatedSVG() {
 }
 ```
 
+### CSS SVG Animations (v4.3.0+)
+
+Reanimated 4.3.0 added CSS animation support for SVG components including Path, Image, LinearGradient, RadialGradient, Pattern, Text, Polyline, and Polygon. This includes special handling for path morphing via the `d` property.
+
+```typescript
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+function MorphingPath() {
+  const progress = useSharedValue(0);
+
+  const animatedProps = useAnimatedProps(() => ({
+    d: progress.value === 0
+      ? 'M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80'
+      : 'M10 80 Q 95 10 180 80',
+    fill: 'none',
+    stroke: 'blue',
+    strokeWidth: 2,
+  }));
+
+  const toggle = () => {
+    progress.value = withTiming(progress.value === 0 ? 1 : 0, { duration: 600 });
+  };
+
+  return (
+    <Svg viewBox="0 0 200 200">
+      <AnimatedPath animatedProps={animatedProps} />
+    </Svg>
+  );
+}
+```
+
+Supported SVG components for CSS animations:
+- `Path` (including `d` property morphing)
+- `Image`, `Text`
+- `LinearGradient`, `RadialGradient`
+- `Pattern`
+- `Polyline`, `Polygon`
+- Percentage-based length values supported
+
 ---
 
 ## useAnimatedRef

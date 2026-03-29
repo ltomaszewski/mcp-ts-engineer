@@ -16,6 +16,20 @@ yarn add better-auth
 bun add better-auth
 ```
 
+### CLI Initialization (New in v1.5)
+
+The new standalone CLI `npx auth` scaffolds a complete setup with one command:
+
+```bash
+npx auth init
+```
+
+Options:
+- `--framework` -- The framework your codebase is using
+- `--package-manager` -- npm, pnpm, yarn, or bun
+
+This replaces `npx @better-auth/cli` which will be deprecated.
+
 ### Environment Variables
 
 Create a `.env` file in your project root:
@@ -40,7 +54,7 @@ Generate a secure secret:
 openssl rand -base64 32
 ```
 
-The `BETTER_AUTH_URL` is critical for OAuth callback URLs. Without it, callbacks default to localhost and fail in production.
+The `BETTER_AUTH_URL` is critical for OAuth callback URLs. Without it, callbacks default to localhost and fail in production. The client auto-detects `VERCEL_URL` and `NEXTAUTH_URL` when no explicit `baseURL` is set.
 
 ---
 
@@ -91,11 +105,48 @@ export const auth = betterAuth({
 });
 ```
 
+### Dynamic Base URL (New in v1.5)
+
+For Vercel preview deployments, multi-domain setups, or reverse proxies:
+
+```typescript
+export const auth = betterAuth({
+  baseURL: {
+    allowedHosts: [
+      "myapp.com",
+      "www.myapp.com",
+      "*.vercel.app",            // wildcard for all Vercel previews
+      "preview-*.myapp.com",     // custom preview pattern
+    ],
+  },
+});
+```
+
+Better Auth extracts the host from `x-forwarded-host` or `host` header and validates against `allowedHosts`. Only hosts explicitly listed are accepted. When configured, allowed hosts are automatically added to `trustedOrigins`.
+
 ---
 
 ## Database Adapter Setup
 
-Better Auth requires a database. Choose one of these adapters:
+Better Auth requires a database. Choose one of these adapters.
+
+### Separate Adapter Packages (New in v1.5)
+
+For smaller bundles, install only the adapter you need with `better-auth/minimal`:
+
+```typescript
+import { betterAuth } from "better-auth/minimal";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { db } from "./db";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: "pg" }),
+});
+```
+
+Available packages: `@better-auth/drizzle-adapter`, `@better-auth/prisma-adapter`, `@better-auth/mongodb-adapter`.
+
+The main `better-auth` package re-exports all adapters so existing imports continue to work.
 
 ### SQLite (Built-in)
 
@@ -174,6 +225,31 @@ export const auth = betterAuth({
 });
 ```
 
+### Cloudflare D1 (New in v1.5)
+
+Native first-class D1 support -- pass the binding directly, auto-detected:
+
+```typescript
+import { betterAuth } from "better-auth";
+
+export default {
+  async fetch(request, env) {
+    const auth = betterAuth({
+      database: env.DB, // D1 binding, auto-detected
+    });
+    return auth.handler(request);
+  },
+} satisfies ExportedHandler<{ DB: D1Database }>;
+```
+
+D1 does not support interactive transactions; Better Auth uses D1's `batch()` API for atomicity. Add `nodejs_compat` flag to `wrangler.toml` for AsyncLocalStorage support.
+
+For environments where the CLI is unavailable (e.g. Workers), run migrations programmatically:
+
+```typescript
+import { getMigrations } from "better-auth/db/migration";
+```
+
 ### Database Schema (Core Tables)
 
 Better Auth requires four core tables:
@@ -187,14 +263,21 @@ Better Auth requires four core tables:
 
 ### Running Migrations
 
-Generate and apply schema:
+Generate and apply schema using the new CLI:
 
 ```bash
 # Apply migrations directly (built-in Kysely adapter only)
-npx @better-auth/cli migrate
+npx auth@latest migrate
 
 # Generate schema files (works with all adapters including Prisma/Drizzle)
-npx @better-auth/cli generate
+npx auth@latest generate
+
+# Generate schema tailored to specific adapter (new in v1.5)
+npx auth@latest generate --adapter
+
+# Skip confirmation prompt
+npx auth@latest migrate --yes
+npx auth@latest generate --yes
 ```
 
 Always run migrations after adding plugins, as plugins may add new tables or columns.
@@ -258,6 +341,30 @@ export const auth = betterAuth({
   },
 });
 ```
+
+---
+
+## Secret Key Rotation (New in v1.5)
+
+Rotate `BETTER_AUTH_SECRET` without invalidating existing sessions or encrypted data:
+
+```typescript
+export const auth = betterAuth({
+  secrets: [
+    { version: 2, value: "new-secret-key-at-least-32-chars" }, // current (first = active)
+    { version: 1, value: "old-secret-key-still-used-to-decrypt" }, // previous
+  ],
+});
+```
+
+Or via environment variable: `BETTER_AUTH_SECRETS=2:new-secret-base64,1:old-secret-base64`
+
+Key behaviors:
+- First entry is the active signing key; remaining entries are decryption-only
+- Gaps are allowed (e.g., versions 1, 3 after revoking version 2)
+- Legacy data encrypted before rotation (bare-hex format) remains decryptable via the original `BETTER_AUTH_SECRET` as fallback
+- Encrypted cookie data (e.g. JWE session caches) automatically uses the current key and remains decryptable with previous keys
+- No database migrations or downtime required
 
 ---
 
@@ -622,6 +729,31 @@ export const auth = betterAuth({
 
 ---
 
+## Test Utilities (New in v1.5)
+
+The test utils plugin provides factories, database helpers, auth helpers, and OTP capture for integration and E2E tests. **Test environments only -- never use in production.**
+
+```typescript
+import { betterAuth } from "better-auth";
+import { testUtils } from "better-auth/plugins";
+
+export const auth = betterAuth({
+  plugins: [
+    testUtils({
+      captureOTP: true, // passively capture OTPs for test verification
+    }),
+  ],
+});
+```
+
+Key features:
+- **Factories** -- Create user objects with defaults, no database write
+- **Database helpers** -- `saveUser()` persists test data, cleanup helpers remove it
+- **Auth helpers** -- `login()` creates authenticated sessions, returns headers/cookies/token
+- **OTP capture** -- Retrieve OTPs without mocking email/SMS sending
+
+---
+
 ## BFF Pattern: Next.js + NestJS Backend
 
 When using Better Auth in Next.js as a BFF with a NestJS backend:
@@ -657,4 +789,4 @@ export async function fetchFromBackend(endpoint: string) {
 }
 ```
 
-**Version:** 1.4.x | **Source:** https://www.better-auth.com/docs
+**Version:** 1.5.6 | **Source:** https://www.better-auth.com/docs

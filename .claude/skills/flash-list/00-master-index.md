@@ -1,6 +1,6 @@
 # FlashList v2.x - Master Index
 
-**Version:** 2.x (2.2.2)
+**Version:** 2.x (2.3.1)
 **Package:** `@shopify/flash-list@^2.0.0`
 **Source:** https://shopify.github.io/flash-list/docs/
 
@@ -16,7 +16,7 @@ FlashList v2 is a ground-up rewrite of Shopify's high-performance React Native l
 - **No size estimates** -- `estimatedItemSize`, `estimatedListSize`, `estimatedFirstItemOffset` all removed
 - **JS-only** -- no native code dependencies, easier maintenance
 - **Masonry as prop** -- `MasonryFlashList` replaced by `masonry` prop on `FlashList`
-- **`inverted` deprecated** -- replaced by `maintainVisibleContentPosition` with reversed data
+- **`inverted` re-added in v2.3.0** -- uses CSS transforms (`scaleY(-1)` on iOS/web, `rotate(180deg)` on Android); `maintainVisibleContentPosition` remains as alternative
 - **New hooks** -- `useRecyclingState`, `useLayoutState`, `useMappingHelper`, `useFlashListContext`
 - **New props** -- `onStartReached`, `maintainVisibleContentPosition`, `masonry`, `stickyHeaderConfig`, `maxItemsInRecyclePool`
 - **Ref type change** -- `FlashList<T>` ref replaced by `FlashListRef<T>`
@@ -96,6 +96,7 @@ FlashList v2 is a ground-up rewrite of Shopify's high-performance React Native l
 | Horizontal lists + RTL cannot read padding from `contentContainerStyle` | Apply padding to header component instead |
 | Horizontal lists with headers assume fixed height | Render header as first list item with distinct `getItemType` |
 | Data re-ordering causes item movement due to `maintainVisibleContentPosition` | Set `maintainVisibleContentPosition={{ disabled: true }}` |
+| On Android, `inverted` scrollbar appears on the left | Known limitation of `rotate(180deg)` transform on Android |
 
 ---
 
@@ -108,4 +109,4 @@ FlashList v2 is a ground-up rewrite of Shopify's high-performance React Native l
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/

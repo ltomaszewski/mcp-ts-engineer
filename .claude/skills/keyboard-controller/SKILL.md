@@ -149,6 +149,33 @@ export function FormWithToolbar() {
 }
 ```
 
+### KeyboardChatScrollView for Chat Apps (v1.21.0+)
+
+```typescript
+import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
+import { FlatList, TextInput, View, StyleSheet } from 'react-native';
+
+export function ChatScreen() {
+  return (
+    <KeyboardChatScrollView extraContentPadding={16} blankSpace={100}>
+      <FlatList
+        data={messages}
+        renderItem={({ item }) => <MessageBubble message={item} />}
+        inverted
+      />
+      <View style={styles.inputRow}>
+        <TextInput placeholder="Type a message..." style={styles.input} />
+      </View>
+    </KeyboardChatScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  inputRow: { flexDirection: 'row', padding: 8 },
+  input: { flex: 1, padding: 10, borderWidth: 1, borderColor: '#ddd', borderRadius: 20 },
+});
+```
+
 ### Interactive Dismiss (Android 11+)
 
 ```typescript
@@ -229,6 +256,7 @@ useKeyboardHandler({
 |------|-----|---------|
 | Wrap app | `KeyboardProvider` | `<KeyboardProvider>...</KeyboardProvider>` |
 | Keyboard-aware scroll | `KeyboardAwareScrollView` | `<KeyboardAwareScrollView bottomOffset={20}>` |
+| Chat scroll view | `KeyboardChatScrollView` | `<KeyboardChatScrollView extraContentPadding={16} blankSpace={100}>` |
 | Ensure input visible | `assureFocusedInputVisible()` | `scrollRef.current?.assureFocusedInputVisible()` |
 | Animate with keyboard (Reanimated) | `useReanimatedKeyboardAnimation()` | `const { height, progress } = useReanimatedKeyboardAnimation()` |
 | Animate with keyboard (Animated) | `useKeyboardAnimation()` | `const { height, progress } = useKeyboardAnimation()` |
@@ -264,4 +292,4 @@ useKeyboardHandler({
 
 ---
 
-**Version:** 1.20.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/
+**Version:** 1.21.x | **Source:** https://kirillzyusko.github.io/react-native-keyboard-controller/

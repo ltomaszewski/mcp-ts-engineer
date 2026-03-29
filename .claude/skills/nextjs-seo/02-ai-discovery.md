@@ -327,3 +327,8 @@ SEO routes are **documented exceptions** to the "no API routes in Next.js" BFF r
 - [Next.js sitemap.ts](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/sitemap)
 - [Next.js Metadata API](https://nextjs.org/docs/app/api-reference/functions/generate-metadata)
 - [AI Crawler User-Agents](https://www.searchenginejournal.com/ai-crawler-user-agents-list/558130/)
+
+---
+
+**Source**: https://nextjs.org/docs/app/api-reference/file-conventions/metadata
+**Version**: Next.js 15.5.x

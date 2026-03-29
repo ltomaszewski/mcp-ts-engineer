@@ -329,4 +329,4 @@ npx expo run:ios --configuration Release
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/fundamentals/performant-components
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/fundamentals/performant-components

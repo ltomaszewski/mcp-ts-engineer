@@ -31,6 +31,8 @@ Ultra-fast synchronous key-value storage for React Native -- 30x faster than Asy
 5. Install `react-native-nitro-modules` alongside MMKV -- required runtime dependency for v4
 6. Access `storage.id` to identify instances at runtime -- read-only property added in v4.0.1
 7. Keep encryption keys under 16 bytes -- MMKV enforces a maximum key length of 16 bytes
+8. Use `encrypt()`/`decrypt()` for runtime encryption changes (v4.2.0+) -- preferred over `recrypt()` with AES-256 support
+9. Enable `compareBeforeSet` when values are frequently written unchanged (v4.3.0+) -- avoids redundant disk writes
 
 **NEVER:**
 1. Store sensitive tokens without encryption -- MMKV storage files are accessible on rooted devices
@@ -153,21 +155,41 @@ const listener = storage.addOnValueChangedListener((changedKey) => {
 listener.remove();
 ```
 
-### Encryption Management (v4 API)
+### Encryption Management (v4.2.0+ API)
 
 ```typescript
 import { createMMKV } from 'react-native-mmkv';
 
 const storage = createMMKV({ id: 'my-storage' });
 
-// Encrypt all data (key max 16 bytes)
-storage.recrypt('hunter2');
+// Encrypt with AES-128 (default)
+storage.encrypt('hunter2');
 
-// Change encryption key
-storage.recrypt('new-secret-key');
+// Encrypt with AES-256
+storage.encrypt('hunter2again', 'AES-256');
 
 // Remove encryption
-storage.recrypt(undefined);
+storage.decrypt();
+
+// Check encryption status
+console.log(storage.isEncrypted); // true/false
+
+// Legacy API (still works)
+storage.recrypt('hunter2');       // encrypt or re-key
+storage.recrypt(undefined);       // remove encryption
+```
+
+### Compare Before Set (v4.3.0+)
+
+```typescript
+const storage = createMMKV({
+  id: 'frequently-written',
+  compareBeforeSet: true, // Skip disk write if value unchanged
+});
+
+// These redundant writes are optimized -- no disk I/O
+storage.set('counter', 42);
+storage.set('counter', 42); // Skipped, value unchanged
 ```
 
 ---
@@ -230,11 +252,15 @@ const age = storage.getNumber('user.age'); // Returns 30
 | Check exists | `contains()` | `s.contains('key')` |
 | Get all keys | `getAllKeys()` | `s.getAllKeys()` |
 | Clear all | `clearAll()` | `s.clearAll()` |
-| Storage size | `size` | `s.size` |
+| Storage size (bytes) | `size` | `s.size` |
+| Key count | `length` | `s.length` (v4.2.0+) |
+| Is encrypted | `isEncrypted` | `s.isEncrypted` (v4.2.0+) |
 | Read-only check | `isReadOnly` | `s.isReadOnly` |
 | Trim/optimize | `trim()` | `s.trim()` |
-| Encrypt/rekey | `recrypt()` | `s.recrypt('key')` -- key max 16 bytes |
-| Remove encryption | `recrypt(undefined)` | `s.recrypt(undefined)` |
+| Encrypt (AES-128/256) | `encrypt()` | `s.encrypt('key', 'AES-256')` (v4.2.0+) |
+| Remove encryption | `decrypt()` | `s.decrypt()` (v4.2.0+) |
+| Encrypt/rekey (legacy) | `recrypt()` | `s.recrypt('key')` -- key max 16 bytes |
+| Remove encryption (legacy) | `recrypt(undefined)` | `s.recrypt(undefined)` |
 | Import data | `importAllFrom()` | `s.importAllFrom(otherInstance)` -- returns count |
 | Listen changes | `addOnValueChangedListener()` | `s.addOnValueChangedListener(cb)` |
 | Check exists (global) | `existsMMKV()` | `existsMMKV('id')` -- returns `boolean` |
@@ -264,4 +290,4 @@ const age = storage.getNumber('user.age'); // Returns 30
 
 ---
 
-**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.3.0 | **Source:** https://github.com/mrousavy/react-native-mmkv

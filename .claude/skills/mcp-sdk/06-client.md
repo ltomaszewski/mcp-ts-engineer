@@ -362,4 +362,4 @@ main().catch(console.error);
 
 **See Also**: [05-transports.md](05-transports.md), [01-server-basics.md](01-server-basics.md)
 **Source**: https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/README.md
-**Version**: 1.x
+**Version**: 1.28.0

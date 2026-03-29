@@ -7,7 +7,7 @@ description: "Maestro E2E testing framework v2.x - YAML-based flows, selectors, 
 
 Mobile and web E2E testing framework with human-readable YAML flows, automatic waiting, and cross-platform support.
 
-**CLI:** `maestro` | **Current Version:** 2.2.0 | **Java:** 17+
+**CLI:** `maestro` | **Current Version:** 2.3.1 | **Java:** 17+
 
 ---
 
@@ -255,7 +255,7 @@ url: https://example.com
 | `retry` | `- retry: { maxRetries: 3 }` | Retry on failure |
 | `back` | `- back` | Android back button |
 | `hideKeyboard` | `- hideKeyboard` | Dismiss keyboard |
-| `takeScreenshot` | `- takeScreenshot: "name"` | Capture screenshot |
+| `takeScreenshot` | `- takeScreenshot: "name"` | Capture screenshot. Supports `cropOn` selector to crop to specific element (v2.3+). |
 | `evalScript` | `- evalScript: ${...}` | Run inline JavaScript (GraalJS) |
 | `assertWithAI` | `- assertWithAI: "description"` | AI-powered visual assertion |
 
@@ -280,4 +280,4 @@ url: https://example.com
 
 ---
 
-**Version:** Maestro 2.x (2.2.0) | **Source:** https://docs.maestro.dev/
+**Version:** Maestro 2.x (2.3.1) | **Source:** https://docs.maestro.dev/

@@ -1,4 +1,4 @@
-# Quick Start Setup -- Expo Notifications SDK 54
+# Quick Start Setup -- Expo Notifications SDK 55
 
 Installation, configuration, credentials, and build setup for push and local notifications.
 
@@ -26,7 +26,9 @@ npx expo install expo-task-manager
 
 ## App Configuration (app.json)
 
-### Plugin Configuration
+### Config Plugin (Required in SDK 55)
+
+In SDK 55, the root-level `notification` field in app.json has been **removed**. Use the `expo-notifications` config plugin instead. Specifying a root `notification` entry will throw an error in `prebuild`.
 
 ```json
 {
@@ -49,15 +51,43 @@ npx expo install expo-task-manager
 }
 ```
 
-### Plugin Properties
+### Config Plugin Properties
 
 | Property | Type | Platform | Required | Description |
 |----------|------|----------|----------|-------------|
 | `icon` | `string` | Android | No | 96x96 all-white PNG with transparency |
-| `color` | `string` | Android | No | Tint color for icon in hex (default: `#ffffff`) |
+| `color` | `string` | Android | No | Tint color for icon (#AARRGGBB or #RRGGBB, default: `#ffffff`) |
 | `defaultChannel` | `string` | Android | No | Default channel ID for FCMv1 (default: `default`) |
 | `sounds` | `string[]` | Both | No | Array of local .wav file paths to include in build |
-| `enableBackgroundRemoteNotifications` | `boolean` | iOS | No | Enable background remote notifications (default: `false`) |
+| `enableBackgroundRemoteNotifications` | `boolean` | iOS | No | Adds `remote-notification` to UIBackgroundModes (default: `false`) |
+
+### Migration from SDK 54
+
+If you were using the root-level `notification` field:
+
+```json
+// BEFORE (SDK 54) -- will throw error in SDK 55
+{
+  "expo": {
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#ffffff"
+    }
+  }
+}
+
+// AFTER (SDK 55) -- use config plugin
+{
+  "expo": {
+    "plugins": [
+      ["expo-notifications", {
+        "icon": "./assets/notification-icon.png",
+        "color": "#ffffff"
+      }]
+    ]
+  }
+}
+```
 
 ---
 
@@ -85,6 +115,7 @@ Select: **iOS** > **Production** > **APNs certificate** > Upload `.p8` file
 - Local notifications work on simulators
 - Verify bundle ID matches Apple Developer account
 - Ensure APNs certificate is not expired
+- APNs entitlement is auto-set to 'development' in builds; Xcode switches to 'production' for release archives
 
 ---
 
@@ -139,6 +170,9 @@ await Notifications.setNotificationChannelAsync('default', {
 });
 
 // Now request token
+const projectId =
+  Constants.expoConfig?.extra?.eas?.projectId ??
+  Constants?.easConfig?.projectId;
 const token = await Notifications.getExpoPushTokenAsync({ projectId });
 ```
 
@@ -146,7 +180,9 @@ const token = await Notifications.getExpoPushTokenAsync({ projectId });
 
 ## Building
 
-### Development Build
+### Development Build (Required for Push)
+
+Push notifications do not work in Expo Go. In SDK 55, attempting to use push notifications in Expo Go on Android **throws an error**. A development build is required.
 
 ```bash
 # Create development build (first time)
@@ -156,8 +192,6 @@ npx expo prebuild --clean
 npx expo run:android
 npx expo run:ios
 ```
-
-Push notifications do not work in Expo Go. A development build is required.
 
 ### EAS Build (Production)
 
@@ -182,7 +216,7 @@ npx expo prebuild --clean
 ## Verification Checklist
 
 - [ ] `expo-notifications` installed in package.json
-- [ ] `app.json` has notifications plugin configured
+- [ ] `app.json` has notifications config plugin (not root `notification` field)
 - [ ] Icon and sound files exist at configured paths
 - [ ] iOS: APNs certificate generated and added to EAS
 - [ ] Android: Firebase project created and credentials added
@@ -212,10 +246,18 @@ Create notification channel before requesting token (see Android 13+ section abo
 3. Run `eas credentials` to update
 4. Rebuild with `eas build --platform ios`
 
+### "notification" config error on prebuild (SDK 55)
+
+Remove the root-level `notification` field from app.json and move settings to the config plugin. See Migration from SDK 54 section above.
+
+### Push notifications throw error in Expo Go (Android)
+
+This is expected in SDK 55. Use a development build instead of Expo Go for push notification testing.
+
 ### "app.json plugin configuration invalid"
 
-Verify plugin syntax matches the Plugin Properties table above. All values must be correct types.
+Verify plugin syntax matches the Config Plugin Properties table above. All values must be correct types.
 
 ---
 
-**Version:** SDK 54 | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/
+**Version:** Expo SDK 55 (~55.0.14) | **Source:** https://docs.expo.dev/versions/latest/sdk/notifications/

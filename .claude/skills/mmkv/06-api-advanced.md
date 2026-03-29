@@ -21,29 +21,41 @@ storage.set('password', 'secret123'); // Stored as encrypted bytes
 storage.getString('password');         // Returns "secret123"
 ```
 
-### Runtime Encryption Management (v4 API)
+### Runtime Encryption Management (v4.2.0+ API)
 
 | Method | Description |
 |--------|-------------|
-| `recrypt(key)` | Encrypt or re-encrypt all data (key max 16 bytes) |
-| `recrypt(undefined)` | Remove encryption from all data |
+| `encrypt(key, type?)` | Encrypt all data with optional AES-256 support (v4.2.0+) |
+| `decrypt()` | Remove encryption from all data (v4.2.0+) |
+| `recrypt(key)` | Legacy: encrypt or re-encrypt all data (key max 16 bytes) |
+| `recrypt(undefined)` | Legacy: remove encryption from all data |
 
 ```typescript
 const storage = createMMKV({ id: 'my-data' });
 
-// Encrypt existing unencrypted data
-storage.recrypt('hunter2');
+// Encrypt with AES-128 (default)
+storage.encrypt('hunter2');
 
-// Remove encryption (data becomes plaintext)
-storage.recrypt(undefined);
+// Encrypt with AES-256 (v4.2.0+)
+storage.encrypt('hunter2again', 'AES-256');
+
+// Remove encryption
+storage.decrypt();
+
+// Check encryption status (v4.2.0+)
+console.log(storage.isEncrypted); // true/false
 ```
 
 ### Key Rotation
 
 ```typescript
 // Re-encrypt with a new key
-storage.recrypt('old-key');        // Initially encrypted
-storage.recrypt('new-key');        // Re-encrypts with new key
+storage.encrypt('old-key');
+storage.encrypt('new-key');        // Re-encrypts with new key
+
+// Legacy API (still works)
+storage.recrypt('old-key');
+storage.recrypt('new-key');
 ```
 
 ### Secure Key Management
@@ -208,14 +220,16 @@ Update `Info.plist`:
 
 ---
 
-## Complete MMKV Type Interface (v4.1.x)
+## Complete MMKV Type Interface (v4.3.0)
 
 ```typescript
 interface MMKV {
   // Instance identifier (read-only, added v4.0.1)
   readonly id: string;
-  readonly size: number;
+  readonly size: number;         // Storage size in bytes
+  readonly length: number;       // Number of stored keys (v4.2.0+)
   readonly isReadOnly: boolean;
+  readonly isEncrypted: boolean; // Encryption status (v4.2.0+)
 
   // Write
   set(key: string, value: string | number | boolean | ArrayBuffer): void;
@@ -236,7 +250,11 @@ interface MMKV {
   trim(): void;
   importAllFrom(source: MMKV): number;  // returns count of imported entries
 
-  // Encryption (key max 16 bytes, undefined to remove)
+  // Encryption (v4.2.0+)
+  encrypt(key: string, encryptionType?: 'AES-128' | 'AES-256'): void;
+  decrypt(): void;
+
+  // Encryption (legacy, key max 16 bytes, undefined to remove)
   recrypt(key: string | undefined): void;
 
   // Listeners
@@ -252,4 +270,4 @@ declare function deleteMMKV(id: string): boolean;
 
 ---
 
-**Version:** 4.1.x | **Source:** https://github.com/mrousavy/react-native-mmkv
+**Version:** 4.3.0 | **Source:** https://github.com/mrousavy/react-native-mmkv

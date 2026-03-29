@@ -7,7 +7,7 @@ description: "@shopify/flash-list v2.x performant lists - cell recycling, automa
 
 High-performance list component by Shopify with cell recycling -- drop-in FlatList replacement delivering up to 5x faster UI thread and 10x faster JS thread performance. v2 is a ground-up rewrite: JS-only (no native code), automatic sizing, New Architecture required.
 
-**Package:** `@shopify/flash-list@^2.0.0`
+**Package:** `@shopify/flash-list@^2.3.0`
 
 ---
 
@@ -20,9 +20,10 @@ LOAD THIS SKILL when user is:
 - Building masonry (Pinterest-style) layouts
 - Migrating from React Native `FlatList` to FlashList
 - Migrating from FlashList v1.x to v2.x
-- Building chat interfaces with `maintainVisibleContentPosition`
+- Building chat interfaces with `maintainVisibleContentPosition` or `inverted`
 - Managing per-item state in recycled cells with `useRecyclingState`
 - Using sticky headers with `stickyHeaderConfig`
+- Using inverted lists for chat-style bottom-up rendering
 
 ---
 
@@ -43,6 +44,7 @@ LOAD THIS SKILL when user is:
 4. Wrap FlashList in a `ScrollView` -- FlashList manages its own scroll; nesting causes layout and performance issues
 5. Test performance in dev mode -- dev mode adds debugging overhead; always benchmark in release builds
 6. Use `MasonryFlashList` -- deprecated in v2; use `masonry` prop on `FlashList` instead
+7. Use `inverted` with `maintainVisibleContentPosition` simultaneously -- choose one approach for bottom-up lists
 
 ---
 
@@ -221,12 +223,23 @@ import { FlashList } from '@shopify/flash-list';
 <FlashList data={data} masonry numColumns={2} renderItem={renderItem} />
 ```
 
-**BAD** -- Using inverted prop (deprecated in v2):
+**BAD** -- Using both inverted and maintainVisibleContentPosition:
 ```typescript
-<FlashList data={messages} renderItem={renderItem} inverted={true} />
+<FlashList data={messages} renderItem={renderItem} inverted={true}
+  maintainVisibleContentPosition={{ startRenderingFromBottom: true }} />
 ```
 
-**GOOD** -- Using maintainVisibleContentPosition with reversed data:
+**GOOD** -- Use inverted (v2.3.0+, simpler) for chat lists:
+```typescript
+<FlashList
+  data={messages}
+  renderItem={renderItem}
+  inverted={true}
+  onEndReached={loadOlderMessages}
+/>
+```
+
+**ALSO GOOD** -- Use maintainVisibleContentPosition with reversed data (more control):
 ```typescript
 const reversed = [...messages].reverse();
 <FlashList
@@ -267,6 +280,7 @@ const Item = ({ item }: { item: Item }) => {
 | Increase draw buffer | `drawDistance` | `drawDistance={250}` |
 | Scroll to item | `scrollToIndex()` | `ref.current?.scrollToIndex({ index: 5 })` |
 | Scroll to end | `scrollToEnd()` | `ref.current?.scrollToEnd({ animated: true })` |
+| Inverted list (v2.3.0+) | `inverted` | `inverted={true}` |
 | Chat list (bottom-up) | `maintainVisibleContentPosition` | `maintainVisibleContentPosition={{ startRenderingFromBottom: true }}` |
 | Load older content | `onStartReached` | `onStartReached={fetchOlder}` |
 | Horizontal carousel | `horizontal` | `horizontal={true}` |
@@ -295,4 +309,4 @@ const Item = ({ item }: { item: Item }) => {
 
 ---
 
-**Version:** 2.x (2.2.2) | **Source:** https://shopify.github.io/flash-list/docs/
+**Version:** 2.x (2.3.1) | **Source:** https://shopify.github.io/flash-list/docs/

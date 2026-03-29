@@ -7,7 +7,7 @@ description: Next.js SEO and AI readability - JSON-LD structured data, robots.tx
 
 > Three-layer SEO infrastructure for Next.js apps: discovery (robots/sitemap/llms.txt), metadata (JSON-LD/OG tags), and content serving (Markdown middleware for AI crawlers).
 
-**Stack:** Next.js 15 App Router + schema-dts + linkedom + turndown
+**Stack:** Next.js 15.5 App Router + schema-dts + linkedom + turndown
 
 ---
 
@@ -28,14 +28,15 @@ description: Next.js SEO and AI readability - JSON-LD structured data, robots.tx
 
 **ALWAYS:**
 1. Use `safeJsonLdStringify()` for JSON-LD — raw `JSON.stringify` in `<script>` tags is an XSS vector
-2. Keep middleware thin (Edge-compatible) — heavy DOM parsing belongs in API routes (Node.js runtime)
+2. Keep middleware thin (Edge-compatible by default) — heavy DOM parsing belongs in API routes (Node.js runtime)
 3. Use `NEXT_PUBLIC_SITE_URL` env var for all absolute URLs — never hardcode domains
 4. Include `Vary: Accept, User-Agent` header on Markdown responses — prevents cache poisoning
 5. Import `AI_BOT_PATTERNS` from single source (`ai-bots.ts`) — used by both robots.ts and middleware
+6. Use `safeJsonLdStringify` with `replace(/</g, '\\u003c')` — this is the Next.js recommended approach per the official JSON-LD guide
 
 **NEVER:**
 1. Use `JSON.stringify()` directly in `<script type="application/ld+json">` — allows `</script>` XSS breakout
-2. Import `linkedom`, `@mozilla/readability`, or `turndown` in middleware — they are not Edge-compatible
+2. Import `linkedom`, `@mozilla/readability`, or `turndown` in Edge middleware — they are not Edge-compatible (with Node.js middleware runtime in 15.5 this is technically possible but still not recommended for performance)
 3. Serve Markdown without `X-Markdown-Bypass` header check — causes infinite self-fetch loops
 4. Hardcode site URLs in metadata or sitemaps — breaks across environments
 
@@ -155,4 +156,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** Next.js 15.x | **Sources:** [Next.js Metadata](https://nextjs.org/docs/app/api-reference/file-conventions/metadata), [llmstxt.org](https://llmstxt.org/), [Cloudflare Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/)
+**Version:** Next.js 15.5.x | **Sources:** [Next.js Metadata](https://nextjs.org/docs/app/api-reference/file-conventions/metadata), [Next.js JSON-LD Guide](https://nextjs.org/docs/app/guides/json-ld), [llmstxt.org](https://llmstxt.org/), [Cloudflare Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/)

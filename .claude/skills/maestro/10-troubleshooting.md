@@ -263,4 +263,4 @@ adb shell pm list packages | grep your.app
 
 ---
 
-**Version:** 2.x (2.2.0) | **Source:** https://docs.maestro.dev/
+**Version:** 2.x (2.3.1) | **Source:** https://docs.maestro.dev/

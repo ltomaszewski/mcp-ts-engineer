@@ -160,6 +160,7 @@ vi.mock('next/font/local', () => ({
 // Mock: next/link
 // -------------------------------------------------------
 // next/link prefetches routes. In tests, render as plain <a>.
+// Also mock useLinkStatus (added in 15.3) for components using pending state.
 vi.mock('next/link', () => ({
   default: ({
     children,
@@ -168,6 +169,7 @@ vi.mock('next/link', () => ({
   }: { children: React.ReactNode; href: string } & Record<string, unknown>) => {
     return <a href={href} {...props}>{children}</a>;
   },
+  useLinkStatus: () => ({ pending: false }),
 }));
 
 // -------------------------------------------------------
@@ -390,7 +392,8 @@ describe('API client', () => {
 | `Error: Invariant: headers/cookies can only be called in a Server Component` | Testing server-only code in jsdom | Mock `next/headers` or test with E2E |
 | JSX not recognized in `.tsx` test files | Missing React plugin | Add `react()` to vitest.config.ts plugins |
 | CSS import errors | Vitest trying to parse CSS | Set `css: false` in vitest.config.ts |
+| `useLinkStatus is not a function` | Missing next/link mock (15.3+) | Add `useLinkStatus: () => ({ pending: false })` to next/link mock |
 
 ---
 
-**Version:** Vitest 4.x + Next.js 15.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest
+**Version:** Vitest 4.x + Next.js 15.5.x | **Source:** https://nextjs.org/docs/app/guides/testing/vitest
