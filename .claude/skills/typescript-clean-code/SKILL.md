@@ -1,7 +1,8 @@
 ---
 name: typescript-clean-code
 version: "5.9"
-description: TypeScript clean code patterns - SOLID principles, file/function size limits, TSDoc, error handling, debugging, type safety. Use when writing TypeScript code, refactoring, or reviewing code quality.
+description: "TypeScript clean code patterns - SOLID principles, file/function size limits, TSDoc, error handling, type safety."
+when_to_use: "Use when writing TypeScript code, refactoring, or reviewing code quality."
 globs: ["**/*.ts", "**/*.tsx"]
 ---
 

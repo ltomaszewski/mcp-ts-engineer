@@ -1,17 +1,18 @@
 ---
 name: expo-router
-description: Expo Router v7 (~55.0.7) file-based navigation - routes, layouts, tabs, stacks, drawers, typed navigation, modals, error boundaries. Use when implementing navigation, creating screens, handling deep links, or building auth flows in Expo apps.
+description: "Expo Router v7 (~55.0.7) file-based navigation — routes, layouts, tabs, stacks, drawers, typed navigation, modals, error boundaries."
+when_to_use: "Use when implementing navigation, creating screens, handling deep links, or building auth flows in Expo apps."
 ---
 
 # Expo Router
 
-File-based routing for React Native and web with Expo SDK 55. Routes are files in the `app/` directory.
+> File-based routing for React Native and web with Expo SDK 55. Routes are files in the `app/` directory.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Creating navigation structure or adding new screens
 - Implementing tab, stack, or drawer navigation
 - Setting up deep linking or universal links

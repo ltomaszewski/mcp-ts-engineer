@@ -1,6 +1,7 @@
 ---
 name: expo-notifications
-description: Expo push notifications - tokens, scheduling, handlers, permissions. Use when implementing push notifications, local notifications, or notification handling.
+description: "Expo push notifications — tokens, scheduling, handlers, permissions."
+when_to_use: "Use when implementing push notifications, local notifications, or notification handling."
 ---
 
 # Expo Notifications

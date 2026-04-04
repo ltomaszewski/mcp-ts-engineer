@@ -1,9 +1,7 @@
 ---
 name: agent-browser
-description: >
-  Use this skill for browser testing, screenshot capture, visual regression,
-  page navigation, a11y diff, browser smoke tests, and responsive viewport testing
-  in AI-agent contexts using the agent-browser tool.
+description: "Browser testing, screenshot capture, visual regression, and responsive viewport testing using agent-browser CLI."
+when_to_use: "Use when doing browser smoke tests, screenshots, visual regression, a11y diff, or page navigation in AI-agent contexts."
 triggers:
   - browser test
   - browser testing
@@ -17,7 +15,7 @@ triggers:
 
 # agent-browser
 
-Real browser testing for AI agents via the `agent-browser` CLI tool. Enables snapshot-based DOM interaction, screenshot capture, accessibility diffing, and visual regression checks without Playwright or browser driver setup.
+> Real browser testing for AI agents via the `agent-browser` CLI tool. Enables snapshot-based DOM interaction, screenshot capture, accessibility diffing, and visual regression checks without Playwright or browser driver setup.
 
 ---
 

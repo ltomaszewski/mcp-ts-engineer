@@ -1,17 +1,18 @@
 ---
 name: zod
-description: Zod v4 schema validation - types, parsing, transforms, error handling, JSON Schema. Use when validating data, defining schemas, type-safe API responses, or form validation.
+description: "Zod v4 schema validation - types, parsing, transforms, error handling, JSON Schema."
+when_to_use: "Use when validating data, defining schemas, type-safe API responses, or form validation."
 ---
 
 # Zod v4
 
-TypeScript-first schema validation with static type inference. Define once, validate and type everywhere.
+> TypeScript-first schema validation with static type inference. Define once, validate and type everywhere.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Defining data schemas for validation
 - Validating API responses or form inputs
 - Inferring TypeScript types from schemas

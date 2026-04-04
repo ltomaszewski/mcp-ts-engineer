@@ -1,6 +1,7 @@
 ---
 name: safe-area-context
-description: React Native Safe Area Context v5.x - SafeAreaView, useSafeAreaInsets, useSafeAreaFrame, SafeAreaProvider, edges prop, insets handling, platform-specific safe areas. Use when handling notches, status bars, home indicators, or safe area insets.
+description: "React Native Safe Area Context v5.x - SafeAreaView, useSafeAreaInsets, useSafeAreaFrame, SafeAreaProvider, edges prop, insets handling, platform-specific safe areas."
+when_to_use: "Use when handling notches, status bars, home indicators, or safe area insets."
 ---
 
 # Safe Area Context

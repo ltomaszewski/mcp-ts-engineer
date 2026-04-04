@@ -1,17 +1,18 @@
 ---
 name: expo-core
-description: Expo SDK 55 framework - project setup, app.json config, Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font. Use when creating Expo projects, configuring apps, or using Expo SDK modules.
+description: "Expo SDK 55 framework — project setup, app.json config, Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font."
+when_to_use: "Use when creating Expo projects, configuring apps, or using Expo SDK modules."
 ---
 
 # Expo Core
 
-Managed React Native framework for building universal iOS, Android, and web apps from a single TypeScript codebase with Expo SDK 55.
+> Managed React Native framework for building universal iOS, Android, and web apps from a single TypeScript codebase with Expo SDK 55.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Creating or configuring Expo projects (app.json, app.config.ts, plugins)
 - Using Expo SDK modules (Constants, FileSystem, SecureStore, Linking, SplashScreen, Updates, Asset, Font)
 - Setting up project structure, environment variables, or build configuration

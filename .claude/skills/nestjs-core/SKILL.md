@@ -1,6 +1,7 @@
 ---
 name: nestjs-core
-description: NestJS core framework patterns - modules, dependency injection, lifecycle hooks, exception handling, configuration. Use when creating NestJS modules, services, controllers, or working with DI, guards, interceptors, pipes.
+description: "NestJS core framework patterns — modules, dependency injection, lifecycle hooks, exception handling, configuration."
+when_to_use: "Use when creating NestJS modules, services, controllers, or working with DI, guards, interceptors, pipes."
 ---
 
 # NestJS Core

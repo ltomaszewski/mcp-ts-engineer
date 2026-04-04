@@ -1,6 +1,7 @@
 ---
 name: nextjs-seo
-description: Next.js SEO and AI readability - JSON-LD structured data, robots.txt with AI crawler allowlist, sitemap.ts, llms.txt, Markdown middleware for AI bots. Use when implementing SEO, adding JSON-LD, configuring robots.txt, setting up sitemap, adding llms.txt, building AI readability, or serving markdown to AI bots.
+description: "Next.js SEO and AI readability - JSON-LD, robots.txt, sitemap.ts, llms.txt, Markdown middleware for AI bots"
+when_to_use: "implementing SEO, adding JSON-LD, configuring robots/sitemap, adding llms.txt, or serving markdown to AI bots"
 ---
 
 # Next.js SEO & AI Readability

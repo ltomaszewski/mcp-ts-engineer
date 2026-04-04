@@ -1,18 +1,19 @@
 ---
 name: react-query
 version: "5.96.2"
-description: "@tanstack/react-query v5 server state management - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, queryOptions, caching, invalidation, optimistic updates. Use when fetching API data, managing server state, implementing pagination, or cache management."
+description: "@tanstack/react-query v5 server state - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, queryOptions, caching, invalidation"
+when_to_use: "fetching API data, managing server state, implementing pagination, or cache management"
 ---
 
 # TanStack React Query v5
 
-Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate strategy.
+> Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate strategy.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Fetching data from APIs with `useQuery` or `useSuspenseQuery`
 - Creating/updating/deleting data with `useMutation`
 - Implementing pagination or infinite scroll with `useInfiniteQuery`

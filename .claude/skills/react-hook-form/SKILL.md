@@ -1,6 +1,7 @@
 ---
 name: react-hook-form
-description: React Hook Form 7.72.1 - useForm, Controller, form-level validate, Zod integration. Use when building forms, handling validation, managing form state, or implementing cross-field validation in React/React Native.
+description: "React Hook Form 7.72.1 - useForm, Controller, form-level validate, Zod integration"
+when_to_use: "building forms, handling validation, managing form state, or implementing cross-field validation in React/React Native"
 ---
 
 # React Hook Form

@@ -1,11 +1,12 @@
 ---
 name: tailwind-v4
-description: Tailwind CSS v4 utility-first CSS - CSS-first config, @theme, @import, PostCSS plugin, responsive design, dark mode. Use when styling components, configuring themes, or migrating from v3.
+description: "Tailwind CSS v4 utility-first CSS - CSS-first config, @theme, @import, PostCSS plugin, responsive design, dark mode"
+when_to_use: "styling components, configuring themes, or migrating from v3"
 ---
 
 # Tailwind CSS v4
 
-Utility-first CSS framework with CSS-first configuration. No JavaScript config file needed -- design tokens defined directly in CSS via `@theme` blocks.
+> Utility-first CSS framework with CSS-first configuration. No JavaScript config file needed -- design tokens defined directly in CSS via `@theme` blocks.
 
 **Package:** `tailwindcss` + `@tailwindcss/postcss`
 
@@ -13,7 +14,7 @@ Utility-first CSS framework with CSS-first configuration. No JavaScript config f
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Styling components with Tailwind utility classes
 - Configuring theme colors, fonts, spacing, or breakpoints
 - Setting up dark mode or responsive design

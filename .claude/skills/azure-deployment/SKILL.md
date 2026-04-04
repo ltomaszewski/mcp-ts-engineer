@@ -1,6 +1,7 @@
 ---
 name: azure-deployment
-description: Azure App Service deployment - zip deploy, webapp commands, environment configuration. Use when deploying my-server to Azure, configuring app settings, or troubleshooting deployments.
+description: "Azure App Service deployment — zip deploy, webapp commands, environment configuration."
+when_to_use: "Use when deploying my-server to Azure, configuring app settings, or troubleshooting deployments."
 ---
 
 # Azure App Service Deployment

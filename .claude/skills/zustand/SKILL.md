@@ -1,17 +1,18 @@
 ---
 name: zustand
-description: Zustand v5 state management - store creation, selectors, useShallow, persist/devtools/immer middleware, slices pattern, subscriptions. Use when implementing global state, creating stores, adding persistence, or optimizing re-renders in React/React Native.
+description: "Zustand v5 state management - store creation, selectors, useShallow, persist/devtools/immer middleware, slices pattern, subscriptions"
+when_to_use: "implementing global state, creating stores, adding persistence, or optimizing re-renders in React/React Native"
 ---
 
 # Zustand v5
 
-Lightweight, fast state management with a hook-based API. No providers, no boilerplate, no context wrappers.
+> Lightweight, fast state management with a hook-based API. No providers, no boilerplate, no context wrappers.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Creating or modifying Zustand stores
 - Implementing global state management patterns
 - Adding persistence to stores (MMKV, AsyncStorage, localStorage)

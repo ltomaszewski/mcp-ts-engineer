@@ -1,6 +1,7 @@
 ---
 name: nextjs-core
-description: Next.js 15.5 App Router - Server/Client Components, routing, data fetching, Server Actions, middleware, typed routes. Use when building Next.js pages, fetching data, or configuring routes.
+description: "Next.js 15.5 App Router - Server/Client Components, routing, data fetching, Server Actions, middleware, typed routes"
+when_to_use: "building Next.js pages, fetching data, or configuring routes"
 ---
 
 # Next.js 15.5 App Router
@@ -13,7 +14,7 @@ description: Next.js 15.5 App Router - Server/Client Components, routing, data f
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Creating or modifying Next.js pages, layouts, or routes
 - Fetching data in Server Components or Client Components
 - Working with Server Actions for mutations

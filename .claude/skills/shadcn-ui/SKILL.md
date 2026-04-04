@@ -1,6 +1,7 @@
 ---
 name: shadcn-ui
-description: shadcn/ui component library - CLI v4, AI agent skills, design presets, unified radix-ui, Radix + Base UI primitives, CVA variants, Tailwind v4 theming, RTL support, accessible components. Use when adding UI components, building forms, or customizing design tokens.
+description: "shadcn/ui component library - CLI v4, design presets, unified radix-ui, Radix + Base UI primitives, CVA variants, Tailwind v4 theming, RTL support"
+when_to_use: "adding UI components, building forms, or customizing design tokens"
 ---
 
 # shadcn/ui

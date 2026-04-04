@@ -1,6 +1,7 @@
 ---
 name: hooks
-description: Claude Code hooks configuration - PreToolUse, PostToolUse, Stop hooks, settings.json setup, debugging. Use when configuring hooks, setting up automation, or debugging hook behavior.
+description: "Claude Code hooks configuration - PreToolUse, PostToolUse, Stop hooks, settings.json setup, debugging."
+when_to_use: "Use when configuring hooks, setting up automation, or debugging hook behavior."
 ---
 
 # Hooks Configuration

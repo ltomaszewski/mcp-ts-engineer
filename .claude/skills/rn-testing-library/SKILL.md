@@ -1,11 +1,12 @@
 ---
 name: rn-testing-library
-description: "@testing-library/react-native v13.3.x - render, renderAsync, screen, queries (getBy/queryBy/findBy), userEvent (press, longPress, type, clear, paste, scrollTo), fireEventAsync, built-in Jest matchers (toBeOnTheScreen, toBeVisible, toBeDisabled, toHaveTextContent, toHaveProp, toHaveStyle, toHaveAccessibleName), waitFor, renderHook, renderHookAsync. Use when writing component tests, testing user interactions, testing async behavior, or testing React 19 Suspense components."
+description: "@testing-library/react-native v13.3.x - render, screen, queries, userEvent, Jest matchers, waitFor, hooks"
+when_to_use: "writing component tests, testing user interactions, testing async behavior, or testing React 19 Suspense components"
 ---
 
 # React Native Testing Library
 
-Testing utilities for React Native components focused on user behavior, not implementation.
+> Testing utilities for React Native components focused on user behavior, not implementation.
 
 **Package:** `@testing-library/react-native`
 
@@ -13,7 +14,7 @@ Testing utilities for React Native components focused on user behavior, not impl
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Writing component tests for React Native
 - Testing user interactions (press, type, scroll, longPress)
 - Querying rendered elements by role, text, or label

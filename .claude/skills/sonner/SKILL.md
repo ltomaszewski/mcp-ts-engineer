@@ -1,6 +1,7 @@
 ---
 name: sonner
-description: Sonner v2 toast notifications - toast(), Toaster, promise toasts, custom toasts, rich colors, stacking. Use when showing toast notifications, success/error feedback, or async operation status.
+description: "Sonner v2 toast notifications - toast(), Toaster, promise toasts, custom toasts, rich colors, stacking."
+when_to_use: "Use when showing toast notifications, success/error feedback, or async operation status."
 ---
 
 # Sonner

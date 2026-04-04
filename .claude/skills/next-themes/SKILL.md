@@ -1,6 +1,7 @@
 ---
 name: next-themes
-description: next-themes v0.4 theme management - ThemeProvider, useTheme, dark mode, system preference, Tailwind integration. Use when implementing dark mode, theme switching, or system preference detection in Next.js.
+description: "next-themes v0.4 theme management - ThemeProvider, useTheme, dark mode, system preference, Tailwind integration"
+when_to_use: "implementing dark mode, theme switching, or system preference detection in Next.js"
 ---
 
 # next-themes

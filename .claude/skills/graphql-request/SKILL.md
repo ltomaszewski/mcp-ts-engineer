@@ -1,7 +1,8 @@
 ---
 name: graphql-request
 version: "7.4.0"
-description: GraphQL Request client - queries, mutations, variables, headers. Use when making GraphQL API calls, handling authentication, or integrating with React Query.
+description: "GraphQL Request client - queries, mutations, variables, headers"
+when_to_use: "making GraphQL API calls, handling authentication, or integrating with React Query"
 ---
 
 # GraphQL Request

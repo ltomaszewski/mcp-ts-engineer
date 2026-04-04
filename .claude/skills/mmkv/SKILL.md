@@ -1,11 +1,12 @@
 ---
 name: mmkv
-description: MMKV fast key-value storage - initialization, CRUD, encryption, hooks, listeners. Use when implementing fast local storage, replacing AsyncStorage, or storing user preferences.
+description: "MMKV fast key-value storage — initialization, CRUD, encryption, hooks, listeners."
+when_to_use: "Use when implementing fast local storage, replacing AsyncStorage, or storing user preferences."
 ---
 
 # MMKV
 
-Ultra-fast synchronous key-value storage for React Native -- 30x faster than AsyncStorage.
+> Ultra-fast synchronous key-value storage for React Native -- 30x faster than AsyncStorage.
 
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: patterns
-description: Common TypeScript patterns - service layer, hooks, Zustand stores, error handling, Zod validation, testing. Use when implementing services, creating hooks, setting up stores, or writing tests.
+description: "Common TypeScript patterns - service layer, hooks, Zustand stores, error handling, Zod validation, testing."
+when_to_use: "Use when implementing services, creating hooks, setting up stores, or writing tests."
 ---
 
 # Common Patterns

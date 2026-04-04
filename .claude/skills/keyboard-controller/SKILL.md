@@ -1,11 +1,12 @@
 ---
 name: keyboard-controller
-description: React Native Keyboard Controller - keyboard animations, KeyboardToolbar, KeyboardAwareScrollView, interactive dismiss. Use when handling keyboard in React Native apps.
+description: "React Native Keyboard Controller — keyboard animations, KeyboardToolbar, KeyboardAwareScrollView, interactive dismiss."
+when_to_use: "Use when handling keyboard in React Native apps."
 ---
 
 # Keyboard Controller
 
-Universal keyboard handling for React Native with smooth native animations and Reanimated integration.
+> Universal keyboard handling for React Native with smooth native animations and Reanimated integration.
 
 ---
 

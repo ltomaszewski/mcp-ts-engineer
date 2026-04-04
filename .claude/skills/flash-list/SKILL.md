@@ -1,11 +1,12 @@
 ---
 name: flash-list
-description: "@shopify/flash-list v2.x performant lists - cell recycling, automatic sizing, getItemType, overrideItemLayout, masonry prop, maintainVisibleContentPosition, useRecyclingState, grid, horizontal. New Architecture required. Use when implementing large lists, optimizing scroll performance, migrating from FlatList/v1, or building grid/masonry layouts."
+description: "@shopify/flash-list v2.x performant lists - cell recycling, automatic sizing, masonry, grid, useRecyclingState."
+when_to_use: "Use when implementing large lists, optimizing scroll performance, migrating from FlatList/v1, or building grid/masonry layouts."
 ---
 
 # FlashList v2
 
-High-performance list component by Shopify with cell recycling -- drop-in FlatList replacement delivering up to 5x faster UI thread and 10x faster JS thread performance. v2 is a ground-up rewrite: JS-only (no native code), automatic sizing, New Architecture required.
+> High-performance list component by Shopify with cell recycling -- drop-in FlatList replacement delivering up to 5x faster UI thread and 10x faster JS thread performance. v2 is a ground-up rewrite: JS-only (no native code), automatic sizing, New Architecture required.
 
 **Package:** `@shopify/flash-list@^2.3.0`
 
@@ -13,7 +14,7 @@ High-performance list component by Shopify with cell recycling -- drop-in FlatLi
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Implementing large or infinite scrolling lists
 - Optimizing list scroll performance or debugging blank areas
 - Creating grid layouts with `numColumns`

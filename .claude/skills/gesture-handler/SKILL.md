@@ -1,6 +1,7 @@
 ---
 name: gesture-handler
-description: React Native Gesture Handler v2.x - Pan, Pinch, Tap, LongPress, Fling, Rotation, Hover, composed gestures, GestureDetector, Reanimated integration. Use when implementing touch gestures, swipe interactions, drag-and-drop, or gesture-driven animations.
+description: "React Native Gesture Handler v2.x - Pan, Pinch, Tap, LongPress, Fling, Rotation, composed gestures, GestureDetector, Reanimated integration."
+when_to_use: "Use when implementing touch gestures, swipe interactions, drag-and-drop, or gesture-driven animations."
 ---
 
 # Gesture Handler

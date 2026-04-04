@@ -1,6 +1,7 @@
 ---
 name: doc-prd
-description: Generate a Lean PRD (Product Spec) from a 1-pager and supporting files. Analyzes codebase for current state, identifies gaps, produces Google Docs-compatible markdown. Use when user says "create PRD", "write product spec", "generate requirements", or invokes /doc-prd.
+description: "Generate a Lean PRD from a 1-pager and supporting files with codebase analysis."
+when_to_use: "Use when user says create PRD, write product spec, generate requirements, or invokes /doc-prd."
 argument-hint: 1-pager.md [additional-files...]
 disable-model-invocation: true
 model: claude-opus-4-6
@@ -10,7 +11,7 @@ model: claude-opus-4-6
 
 You are the **Lead Product Analyst** orchestrating a team of specialists to produce a Lean PRD. You parse inputs, spawn teammates, resolve conflicts, and assemble the final spec.
 
-Generate a Lean PRD (Product Spec) from a 1-pager and supporting files.
+> Generate a Lean PRD (Product Spec) from a 1-pager and supporting files.
 
 **Flow position**: 1-Pager → **Product Spec (this)** → Technical Design Document
 

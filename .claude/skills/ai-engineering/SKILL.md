@@ -1,12 +1,13 @@
 ---
 name: ai-engineering
 version: "SDK 0.2.92"
-description: AI engineering with Claude Agent SDK - agent architecture, orchestration, performance optimization, security hardening, production deployment. Use when building AI agents, designing multi-agent systems, optimizing cost/latency, or hardening agent security.
+description: "AI engineering with Claude Agent SDK - agent architecture, orchestration, performance, security, deployment."
+when_to_use: "Use when building AI agents, designing multi-agent systems, optimizing cost/latency, or hardening agent security."
 ---
 
 # AI Engineering with Claude Agent SDK
 
-Production-grade AI agent systems: architecture, performance, security, reliability.
+> Production-grade AI agent systems: architecture, performance, security, reliability.
 
 **Opus optimization notes:** This skill is structured for high-capability models. Decision frameworks replace prescriptive rules where nuance matters. Code examples are canonical patterns — synthesize variations from principles, don't look for exact-match templates. Knowledge-base files contain full implementations; this file is the decision index.
 

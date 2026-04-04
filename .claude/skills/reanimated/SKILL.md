@@ -1,17 +1,18 @@
 ---
 name: reanimated
-description: React Native Reanimated 4.x animations - shared values, animated styles, timing, spring, decay, gestures, layout animations, entering/exiting transitions, keyframes. Use when implementing animations, gesture-driven interactions, or UI transitions.
+description: "React Native Reanimated 4.x animations - shared values, animated styles, timing, spring, decay, gestures, layout animations, entering/exiting transitions, keyframes."
+when_to_use: "Use when implementing animations, gesture-driven interactions, or UI transitions."
 ---
 
 # React Native Reanimated
 
-High-performance animations running on the UI thread for smooth 60/120fps experiences in React Native.
+> High-performance animations running on the UI thread for smooth 60/120fps experiences in React Native.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Creating timing, spring, decay, or layout animations
 - Using shared values for animated state
 - Implementing gesture-driven animations with react-native-gesture-handler

@@ -1,11 +1,12 @@
 ---
 name: biome
-description: Biome v2 linting, formatting, and code assists - configuration, 450+ rules, CLI, migration. Use when setting up linting, configuring formatting rules, running CI checks, or migrating from ESLint/Prettier.
+description: "Biome v2 linting, formatting, and code assists - configuration, 450+ rules, CLI, migration"
+when_to_use: "setting up linting, configuring formatting rules, running CI checks, or migrating from ESLint/Prettier"
 ---
 
 # Biome v2
 
-Fast unified linter, formatter, and import sorter. 35x faster than Prettier, 450+ lint rules, zero-config defaults.
+> Fast unified linter, formatter, and import sorter. 35x faster than Prettier, 450+ lint rules, zero-config defaults.
 
 **Package:** `@biomejs/biome`
 
@@ -13,7 +14,7 @@ Fast unified linter, formatter, and import sorter. 35x faster than Prettier, 450
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Setting up project linting and formatting
 - Configuring biome.json rules or formatter options
 - Migrating from ESLint/Prettier

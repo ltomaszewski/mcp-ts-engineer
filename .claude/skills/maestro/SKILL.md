@@ -1,11 +1,12 @@
 ---
 name: maestro
-description: "Maestro E2E testing framework v2.x - YAML-based flows, selectors, assertions, gestures, scroll, swipe, repeat, runFlow, environment variables, CI integration, React Native testID. Use when writing end-to-end tests, automating UI flows, debugging test failures, or setting up mobile CI testing."
+description: "Maestro E2E testing framework v2.x - YAML flows, selectors, assertions, gestures, runFlow, environment variables, CI, React Native testID"
+when_to_use: "writing end-to-end tests, automating UI flows, debugging test failures, or setting up mobile CI testing"
 ---
 
 # Maestro
 
-Mobile and web E2E testing framework with human-readable YAML flows, automatic waiting, and cross-platform support.
+> Mobile and web E2E testing framework with human-readable YAML flows, automatic waiting, and cross-platform support.
 
 **CLI:** `maestro` | **Current Version:** 2.3.1 | **Java:** 17+
 

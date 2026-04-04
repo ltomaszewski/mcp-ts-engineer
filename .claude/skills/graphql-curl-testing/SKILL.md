@@ -1,6 +1,7 @@
 ---
 name: graphql-curl-testing
-description: GraphQL API testing with curl - authentication flow, protected endpoints, sleep sessions. Use when testing API endpoints, debugging requests, or validating GraphQL functionality.
+description: "GraphQL API testing with curl - authentication flow, protected endpoints, sleep sessions"
+when_to_use: "testing API endpoints, debugging requests, or validating GraphQL functionality"
 ---
 
 # GraphQL curl Testing

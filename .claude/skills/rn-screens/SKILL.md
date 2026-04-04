@@ -1,17 +1,18 @@
 ---
 name: rn-screens
-description: React Native Screens v4.x - native screen containers, transitions, enableScreens, enableFreeze, ScreenStack, ScreenContainer, ScreenStackHeaderConfig, SearchBar, useTransitionProgress, FullWindowOverlay, formSheet. Use when optimizing navigation performance, configuring screen transitions, or working with native stack navigation.
+description: "React Native Screens v4.x - native screen containers, transitions, enableScreens, enableFreeze, formSheet, SearchBar."
+when_to_use: "Use when optimizing navigation performance, configuring screen transitions, or working with native stack navigation."
 ---
 
 # React Native Screens
 
-Native navigation primitives for React Native. Replaces plain React Native Views with native screen containers (UINavigationController on iOS, Fragment on Android) for platform-native transitions, memory optimization, and OS-level screen management.
+> Native navigation primitives for React Native. Replaces plain React Native Views with native screen containers (UINavigationController on iOS, Fragment on Android) for platform-native transitions, memory optimization, and OS-level screen management.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Installing or configuring react-native-screens in an Expo or bare RN project
 - Optimizing navigation performance with native screen containers
 - Configuring screen transition animations (fade, slide, flip, push)

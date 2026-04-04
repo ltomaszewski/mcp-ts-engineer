@@ -1,6 +1,7 @@
 ---
 name: nestjs-auth
-description: NestJS authentication and authorization - Passport.js, JWT, guards, refresh tokens, RBAC. Use when implementing login, registration, JWT tokens, role-based access control, or authentication guards.
+description: "NestJS authentication and authorization — Passport.js, JWT, guards, refresh tokens, RBAC."
+when_to_use: "Use when implementing login, registration, JWT tokens, role-based access control, or authentication guards."
 ---
 
 # NestJS Authentication

@@ -1,7 +1,8 @@
 ---
 name: mcp-sdk
 version: "1.29.0"
-description: Model Context Protocol SDK v1.x - MCP servers, tools, resources, prompts, transports, Zod schema validation. Use when building MCP servers, defining tools, exposing resources, creating prompts, or configuring stdio/HTTP transports.
+description: "Model Context Protocol SDK v1.x - MCP servers, tools, resources, prompts, transports, Zod schema validation."
+when_to_use: "Use when building MCP servers, defining tools, exposing resources, creating prompts, or configuring transports."
 ---
 
 # MCP SDK v1.x

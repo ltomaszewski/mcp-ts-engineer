@@ -1,6 +1,7 @@
 ---
 name: nestjs-graphql
-description: NestJS GraphQL integration with GraphQL Yoga - resolvers, type definitions, DataLoader, subscriptions, Federation. Use when working with GraphQL queries, mutations, subscriptions, or schema design.
+description: "NestJS GraphQL integration with GraphQL Yoga — resolvers, type definitions, DataLoader, subscriptions, Federation."
+when_to_use: "Use when working with GraphQL queries, mutations, subscriptions, or schema design."
 ---
 
 # NestJS GraphQL

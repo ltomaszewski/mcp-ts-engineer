@@ -1,6 +1,7 @@
 ---
 name: better-auth
-description: Better Auth v1.5.6 authentication - email/password, OAuth, sessions, RBAC, MFA, i18n, MCP auth, OAuth 2.1 provider, test utilities, secret rotation. Use when implementing auth, managing sessions, adding social login, or role-based access.
+description: "Better Auth v1.5.6 authentication — email/password, OAuth, sessions, RBAC, MFA, i18n, MCP auth, OAuth 2.1 provider, test utilities, secret rotation."
+when_to_use: "Use when implementing auth, managing sessions, adding social login, or role-based access."
 ---
 
 # Better Auth

@@ -1,17 +1,18 @@
 ---
 name: nativewind
-description: NativeWind v5 Tailwind CSS styling - className prop, responsive breakpoints, dark mode, platform selectors, cssInterop, safe area utilities. Use when styling React Native components with Tailwind utilities, configuring themes, or integrating third-party components.
+description: "NativeWind Tailwind CSS styling - className, breakpoints, dark mode, platform selectors, cssInterop, safe area utilities."
+when_to_use: "Use when styling React Native components with Tailwind utilities, configuring themes, or integrating third-party components."
 ---
 
 # NativeWind
 
-Use Tailwind CSS utility classes to style React Native components across iOS, Android, and Web via a single `className` prop.
+> Use Tailwind CSS utility classes to style React Native components across iOS, Android, and Web via a single `className` prop.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Styling React Native components with `className` prop
 - Implementing responsive layouts with breakpoints (`sm:`, `md:`, `lg:`)
 - Setting up dark mode with `dark:` prefix or `useColorScheme`

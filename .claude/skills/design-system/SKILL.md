@@ -1,7 +1,8 @@
 ---
 name: design-system
 version: "WCAG 2.2"
-description: Design system fundamentals - tokens, components, accessibility, WCAG 2.2 compliance. Use when creating design systems, defining tokens (colors, typography, spacing), or ensuring accessibility standards.
+description: "Design system fundamentals - tokens, components, accessibility, WCAG 2.2 compliance"
+when_to_use: "creating design systems, defining tokens (colors, typography, spacing), or ensuring accessibility standards"
 ---
 
 # Design System

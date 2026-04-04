@@ -1,11 +1,12 @@
 ---
 name: codemap-updater
-description: Generate and update token-lean codemaps for quick codebase navigation.
+description: "Generate and update token-lean codemaps for quick codebase navigation."
+when_to_use: "Use when running /update-codemaps, codemaps are stale, or after major feature/refactoring work."
 ---
 
 # Codemap Updater Skill
 
-Generate token-lean architecture documentation for quick codebase navigation without burning context on exploration.
+> Generate token-lean architecture documentation for quick codebase navigation without burning context on exploration.
 
 ## When to Use
 

@@ -1,6 +1,7 @@
 ---
 name: lucide-react
-description: Lucide React icons - tree-shakeable SVG icons, customizable props, dynamic imports, shadcn/ui integration. Use when adding icons, customizing icon appearance, or optimizing icon bundle size.
+description: "Lucide React icons - tree-shakeable SVG icons, customizable props, dynamic imports, shadcn/ui integration"
+when_to_use: "adding icons, customizing icon appearance, or optimizing icon bundle size"
 ---
 
 # lucide-react

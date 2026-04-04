@@ -1,7 +1,8 @@
 ---
 name: claude-agent-sdk
 version: "0.2.92"
-description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks, multi-turn conversations. Use when building agents, integrating Claude API, or implementing AI features programmatically.
+description: "Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks."
+when_to_use: "Use when building agents, integrating Claude API, or implementing AI features programmatically."
 ---
 
 # Claude Agent SDK

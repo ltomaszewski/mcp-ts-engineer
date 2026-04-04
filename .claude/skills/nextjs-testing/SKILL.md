@@ -1,6 +1,7 @@
 ---
 name: nextjs-testing
-description: Next.js 15.5 testing with Vitest - component testing, Server Component mocking, TanStack Query wrappers, jsdom environment, @testing-library/react. Use when writing tests for Next.js components, pages, or hooks.
+description: "Next.js 15.5 testing with Vitest - component testing, Server Component mocking, TanStack Query wrappers, jsdom environment, @testing-library/react"
+when_to_use: "writing tests for Next.js components, pages, or hooks"
 ---
 
 # Next.js 15.5 Testing with Vitest
@@ -13,7 +14,7 @@ description: Next.js 15.5 testing with Vitest - component testing, Server Compon
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Writing component tests for Next.js pages or components
 - Testing Client Components with interactive behavior (forms, buttons, modals)
 - Testing components that use TanStack Query (useQuery, useMutation)

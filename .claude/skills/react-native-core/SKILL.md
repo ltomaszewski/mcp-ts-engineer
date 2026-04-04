@@ -1,17 +1,18 @@
 ---
 name: react-native-core
-description: React Native 0.83.4 fundamentals - core components, native modules, navigation, Fabric, TurboModules, best practices. Use when working with RN basics, platform-specific code, or performance optimization.
+description: "React Native 0.83.4 fundamentals - core components, native modules, navigation, Fabric, TurboModules, best practices."
+when_to_use: "Use when working with RN basics, platform-specific code, or performance optimization."
 ---
 
 # React Native Core
 
-Cross-platform mobile development with native performance using React Native 0.83.4, Fabric renderer, TurboModules, and Hermes engine.
+> Cross-platform mobile development with native performance using React Native 0.83.4, Fabric renderer, TurboModules, and Hermes engine.
 
 ---
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Building or modifying UI with core RN components (View, Text, FlatList, Pressable, TextInput, Image)
 - Implementing platform-specific code (iOS/Android differences, `.ios.ts`/`.android.ts` files)
 - Optimizing list rendering, component performance, or app startup time

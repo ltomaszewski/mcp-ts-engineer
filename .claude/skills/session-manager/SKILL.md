@@ -1,11 +1,12 @@
 ---
 name: session-manager
-description: Session state persistence and context management for long coding sessions. Use when approaching context limits, before breaks, or at session end.
+description: "Session state persistence and context management for long coding sessions."
+when_to_use: "Use when approaching context limits, before breaks, or at session end."
 ---
 
 # Session Manager
 
-Persist session state and learnings across Claude Code sessions for continuity.
+> Persist session state and learnings across Claude Code sessions for continuity.
 
 ---
 

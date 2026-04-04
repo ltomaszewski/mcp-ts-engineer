@@ -1,6 +1,7 @@
 ---
 name: date-fns
-description: date-fns date utilities - formatting, parsing, manipulation, comparison. Use when working with dates, formatting timestamps, or calculating date differences.
+description: "date-fns date utilities - formatting, parsing, manipulation, comparison"
+when_to_use: "working with dates, formatting timestamps, or calculating date differences"
 ---
 
 # date-fns

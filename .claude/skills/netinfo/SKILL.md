@@ -1,7 +1,8 @@
 ---
 name: netinfo
 version: "12.x"
-description: "@react-native-community/netinfo v12 network connectivity - state, type, listeners, offline handling, WiFi details via NEHotspotNetwork. Use when working with @react-native-community/netinfo, checking network status, handling offline mode, or detecting connection type."
+description: "@react-native-community/netinfo v12 network connectivity — state, type, listeners, offline handling, WiFi details."
+when_to_use: "Use when working with @react-native-community/netinfo, checking network status, handling offline mode, or detecting connection type."
 ---
 
 # NetInfo
