@@ -114,7 +114,7 @@ for pkg_json in apps/*/package.json packages/*/package.json; do
   proj_dir="$(dirname "$pkg_json")"
   proj_name="$(basename "$proj_dir")"
 
-  [[ "$proj_name" == "mcp-ts-engineer" ]] && continue
+  [[ "$proj_name" == "mcp-ts-engineer" || "$proj_name" == "claude-code" ]] && continue
 
   if [[ ! -d "docs/specs/$proj_name/todo" ]]; then
     mkdir -p "docs/specs/$proj_name/todo"
