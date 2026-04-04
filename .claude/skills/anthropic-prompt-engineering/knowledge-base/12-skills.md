@@ -37,9 +37,11 @@ Skills work identically across Claude.ai, Claude Code, and API — create once, 
 
 | Level | What | When Loaded |
 |-------|------|-------------|
-| **1. YAML Frontmatter** | Name + description | Always (in system prompt) |
+| **1. YAML Frontmatter** | Name + description | Each turn (as `<system-reminder>` user message) |
 | **2. SKILL.md Body** | Full instructions | When Claude thinks skill is relevant |
 | **3. Linked Files** | References, scripts, assets | When Claude navigates to them on demand |
+
+> **Important:** Skills are NOT part of the system prompt. They are injected as `<system-reminder>` wrapped user messages each turn via the attachment system. This means they don't break prompt cache and are refreshed every turn.
 
 This minimizes token usage while maintaining specialized expertise.
 
@@ -53,16 +55,62 @@ Same skill works across Claude.ai, Claude Code, and API without modification (pr
 
 ---
 
+## How Skills Compete for Context
+
+Each turn, ALL skills are listed in a `<system-reminder>` user message. Total budget: ~1% of context window (~8,000 characters, configurable via `SKILL_BUDGET_CONTEXT_PERCENT`).
+
+| Category | Budget Treatment |
+|----------|-----------------|
+| Bundled skills | Always full description (never truncated) |
+| Non-bundled skills | Share remaining budget proportionally |
+| Over budget | Descriptions truncated, then reduced to name-only |
+
+**Per-entry cap:** Each skill's listing entry is capped at **250 characters** (`MAX_LISTING_DESC_CHARS`). Content beyond 250 chars is silently truncated.
+
+**Practical impact:** If you have 50+ skills installed, your custom skill descriptions may be truncated to just the skill name. Keep `description` + `when_to_use` concise and front-load trigger keywords.
+
+---
+
 ## YAML Frontmatter (Most Important Part)
 
 The frontmatter is how Claude decides whether to load your skill. Get this right.
 
-### Minimal Required Format
+### Complete Frontmatter Reference
 
 ```yaml
 ---
-name: your-skill-name
-description: What it does. Use when user asks to [specific phrases].
+# REQUIRED
+name: your-skill-name                # kebab-case, must match folder name
+description: "What it does."         # ≤200 chars recommended (see budget cap below)
+
+# RECOMMENDED
+when_to_use: "Use when..."           # Trigger phrases (NOTE: underscore, not hyphen)
+allowed-tools: [Read, Bash, Grep]    # Tool whitelist when skill runs
+user-invocable: true                 # Allow /skill-name invocation
+
+# OPTIONAL
+argument-hint: "<filename>"          # Shows in autocomplete
+arguments: [$var1, $var2]            # Named arguments for $var substitution
+context: fork                        # fork = isolated sub-agent; inline = expand in context (default)
+agent: general-purpose               # Agent type for fork mode
+model: claude-sonnet-4-6             # Model override
+effort: high                         # Thinking depth: low/medium/high/max
+disable-model-invocation: true       # Hide from Skill tool (user-only)
+license: MIT                         # Open source license
+compatibility: "Requires network"    # 1-500 chars, environment needs
+shell: bash                          # Shell for command hooks
+paths: ["src/**/*.ts"]               # Only load for matching file paths
+hooks:                               # Hook definitions
+  PreToolUse:
+    - type: command
+      command: "validate.sh"
+      if: "Bash(git push*)"
+metadata:
+  author: Company Name
+  version: 1.0.0
+  mcp-server: server-name
+  category: productivity
+  tags: [project-management, automation]
 ---
 ```
 
@@ -74,36 +122,21 @@ description: What it does. Use when user asks to [specific phrases].
 - Example: `notion-project-setup`
 
 **description:**
-- MUST include BOTH:
-  - What the skill does
-  - When to use it (trigger conditions)
-- Under 1024 characters
-- No XML tags (`<` or `>`)
-- Include specific task phrases users might say
-- Mention file types if relevant
+- What the skill does — its capabilities and scope
+- Under 1024 characters, no XML tags (`<` or `>`)
 
-### Optional Fields
+### Critical: `when_to_use` Field
 
-```yaml
----
-name: skill-name
-description: [required description]
-license: MIT                          # Open source license
-allowed-tools: "Bash(python:*) WebFetch"  # Restrict tool access
-compatibility: "Requires network access"   # 1-500 chars, environment needs
-metadata:
-  author: Company Name
-  version: 1.0.0
-  mcp-server: server-name
-  category: productivity
-  tags: [project-management, automation]
----
-```
+Anthropic's own `skillify` tool calls this field **"CRITICAL"**. It contains trigger phrases that help Claude decide when to load the skill.
+
+> **Casing trap:** `when_to_use` uses UNDERSCORE. Most other fields (`allowed-tools`, `argument-hint`, `user-invocable`) use HYPHENS. This inconsistency is in the source parser (`loadSkillsDir.ts`).
+
+> **Budget cap:** Your `description` + ` - ` + `when_to_use` is truncated to **250 characters** in the per-turn skill listing. Front-load the most important trigger keywords. Content beyond 250 chars is silently truncated.
 
 ### Security Restrictions
 
 **Forbidden in frontmatter:**
-- XML angle brackets (`<` `>`) — frontmatter appears in system prompt
+- XML angle brackets (`<` `>`)
 - Skills with "claude" or "anthropic" in name (reserved)
 
 ---
@@ -301,6 +334,98 @@ Workflow guidance layered on top of MCP tool access.
 - Consistent, reliable tool usage
 - Best practices embedded in every interaction
 - Lower learning curve
+
+---
+
+## Execution Context: Inline vs Fork
+
+| Mode | Behavior | Use When |
+|------|----------|----------|
+| `inline` (default) | Content expands into current conversation | Quick patterns, simple workflows, token-light operations |
+| `context: fork` | Runs in isolated sub-agent | Expensive analysis, long outputs, research tasks |
+
+**Inline:** Skill output stays in main context window, consuming tokens for the rest of the conversation. Ideal for most skills.
+
+**Fork:** Runs in separate context, returns only result. Main context stays clean. Has overhead (~2-3 seconds setup) — don't use for trivial skills.
+
+```yaml
+---
+name: deep-analysis
+context: fork
+agent: general-purpose
+model: claude-opus-4-6
+effort: high
+---
+```
+
+> **Compaction vulnerability:** Fork-mode skill outputs return as conversation messages. These get summarized during auto-compaction. If fork output contains critical state, persist it to a file.
+
+---
+
+## Hooks in Skills
+
+Skills can register hooks via frontmatter:
+
+```yaml
+---
+name: safe-deploy
+hooks:
+  PreToolUse:
+    - type: command
+      command: "scripts/validate-push.sh"
+      if: "Bash(git push*)"
+    - type: prompt
+      prompt: "Verify this tool call is safe: $ARGUMENTS"
+      model: claude-haiku-4-5
+  PostToolUse:
+    - type: command
+      command: "scripts/log-tool.sh $TOOL_NAME"
+---
+```
+
+**4 hook types:**
+
+| Type | Behavior | Use When |
+|------|----------|----------|
+| `command` | Runs shell command | Validation scripts, logging |
+| `prompt` | LLM evaluates the action | Safety checks, policy enforcement |
+| `http` | Sends webhook | External system notification |
+| `agent` | Multi-turn AI verification | Complex validation requiring reasoning |
+
+**Hook conditions:** The `if` field supports glob patterns matching `ToolName(arguments)` format. Example: `Bash(git push*)` matches any Bash tool call starting with "git push".
+
+---
+
+## Arguments and Variables
+
+### Frontmatter
+
+```yaml
+---
+name: deploy
+arguments: [$environment, $branch]
+argument-hint: "<environment> [branch]"
+user-invocable: true
+---
+```
+
+### Variable Substitution in Skill Body
+
+| Variable | Resolves To |
+|----------|-------------|
+| `$ARGUMENTS` | Raw args string from invocation |
+| `$var_name` | Named argument from `arguments:` list |
+| `${CLAUDE_SKILL_DIR}` | Absolute path to skill directory |
+| `${CLAUDE_SESSION_ID}` | Current session ID |
+
+### Example
+
+```markdown
+Deploy to $environment on branch $branch.
+Read the deployment checklist at ${CLAUDE_SKILL_DIR}/references/deploy-guide.md
+```
+
+When invoked as `/deploy production main`, `$environment` resolves to "production" and `$branch` to "main".
 
 ---
 
@@ -648,11 +773,17 @@ Anthropic has published [Agent Skills](https://agentskills.io) as an **open stan
 | "Invalid frontmatter" | YAML formatting | Ensure `---` delimiters, close quotes |
 | "Invalid skill name" | Name has spaces/capitals | Use kebab-case: `my-cool-skill` |
 
-### Skill Doesn't Trigger
+### Skill Doesn't Trigger — Diagnostic Checklist
 
-1. Is description too generic? ("Helps with projects" won't work)
-2. Does it include trigger phrases users would actually say?
-3. Does it mention relevant file types?
+> See also [How Skills Compete for Context](#how-skills-compete-for-context) above for budget details.
+
+1. **Check listing cap:** Is `description` + ` - ` + `when_to_use` under 250 chars?
+2. **Check visibility:** Ask Claude "List all available skills" — does your skill appear with its description?
+3. **Check budget:** If description shows truncated or missing, too many skills compete for ~8K char budget
+4. **Check `when_to_use`:** Does it contain explicit trigger phrases users would say?
+5. **Check casing:** `when_to_use` uses UNDERSCORE; `allowed-tools` uses HYPHEN
+6. **Check `disable-model-invocation`:** If `true`, skill won't appear in Skill tool
+7. **Check `user-invocable`:** Must be `true` for /slash-command invocation
 
 ### Skill Triggers Too Often
 
@@ -666,6 +797,13 @@ Anthropic has published [Agent Skills](https://agentskills.io) as an **open stan
 2. **Buried** — Put critical instructions at top, use `## Important` headers
 3. **Ambiguous** — Replace "validate things properly" with specific checklists
 4. **Use scripts** — For critical validations, bundle a script instead of language instructions
+
+### Frontmatter Gotchas
+
+- `when_to_use` uses UNDERSCORE (not hyphen like `allowed-tools`)
+- No XML brackets (`<` `>`) in description or when_to_use
+- Invalid `effort` values silently ignored (valid: low, medium, high, max)
+- `name` must match folder name exactly (kebab-case)
 
 ### Large Context Issues
 
@@ -681,16 +819,18 @@ Anthropic has published [Agent Skills](https://agentskills.io) as an **open stan
 ### Naming
 - File: exactly `SKILL.md` (case-sensitive)
 - Folder: kebab-case (`my-skill-name`)
-- No `README.md` inside skill folder (all docs in SKILL.md or `references/`)
 
 ### Frontmatter
 - `---` delimiters required
 - `name` and `description` required
+- `when_to_use` strongly recommended (Anthropic calls it "CRITICAL")
 - No XML angle brackets (`<` `>`)
 - No "claude" or "anthropic" in name
-- Description under 1024 characters
+- `description` + `when_to_use` under 250 chars combined for listing
+- `when_to_use` uses UNDERSCORE (not hyphen)
 
 ### Instructions
+- SKILL.md files use **Markdown**, not XML tags (XML tags are for prompts sent via the Messages API)
 - Be specific and actionable
 - Reference bundled resources by path
 - Include error handling
@@ -755,5 +895,7 @@ After encountering edge cases, bring examples back:
 ```
 
 ---
+
+**Next**: [13-agent-teams.md](13-agent-teams.md) - Agent teams and multi-agent orchestration
 
 **Source**: [The Complete Guide to Building Skills for Claude](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) (Anthropic, 2026) | [Agent Skills Engineering Blog](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)

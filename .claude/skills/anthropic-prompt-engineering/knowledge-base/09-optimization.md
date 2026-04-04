@@ -298,6 +298,64 @@ Track these metrics:
 
 ---
 
+## Claude Code Cache Architecture
+
+Claude Code's system prompt has a STATIC/DYNAMIC boundary (`SYSTEM_PROMPT_DYNAMIC_BOUNDARY`):
+
+| Section | Caching | Content |
+|---------|---------|---------|
+| Static (before boundary) | `cache_control: { scope: 'global' }` | Intro, tool usage rules, style, output rules |
+| Dynamic (after boundary) | Per-session, not globally cached | CLAUDE.md, env info, MCP instructions |
+
+### Key Implications
+
+- **CLAUDE.md** is in the dynamic section — adding timestamps or dynamic content is fine, won't break global cache
+- **MCP instructions** use `DANGEROUS_uncachedSystemPromptSection()` — they recompute every turn and break cache when values change
+- **Tool schemas** are cached per-session via `getToolSchemaCache()` — tools sorted alphabetically for cache stability
+- **Changing tool lists** mid-session breaks the tool schema cache
+- **MCP tools** that aren't deferred prevent global system prompt caching
+
+### Message-Level Cache Breakpoints
+
+Claude Code uses exactly **ONE** message-level `cache_control` marker per request, placed on the last message (or second-to-last for fork subagents). This is different from the multi-breakpoint pattern used in direct API calls.
+
+### Global Cache Scope
+
+Global scope (`scope: 'global'`) is only available for first-party Anthropic API users. MCP tools downgrade to org scope unless deferred via tool search.
+
+### Cache TTL Options
+
+| Duration | Availability | Cost |
+|----------|-------------|------|
+| 5 minutes (default) | All users | No extra cost |
+| 1 hour | Claude.ai subscribers (not during overage), Bedrock (opt-in) | Additional cost |
+
+Eligibility for 1-hour TTL is determined at session start and doesn't change mid-session.
+
+### Auto-Compact Thresholds
+
+| Threshold | Value |
+|-----------|-------|
+| Warning | `effective_window - 20,000 tokens` |
+| Auto-compact trigger | `effective_window - 13,000 tokens` (~93%) |
+| Circuit breaker | 3 consecutive failures |
+| Post-compact file re-injection | Max 5 files, 50K tokens total, 5K per file |
+| Post-compact skill re-injection | 25K tokens total, 5K per skill |
+
+### Pricing: Cache Reads vs Standard Input
+
+| Model | Standard Input | Cache Write | Cache Read | Savings |
+|-------|---------------|-------------|------------|---------|
+| Opus 4.6 | $5/MTok | $6.25/MTok | $0.50/MTok | 10x cheaper reads |
+| Sonnet 4.6 | $3/MTok | $3.75/MTok | $0.30/MTok | 10x cheaper reads |
+| Haiku 4.5 | $1/MTok | $1.25/MTok | $0.10/MTok | 10x cheaper reads |
+
+Cache reads are consistently **10x cheaper** than standard input across all models. Break-even: 2 requests with identical prefix.
+
+> **Note**: Opus 4.0/4.1 use a higher tier ($15/$18.75/$1.50 per MTok). Prices above reflect current-generation models.
+
+---
+
 ## Optimization Checklist
 
 - [ ] Stable content is at the beginning of prompts
@@ -308,6 +366,8 @@ Track these metrics:
 - [ ] Variable content is at the end
 - [ ] Cache metrics are being monitored
 - [ ] First request completes before parallel requests
+- [ ] Tool list is consistent across calls (avoid mid-session changes)
+- [ ] MCP instructions are stable (avoid DANGEROUS_uncachedSystemPromptSection churn)
 
 ---
 

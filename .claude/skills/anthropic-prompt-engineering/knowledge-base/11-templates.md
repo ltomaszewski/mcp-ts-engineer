@@ -18,11 +18,13 @@
 ### Basic Skill Template
 
 ```markdown
+---
+name: my-skill
+description: "Brief description of what this skill provides."
+when_to_use: "Use when user asks about [topic], mentions [keyword], or says [phrase]."
+---
+
 # [Skill Name]
-
-[Brief description of what this skill provides]
-
-**When to Use**: [Triggers that should invoke this skill]
 
 ## Core Knowledge
 
@@ -546,11 +548,11 @@ For building Claude Skills (see [12-skills.md](12-skills.md) for full guide).
 ```markdown
 ---
 name: my-skill-name
-description: Does [what] for [context]. Use when user asks to [trigger 1],
-  mentions "[trigger phrase 2]", or says "[trigger phrase 3]".
-metadata:
-  author: Your Name
-  version: 1.0.0
+description: "Does [what] for [context]. Covers [key topics]."
+when_to_use: "Use when user asks to [trigger 1], mentions [trigger 2], or says [trigger 3]."
+allowed-tools: [Read, Write, Bash, Glob, Grep]
+user-invocable: true
+argument-hint: "<filename>"
 ---
 
 # [Skill Name]
@@ -599,14 +601,14 @@ Actions:
 **Key rules for SKILL.md:**
 - File must be exactly `SKILL.md` (case-sensitive)
 - Folder must be kebab-case
-- No `README.md` inside skill folder
 - No XML angle brackets in frontmatter
-- Description must include WHAT and WHEN (trigger conditions)
+- `description` + ` - ` + `when_to_use` is capped at 250 characters in the skill listing — front-load trigger keywords
+- `when_to_use` uses UNDERSCORE (not hyphen like `allowed-tools`)
 - Keep SKILL.md under 5,000 words; use `references/` for detail
 
 ---
 
-**End of Knowledge Base**
+**Next**: [12-skills.md](12-skills.md) - Building skills for Claude
 
 For questions or updates, consult Anthropic's official documentation:
 - https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview

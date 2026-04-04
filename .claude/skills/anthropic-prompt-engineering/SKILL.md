@@ -1,6 +1,7 @@
 ---
 name: anthropic-prompt-engineering
-description: Anthropic prompt engineering - official best practices for writing prompts from simple to complex (agents, commands, skills). Covers XML tags, chain of thought, extended thinking, tool use, caching, testing, and building skills for Claude. Use when designing prompts, writing system instructions, creating agents, building SKILL.md files, or troubleshooting prompt issues.
+description: "Anthropic prompt engineering — prompts, system instructions, skills, CLAUDE.md, agents, tools, caching."
+when_to_use: "Use when designing prompts, writing SKILL.md, building agents, creating CLAUDE.md rules, or optimizing caching."
 ---
 
 # Anthropic Prompt Engineering
@@ -42,6 +43,30 @@ description: Anthropic prompt engineering - official best practices for writing 
 
 ---
 
+## Deep Dive References
+
+Load additional context when needed:
+
+| When you need | Load |
+|---------------|------|
+| Complete overview and learning paths | [knowledge-base/00-master-index.md](knowledge-base/00-master-index.md) |
+| Core principles (7 golden rules) | [knowledge-base/01-core-principles.md](knowledge-base/01-core-principles.md) |
+| XML tag patterns and structure | [knowledge-base/02-prompt-structure.md](knowledge-base/02-prompt-structure.md) |
+| System prompt design for agents | [knowledge-base/03-system-prompts.md](knowledge-base/03-system-prompts.md) |
+| Chain of thought implementation | [knowledge-base/04-chain-of-thought.md](knowledge-base/04-chain-of-thought.md) |
+| Extended thinking mode details | [knowledge-base/05-extended-thinking.md](knowledge-base/05-extended-thinking.md) |
+| Tool use and function calling | [knowledge-base/06-tool-use.md](knowledge-base/06-tool-use.md) |
+| Agentic prompt patterns | [knowledge-base/07-agentic-prompts.md](knowledge-base/07-agentic-prompts.md) |
+| Multi-step workflows and chaining | [knowledge-base/08-prompt-chaining.md](knowledge-base/08-prompt-chaining.md) |
+| Caching and cost optimization | [knowledge-base/09-optimization.md](knowledge-base/09-optimization.md) |
+| Testing and evaluation strategies | [knowledge-base/10-testing.md](knowledge-base/10-testing.md) |
+| Ready-to-use templates | [knowledge-base/11-templates.md](knowledge-base/11-templates.md) |
+| Building skills (SKILL.md, frontmatter, testing) | [knowledge-base/12-skills.md](knowledge-base/12-skills.md) |
+| Agent teams and multi-agent orchestration | [knowledge-base/13-agent-teams.md](knowledge-base/13-agent-teams.md) |
+| CLAUDE.md architecture, @include, memory | [knowledge-base/14-claude-md.md](knowledge-base/14-claude-md.md) |
+
+---
+
 ## Core Patterns
 
 ### Basic Structured Prompt with XML Tags
@@ -69,30 +94,6 @@ This report will be used to make strategic decisions about product development.
 </output_format>
 ```
 
-### Multishot Prompting (Examples)
-
-```xml
-<examples>
-  <example>
-    <input>Customer: My order never arrived</input>
-    <output>
-I sincerely apologize for the inconvenience. Let me check your order status immediately. Could you provide your order number so I can investigate what happened and provide a solution?
-    </output>
-  </example>
-  <example>
-    <input>Customer: I want a refund NOW!</input>
-    <output>
-I understand your frustration, and I'm here to help resolve this quickly. To process your refund request, I'll need your order number. I'll make sure this is handled as a priority.
-    </output>
-  </example>
-</examples>
-
-Now respond to this customer:
-<input>
-{{CUSTOMER_MESSAGE}}
-</input>
-```
-
 ### Chain of Thought Prompting
 
 ```xml
@@ -105,35 +106,6 @@ Then provide your final answer in <answer> tags.
 A store sells apples at $0.50 each. If I buy 3 apples, I get 1 free. How much do I pay for 10 apples?
 </problem>
 ```
-
-### System Prompt for Role Setting
-
-```python
-# Using the Messages API
-client.messages.create(
-    model="claude-opus-4-6",
-    system="You are an expert Python developer with 10+ years of experience. You write clean, maintainable code following PEP 8. Always include type hints and docstrings.",
-    messages=[
-        {"role": "user", "content": "Write a function to validate email addresses"}
-    ]
-)
-```
-
-### Structured Outputs for Format Control
-
-```python
-# Use Structured Outputs to enforce response format (replaces prefill)
-client.messages.create(
-    model="claude-opus-4-6",
-    max_tokens=1024,
-    messages=[
-        {"role": "user", "content": "Extract the name and email from: John Doe (john@example.com)"}
-    ],
-    # Use tool_choice or structured outputs to enforce JSON
-)
-```
-
-> **Note**: Prefilled assistant responses are **deprecated** starting with Claude 4.6. Use structured outputs, direct instructions, or XML tags instead. See [Claude 4 Best Practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices) for migration guidance.
 
 ### Long Document Optimization
 
@@ -249,30 +221,6 @@ Claude 4.6 models (Opus 4.6, Sonnet 4.6) and Haiku 4.5 have significant improvem
 - **Subagent orchestration**: Claude 4.6 spawns subagents proactively; add guidance on when direct work is better
 - **LaTeX default**: Opus 4.6 defaults to LaTeX for math; explicitly request plain text if needed
 - **More concise**: May skip verbal summaries after tool calls; request summaries explicitly if desired
-
----
-
-## Deep Dive References
-
-Load additional context when needed:
-
-| When you need | Load |
-|---------------|------|
-| Complete overview and learning paths | [knowledge-base/00-master-index.md](knowledge-base/00-master-index.md) |
-| Core principles (7 golden rules) | [knowledge-base/01-core-principles.md](knowledge-base/01-core-principles.md) |
-| XML tag patterns and structure | [knowledge-base/02-prompt-structure.md](knowledge-base/02-prompt-structure.md) |
-| System prompt design for agents | [knowledge-base/03-system-prompts.md](knowledge-base/03-system-prompts.md) |
-| Chain of thought implementation | [knowledge-base/04-chain-of-thought.md](knowledge-base/04-chain-of-thought.md) |
-| Extended thinking mode details | [knowledge-base/05-extended-thinking.md](knowledge-base/05-extended-thinking.md) |
-| Tool use and function calling | [knowledge-base/06-tool-use.md](knowledge-base/06-tool-use.md) |
-| Agentic prompt patterns | [knowledge-base/07-agentic-prompts.md](knowledge-base/07-agentic-prompts.md) |
-| Multi-step workflows and chaining | [knowledge-base/08-prompt-chaining.md](knowledge-base/08-prompt-chaining.md) |
-| Caching and cost optimization | [knowledge-base/09-optimization.md](knowledge-base/09-optimization.md) |
-| Testing and evaluation strategies | [knowledge-base/10-testing.md](knowledge-base/10-testing.md) |
-| Ready-to-use templates | [knowledge-base/11-templates.md](knowledge-base/11-templates.md) |
-| Building skills (SKILL.md, frontmatter, testing) | [knowledge-base/12-skills.md](knowledge-base/12-skills.md) |
-| Agent teams and multi-agent orchestration | [knowledge-base/13-agent-teams.md](knowledge-base/13-agent-teams.md) |
-| Advanced tool use (search, programmatic, examples) | [knowledge-base/06-tool-use.md](knowledge-base/06-tool-use.md) |
 
 ---
 

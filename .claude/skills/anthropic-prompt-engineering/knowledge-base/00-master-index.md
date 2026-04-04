@@ -36,6 +36,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 | **11 Templates** | Ready-to-use patterns | Claude Code skills, commands, agents |
 | **12 Skills** | Building skills for Claude | SKILL.md, frontmatter, progressive disclosure, testing |
 | **13 Agent Teams** | Multi-agent orchestration | Agent teams, subagents, shared tasks, messaging |
+| **14 CLAUDE.md Architecture** | Project instruction files | File hierarchy, @include, paths:, cache boundary, memory |
 
 ---
 
@@ -75,6 +76,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 
 ### Specialist: Skills & Distribution
 12. [Building Skills](12-skills.md) - SKILL.md structure, frontmatter, testing, distribution
+13. [CLAUDE.md Architecture](14-claude-md.md) - File hierarchy, @include, paths:, cache boundary, memory
 
 ---
 

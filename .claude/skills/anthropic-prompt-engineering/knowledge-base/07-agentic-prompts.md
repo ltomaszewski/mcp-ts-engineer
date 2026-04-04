@@ -491,6 +491,30 @@ if error:
 
 ---
 
+## Post-Compaction Survival
+
+Auto-compaction fires at ~93% of context window (`effective_window - 13,000 tokens`). After compaction:
+
+| Resource | Budget |
+|----------|--------|
+| Files re-injected | Max 5 (50K token total, 5K per file) |
+| Skills re-injected | 25K token budget (5K per skill) |
+| Images | Replaced with `[image]` markers |
+| Conversation history | Summarized by Sonnet |
+
+**Design for compaction survival:**
+- Persist important state to files (CLAUDE.md, `.tmp` files), not conversation memory
+- CLAUDE.md content reloads fully after compaction — safest place for critical instructions
+- Fork-mode skill outputs are especially vulnerable (they return as conversation messages that get summarized)
+- Use todo lists and progress files for multi-step tasks spanning compaction boundaries
+
+**Warning thresholds:**
+- Warning at: `effective_window - 20,000 tokens`
+- Auto-compact at: `effective_window - 13,000 tokens` (~93%)
+- Circuit breaker: Stops after 3 consecutive compaction failures
+
+---
+
 ## Validation Checklist
 
 - [ ] System prompt defines identity, capabilities, and constraints
@@ -507,6 +531,7 @@ if error:
 - [ ] Subagent usage guidance provided (when to delegate vs work directly)
 - [ ] Multi-context-window state management defined
 - [ ] Autonomy/safety boundaries set for irreversible actions
+- [ ] Critical state persisted to files (CLAUDE.md, .tmp) for compaction survival
 
 ---
 

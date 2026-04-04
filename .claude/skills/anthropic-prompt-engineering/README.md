@@ -428,6 +428,8 @@ description: Does X when user asks to Y. Use when user mentions "Z" or "W".
 | Testing prompts | `Read .../knowledge-base/10-testing.md` |
 | Templates | `Read .../knowledge-base/11-templates.md` |
 | Building skills | `Read .../knowledge-base/12-skills.md` |
+| Agent teams | `Read .../knowledge-base/13-agent-teams.md` |
+| CLAUDE.md architecture | `Read .../knowledge-base/14-claude-md.md` |
 
 *Path prefix: `.claude/skills/anthropic-prompt-engineering`*
 

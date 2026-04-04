@@ -251,4 +251,6 @@ Agent teams use significantly more tokens than single sessions:
 
 ---
 
+**Next**: [14-claude-md.md](14-claude-md.md) - CLAUDE.md architecture, @include, memory
+
 **Source**: [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams) | [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) | [Building Agents with the Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)
