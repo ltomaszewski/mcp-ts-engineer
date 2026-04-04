@@ -16,7 +16,7 @@ when_to_use: "Use when implementing auth, managing sessions, adding social login
 
 ## When to Use
 
-LOAD THIS SKILL when user is:
+**LOAD THIS SKILL** when user is:
 - Setting up authentication in a new project (email/password, OAuth, social login)
 - Integrating Better Auth with Next.js (App Router, Server Components, middleware)
 - Implementing session management (cookies, caching, revocation)

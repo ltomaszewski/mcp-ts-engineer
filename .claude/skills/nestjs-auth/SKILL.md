@@ -6,7 +6,7 @@ when_to_use: "Use when implementing login, registration, JWT tokens, role-based 
 
 # NestJS Authentication
 
-Secure authentication and authorization for NestJS using Passport.js, JWT, and guards with refresh token rotation.
+> Secure authentication and authorization for NestJS using Passport.js, JWT, and guards with refresh token rotation.
 
 ---
 

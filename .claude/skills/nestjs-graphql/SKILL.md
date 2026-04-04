@@ -6,7 +6,7 @@ when_to_use: "Use when working with GraphQL queries, mutations, subscriptions, o
 
 # NestJS GraphQL
 
-Type-safe GraphQL APIs using code-first approach with GraphQL Yoga driver, DataLoader for N+1 prevention, and query protection.
+> Type-safe GraphQL APIs using code-first approach with GraphQL Yoga driver, DataLoader for N+1 prevention, and query protection.
 
 ---
 

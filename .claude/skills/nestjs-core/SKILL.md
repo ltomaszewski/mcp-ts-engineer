@@ -6,7 +6,7 @@ when_to_use: "Use when creating NestJS modules, services, controllers, or workin
 
 # NestJS Core
 
-Enterprise-grade Node.js framework with dependency injection, modular architecture, and TypeScript-first design.
+> Enterprise-grade Node.js framework with dependency injection, modular architecture, and TypeScript-first design.
 
 ---
 
