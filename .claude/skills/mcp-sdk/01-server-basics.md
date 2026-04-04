@@ -10,7 +10,7 @@
 npm install @modelcontextprotocol/sdk zod
 ```
 
-Zod is a required peer dependency (v3.25+). The SDK handles Zod schema conversion internally.
+Zod is a required peer dependency (v3.25+). The SDK handles Zod schema conversion internally. The SDK internally imports from `zod/v4` but maintains backward compatibility with Zod v3 shapes.
 
 ---
 
@@ -322,6 +322,66 @@ process.on("SIGTERM", async () => {
 
 ---
 
+## Extensions Capability (v1.29.0+)
+
+Servers and clients can advertise custom extensions in the capability object:
+
+```typescript
+const server = new McpServer(
+  { name: "my-server", version: "1.0.0" },
+  {
+    capabilities: {
+      logging: {},
+      extensions: {
+        "x-custom-feature": { version: "1.0" },
+      },
+    },
+  }
+);
+```
+
+Extensions let servers expose non-standard capabilities to clients that understand them, without breaking standard MCP protocol compliance.
+
+---
+
+## Express Helper (v1.29.0+)
+
+For HTTP-based servers, `createMcpExpressApp()` provides a preconfigured Express app with JSON parsing and DNS rebinding protection:
+
+```typescript
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+
+const app = createMcpExpressApp({
+  host: "127.0.0.1",          // Default; auto-enables DNS rebinding protection
+  allowedHosts: ["myapp.local"], // Optional custom allowed hosts
+});
+
+app.listen(3001, () => {
+  console.error("MCP server running on port 3001");
+});
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `host` | `string` | `"127.0.0.1"` | Hostname to bind to |
+| `allowedHosts` | `string[]` | `undefined` | Custom allowed hostnames for DNS rebinding protection |
+
+When `host` is `127.0.0.1`, `localhost`, or `::1`, DNS rebinding protection is automatically enabled. When binding to `0.0.0.0` or `::` without `allowedHosts`, a warning is logged.
+
+---
+
+## DNS Rebinding Protection Middleware
+
+For custom Express setups, use the middleware directly:
+
+```typescript
+import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
+
+app.use(hostHeaderValidation(["localhost", "127.0.0.1", "myapp.local"]));
+```
+
+---
+
 ## Package Configuration
 
 For an MCP server that runs via `node`:
@@ -360,4 +420,4 @@ For an MCP server that runs via `node`:
 
 **See Also**: [02-tools.md](02-tools.md), [03-resources.md](03-resources.md), [05-transports.md](05-transports.md)
 **Source**: https://modelcontextprotocol.io/docs/develop/build-server and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/README.md
-**Version**: 1.28.0
+**Version**: 1.29.0

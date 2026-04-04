@@ -67,6 +67,7 @@ interface ResourceMetadata {
   title?: string;            // Human-readable display name
   description?: string;      // What the resource provides
   mimeType?: string;         // MIME type of content
+  size?: number;             // Size in bytes (v1.29.0+)
 }
 ```
 
@@ -360,4 +361,4 @@ The SDK handles error propagation automatically when your handler throws.
 
 **See Also**: [02-tools.md](02-tools.md), [04-prompts.md](04-prompts.md), [01-server-basics.md](01-server-basics.md)
 **Source**: https://modelcontextprotocol.io/specification/2025-06-18/server/resources and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/src/server/mcp.ts
-**Version**: 1.28.0
+**Version**: 1.29.0

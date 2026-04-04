@@ -51,6 +51,7 @@ The `Query` object extends `AsyncGenerator<SDKMessage, void>` with additional me
 | `accountInfo()` | Get account information |
 | `getSettings()` | Get runtime-resolved settings including `applied` model and effort (v0.2.83+) |
 | `reloadPlugins()` | Reload plugins and refresh commands/agents/MCP status (v0.2.86+) |
+| `getContextUsage()` | Get context window usage breakdown by category (v0.2.86+) |
 
 ---
 
@@ -125,6 +126,7 @@ interface Options {
   env?: Dict<string>;
   stderr?: (data: string) => void;
   includePartialMessages?: boolean;  // Include stream_event messages
+  includeHookEvents?: boolean;       // Include hook lifecycle messages (v0.2.89+)
   additionalDirectories?: string[];
 }
 ```
@@ -499,7 +501,8 @@ const messages = await getSessionMessages(sessionId);
 // With pagination
 const page = await getSessionMessages(sessionId, {
   limit: 50,
-  offset: 0
+  offset: 0,
+  includeSystemMessages: true  // v0.2.89+: include system messages
 });
 
 for (const msg of page) {
@@ -552,6 +555,92 @@ query({
 
 ---
 
+## Pre-Warming: `startup()` (v0.2.89+)
+
+Pre-warm the CLI subprocess before the first `query()` call for ~20x faster first query:
+
+```typescript
+import { startup } from "@anthropic-ai/claude-agent-sdk";
+
+// Pre-warm during application initialization
+await startup();
+
+// First query is now fast — no cold start
+for await (const message of query({ prompt: "Hello" })) {
+  // ...
+}
+```
+
+Use `startup()` when startup latency matters (e.g., serverless functions, interactive CLIs).
+
+---
+
+## Subagent History (v0.2.89+)
+
+Retrieve subagent conversation history from a parent session:
+
+```typescript
+import { listSubagents, getSubagentMessages } from "@anthropic-ai/claude-agent-sdk";
+
+// List all subagent sessions from a parent session
+const subagents = await listSubagents(sessionId);
+
+for (const sub of subagents) {
+  console.log(`Subagent: ${sub.agent_id}, type: ${sub.agent_type}`);
+
+  // Read subagent conversation history
+  const messages = await getSubagentMessages(sub.session_id);
+  for (const msg of messages) {
+    console.log(msg.type, msg);
+  }
+}
+```
+
+---
+
+## Context Usage (v0.2.86+)
+
+Get a breakdown of context window usage:
+
+```typescript
+const q = query({ prompt: "...", options });
+
+// After some turns, check context usage
+const usage = await q.getContextUsage();
+console.log("Context usage:", usage);
+```
+
+---
+
+## Terminal Reason (v0.2.91+)
+
+Result messages now include an optional `terminal_reason` field that exposes why the query loop terminated:
+
+```typescript
+for await (const message of query({ prompt })) {
+  if (message.type === "result") {
+    console.log("Terminal reason:", message.terminal_reason);
+    // Values: "completed", "aborted_tools", "max_turns", "blocking_limit", etc.
+  }
+}
+```
+
+---
+
+## Sandbox Breaking Change (v0.2.91+)
+
+When `sandbox.enabled: true` is passed, `failIfUnavailable` now defaults to `true`. The query will emit an error result and exit if sandbox dependencies are missing, instead of silently running unsandboxed:
+
+```typescript
+// v0.2.91+: Will error if sandbox unavailable
+query({ prompt, options: { sandbox: { enabled: true } } })
+
+// To restore old behavior (graceful degradation):
+query({ prompt, options: { sandbox: { enabled: true, failIfUnavailable: false } } })
+```
+
+---
+
 ## Best Practices
 
 1. **Always set `maxTurns`** for automated pipelines to prevent runaway costs
@@ -565,4 +654,4 @@ query({
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

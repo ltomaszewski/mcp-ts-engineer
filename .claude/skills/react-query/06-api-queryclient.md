@@ -1,6 +1,6 @@
 # QueryClient: Cache Management API
 
-**Module:** `06-api-queryclient.md` | **Version:** 5.x (^5.90.x)
+**Module:** `06-api-queryclient.md` | **Version:** 5.96.2
 
 ---
 
@@ -537,4 +537,4 @@ const todoMutating = useIsMutating({ mutationKey: ['todos'] })
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/reference/QueryClient
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

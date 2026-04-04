@@ -170,6 +170,21 @@ app.listen(3001, () => {
 });
 ```
 
+### Express Helper (Recommended for HTTP)
+
+For quick setup with built-in DNS rebinding protection:
+
+```typescript
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+
+const app = createMcpExpressApp(); // Auto DNS-rebind protection on localhost
+app.listen(3001, () => {
+  console.error("Streamable HTTP server on port 3001");
+});
+```
+
+See [01-server-basics.md](01-server-basics.md) for `createMcpExpressApp` options.
+
 ### StreamableHTTPServerTransport Options
 
 | Option | Type | Default | Description |
@@ -268,25 +283,28 @@ class CustomTransport implements Transport {
 
 ## Security: DNS Rebinding Protection
 
-For HTTP-based transports, validate the `Origin` header to prevent DNS rebinding attacks:
+For HTTP-based transports, validate the `Host` header to prevent DNS rebinding attacks. The SDK provides built-in middleware:
 
 ```typescript
-const ALLOWED_ORIGINS = ["http://localhost:3001", "https://myapp.example.com"];
+import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
-    res.status(403).send("Forbidden");
-    return;
-  }
-  next();
-});
+// Validate Host header against allowed hostnames
+app.use(hostHeaderValidation(["localhost", "127.0.0.1", "myapp.example.com"]));
+```
+
+Or use `createMcpExpressApp()` which auto-enables protection on localhost:
+
+```typescript
+import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+
+const app = createMcpExpressApp(); // Auto DNS-rebind protection
 ```
 
 Rules:
-- Servers MUST validate the `Origin` header on all incoming connections
+- Servers MUST validate the `Host` header on all incoming connections
 - When running locally, bind to `127.0.0.1` (not `0.0.0.0`)
-- Implement proper authentication for all connections
+- Use `hostHeaderValidation()` middleware or `createMcpExpressApp()` for automatic protection
+- Implement proper authentication for all remote connections
 
 ---
 
@@ -305,4 +323,4 @@ Rules:
 
 **See Also**: [01-server-basics.md](01-server-basics.md), [06-client.md](06-client.md)
 **Source**: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports and https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.x/README.md
-**Version**: 1.28.0
+**Version**: 1.29.0

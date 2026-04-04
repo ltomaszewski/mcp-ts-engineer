@@ -168,7 +168,35 @@ const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
 ---
 
-### Issue 5: Form Resets Unexpectedly
+### Issue 5: formState.isValid Incorrect After Controller Re-mount
+
+**Symptoms:** `isValid` stays `false` after a `Controller` component unmounts and re-mounts (e.g., in conditional rendering or tab navigation).
+
+**Solution (fixed in 7.72.1):** Upgrade to `react-hook-form@7.72.1`. This version corrects the `isValid` computation when Controllers are re-mounted.
+
+```typescript
+// This pattern now works correctly in 7.72.1:
+const { control, formState: { isValid } } = useForm<FormData>({
+  mode: 'onChange',
+  defaultValues: { name: '' },
+});
+
+// Controller that conditionally mounts/unmounts
+{showField && (
+  <Controller
+    control={control}
+    name="name"
+    rules={{ required: true }}
+    render={({ field }) => <TextInput {...field} onChangeText={field.onChange} />}
+  />
+)}
+
+// isValid now correctly re-evaluates when Controller re-mounts
+```
+
+---
+
+### Issue 6: Form Resets Unexpectedly
 
 **Symptoms:** Form clears after submit, values reset randomly.
 
@@ -197,7 +225,7 @@ const onSubmit = async (data) => {
 
 ---
 
-### Issue 6: Disabled Fields Not Excluded
+### Issue 7: Disabled Fields Not Excluded
 
 **Symptoms:** Disabled fields appear in form submission.
 
@@ -220,7 +248,7 @@ const onSubmit = (data) => {
 
 ---
 
-### Issue 7: Type Errors with TypeScript
+### Issue 8: Type Errors with TypeScript
 
 **Symptoms:** Type errors when using form methods.
 
@@ -267,7 +295,7 @@ const { register } = useForm<FormData>({
 
 ---
 
-### Issue 8: Nested Field Errors Not Displayed
+### Issue 9: Nested Field Errors Not Displayed
 
 **Symptoms:** Can't access nested error messages.
 
@@ -489,4 +517,4 @@ const getCurrentValues = () => {
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/faqs
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/faqs

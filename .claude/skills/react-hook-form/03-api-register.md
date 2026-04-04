@@ -336,4 +336,4 @@ const { register, control } = useForm();
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/docs/useform/register
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/docs/useform/register

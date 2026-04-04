@@ -434,9 +434,27 @@ Sentry.wrapExpoImage(Image);
 Sentry.wrapExpoAsset(Asset);
 ```
 
+### Feedback Form Component (v8.7+)
+
+Render the feedback form inline or show it programmatically. Renamed from `FeedbackWidget` in v8.7.
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+// Inline component
+function FeedbackScreen(): React.JSX.Element {
+  return <Sentry.FeedbackForm />;
+}
+
+// Programmatic
+Sentry.showFeedbackForm();
+```
+
+**Deprecated in v8.7:** `FeedbackWidget`, `showFeedbackWidget()`, `FeedbackButton`, `showFeedbackButton()`, `hideFeedbackButton()`. Legacy names remain functional but should be migrated.
+
 ### Shake-to-Report Feedback (v8.5+)
 
-Enable the shake gesture to open the user feedback widget:
+Enable the shake gesture to open the user feedback form:
 
 ```typescript
 import * as Sentry from '@sentry/react-native';
@@ -448,6 +466,23 @@ Sentry.enableFeedbackOnShake();
 Sentry.disableFeedbackOnShake();
 ```
 
+### App Loaded Signal (v8.7+)
+
+Explicitly signal that the app has finished loading. Ends the app start span for more accurate app start measurements.
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+function App(): React.JSX.Element {
+  useEffect(() => {
+    // Signal app finished loading after initial render
+    Sentry.appLoaded();
+  }, []);
+
+  return <AppNavigator />;
+}
+```
+
 ---
 
-**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/
+**Version:** 8.7.0 | **Source:** https://docs.sentry.io/platforms/react-native/enriching-events/

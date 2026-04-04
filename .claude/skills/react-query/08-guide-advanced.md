@@ -1,6 +1,6 @@
 # Advanced Patterns & Best Practices
 
-**Module:** `08-guide-advanced.md` | **Version:** 5.x (^5.90.x)
+**Module:** `08-guide-advanced.md` | **Version:** 5.96.2
 
 ---
 
@@ -562,8 +562,9 @@ useQuery({
 | `staleTime: 0` (default) | Too many refetches | Set appropriate staleTime per query |
 | Using `onSuccess` on useQuery | Removed in v5 | Use useEffect for side effects |
 | Using `cacheTime` | Renamed in v5 | Use `gcTime` instead |
+| Queries stuck in non-browser env | Wrong server detection | Use `environmentManager.setIsServer(false)` |
 
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/guides/dependent-queries | https://tanstack.com/query/v5/docs/framework/react/guides/parallel-queries | https://tanstack.com/query/v5/docs/framework/react/guides/optimistic-updates | https://tanstack.com/query/v5/docs/framework/react/guides/migrating-to-v5
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

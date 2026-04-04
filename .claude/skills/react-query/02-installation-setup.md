@@ -1,6 +1,6 @@
 # Installation & Setup
 
-**Module:** `02-installation-setup.md` | **Version:** 5.x (^5.90.x)
+**Module:** `02-installation-setup.md` | **Version:** 5.96.2
 
 ---
 
@@ -222,6 +222,24 @@ Rules include: `exhaustive-deps` (ensure queryKey includes all queryFn variables
 
 ---
 
+## Environment Manager (v5.91+)
+
+The `environmentManager` provides explicit control over server-detection behavior. Useful for non-standard environments like browser extensions, VSCode extensions, or Electron apps where automatic detection may fail.
+
+```typescript
+import { environmentManager } from '@tanstack/react-query'
+
+// Check if running on server
+const isServer = environmentManager.isServer()
+
+// Override server detection (e.g., in browser extensions)
+environmentManager.setIsServer(false)
+```
+
+Use `setIsServer(false)` when queries fail to refetch in environments where `typeof window === 'undefined'` incorrectly returns `true` (e.g., service workers, VSCode webviews).
+
+---
+
 ## Common Setup Issues
 
 | Issue | Solution |
@@ -232,8 +250,9 @@ Rules include: `exhaustive-deps` (ensure queryKey includes all queryFn variables
 | `onSuccess` callback not working | Removed in v5 -- use `useEffect` for side effects |
 | `cacheTime` not recognized | Renamed to `gcTime` in v5 |
 | `isLoading` behaves differently | `isLoading` = `isPending && isFetching` in v5; use `isPending` for first-load check |
+| Queries don't refetch in extensions | Use `environmentManager.setIsServer(false)` for browser/VSCode extensions |
 
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/installation | https://tanstack.com/query/v5/docs/reference/QueryClient
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

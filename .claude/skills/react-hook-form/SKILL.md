@@ -1,13 +1,13 @@
 ---
 name: react-hook-form
-description: React Hook Form - useForm, Controller, validation, Zod integration. Use when building forms, handling validation, or managing form state in React Native.
+description: React Hook Form 7.72.1 - useForm, Controller, form-level validate, Zod integration. Use when building forms, handling validation, managing form state, or implementing cross-field validation in React/React Native.
 ---
 
 # React Hook Form
 
 > Performant form handling with minimal re-renders and great developer experience.
 
-**Package:** `react-hook-form` v7.71.2 | **React:** 19.1.0 | **TypeScript:** ^5.9.3
+**Package:** `react-hook-form` v7.72.1 | **React:** 19.1.0 | **TypeScript:** ^5.9.3
 
 ---
 
@@ -30,12 +30,14 @@ description: React Hook Form - useForm, Controller, validation, Zod integration.
 3. Destructure `formState: { errors }` -- access errors reactively via Proxy
 4. Use `handleSubmit` wrapper -- handles validation before calling your function
 5. Provide `defaultValues` -- prevents uncontrolled-to-controlled warnings
+6. Use form-level `validate` for cross-field validation -- new in 7.72.0, returns errors to `formState.errors`
 
 **NEVER:**
 1. Use `register` directly with React Native `TextInput` -- won't work, no ref support
 2. Call `watch()` without arguments -- causes re-render on every field change
 3. Forget to pass `control` to `Controller` -- required prop
 4. Mix controlled and uncontrolled patterns in the same form
+5. Use `setValue` with `shouldDirty` on unrelated fields -- can pollute dirty state (fixed in 7.72.1)
 
 ---
 
@@ -139,6 +141,50 @@ export function DynamicForm() {
 }
 ```
 
+### Form-Level Validation (New in 7.72.0)
+
+```typescript
+import { useForm, Controller } from 'react-hook-form';
+import { View, TextInput, Text, Pressable } from 'react-native';
+
+interface FormData {
+  password: string;
+  confirmPassword: string;
+}
+
+export function PasswordForm() {
+  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+    defaultValues: { password: '', confirmPassword: '' },
+    validate: async (data) => {
+      if (data.password !== data.confirmPassword) {
+        return {
+          values: data,
+          errors: {
+            confirmPassword: { type: 'validate', message: 'Passwords must match' },
+          },
+        };
+      }
+      return { values: data, errors: {} };
+    },
+  });
+
+  return (
+    <View>
+      <Controller control={control} name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput secureTextEntry onBlur={onBlur} onChangeText={onChange} value={value} />
+        )} />
+      <Controller control={control} name="confirmPassword"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput secureTextEntry onBlur={onBlur} onChangeText={onChange} value={value} />
+        )} />
+      {errors.confirmPassword && <Text>{errors.confirmPassword.message}</Text>}
+      <Pressable onPress={handleSubmit((data) => console.log(data))}><Text>Submit</Text></Pressable>
+    </View>
+  );
+}
+```
+
 ### FormProvider for Nested Components
 
 ```typescript
@@ -200,6 +246,7 @@ const email = useWatch({ control, name: 'email' });
 |------|-----|---------|
 | Create form | `useForm()` | `const { control, handleSubmit } = useForm()` |
 | Zod validation | `zodResolver()` | `resolver: zodResolver(schema)` |
+| Form-level validate | `validate` option | `useForm({ validate: async (data) => ({ values, errors }) })` |
 | Wrap RN input | `Controller` | `<Controller control={control} name="x" render={...} />` |
 | Submit form | `handleSubmit()` | `onPress={handleSubmit(onSubmit)}` |
 | Get errors | `formState.errors` | `formState: { errors }` |
@@ -233,4 +280,4 @@ const email = useWatch({ control, name: 'email' });
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/

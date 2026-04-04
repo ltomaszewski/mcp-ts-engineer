@@ -1,6 +1,6 @@
 # useQuery: Data Fetching Hook
 
-**Module:** `03-api-usequery.md` | **Version:** 5.x (^5.90.x)
+**Module:** `03-api-usequery.md` | **Version:** 5.96.2
 
 ---
 
@@ -304,4 +304,4 @@ function App() {
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/reference/useQuery | https://tanstack.com/query/v5/docs/framework/react/reference/useSuspenseQuery
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

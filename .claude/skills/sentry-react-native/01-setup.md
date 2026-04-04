@@ -1,6 +1,6 @@
 # Setup & Configuration - Sentry React Native
 
-Complete setup guide for @sentry/react-native v8.6.0 in React Native and Expo projects.
+Complete setup guide for @sentry/react-native v8.7.0 in React Native and Expo projects.
 
 ---
 
@@ -237,7 +237,8 @@ Use the `useNativeInit` Expo plugin option:
 |--------|------|---------|-------------|
 | `nativeInit` | boolean | `true` | Explicit control over native SDK initialization (v8.3+) |
 | `onNativeLog` | function | -- | Callback to intercept and forward native SDK logs to JavaScript (v8.3+) |
-| `enableAnrFingerprinting` | boolean | -- | Enable ANR fingerprinting on Android (v8.5+) |
+| `enableAnrFingerprinting` | boolean | `true` | Enable ANR fingerprinting on Android (v8.5+) |
+| `enableTombstone` | boolean | `false` | Enable tombstone crash reporting on Android 12+ (v8+) |
 | `captureScreenshots` | boolean | -- | Control screenshot capture behavior in mobile replay (v8.3+) |
 
 ### Logs Options (v7.7.0+)
@@ -348,17 +349,27 @@ module.exports = withSentryConfig(getDefaultConfig(__dirname), {
 
 ### New in v8
 
-| Feature | Details |
-|---------|---------|
-| Native initialization | Capture app start crashes via `sentry.options.json` |
-| Tombstone integration | Android 12+ native crash detail via `io.sentry.tombstone.enable` manifest key |
-| iOS replay filtering | `includedViewClasses` / `excludedViewClasses` |
-| Expo `useNativeInit` | Auto native init for app start error capture |
-| Minimum iOS | 15.0+ (was 11.0+) |
-| Minimum Xcode | 16.4+ |
-| Cocoa SDK | v9.1.0+ |
-| Sentry CLI | v3.1.0+ |
-| Self-hosted Sentry | 25.11.1+ |
+| Feature | Version | Details |
+|---------|---------|---------|
+| Native initialization | 8.0 | Capture app start crashes via `sentry.options.json` |
+| Tombstone integration | 8.0 | Android 12+ native crash detail via `io.sentry.tombstone.enable` manifest key |
+| iOS replay filtering | 8.0 | `includedViewClasses` / `excludedViewClasses` |
+| Expo `useNativeInit` | 8.0 | Auto native init for app start error capture |
+| `nativeInit` option | 8.3 | Explicit control over native SDK initialization |
+| `onNativeLog` callback | 8.3 | Intercept and forward native SDK logs to JavaScript |
+| `wrapExpoImage()` / `wrapExpoAsset()` | 8.4 | Instrument expo-image and expo-asset for performance |
+| Shake-to-report feedback | 8.5 | `enableFeedbackOnShake()` / `disableFeedbackOnShake()` |
+| ANR fingerprinting | 8.5 | `enableAnrFingerprinting` option on Android |
+| `expoUpdatesListenerIntegration()` | 8.5 | Expo Updates lifecycle breadcrumbs (default in Expo) |
+| `Sentry.appLoaded()` | 8.7 | Explicitly signal app finish loading for app start span |
+| `frames.delay` span data | 8.7 | Frame delay data from native SDKs on app start / TTID / TTFD spans |
+| `FeedbackForm` / `showFeedbackForm()` | 8.7 | Renamed from `FeedbackWidget` / `showFeedbackWidget()` |
+| `FeedbackButton` deprecated | 8.7 | `FeedbackButton`, `showFeedbackButton`, `hideFeedbackButton` deprecated |
+| Minimum iOS | 8.0 | 15.0+ (was 11.0+) |
+| Minimum Xcode | 8.0 | 16.4+ |
+| Cocoa SDK | 8.0 | v9.1.0+ |
+| Sentry CLI | 8.0 | v3.1.0+ |
+| Self-hosted Sentry | 8.0 | 25.11.1+ |
 
 ---
 
@@ -379,4 +390,4 @@ Check the Sentry dashboard for the event within 30 seconds.
 
 ---
 
-**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/
+**Version:** 8.7.0 | **Source:** https://docs.sentry.io/platforms/react-native/configuration/options/

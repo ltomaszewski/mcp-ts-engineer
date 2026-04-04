@@ -1,8 +1,8 @@
 # TanStack React Query v5 -- Knowledge Base
 
-> Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate.
+> Server state management with automatic caching, background refetching, deduplication, and stale-while-revalidate. Includes environmentManager for non-standard runtime environments.
 
-**Version:** 5.x (^5.90.x) | **Source:** https://tanstack.com/query/latest
+**Version:** 5.96.2 | **Source:** https://tanstack.com/query/latest
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: mcp-sdk
-version: "1.28.0"
+version: "1.29.0"
 description: Model Context Protocol SDK v1.x - MCP servers, tools, resources, prompts, transports, Zod schema validation. Use when building MCP servers, defining tools, exposing resources, creating prompts, or configuring stdio/HTTP transports.
 ---
 
@@ -30,10 +30,12 @@ description: Model Context Protocol SDK v1.x - MCP servers, tools, resources, pr
 3. Use `console.error()` for logging in stdio servers -- `console.log()` writes to stdout and corrupts JSON-RPC messages
 4. Return `{ content: [{ type: 'text', text: string }] }` from tool handlers -- this is the required `CallToolResult` format
 5. Call `await server.connect(transport)` after registering all capabilities -- connection starts the message loop
+6. Validate the `Host` header on HTTP-based servers to prevent DNS rebinding attacks -- use `hostHeaderValidation()` middleware or `createMcpExpressApp()` which auto-enables it on localhost
 
 **NEVER:**
 1. Use `console.log()` in stdio-based servers -- corrupts the JSON-RPC protocol stream, breaks the server silently
 2. Import from `@modelcontextprotocol/server` or `@modelcontextprotocol/client` in v1.x -- those are v2 package names; use `@modelcontextprotocol/sdk/server/mcp.js` and `@modelcontextprotocol/sdk/client/index.js`
+3. Pass `null` as a TTL value for resource caching -- `null` (infinite TTL) is disallowed since v1.29.0
 
 ---
 
@@ -136,12 +138,14 @@ server.tool("hello", async () => ({
 | Register resource | `server.resource()` | `server.resource("name", "uri://path", metadata, handler)` |
 | Register prompt | `server.prompt()` | `server.prompt("name", "desc", { arg: z.string() }, handler)` |
 | Connect stdio | `StdioServerTransport` | `await server.connect(new StdioServerTransport())` |
-| Connect HTTP | `SSEServerTransport` | See [05-transports.md](05-transports.md) |
+| Connect HTTP | `StreamableHTTPServerTransport` | See [05-transports.md](05-transports.md) |
+| Express helper | `createMcpExpressApp()` | Auto DNS-rebind protection, JSON parsing |
 | Resource template | `ResourceTemplate` | `new ResourceTemplate("u://{id}", { list: undefined })` |
 | Tool annotations | `ToolAnnotations` | `server.tool("name", "desc", schema, annotations, handler)` |
 | Send log | `server.server.sendLoggingMessage()` | See [01-server-basics.md](01-server-basics.md) |
-| Sampling (LLM) | `ctx.mcpReq.requestSampling()` | Request LLM completion from client inside tool handler |
-| Elicitation | `ctx.mcpReq.elicitInput()` | Request user input via structured form inside tool handler |
+| Sampling (LLM) | `extra.requestSampling()` | Request LLM completion from client inside tool handler |
+| Elicitation | `extra.elicitInput()` | Request user input via structured form inside tool handler |
+| Extensions | `capabilities.extensions` | Servers/clients advertise custom extensions |
 | Close server | `server.close()` | `await server.close()` |
 
 ---
@@ -164,8 +168,16 @@ Load additional context when needed:
 
 ### v2 Migration Note
 
-A stable v2 release is anticipated in Q1 2026 with separate packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/client`). Until then, v1.x remains the recommended version for production use. v1.x will continue to receive bug fixes and security updates for at least 6 months after v2 ships. For v1.x, continue using `@modelcontextprotocol/sdk` as the single package import.
+v2 alpha releases began April 2026 (`@modelcontextprotocol/server@2.0.0-alpha.2`). Key v2 changes: separate packages (`@modelcontextprotocol/server`, `@modelcontextprotocol/client`), Standard Schema support (Zod v4, Valibot, ArkType), error handling realigned with MCP spec (unknown tools return JSON-RPC `-32602`), and deprecated method signatures removed. Until v2 stabilizes, v1.x remains recommended for production. For v1.x, continue using `@modelcontextprotocol/sdk` as the single package import.
+
+### v1.29.0 Notable Changes
+
+- **Extensions capability**: Servers and clients can advertise custom extensions in the capability object
+- **Resource `size` field**: `ResourceSchema` now includes an optional `size` field
+- **Windows stdio fix**: `windowsHide` always set on Windows (not just Electron)
+- **Null TTL disallowed**: `null` (infinite) requested TTL is now rejected
+- **TypeScript type exports**: Improved re-exported types from package root
 
 ---
 
-**Version:** 1.28.0 | **Source:** https://modelcontextprotocol.io/ and https://github.com/modelcontextprotocol/typescript-sdk
+**Version:** 1.29.0 | **Source:** https://modelcontextprotocol.io/ and https://github.com/modelcontextprotocol/typescript-sdk

@@ -183,6 +183,29 @@ if (span) {
 
 ---
 
+## App Loaded Signal (v8.7+)
+
+Explicitly mark when the app has finished loading. This ends the app start span for accurate timing.
+
+```typescript
+import * as Sentry from '@sentry/react-native';
+import { useEffect } from 'react';
+
+function App(): React.JSX.Element {
+  useEffect(() => {
+    Sentry.appLoaded();
+  }, []);
+
+  return <AppNavigator />;
+}
+```
+
+### Frames Delay Data (v8.7+)
+
+Starting in v8.7, `frames.delay` span data from native SDKs is automatically attached to app start, TTID/TTFD, and JavaScript API spans. This provides visibility into UI thread frame drops that contribute to perceived slowness.
+
+---
+
 ## Utility Functions
 
 | Function | Purpose | Example |
@@ -387,4 +410,4 @@ Sentry.init({
 
 ---
 
-**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/
+**Version:** 8.7.0 | **Source:** https://docs.sentry.io/platforms/react-native/tracing/instrumentation/custom-instrumentation/

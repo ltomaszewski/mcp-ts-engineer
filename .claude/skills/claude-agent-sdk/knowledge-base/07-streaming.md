@@ -41,17 +41,19 @@ Handle real-time responses and multi-turn conversations.
 
 ## Basic Streaming
 
+Requires `includePartialMessages: true` in options. In v0.2+, streaming messages use `type: "stream_event"` (not the old `type: "partial"`).
+
 ```typescript
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
 for await (const message of query({
   prompt: "Explain quantum computing",
-  options: { model: "sonnet" }
+  options: { model: "sonnet", includePartialMessages: true }
 })) {
-  if (message.type === "partial") {
+  if (message.type === "stream_event") {
     // Streaming text
-    if (message.delta.text) {
-      process.stdout.write(message.delta.text);
+    if (message.event.delta.text) {
+      process.stdout.write(message.event.delta.text);
     }
   } else if (message.type === "assistant") {
     // Complete message
@@ -64,17 +66,23 @@ for await (const message of query({
 
 ---
 
-## SDKPartialAssistantMessage
+## SDKStreamEventMessage (v0.2+)
+
+> **v0.2 Migration**: Type changed from `"partial"` to `"stream_event"`. The old `SDKPartialAssistantMessage` with `type: "partial"` is replaced.
 
 ```typescript
-type SDKPartialAssistantMessage = {
-  type: "partial";
+type SDKStreamEventMessage = {
+  type: "stream_event";
   uuid: UUID;
   session_id: string;
-  delta: {
-    type: "text_delta" | "input_json_delta";
-    text?: string;           // For text content
-    partial_json?: string;   // For tool input JSON
+  event: {
+    type: "content_block_delta";
+    index: number;
+    delta: {
+      type: "text_delta" | "input_json_delta";
+      text?: string;           // For text content
+      partial_json?: string;   // For tool input JSON
+    };
   };
 }
 ```
@@ -88,15 +96,15 @@ let fullText = "";
 let currentToolInput = "";
 
 for await (const message of query({ prompt })) {
-  if (message.type === "partial") {
-    switch (message.delta.type) {
+  if (message.type === "stream_event") {
+    switch (message.event.delta.type) {
       case "text_delta":
-        fullText += message.delta.text ?? "";
-        process.stdout.write(message.delta.text ?? "");
+        fullText += message.event.delta.text ?? "";
+        process.stdout.write(message.event.delta.text ?? "");
         break;
 
       case "input_json_delta":
-        currentToolInput += message.delta.partial_json ?? "";
+        currentToolInput += message.event.delta.partial_json ?? "";
         break;
     }
   }
@@ -125,12 +133,12 @@ const state: StreamState = {
 for await (const message of query({ prompt, options })) {
   switch (message.type) {
     case "partial":
-      if (message.delta.text) {
-        state.text += message.delta.text;
-        process.stdout.write(message.delta.text);
+      if (message.event.delta.text) {
+        state.text += message.event.delta.text;
+        process.stdout.write(message.event.delta.text);
       }
-      if (message.delta.partial_json) {
-        state.toolInput += message.delta.partial_json;
+      if (message.event.delta.partial_json) {
+        state.toolInput += message.event.delta.partial_json;
       }
       break;
 
@@ -196,8 +204,8 @@ for await (const message of query({
   prompt: userMessages(),  // AsyncIterable instead of string
   options: { model: "sonnet" }
 })) {
-  if (message.type === "partial" && message.delta.text) {
-    process.stdout.write(message.delta.text);
+  if (message.type === "stream_event" && message.event.delta.text) {
+    process.stdout.write(message.event.delta.text);
   }
 }
 ```
@@ -256,8 +264,8 @@ for await (const message of query({
   prompt: interactiveInput(),
   options: { model: "sonnet" }
 })) {
-  if (message.type === "partial" && message.delta.text) {
-    process.stdout.write(message.delta.text);
+  if (message.type === "stream_event" && message.event.delta.text) {
+    process.stdout.write(message.event.delta.text);
   } else if (message.type === "assistant") {
     console.log(); // Newline after response
     process.stdout.write("You: ");
@@ -287,16 +295,16 @@ const progress: Progress = {
 };
 
 for await (const message of query({ prompt })) {
-  if (message.type === "partial" && message.delta.text) {
+  if (message.type === "stream_event" && message.event.delta.text) {
     progress.chunks++;
-    progress.characters += message.delta.text.length;
+    progress.characters += message.event.delta.text.length;
 
     // Update progress display
     process.stderr.write(
       `\r[Chunks: ${progress.chunks}, Chars: ${progress.characters}]`
     );
 
-    process.stdout.write(message.delta.text);
+    process.stdout.write(message.event.delta.text);
   }
 
   if (message.type === "assistant") {
@@ -327,8 +335,8 @@ const BUFFER_SIZE = 10; // chars
 let buffer = "";
 
 for await (const message of query({ prompt })) {
-  if (message.type === "partial" && message.delta.text) {
-    buffer += message.delta.text;
+  if (message.type === "stream_event" && message.event.delta.text) {
+    buffer += message.event.delta.text;
 
     // Flush when buffer is full or on word boundary
     if (buffer.length >= BUFFER_SIZE || buffer.endsWith(" ")) {
@@ -370,8 +378,8 @@ function useStreamingChat() {
       prompt,
       options: { model: "sonnet" }
     })) {
-      if (message.type === "partial" && message.delta.text) {
-        response += message.delta.text;
+      if (message.type === "stream_event" && message.event.delta.text) {
+        response += message.event.delta.text;
         setCurrentResponse(response);
       }
 
@@ -398,9 +406,9 @@ for message in query(
     prompt="Explain machine learning",
     options={"model": "sonnet"}
 ):
-    if message.type == "partial":
-        if hasattr(message.delta, "text") and message.delta.text:
-            print(message.delta.text, end="", flush=True)
+    if message.type == "stream_event":
+        if hasattr(message.event.delta, "text") and message.event.delta.text:
+            print(message.event.delta.text, end="", flush=True)
 
     elif message.type == "assistant":
         print()  # Newline after response
@@ -417,8 +425,8 @@ for message in query(
 
 ```typescript
 // Good - handles streaming
-if (message.type === "partial" && message.delta.text) {
-  process.stdout.write(message.delta.text);
+if (message.type === "stream_event" && message.event.delta.text) {
+  process.stdout.write(message.event.delta.text);
 }
 
 // Bad - only handles complete messages (misses streaming)
@@ -443,8 +451,8 @@ setCurrentResponse(prev => prev + text); // Immediate state update
 let streamedText = "";
 
 for await (const message of query({ prompt })) {
-  if (message.type === "partial" && message.delta.text) {
-    streamedText += message.delta.text;
+  if (message.type === "stream_event" && message.event.delta.text) {
+    streamedText += message.event.delta.text;
     // Show streaming
   }
 
@@ -468,4 +476,4 @@ q.interrupt();
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

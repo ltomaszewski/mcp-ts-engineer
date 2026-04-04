@@ -183,6 +183,45 @@ expect(errors).toHaveLength(0);
 
 **Warning:** `validateSync` silently ignores async validators (e.g., database-checking custom validators). Always use `validate()` if async validators exist.
 
+## Testing Per-Decorator validateIf (0.15+)
+
+```typescript
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+import { IsNotEmpty, IsNumber, Min } from 'class-validator';
+
+class ShippingDto {
+  type: 'standard' | 'pickup';
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0, { validateIf: (o) => o.type !== 'pickup' })
+  weight: number;
+}
+
+describe('ShippingDto (validateIf)', () => {
+  it('should enforce Min when type is standard', async () => {
+    const dto = plainToInstance(ShippingDto, {
+      type: 'standard',
+      weight: -1,
+    });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'weight')).toBe(true);
+  });
+
+  it('should skip Min when type is pickup', async () => {
+    const dto = plainToInstance(ShippingDto, {
+      type: 'pickup',
+      weight: -1,
+    });
+    const errors = await validate(dto);
+    // @Min is skipped, but @IsNotEmpty and @IsNumber still run
+    const weightError = errors.find((e) => e.property === 'weight');
+    expect(weightError?.constraints).not.toHaveProperty('min');
+  });
+});
+```
+
 ---
 
-**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1 | **Source:** https://github.com/typestack/class-validator

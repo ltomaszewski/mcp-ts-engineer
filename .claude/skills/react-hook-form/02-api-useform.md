@@ -50,6 +50,7 @@ export function MyForm() {
 | `delayError` | `number` | `undefined` | Delay error display in ms |
 | `disabled` | `boolean` | `false` | Disable all form fields |
 | `resolver` | `Resolver` | `undefined` | External validation resolver (Zod, Yup, etc.) |
+| `validate` | `(data: TFieldValues) => Promise<{ values: TFieldValues; errors: FieldErrors }> \| { values: TFieldValues; errors: FieldErrors }` | `undefined` | Form-level validation function (new in 7.72.0) |
 
 ---
 
@@ -151,6 +152,52 @@ const { control } = useForm<z.infer<typeof schema>>({
 
 ---
 
+### validate: Form-Level Validation (New in 7.72.0)
+
+Enables form-level validation directly in `useForm`. The function receives the entire form data and must return an object with `values` and `errors` properties. Errors are merged into `formState.errors`.
+
+```typescript
+import { useForm } from 'react-hook-form';
+
+interface CheckoutData {
+  startDate: string;
+  endDate: string;
+  quantity: number;
+  maxQuantity: number;
+}
+
+const { control, handleSubmit, formState: { errors } } = useForm<CheckoutData>({
+  defaultValues: { startDate: '', endDate: '', quantity: 0, maxQuantity: 10 },
+  validate: async (data) => {
+    const errors: Record<string, { type: string; message: string }> = {};
+
+    if (data.endDate && data.startDate && new Date(data.endDate) <= new Date(data.startDate)) {
+      errors.endDate = { type: 'validate', message: 'End date must be after start date' };
+    }
+    if (data.quantity > data.maxQuantity) {
+      errors.quantity = { type: 'validate', message: `Max quantity is ${data.maxQuantity}` };
+    }
+
+    return {
+      values: Object.keys(errors).length === 0 ? data : {},
+      errors,
+    };
+  },
+});
+
+// Access form-level errors via formState.errors
+// errors.endDate?.message, errors.quantity?.message
+```
+
+**Key behavior:**
+- The `validate` function is cached and re-invoked per field during user interaction
+- Parent-level error checking is limited to the direct parent level (useful for group checkboxes)
+- Returns `{ values, errors }` -- both default to `{}` when empty
+- Can be async for server-side cross-field validation
+- Works alongside `resolver` (resolver runs first, then `validate`)
+
+---
+
 ### delayError: Delayed Error Display
 
 ```typescript
@@ -221,6 +268,8 @@ const onError: SubmitErrorHandler<FormData> = (errors) => console.log(errors);
 ```typescript
 setValue('email', 'test@example.com', { shouldValidate: true, shouldDirty: true });
 ```
+
+**7.72.1 fix:** `setValue` with `shouldDirty: true` no longer pollutes unrelated dirty fields. Previously, calling `setValue('fieldA', value, { shouldDirty: true })` could incorrectly mark other fields as dirty.
 
 ---
 
@@ -328,4 +377,4 @@ if (!isReady) return null;
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/docs/useform
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/docs/useform

@@ -377,8 +377,11 @@ export const startInactiveSpan = jest.fn(() => ({
 }));
 export const getActiveSpan = jest.fn();
 export const flush = jest.fn();
+export const appLoaded = jest.fn();
+export const showFeedbackForm = jest.fn();
 
 export const ErrorBoundary = ({ children }: { children: React.ReactNode }) => children;
+export const FeedbackForm = ({ children }: { children?: React.ReactNode }) => children ?? null;
 export const reactNavigationIntegration = jest.fn(() => ({
   registerNavigationContainer: jest.fn(),
 }));
@@ -470,4 +473,4 @@ This requires native initialization via `sentry.options.json` or the Expo `useNa
 
 ---
 
-**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/
+**Version:** 8.7.0 | **Source:** https://docs.sentry.io/platforms/react-native/

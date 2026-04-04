@@ -1,6 +1,6 @@
 # useMutation: Data Mutation Hook
 
-**Module:** `04-api-usemutation.md` | **Version:** 5.x (^5.90.x)
+**Module:** `04-api-usemutation.md` | **Version:** 5.96.2
 
 ---
 
@@ -346,4 +346,4 @@ const mutation = useMutation<
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/reference/useMutation | https://tanstack.com/query/v5/docs/framework/react/guides/mutations | https://tanstack.com/query/v5/docs/react/reference/useMutationState
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

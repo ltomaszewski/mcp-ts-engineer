@@ -522,14 +522,95 @@ export function LoginWithServerErrors() {
 
 ---
 
+## Pattern 7: Form-Level Validation (New in 7.72.0)
+
+```typescript
+import { useForm, SubmitHandler } from 'react-hook-form';
+
+interface BookingData {
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  rooms: number;
+}
+
+export function BookingForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<BookingData>({
+    defaultValues: { checkIn: '', checkOut: '', guests: 1, rooms: 1 },
+    validate: (data) => {
+      const errs: Record<string, { type: string; message: string }> = {};
+
+      if (data.checkIn && data.checkOut) {
+        if (new Date(data.checkOut) <= new Date(data.checkIn)) {
+          errs.checkOut = { type: 'validate', message: 'Check-out must be after check-in' };
+        }
+      }
+      if (data.guests > data.rooms * 4) {
+        errs.guests = { type: 'validate', message: `Max ${data.rooms * 4} guests for ${data.rooms} rooms` };
+      }
+
+      return {
+        values: Object.keys(errs).length === 0 ? data : {},
+        errors: errs,
+      };
+    },
+  });
+
+  const onSubmit: SubmitHandler<BookingData> = (data) => {
+    console.log('Booking:', data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <label>Check-in</label>
+        <input {...register('checkIn', { required: 'Check-in required' })} type="date" />
+        {errors.checkIn && <p>{errors.checkIn.message}</p>}
+      </div>
+
+      <div>
+        <label>Check-out</label>
+        <input {...register('checkOut', { required: 'Check-out required' })} type="date" />
+        {errors.checkOut && <p>{errors.checkOut.message}</p>}
+      </div>
+
+      <div>
+        <label>Guests</label>
+        <input {...register('guests', { valueAsNumber: true, min: 1 })} type="number" />
+        {errors.guests && <p>{errors.guests.message}</p>}
+      </div>
+
+      <div>
+        <label>Rooms</label>
+        <input {...register('rooms', { valueAsNumber: true, min: 1 })} type="number" />
+      </div>
+
+      <button type="submit">Book</button>
+    </form>
+  );
+}
+```
+
+**When to use form-level `validate` vs `resolver`:**
+- Use `validate` for simple cross-field checks without an external library
+- Use `resolver` (Zod/Yup) when you need full schema type inference and complex nested validation
+- Both can be used together -- `resolver` runs first, then `validate`
+
+---
+
 ## Cross-References
 
 - **Multi-step validation:** See `04-api-advanced-methods.md` (trigger)
 - **Dynamic fields:** See `04-api-advanced-methods.md` (useFieldArray)
 - **Conditional logic:** See `04-api-advanced-methods.md` (watch)
+- **Form-level validate API:** See `02-api-useform.md` (validate option)
 - **Best practices:** See `09-best-practices.md`
 - **Troubleshooting:** See `10-troubleshooting-faq.md`
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/form-builder
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/form-builder

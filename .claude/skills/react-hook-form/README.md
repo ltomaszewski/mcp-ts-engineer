@@ -1,4 +1,4 @@
-# React Hook Form 7.71.2 - Modular Knowledge Base
+# React Hook Form 7.72.1 - Modular Knowledge Base
 
 > Performant, flexible, and extensible forms with easy-to-use validation. LLM-optimized modular architecture for context efficiency.
 
@@ -98,11 +98,12 @@ const schema = yup.object({ email: yup.string().email() });
 const { register } = useForm({ resolver: yupResolver(schema) });
 ```
 
-### Three Key APIs
+### Four Key APIs
 
 1. **register()** — Connect HTML inputs to form state
 2. **handleSubmit()** — Wrapper for form submission with validation
 3. **formState** — Read-only form metadata (errors, isDirty, isSubmitting, etc.)
+4. **validate** (7.72.0+) — Form-level validation option on `useForm` for cross-field checks
 
 ---
 
@@ -226,7 +227,7 @@ const { register } = useForm({ resolver: yupResolver(schema) });
 
 ## Version & Compatibility
 
-- **React Hook Form Version:** 7.71.2 (latest 7.x)
+- **React Hook Form Version:** 7.72.1 (latest 7.x)
 - **React Versions:** 16.8+ (hooks required)
 - **TypeScript Support:** Full (3.5+)
 - **Bundle Size:** ~8.5kb gzipped
@@ -234,4 +235,4 @@ const { register } = useForm({ resolver: yupResolver(schema) });
 
 ---
 
-**Last Updated:** February 2026 | **Status:** Complete with official documentation alignment | **Content:** 11 self-contained modules
+**Last Updated:** April 2026 | **Status:** Complete with official documentation alignment | **Content:** 11 self-contained modules

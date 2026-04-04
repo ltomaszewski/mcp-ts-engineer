@@ -120,4 +120,4 @@ export class UserDto {
 
 ---
 
-**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1 | **Source:** https://github.com/typestack/class-validator

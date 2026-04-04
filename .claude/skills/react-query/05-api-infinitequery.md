@@ -1,6 +1,6 @@
 # useInfiniteQuery: Pagination & Infinite Scroll
 
-**Module:** `05-api-infinitequery.md` | **Version:** 5.x (^5.90.x)
+**Module:** `05-api-infinitequery.md` | **Version:** 5.96.2
 
 ---
 
@@ -267,4 +267,4 @@ refetch({
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/reference/useInfiniteQuery | https://tanstack.com/query/v5/docs/framework/react/guides/infinite-queries
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

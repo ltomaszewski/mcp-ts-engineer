@@ -1,6 +1,6 @@
 ---
 name: sentry-react-native
-version: "8.6.0"
+version: "8.7.0"
 description: "@sentry/react-native v8 - error monitoring, crash reporting, performance tracing, session replay, native initialization, breadcrumbs, navigation instrumentation. Use when integrating Sentry, capturing errors, configuring performance monitoring, setting up error boundaries, or enabling native app start crash capture."
 ---
 
@@ -35,6 +35,8 @@ Error monitoring, crash reporting, and performance tracing for React Native and 
 6. Upload source maps for every release -- without them stack traces are unreadable
 7. Use `captureFeedback()` instead of removed `captureUserFeedback()` -- old API removed in v7+
 8. Use `enableAutoSessionTracking` instead of removed `autoSessionTracking` -- renamed in v7+
+9. Use `FeedbackForm` / `showFeedbackForm()` instead of deprecated `FeedbackWidget` / `showFeedbackWidget()` -- renamed in v8.7+
+10. Call `Sentry.appLoaded()` when app is ready to mark end of app start span (v8.7+)
 
 **NEVER:**
 1. Capture exceptions without context -- useless for debugging
@@ -43,6 +45,8 @@ Error monitoring, crash reporting, and performance tracing for React Native and 
 4. Forget to call `Sentry.flush()` before app backgrounds -- pending events may be lost
 5. Initialize Sentry inside a component render -- causes re-initialization on every render
 6. Use `captureUserFeedback()` -- removed in v7, replaced by `captureFeedback()`
+7. Use `FeedbackWidget` / `showFeedbackWidget()` -- deprecated in v8.7, use `FeedbackForm` / `showFeedbackForm()`
+8. Use `FeedbackButton` / `showFeedbackButton()` -- deprecated in v8.7
 
 ---
 
@@ -168,6 +172,18 @@ Sentry.captureUserFeedback({ name, email, comments, event_id });
 Sentry.captureFeedback({ name, email, message, associatedEventId });
 ```
 
+**BAD** -- Using deprecated widget names (v8.7+):
+```typescript
+<Sentry.FeedbackWidget />
+Sentry.showFeedbackWidget();
+```
+
+**GOOD** -- Using current form names:
+```typescript
+<Sentry.FeedbackForm />
+Sentry.showFeedbackForm();
+```
+
 ---
 
 ## Quick Reference
@@ -187,8 +203,11 @@ Sentry.captureFeedback({ name, email, message, associatedEventId });
 | `withScope()` | Isolated context | `Sentry.withScope(scope => {...})` |
 | `startSpan()` | Performance span | `Sentry.startSpan({ name }, callback)` |
 | `flush()` | Send pending events | `await Sentry.flush(2000)` |
+| `appLoaded()` | Signal app finish loading (v8.7+) | `Sentry.appLoaded()` |
 | `enableFeedbackOnShake()` | Shake-to-report feedback (v8.5+) | `Sentry.enableFeedbackOnShake()` |
 | `disableFeedbackOnShake()` | Stop shake listener | `Sentry.disableFeedbackOnShake()` |
+| `FeedbackForm` | Feedback form component (v8.7+) | `<Sentry.FeedbackForm />` |
+| `showFeedbackForm()` | Show feedback form (v8.7+) | `Sentry.showFeedbackForm()` |
 | `wrapExpoImage()` | Instrument expo-image (v8.4+) | `Sentry.wrapExpoImage(Image)` |
 | `wrapExpoAsset()` | Instrument expo-asset (v8.4+) | `Sentry.wrapExpoAsset(Asset)` |
 | `expoUpdatesListenerIntegration()` | Expo Updates breadcrumbs (v8.5+) | Enabled by default in Expo apps |
@@ -205,4 +224,4 @@ Sentry.captureFeedback({ name, email, message, associatedEventId });
 | ErrorBoundary, offline events, testing, fingerprinting | [04-advanced.md](04-advanced.md) |
 
 ---
-**Version:** 8.6.0 | **Source:** https://docs.sentry.io/platforms/react-native/
+**Version:** 8.7.0 | **Source:** https://docs.sentry.io/platforms/react-native/

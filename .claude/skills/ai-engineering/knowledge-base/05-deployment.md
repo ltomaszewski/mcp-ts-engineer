@@ -327,6 +327,27 @@ class MetricsCollector {
 
 ---
 
+## Pre-Warming (v0.2.89+)
+
+For latency-sensitive deployments, pre-warm the CLI subprocess at application startup:
+
+```typescript
+import { startup } from "@anthropic-ai/claude-agent-sdk";
+
+// In server initialization
+async function initializeAgent(): Promise<void> {
+  await startup();  // ~20x faster first query
+  console.log("Agent runtime pre-warmed");
+}
+```
+
+This is especially valuable for:
+- **Serverless functions**: Warm start in init phase
+- **API servers**: Warm on startup, not on first request
+- **CI/CD**: Warm before running eval suite
+
+---
+
 ## Error Handling
 
 ### Graceful Degradation
@@ -450,4 +471,4 @@ async function retryAgent(
 
 ---
 
-**Version:** SDK ~0.2.86 | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview
+**Version:** SDK 0.2.92 | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

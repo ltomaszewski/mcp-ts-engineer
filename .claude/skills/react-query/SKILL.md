@@ -1,5 +1,6 @@
 ---
 name: react-query
+version: "5.96.2"
 description: "@tanstack/react-query v5 server state management - useQuery, useMutation, useInfiniteQuery, useSuspenseQuery, QueryClient, queryOptions, caching, invalidation, optimistic updates. Use when fetching API data, managing server state, implementing pagination, or cache management."
 ---
 
@@ -202,6 +203,7 @@ useEffect(() => {
 | Mutation state | `useMutationState` | `useMutationState({ filters: { mutationKey } })` |
 | Fetching count | `useIsFetching` | `const count = useIsFetching()` |
 | Mutating count | `useIsMutating` | `const count = useIsMutating()` |
+| Server detection | `environmentManager` | `environmentManager.setIsServer(false)` |
 
 ---
 
@@ -220,4 +222,4 @@ useEffect(() => {
 
 ---
 
-**Version:** 5.x (^5.90.x) | **Source:** https://tanstack.com/query/latest
+**Version:** 5.96.2 | **Source:** https://tanstack.com/query/latest

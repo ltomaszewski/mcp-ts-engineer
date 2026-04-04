@@ -1,7 +1,7 @@
 ---
 name: class-validator
-version: "0.14.x"
-description: Data validation and transformation with class-validator and class-transformer - DTOs, ValidationPipe, custom validators, nested validation. Use when creating DTOs, adding input validation, or transforming data.
+version: "0.15.1"
+description: Data validation and transformation with class-validator and class-transformer - DTOs, ValidationPipe, custom validators, nested validation, per-decorator validateIf. Use when creating DTOs, adding input validation, or transforming data.
 ---
 
 # class-validator
@@ -19,6 +19,7 @@ description: Data validation and transformation with class-validator and class-t
 - Implementing nested object or array validation
 - Creating custom validators
 - Transforming input data with @Transform or @Type
+- Using per-decorator conditional validation (`validateIf` option)
 
 ---
 
@@ -39,12 +40,28 @@ description: Data validation and transformation with class-validator and class-t
 
 ---
 
+## What's New in 0.15.x
+
+| Feature | Description |
+|---------|-------------|
+| `validateIf` option | Per-decorator conditional validation via `ValidationOptions` — more granular than `@ValidateIf` which toggles all validators on a property |
+| `@IsISO6391()` | Validates ISO 639-1 language codes (e.g., `"en"`, `"fr"`) |
+| `@IsISO31661Numeric()` | Validates ISO 3166-1 numeric country codes (e.g., `"840"`, `"076"`) |
+| `@IsUUID()` extended | Now supports versions 1-8, `"nil"`, `"max"`, and `"all"` |
+| `@IsIBAN(options?)` | Now accepts `IsIBANOptions` parameter for configurable validation |
+| `@IsBase64(options?)` | Now accepts `IsBase64Options` parameter |
+
+---
+
 ## Core Patterns
 
 ### Global ValidationPipe Setup
 
 ```typescript
 // main.ts
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
+
 app.useGlobalPipes(new ValidationPipe({
   whitelist: true,
   forbidNonWhitelisted: true,
@@ -66,7 +83,7 @@ app.useGlobalPipes(new ValidationPipe({
 ```typescript
 import {
   IsString, IsEmail, IsOptional, IsNotEmpty,
-  IsInt, Min, Max, Length, Matches, IsEnum,
+  IsInt, Min, Max, Length, Matches, IsEnum, MaxLength,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -98,10 +115,33 @@ export class CreateUserDto {
 }
 ```
 
+### Per-Decorator Conditional Validation (0.15+)
+
+```typescript
+import { IsString, IsNotEmpty, Min } from 'class-validator';
+
+export class CreateItemDto {
+  @IsString()
+  type: 'physical' | 'digital';
+
+  // Only validate weight when type is 'physical' — per-decorator granularity
+  @Min(0, {
+    validateIf: (o) => o.type === 'physical',
+    message: 'Physical items must have a non-negative weight',
+  })
+  weight: number;
+
+  // @IsNotEmpty always runs, but @Min only when type is 'physical'
+  @IsNotEmpty()
+  @Min(1, { validateIf: (o) => o.type === 'physical' })
+  quantity: number;
+}
+```
+
 ### Nested Object Validation
 
 ```typescript
-import { ValidateNested, IsArray } from 'class-validator';
+import { ValidateNested, IsArray, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AddressDto {
@@ -135,6 +175,7 @@ export class CreateOrderDto {
 
 ```typescript
 import { Transform, Type } from 'class-transformer';
+import { IsString, IsEmail, IsDate, IsArray } from 'class-validator';
 
 export class QueryDto {
   // Trim whitespace
@@ -226,6 +267,9 @@ bio?: string;
 | Array of strings | `@IsArray() @IsString({ each: true })` | `tags: string[]` |
 | Trim input | `@Transform(({ value }) => value?.trim())` | Removes whitespace |
 | Parse date | `@Type(() => Date)` | Converts string to Date |
+| Language code | `@IsISO6391()` | `lang: string` (0.15+) |
+| Country code | `@IsISO31661Numeric()` | `countryCode: string` (0.15+) |
+| Per-decorator condition | `validateIf` in options | `@Min(0, { validateIf: (o) => ... })` (0.15+) |
 
 ---
 
@@ -250,4 +294,4 @@ Load additional context when needed:
 
 ---
 
-**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1 | **Source:** https://github.com/typestack/class-validator

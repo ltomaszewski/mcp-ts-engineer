@@ -348,4 +348,4 @@ prompt();
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

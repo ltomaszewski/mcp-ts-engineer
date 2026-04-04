@@ -1,6 +1,6 @@
 # Query Keys: Design & Patterns
 
-**Module:** `07-guide-query-keys.md` | **Version:** 5.x (^5.90.x)
+**Module:** `07-guide-query-keys.md` | **Version:** 5.96.2
 
 ---
 
@@ -343,4 +343,4 @@ queryClient.invalidateQueries({ queryKey: userQueries.detail(id).queryKey })
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/guides/query-keys | https://tanstack.com/query/v5/docs/framework/react/guides/query-options | https://tanstack.com/query/v5/docs/framework/react/guides/query-invalidation
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

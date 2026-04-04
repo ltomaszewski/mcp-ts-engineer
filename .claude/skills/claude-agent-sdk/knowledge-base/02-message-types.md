@@ -132,6 +132,7 @@ type SDKResultMessage = {
   structured_output?: unknown;
   model?: string;                  // v0.2: model used
   permission_denials?: number;     // v0.2: count of denied permissions
+  terminal_reason?: string;        // v0.2.91+: why query loop terminated
 }
 ```
 
@@ -147,6 +148,17 @@ type SDKResultMessage = {
 | `"interrupted"` | User or system interrupted |
 
 > **v0.2 Note**: Subtypes were refined. `"error"` split into `"error_during_execution"`, `"error_max_turns"`, `"error_budget"`, `"error_timeout"` for more granular error handling.
+
+### Terminal Reasons (v0.2.91+)
+
+The `terminal_reason` field provides more specific loop termination info:
+
+| Reason | Meaning |
+|--------|---------|
+| `"completed"` | Normal completion |
+| `"aborted_tools"` | Tool execution was aborted |
+| `"max_turns"` | Hit max turns limit |
+| `"blocking_limit"` | Blocked by permission limits |
 
 ### Handling Result Messages
 
@@ -405,4 +417,4 @@ for await (const message of query({ prompt })) {
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

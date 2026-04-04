@@ -70,6 +70,19 @@ bootstrap();
 | `skipMissingProperties` | `boolean` | `false` | Skip validation of missing properties |
 | `forbidUnknownValues` | `boolean` | `true` | Reject unknown objects |
 
+## ValidationOptions Interface (Per-Decorator)
+
+Every decorator accepts a `ValidationOptions` object:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `each` | `boolean` | `false` | Validate each element in array/Set/Map |
+| `message` | `string \| ((args: ValidationArguments) => string)` | auto | Custom error message (string or function) |
+| `groups` | `string[]` | `undefined` | Validation groups for this decorator |
+| `always` | `boolean` | `false` | Validate regardless of active groups |
+| `context` | `any` | `undefined` | Transient data passed to validation result |
+| `validateIf` | `(object: any, value: any) => boolean` | `undefined` | Per-decorator conditional — runs this validator only when callback returns `true` **(0.15+)** |
+
 ## validate() Options (Standalone)
 
 | Option | Type | Default | Description |
@@ -83,6 +96,14 @@ bootstrap();
 | `validationError.value` | `boolean` | `true` | Include value in error |
 | `forbidUnknownValues` | `boolean` | `true` | Reject unknown objects |
 | `stopAtFirstError` | `boolean` | `false` | Stop at first error |
+
+## Validation Functions (Standalone)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `validate(object, options?)` | `Promise<ValidationError[]>` | Async validation |
+| `validateOrReject(object, options?)` | `Promise<void>` | Rejects promise on failure |
+| `validateSync(object, options?)` | `ValidationError[]` | Sync — silently ignores async validators |
 
 ## Enable DI for Custom Validators
 
@@ -129,4 +150,4 @@ export class UsersController {
 
 ---
 
-**Version:** class-validator 0.14.x, class-transformer 0.5.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1, class-transformer 0.5.x | **Source:** https://github.com/typestack/class-validator

@@ -197,4 +197,4 @@ export class UserDto {
 
 ---
 
-**Version:** class-transformer 0.5.x | **Source:** https://github.com/typestack/class-transformer
+**Version:** class-transformer 0.5.x, class-validator 0.15.1 | **Source:** https://github.com/typestack/class-transformer

@@ -52,13 +52,95 @@ export class CreateUserDto {
 
 ## @ValidateNested Options
 
+All `ValidationOptions` properties apply, including the new `validateIf` (0.15+):
+
 | Option | Type | Description |
 |--------|------|-------------|
 | `each` | `boolean` | Validate each item in array/Set/Map |
-| `message` | `string` | Custom error message |
+| `message` | `string \| ((args) => string)` | Custom error message |
 | `groups` | `string[]` | Validation groups |
 | `always` | `boolean` | Validate regardless of group |
-| `context` | `object` | Custom context data |
+| `context` | `any` | Custom context data passed to validation result |
+| `validateIf` | `(object, value) => boolean` | Per-decorator conditional **(0.15+)** |
+
+## @IsUUID — Extended Version Support (0.15+)
+
+`@IsUUID` now supports versions 1-8 plus special identifiers:
+
+```typescript
+import { IsUUID } from 'class-validator';
+
+export class EntityDto {
+  // Specific version
+  @IsUUID('4')
+  id: string;
+
+  // Accept any valid UUID (versions 1-8)
+  @IsUUID('all')
+  externalId: string;
+
+  // Nil UUID (all zeros: 00000000-0000-0000-0000-000000000000)
+  @IsUUID('nil')
+  placeholder: string;
+
+  // Max UUID (all f's: ffffffff-ffff-ffff-ffff-ffffffffffff)
+  @IsUUID('max')
+  sentinel: string;
+}
+```
+
+| Version | Description |
+|---------|-------------|
+| `"1"` - `"8"` | Specific UUID version |
+| `"nil"` | Nil UUID (all zeros) **(0.15+)** |
+| `"max"` | Max UUID (all f's) **(0.15+)** |
+| `"all"` | Any valid UUID format |
+
+## New Validators in 0.15
+
+### @IsISO6391 — Language Codes
+
+```typescript
+import { IsISO6391 } from 'class-validator';
+
+export class LocaleSettingsDto {
+  @IsISO6391()
+  language: string; // "en", "fr", "de", "ja", etc.
+}
+```
+
+### @IsISO31661Numeric — Country Codes (Numeric)
+
+```typescript
+import { IsISO31661Numeric, IsISO31661Alpha2, IsISO31661Alpha3 } from 'class-validator';
+
+export class CountryDto {
+  @IsISO31661Alpha2()
+  alpha2: string; // "US", "BR", "DE"
+
+  @IsISO31661Alpha3()
+  alpha3: string; // "USA", "BRA", "DEU"
+
+  @IsISO31661Numeric()
+  numeric: string; // "840", "076", "276" (0.15+)
+}
+```
+
+### @IsIBAN with Options (0.15+)
+
+```typescript
+import { IsIBAN } from 'class-validator';
+
+export class BankAccountDto {
+  // Basic usage
+  @IsIBAN()
+  iban: string;
+
+  // With options (0.15+)
+  @IsIBAN({ whitelist: ['DE', 'FR', 'NL'] })
+  europeanIban: string;
+}
+```
 
 ## @Transform — Data Transformation
 
@@ -162,4 +244,4 @@ export class AsyncDto {
 
 ---
 
-**Version:** class-validator 0.14.x, class-transformer 0.5.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1, class-transformer 0.5.x | **Source:** https://github.com/typestack/class-validator

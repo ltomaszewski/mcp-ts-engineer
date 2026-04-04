@@ -168,6 +168,8 @@ update(1, { name: 'Updated Item', value: 'new-value' });
 
 **Note:** `update` replaces the entire field object at the given index. Unlike `setValue`, it preserves the field's `id` for stable rendering.
 
+**Nested field arrays (7.72.1 fix):** `isNameInFieldArray` now checks all ancestor paths, so nested field arrays (e.g., `items.0.variants`) correctly detect parent array membership. This fixes issues where operations on nested arrays could produce unexpected dirty state.
+
 ---
 
 #### replace()
@@ -645,4 +647,4 @@ export function ContactForm() {
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/api
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/api

@@ -13,6 +13,11 @@
 - Validation logic is straightforward
 - TypeScript types already defined
 
+**Use form-level `validate` (new in 7.72.0) when:**
+- Cross-field validation (e.g., date ranges, password confirmation)
+- Validation depends on multiple field values together
+- No external schema library needed
+
 **Use schema-based when:**
 - Complex validation logic
 - Reusable validation across multiple forms
@@ -507,4 +512,4 @@ export async function handleSignup(data: SignupData) {
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://github.com/react-hook-form/resolvers
+**Version:** 7.72.1 | **Source:** https://github.com/react-hook-form/resolvers

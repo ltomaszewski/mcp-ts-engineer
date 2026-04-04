@@ -145,6 +145,20 @@ async function bootstrap(): Promise<void> {
 
 **Recommendation:** Use explicit `@Transform()` decorators for controlled conversion instead of relying on `enableImplicitConversion` for complex types.
 
+## 11. @IsIBAN Options Change (0.15)
+
+In 0.15, `@IsIBAN` now accepts `IsIBANOptions` as its first argument. If you were passing `ValidationOptions` as the first argument, you need to adjust:
+
+```typescript
+// BAD — 0.14 pattern that breaks in 0.15
+@IsIBAN({ groups: ['payment'] })
+iban: string;
+
+// GOOD — 0.15 pattern: options first, then ValidationOptions
+@IsIBAN({}, { groups: ['payment'] })
+iban: string;
+```
+
 ## Quick Diagnostic Table
 
 | Symptom | Likely Cause | Fix |
@@ -155,7 +169,9 @@ async function bootstrap(): Promise<void> {
 | Custom async validator ignored | Using `validateSync` | Use `await validate()` |
 | Extra properties pass through | No whitelist | Enable `whitelist: true` |
 | Custom validator with DI fails | Missing `useContainer()` | Call `useContainer()` in bootstrap |
+| `@IsIBAN` fails after upgrade to 0.15 | Options argument changed | Pass `IsIBANOptions` as first arg |
+| `validateIf` not working | Using 0.14.x | Upgrade to 0.15+ for per-decorator `validateIf` |
 
 ---
 
-**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1 | **Source:** https://github.com/typestack/class-validator

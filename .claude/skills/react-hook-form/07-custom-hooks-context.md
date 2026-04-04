@@ -10,6 +10,8 @@
 
 ### Problem Solved
 
+**7.72.1 fix:** `control` is now memoized in `HookFormControlContext`, preventing unnecessary render conflicts when using `FormProvider`.
+
 Passing form context through multiple nested components without prop drilling:
 
 ```typescript
@@ -485,4 +487,4 @@ function ConditionalBusinessFields() {
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/api/useformcontext
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/api/useformcontext

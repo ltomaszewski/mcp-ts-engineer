@@ -510,6 +510,36 @@ ConfigChange: async ({ session_id, key, old_value, new_value }) => {
 
 ---
 
+## Hook Lifecycle Messages (v0.2.89+)
+
+Enable `includeHookEvents` to receive hook lifecycle messages for all hook event types:
+
+```typescript
+for await (const message of query({
+  prompt: "Edit config.json",
+  options: {
+    includeHookEvents: true,
+    hooks: {
+      PreToolUse: async ({ tool_name }) => {
+        return { decision: "approve" };
+      }
+    }
+  }
+})) {
+  if (message.type === "system") {
+    // Hook lifecycle messages:
+    // subtype: "hook_started" — hook execution began
+    // subtype: "hook_progress" — hook is running
+    // subtype: "hook_response" — hook returned a result
+    if (["hook_started", "hook_progress", "hook_response"].includes(message.subtype)) {
+      console.log(`Hook event: ${message.subtype}`, message.data);
+    }
+  }
+}
+```
+
+---
+
 ## Debugging Hooks
 
 ```typescript
@@ -528,4 +558,4 @@ PreToolUse: async (data) => {
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

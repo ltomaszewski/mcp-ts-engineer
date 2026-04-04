@@ -1,6 +1,6 @@
 ---
 name: ai-engineering
-version: "SDK ~0.2.86"
+version: "SDK 0.2.92"
 description: AI engineering with Claude Agent SDK - agent architecture, orchestration, performance optimization, security hardening, production deployment. Use when building AI agents, designing multi-agent systems, optimizing cost/latency, or hardening agent security.
 ---
 
@@ -414,6 +414,38 @@ for await (const message of query({
 
 ---
 
+## Pre-Warming (v0.2.89+)
+
+Use `startup()` to pre-warm the CLI subprocess before the first query, making it ~20x faster:
+
+```typescript
+import { startup } from "@anthropic-ai/claude-agent-sdk";
+
+// Pre-warm during application initialization
+await startup();
+
+// First query is now fast
+const q = query({ prompt: "...", options: prodOptions });
+```
+
+Recommended for serverless functions, interactive CLIs, and any latency-sensitive path.
+
+---
+
+## Sandbox Configuration (v0.2.91+ Breaking Change)
+
+Since v0.2.91, `sandbox.failIfUnavailable` defaults to `true` when `enabled: true`. The query will error if sandbox dependencies are missing:
+
+```typescript
+// v0.2.91+: Will error if sandbox unavailable (safe default)
+query({ prompt, options: { sandbox: { enabled: true } } })
+
+// Graceful degradation: set failIfUnavailable to false
+query({ prompt, options: { sandbox: { enabled: true, failIfUnavailable: false } } })
+```
+
+---
+
 ## Graceful Degradation
 
 ```typescript
@@ -522,6 +554,10 @@ Long-running agents degrade without context management:
 | Self-verification | Verify-fix loop | Linter/tester in prompt, `maxTurns` budget |
 | Session continuity | Resume sessions | `resume: sessionId` |
 | CI/CD integration | Tight limits | `maxTurns: 10`, `model: "haiku"` |
+| Pre-warming | `startup()` before query | ~20x faster first query (v0.2.89+) |
+| Subagent history | `listSubagents()` + `getSubagentMessages()` | Retrieve subagent conversation history (v0.2.89+) |
+| Terminal reason | `result.terminal_reason` | Expose why query loop ended (v0.2.91+) |
+| Context usage | `getContextUsage()` | Monitor context window consumption (v0.2.86+) |
 
 ---
 
@@ -551,4 +587,4 @@ Long-running agents degrade without context management:
 
 ---
 
-**Version:** SDK ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** SDK 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript

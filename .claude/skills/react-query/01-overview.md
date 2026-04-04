@@ -1,6 +1,6 @@
 # Core Philosophy & Overview
 
-**Module:** `01-overview.md` | **Version:** 5.x (^5.90.x)
+**Module:** `01-overview.md` | **Version:** 5.96.2
 
 ---
 
@@ -113,6 +113,7 @@ React Application
 | Infinite queries | No limit | `maxPages` option |
 | useQueries | No combining | `combine` option |
 | Mutation scoping | None | `scope: { id }` for serial execution |
+| Environment manager | None | `environmentManager` for server-detection control (v5.91+) |
 | React requirement | React 17+ | React 18+ (uses `useSyncExternalStore`) |
 
 ---
@@ -126,4 +127,4 @@ React Application
 ---
 
 **Source:** https://tanstack.com/query/v5/docs/framework/react/overview
-**Version:** 5.x (^5.90.x)
+**Version:** 5.96.2

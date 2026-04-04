@@ -1,12 +1,21 @@
 # Conditional Validation
 
-## @ValidateIf Decorator
+## Two Approaches
 
-Runs validators on a property only when the condition returns `true`. If the condition returns `false`, all validators on that property are skipped.
+| Approach | Scope | When to Use |
+|----------|-------|-------------|
+| `@ValidateIf()` decorator | All validators on a property | Toggle an entire property's validation based on a condition |
+| `validateIf` option | Single decorator | Toggle one specific validator while others still run **(0.15+)** |
+
+---
+
+## @ValidateIf Decorator (Property-Level)
+
+Runs validators on a property only when the condition returns `true`. If the condition returns `false`, **all** validators on that property are skipped.
 
 ```typescript
 import {
-  ValidateIf, IsNotEmpty, IsString, IsEmail, Length, Matches,
+  ValidateIf, IsNotEmpty, IsString, IsEmail,
 } from 'class-validator';
 
 export class CreatePostDto {
@@ -39,11 +48,50 @@ export class CreatePostDto {
 | `condition` | `(object: any, value: any) => boolean` | Receives full object and property value |
 | `validationOptions` | `ValidationOptions` | Standard validation options |
 
+---
+
+## validateIf Option (Per-Decorator, 0.15+)
+
+More granular than `@ValidateIf` — controls individual decorators independently. Available on every decorator's `ValidationOptions`.
+
+```typescript
+import { IsString, IsNotEmpty, Min, Max, IsNumber } from 'class-validator';
+
+export class ShippingDto {
+  @IsString()
+  type: 'standard' | 'express' | 'pickup';
+
+  // @IsNotEmpty always runs; @Min only runs for non-pickup
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0, { validateIf: (o) => o.type !== 'pickup' })
+  @Max(50, { validateIf: (o) => o.type === 'express' })
+  weight: number;
+}
+```
+
+### Key Difference: @ValidateIf vs validateIf
+
+```typescript
+// @ValidateIf — ALL validators skipped when condition is false
+@ValidateIf((o) => o.type === 'physical')
+@IsNotEmpty()   // skipped when type !== 'physical'
+@Min(0)         // skipped when type !== 'physical'
+weight: number;
+
+// validateIf — only the specific decorator is skipped
+@IsNotEmpty()   // ALWAYS runs
+@Min(0, { validateIf: (o) => o.type === 'physical' })  // only this one is conditional
+weight: number;
+```
+
+---
+
 ## Complex Payment Form Example
 
 ```typescript
 import {
-  ValidateIf, IsString, IsNotEmpty, Length, Matches, IsIBAN,
+  ValidateIf, IsString, IsNotEmpty, Length, Matches,
 } from 'class-validator';
 
 export class PaymentDto {
@@ -82,6 +130,36 @@ export class PaymentDto {
   @IsString()
   @IsNotEmpty()
   paypalEmail: string;
+}
+```
+
+## Mixing Both Approaches (0.15+)
+
+```typescript
+import { ValidateIf, IsString, IsNotEmpty, Min, Max, IsNumber } from 'class-validator';
+
+export class ProductDto {
+  @IsString()
+  category: 'physical' | 'digital' | 'subscription';
+
+  // Property-level: only validate dimensions for physical products
+  @ValidateIf((o) => o.category === 'physical')
+  @IsNumber()
+  @Min(0)
+  weight: number;
+
+  // Per-decorator: price always required, but min differs by category
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0.99, {
+    validateIf: (o) => o.category !== 'subscription',
+    message: 'Non-subscription products must cost at least $0.99',
+  })
+  @Min(4.99, {
+    validateIf: (o) => o.category === 'subscription',
+    message: 'Subscriptions must cost at least $4.99',
+  })
+  price: number;
 }
 ```
 
@@ -134,4 +212,4 @@ export class UpdateResourceDto {
 
 ---
 
-**Version:** class-validator 0.14.x | **Source:** https://github.com/typestack/class-validator
+**Version:** class-validator 0.15.1 | **Source:** https://github.com/typestack/class-validator

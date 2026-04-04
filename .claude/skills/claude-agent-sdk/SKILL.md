@@ -1,6 +1,6 @@
 ---
 name: claude-agent-sdk
-version: "~0.2.86"
+version: "0.2.92"
 description: Anthropic Claude Agent SDK for TypeScript - Messages API, streaming, tool use, MCP integration, hooks, multi-turn conversations. Use when building agents, integrating Claude API, or implementing AI features programmatically.
 ---
 
@@ -317,6 +317,7 @@ const results = await Promise.all(
 | `allowDangerouslySkipPermissions` | `boolean` | `false` | Required when using `bypassPermissions` |
 | `includePartialMessages` | `boolean` | `false` | Include streaming `stream_event` messages |
 | `agentProgressSummaries` | `boolean` | `false` | Enable periodic AI-generated progress summaries for subagents |
+| `includeHookEvents` | `boolean` | `false` | Enable hook lifecycle messages (`hook_started`, `hook_progress`, `hook_response`) (v0.2.89+) |
 
 ### Permission Modes
 
@@ -326,6 +327,7 @@ const results = await Promise.all(
 | `"acceptEdits"` | Auto-approve file edits |
 | `"bypassPermissions"` | Skip all permission checks (dangerous) |
 | `"plan"` | Planning mode, no execution |
+| `"auto"` | Automatic permission decisions based on context (v0.2.91+) |
 
 ---
 
@@ -516,6 +518,9 @@ ANTHROPIC_API_KEY=your-api-key
 | MCP server | `mcpServers: {}` | `{ command, args }` or `{ url }` |
 | V2 session | `unstable_v2_createSession` | `session.send()`, `session.stream()` |
 | Agents | `agents: {}` | Named agent definitions (v0.2) |
+| Pre-warm | `startup()` | Pre-warm CLI subprocess before first `query()` (v0.2.89+) |
+| Subagent history | `listSubagents()` | List subagent sessions from a session (v0.2.89+) |
+| Context usage | `getContextUsage()` | Get context window usage breakdown (v0.2.86+) |
 
 ---
 
@@ -529,11 +534,17 @@ ANTHROPIC_API_KEY=your-api-key
 
 ---
 
-**Version:** ~0.2.86 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
+**Version:** 0.2.92 | **Source:** https://github.com/anthropics/claude-agent-sdk-typescript
 
-### v0.2.50-0.2.86 Notable Changes
+### v0.2.86-0.2.92 Notable Changes
 
-- **v0.2.86**: `reloadPlugins()` SDK method to reload plugins and refresh commands/agents/MCP status; fixed `PreToolUse` hooks with `permissionDecision: "ask"` being ignored in SDK mode
+- **v0.2.92**: Parity with Claude Code v2.1.92
+- **v0.2.91**: `terminal_reason` field on result messages (`completed`, `aborted_tools`, `max_turns`, `blocking_limit`); `"auto"` added to `PermissionMode` type; **Breaking**: `sandbox.failIfUnavailable` now defaults to `true` when `enabled: true` — set `failIfUnavailable: false` for graceful degradation
+- **v0.2.89**: `startup()` to pre-warm CLI subprocess (~20x faster first query); `includeSystemMessages` option for `getSessionMessages()`; `listSubagents()` and `getSubagentMessages()` for subagent history; `includeHookEvents` for hook lifecycle messages; fixed `ERR_STREAM_WRITE_AFTER_END` errors; fixed Zod v4 `.describe()` metadata dropped from `createSdkMcpServer`; fixed error result messages not setting `is_error: true`; fixed MCP servers stuck in failed state after connection race
+- **v0.2.86**: `getContextUsage()` for context window usage breakdown; `session_id` optional in `SDKUserMessage`; fixed TypeScript types resolving to `any`; `reloadPlugins()` SDK method
+
+### v0.2.50-0.2.85 Notable Changes
+
 - **v0.2.84**: `seed_read_state` control subtype to seed `readFileState` with `{path, mtime}` so `Edit` works after the originating `Read` was removed from context; `session_state_changed` events now opt-in via `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`
 - **v0.2.83**: `agentProgressSummaries` option for periodic AI-generated progress summaries on `task_progress` events; `getSettings()` with `applied` section showing runtime-resolved model and effort values
 - **v0.2.81**: Fixed `getSessionMessages()` dropping parallel tool results — all `tool_use`/`tool_result` pairs now returned

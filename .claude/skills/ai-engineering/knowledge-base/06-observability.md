@@ -209,7 +209,9 @@ for await (const msg of query({
       event: "session_end",
       cost_usd: msg.total_cost_usd,
       level: msg.is_error ? "error" : "info",
-      error_message: msg.is_error ? msg.result : undefined
+      error_message: msg.is_error ? msg.result : undefined,
+      // v0.2.91+: terminal_reason exposes why query loop ended
+      // Values: "completed", "aborted_tools", "max_turns", "blocking_limit"
     });
   }
 }
@@ -423,4 +425,4 @@ jq -r 'select(.level == "error") | .error_message' agent.jsonl | sort | uniq -c 
 
 ---
 
-**Version:** SDK ~0.2.86 | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview
+**Version:** SDK 0.2.92 | **Source:** https://platform.claude.com/docs/en/agent-sdk/overview

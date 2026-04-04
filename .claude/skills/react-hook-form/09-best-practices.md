@@ -157,6 +157,31 @@ const { isDirty, isValid } = useFormState({ control });
 
 ---
 
+### 8. Prefer Form-Level validate for Cross-Field Checks
+
+```typescript
+// ❌ Using watch + custom validate on each field
+const password = watch('password');
+<input {...register('confirm', {
+  validate: (v) => v === password || 'Must match',
+})} />
+
+// ✅ Form-level validate (7.72.0+) -- cleaner, no watch needed
+useForm({
+  validate: (data) => {
+    const errors: Record<string, { type: string; message: string }> = {};
+    if (data.password !== data.confirm) {
+      errors.confirm = { type: 'validate', message: 'Must match' };
+    }
+    return { values: Object.keys(errors).length ? {} : data, errors };
+  },
+});
+```
+
+**Benefit:** Eliminates re-renders from `watch()` and co-locates cross-field logic.
+
+---
+
 ## Memory Management
 
 ### Unregister Fields on Unmount
@@ -411,4 +436,4 @@ const { register } = useForm(createFormConfig({
 
 ---
 
-**Version:** 7.71.2 | **Source:** https://react-hook-form.com/faqs
+**Version:** 7.72.1 | **Source:** https://react-hook-form.com/faqs
