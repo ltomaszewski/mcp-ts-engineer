@@ -71,7 +71,7 @@ export const TEST_RESULT_FALLBACK: TestResult = {
 /** Default LintScanResult returned when AI output cannot be parsed. */
 export const LINT_SCAN_RESULT_FALLBACK: LintScanResult = {
   lint_available: false,
-  lint_passed: true,
+  lint_passed: false,
   error_count: 0,
   warning_count: 0,
   lint_report: '',

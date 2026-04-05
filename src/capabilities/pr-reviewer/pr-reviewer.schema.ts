@@ -221,6 +221,7 @@ export const ReviewStepOutputSchema = z.object({
   agent: z.string(),
   issues: z.array(ReviewIssueSchema),
   error: z.string().optional(),
+  parsing_failed: z.boolean().optional(),
 })
 export type ReviewStepOutput = z.infer<typeof ReviewStepOutputSchema>
 

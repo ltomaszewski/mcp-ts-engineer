@@ -21,6 +21,21 @@ import { AUDIT_CURRENT_VERSION, auditPrompts } from './prompts/index.js'
  * scan files, apply fixes, and run TypeScript validation. Input is validated via Zod
  * schema and this capability is only invoked through the orchestrator's authenticated channel.
  */
+const AUDIT_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    properties: {
+      status: { type: 'string', enum: ['pass', 'warn', 'fail'] },
+      fixes_applied: { type: 'integer', minimum: 0 },
+      issues_remaining: { type: 'integer', minimum: 0 },
+      tsc_passed: { type: 'boolean' },
+      summary: { type: 'string' },
+    },
+    required: ['status', 'fixes_applied', 'issues_remaining', 'tsc_passed', 'summary'],
+  },
+}
+
 export const finalizeAuditStepCapability: CapabilityDefinition<AuditStepInput, AuditResult> = {
   id: 'finalize_audit_step',
   type: 'tool',
@@ -39,6 +54,7 @@ export const finalizeAuditStepCapability: CapabilityDefinition<AuditStepInput, A
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
+    outputSchema: AUDIT_OUTPUT_JSON_SCHEMA,
   },
 
   preparePromptInput: (input: AuditStepInput, _context) => ({
@@ -47,7 +63,15 @@ export const finalizeAuditStepCapability: CapabilityDefinition<AuditStepInput, A
   }),
 
   processResult: (_input: AuditStepInput, aiResult, _context) => {
-    // Parse <audit_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = AuditResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'audit_result')
     const fallback = {
       ...AUDIT_RESULT_FALLBACK,

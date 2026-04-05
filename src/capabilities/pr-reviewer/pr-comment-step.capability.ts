@@ -275,7 +275,7 @@ export const prCommentStepCapability: CapabilityDefinition<CommentStepInput, Com
   defaultRequestOptions: {
     model: 'haiku',
     maxTurns: 1,
-    maxBudgetUsd: 0.01,
+    maxBudgetUsd: 0.5,
   },
   preparePromptInput: (input: CommentStepInput, _context: CapabilityContext) => input,
   processResult: (

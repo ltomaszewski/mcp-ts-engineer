@@ -107,7 +107,7 @@ export const prFixStepCapability: CapabilityDefinition<FixStepInput, FixStepOutp
   defaultRequestOptions: {
     model: 'sonnet',
     maxTurns: 50,
-    maxBudgetUsd: 3.0,
+    maxBudgetUsd: 4.0,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

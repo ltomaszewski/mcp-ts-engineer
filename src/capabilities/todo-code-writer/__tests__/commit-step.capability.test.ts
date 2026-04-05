@@ -100,12 +100,12 @@ describe('commitStepCapability', () => {
       expect(commitStepCapability.defaultRequestOptions?.model).toBe('haiku')
     })
 
-    it('defaults to 40 maxTurns', () => {
-      expect(commitStepCapability.defaultRequestOptions?.maxTurns).toBe(40)
+    it('defaults to 20 maxTurns', () => {
+      expect(commitStepCapability.defaultRequestOptions?.maxTurns).toBe(20)
     })
 
-    it('defaults to $5.0 budget', () => {
-      expect(commitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+    it('defaults to $0.5 budget', () => {
+      expect(commitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
     })
 
     it('has prompt registry with v1', () => {

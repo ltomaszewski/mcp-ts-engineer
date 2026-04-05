@@ -148,7 +148,7 @@ describe('Finalize Integration', () => {
       expect(readme?.defaultRequestOptions?.maxBudgetUsd).toBe(1.0)
 
       const commit = registry.getCapability('finalize_commit_step')
-      expect(commit?.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+      expect(commit?.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
     })
 
     it('all capabilities use correct models', () => {

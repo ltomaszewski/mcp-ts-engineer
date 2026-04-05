@@ -64,7 +64,7 @@ export const prFixerCapability: CapabilityDefinition<PrFixerInput, PrFixerOutput
 
   defaultRequestOptions: {
     model: 'sonnet',
-    maxTurns: 1,
+    maxTurns: 5,
     maxBudgetUsd: 5.0,
   },
 

@@ -63,7 +63,7 @@ export const phaseAuditStepCapability: CapabilityDefinition<PhaseAuditStepInput,
     defaultRequestOptions: {
       model: 'sonnet',
       maxTurns: 50,
-      maxBudgetUsd: 2.0,
+      maxBudgetUsd: 3.0,
       tools: { type: 'preset', preset: 'claude_code' },
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,

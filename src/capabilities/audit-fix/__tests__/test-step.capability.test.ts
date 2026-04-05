@@ -138,6 +138,10 @@ describe('auditFixTestStepCapability', () => {
     it('has current prompt version v2', () => {
       expect(auditFixTestStepCapability.currentPromptVersion).toBe('v2')
     })
+
+    it('has outputSchema configured', () => {
+      expect(auditFixTestStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {

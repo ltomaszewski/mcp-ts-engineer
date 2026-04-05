@@ -6,9 +6,7 @@
 import type { PromptRegistry } from '../../../core/prompt/prompt.types.js'
 import { commitPromptV1 } from './commit.v1.js'
 import { finalAuditPromptV1 } from './final-audit.v1.js'
-import { phaseAuditPromptV1 } from './phase-audit.v1.js'
 import { phaseAuditPromptV2 } from './phase-audit.v2.js'
-import { phaseEngPromptV1 } from './phase-eng.v1.js'
 import { phaseEngPromptV2 } from './phase-eng.v2.js'
 import { plannerPromptV1 } from './planner.v1.js'
 
@@ -27,7 +25,6 @@ export const PLANNER_CURRENT_VERSION = 'v1'
 // ---------------------------------------------------------------------------
 
 export const PHASE_ENG_PROMPT_VERSIONS: PromptRegistry = {
-  v1: phaseEngPromptV1,
   v2: phaseEngPromptV2,
 }
 
@@ -38,7 +35,6 @@ export const PHASE_ENG_CURRENT_VERSION = 'v2'
 // ---------------------------------------------------------------------------
 
 export const PHASE_AUDIT_PROMPT_VERSIONS: PromptRegistry = {
-  v1: phaseAuditPromptV1,
   v2: phaseAuditPromptV2,
 }
 

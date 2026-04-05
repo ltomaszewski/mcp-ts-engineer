@@ -76,9 +76,9 @@ function createMockAiResult(
 
 describe('auditFixCommitStepCapability', () => {
   describe('definition metadata', () => {
-    it('has budget of $5.0 and 40 turns (Haiku)', () => {
-      expect(auditFixCommitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
-      expect(auditFixCommitStepCapability.defaultRequestOptions?.maxTurns).toBe(40)
+    it('has budget of $0.5 and 20 turns (Haiku)', () => {
+      expect(auditFixCommitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
+      expect(auditFixCommitStepCapability.defaultRequestOptions?.maxTurns).toBe(20)
     })
   })
 

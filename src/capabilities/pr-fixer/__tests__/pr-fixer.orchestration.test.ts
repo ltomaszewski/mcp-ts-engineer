@@ -12,6 +12,9 @@ import {
   MAX_VALIDATION_FIX_ROUNDS,
   shouldSkipPhase,
 } from '../pr-fixer.orchestration.js'
+import { prFixerCapability } from '../pr-fixer.capability.js'
+import { prFixerDirectFixStepCapability } from '../pr-fixer-direct-fix-step.capability.js'
+import { prFixerFixValidationStepCapability } from '../pr-fixer-fix-validation-step.capability.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -395,5 +398,27 @@ describe('buildOutput', () => {
     const state: FixerState = { ...baseState, round: 3 }
     const output = buildOutput(state)
     expect(output.round).toBe(3)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Capability definition budget/maxTurns assertions
+// ---------------------------------------------------------------------------
+
+describe('prFixerCapability definition metadata', () => {
+  it('has maxTurns of 5', () => {
+    expect(prFixerCapability.defaultRequestOptions?.maxTurns).toBe(5)
+  })
+})
+
+describe('prFixerDirectFixStepCapability definition metadata', () => {
+  it('has maxBudgetUsd of 3.0', () => {
+    expect(prFixerDirectFixStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
+  })
+})
+
+describe('prFixerFixValidationStepCapability definition metadata', () => {
+  it('has maxBudgetUsd of 3.0', () => {
+    expect(prFixerFixValidationStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
   })
 })

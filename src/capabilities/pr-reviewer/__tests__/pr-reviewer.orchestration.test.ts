@@ -14,6 +14,7 @@ import {
   type ReviewState,
   shouldSkipPhase,
 } from '../pr-reviewer.orchestration.js'
+import { prFixStepCapability } from '../pr-fix-step.capability.js'
 import type { ReviewIssue } from '../pr-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
@@ -437,5 +438,15 @@ describe('buildOutput', () => {
     }
     const output = buildOutput(state)
     expect(output.status).not.toBe('failed')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// pr-fix-step budget assertions
+// ---------------------------------------------------------------------------
+
+describe('prFixStepCapability definition metadata', () => {
+  it('has maxBudgetUsd of 4.0', () => {
+    expect(prFixStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(4.0)
   })
 })

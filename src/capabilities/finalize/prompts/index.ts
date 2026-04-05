@@ -1,5 +1,4 @@
 import type { PromptRegistry } from '../../../core/prompt/prompt.types.js'
-import { auditPromptV1 } from './audit.v1.js'
 import { auditPromptV2 } from './audit.v2.js'
 import { codemapPromptV1 } from './codemap.v1.js'
 import { commitPromptV1 } from './commit.v1.js'
@@ -21,7 +20,6 @@ export const orchestratorPrompts: PromptRegistry = {
  * Scans files for code quality issues and applies auto-fixes.
  */
 export const auditPrompts: PromptRegistry = {
-  v1: auditPromptV1,
   v2: auditPromptV2,
 }
 

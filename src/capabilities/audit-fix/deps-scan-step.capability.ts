@@ -21,6 +21,29 @@ import { DEPS_SCAN_CURRENT_VERSION, depsScanPrompts } from './prompts/index.js'
  * Internal sub-capability for dependency vulnerability scanning with npm audit.
  * Not intended for direct external use — invoked by the audit_fix orchestrator.
  */
+const DEPS_SCAN_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    properties: {
+      audit_ran: { type: 'boolean' },
+      vulnerabilities_found: { type: 'integer', minimum: 0 },
+      vulnerabilities_by_severity: {
+        type: 'object',
+        properties: {
+          critical: { type: 'integer', minimum: 0 },
+          high: { type: 'integer', minimum: 0 },
+          moderate: { type: 'integer', minimum: 0 },
+          low: { type: 'integer', minimum: 0 },
+        },
+        required: ['critical', 'high', 'moderate', 'low'],
+      },
+      audit_json: { type: 'string' },
+    },
+    required: ['audit_ran', 'vulnerabilities_found', 'vulnerabilities_by_severity', 'audit_json'],
+  },
+}
+
 export const auditFixDepsScanStepCapability: CapabilityDefinition<
   DepsScanStepInput,
   DepsScanStepResult
@@ -42,6 +65,7 @@ export const auditFixDepsScanStepCapability: CapabilityDefinition<
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
+    outputSchema: DEPS_SCAN_OUTPUT_JSON_SCHEMA,
     hooks:
       buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
   },
@@ -52,7 +76,15 @@ export const auditFixDepsScanStepCapability: CapabilityDefinition<
   }),
 
   processResult: (_input: DepsScanStepInput, aiResult, _context) => {
-    // Parse <deps_scan_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = DepsScanStepResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'deps_scan_result')
 
     if (xmlContent) {

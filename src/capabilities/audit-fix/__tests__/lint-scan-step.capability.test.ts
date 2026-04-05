@@ -49,6 +49,10 @@ describe('auditFixLintScanStepCapability', () => {
         preset: 'claude_code',
       })
     })
+
+    it('has outputSchema configured', () => {
+      expect(auditFixLintScanStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {
@@ -119,7 +123,7 @@ Some text after`,
 
       expect(result).toEqual({
         lint_available: false,
-        lint_passed: true,
+        lint_passed: false,
         error_count: 0,
         warning_count: 0,
         lint_report: '',

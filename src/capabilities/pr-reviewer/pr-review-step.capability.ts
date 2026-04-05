@@ -263,6 +263,6 @@ export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, Revie
     }
 
     _context.logger.warn('All review parsing strategies failed, returning empty issues')
-    return FALLBACK
+    return { ...FALLBACK, parsing_failed: true }
   },
 }
