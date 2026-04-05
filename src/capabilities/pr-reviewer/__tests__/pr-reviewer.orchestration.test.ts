@@ -14,7 +14,9 @@ import {
   type ReviewState,
   shouldSkipPhase,
 } from '../pr-reviewer.orchestration.js'
+import { prAggregateStepCapability } from '../pr-aggregate-step.capability.js'
 import { prFixStepCapability } from '../pr-fix-step.capability.js'
+import { prValidateStepCapability } from '../pr-validate-step.capability.js'
 import type { ReviewIssue } from '../pr-reviewer.schema.js'
 
 // ---------------------------------------------------------------------------
@@ -444,6 +446,18 @@ describe('buildOutput', () => {
 // ---------------------------------------------------------------------------
 // pr-fix-step budget assertions
 // ---------------------------------------------------------------------------
+
+describe('prAggregateStepCapability definition metadata', () => {
+  it('has model of sonnet', () => {
+    expect(prAggregateStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+  })
+})
+
+describe('prValidateStepCapability definition metadata', () => {
+  it('has model of sonnet', () => {
+    expect(prValidateStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+  })
+})
 
 describe('prFixStepCapability definition metadata', () => {
   it('has maxBudgetUsd of 4.0', () => {

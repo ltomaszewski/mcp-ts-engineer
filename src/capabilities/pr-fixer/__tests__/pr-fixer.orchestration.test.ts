@@ -13,6 +13,7 @@ import {
   shouldSkipPhase,
 } from '../pr-fixer.orchestration.js'
 import { prFixerCapability } from '../pr-fixer.capability.js'
+import { prFixerClassifyStepCapability } from '../pr-fixer-classify-step.capability.js'
 import { prFixerDirectFixStepCapability } from '../pr-fixer-direct-fix-step.capability.js'
 import { prFixerFixValidationStepCapability } from '../pr-fixer-fix-validation-step.capability.js'
 
@@ -414,6 +415,20 @@ describe('prFixerCapability definition metadata', () => {
 describe('prFixerDirectFixStepCapability definition metadata', () => {
   it('has maxBudgetUsd of 3.0', () => {
     expect(prFixerDirectFixStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
+  })
+})
+
+describe('prFixerClassifyStepCapability definition metadata', () => {
+  it('has model of sonnet', () => {
+    expect(prFixerClassifyStepCapability.defaultRequestOptions?.model).toBe('sonnet')
+  })
+
+  it('has maxTurns of 10', () => {
+    expect(prFixerClassifyStepCapability.defaultRequestOptions?.maxTurns).toBe(10)
+  })
+
+  it('has maxBudgetUsd of 0.5', () => {
+    expect(prFixerClassifyStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
   })
 })
 

@@ -56,9 +56,9 @@ export const prFixerClassifyStepCapability: CapabilityDefinition<
   promptRegistry: PROMPT_VERSIONS,
   currentPromptVersion: CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'haiku',
-    maxTurns: 5,
-    maxBudgetUsd: 0.2,
+    model: 'sonnet',
+    maxTurns: 10,
+    maxBudgetUsd: 0.5,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

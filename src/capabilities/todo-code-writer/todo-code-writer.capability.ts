@@ -57,6 +57,7 @@ export const todoCodeWriterCapability: CapabilityDefinition<
     model: 'sonnet',
     maxTurns: 100,
     maxBudgetUsd: 5.0,
+    maxThinkingTokens: 8000,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

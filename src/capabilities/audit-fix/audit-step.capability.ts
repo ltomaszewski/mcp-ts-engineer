@@ -121,6 +121,7 @@ export const auditFixAuditStepCapability: CapabilityDefinition<AuditStepInput, A
     model: 'sonnet',
     maxTurns: 120,
     maxBudgetUsd: 6.0,
+    maxThinkingTokens: 8000,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

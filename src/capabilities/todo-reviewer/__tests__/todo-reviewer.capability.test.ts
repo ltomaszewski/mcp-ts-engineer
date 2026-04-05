@@ -71,8 +71,8 @@ describe('todoReviewerCapability', () => {
       expect(todoReviewerCapability.defaultRequestOptions).toBeDefined()
     })
 
-    it('defaults to sonnet model', () => {
-      expect(todoReviewerCapability.defaultRequestOptions?.model).toBe('sonnet')
+    it('defaults to opus model', () => {
+      expect(todoReviewerCapability.defaultRequestOptions?.model).toBe('opus')
     })
 
     it('defaults to 80 maxTurns', () => {
@@ -98,6 +98,10 @@ describe('todoReviewerCapability', () => {
       expect(todoReviewerCapability.defaultRequestOptions?.allowDangerouslySkipPermissions).toBe(
         true,
       )
+    })
+
+    it('has maxThinkingTokens of 16000', () => {
+      expect(todoReviewerCapability.defaultRequestOptions?.maxThinkingTokens).toBe(16000)
     })
   })
 

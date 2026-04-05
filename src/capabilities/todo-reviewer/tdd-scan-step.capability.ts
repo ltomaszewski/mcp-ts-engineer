@@ -140,7 +140,8 @@ export const tddScanStepCapability: CapabilityDefinition<TddScanStepInput, TddSc
   defaultRequestOptions: {
     model: 'opus',
     maxTurns: 50,
-    maxBudgetUsd: 3.0,
+    maxBudgetUsd: 2.0,
+    maxThinkingTokens: 16000,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
