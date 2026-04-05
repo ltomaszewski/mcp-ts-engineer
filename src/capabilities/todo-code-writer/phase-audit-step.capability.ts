@@ -63,14 +63,13 @@ export const phaseAuditStepCapability: CapabilityDefinition<PhaseAuditStepInput,
     defaultRequestOptions: {
       model: 'sonnet',
       maxTurns: 50,
-      maxBudgetUsd: 2.0,
+      maxBudgetUsd: 3.0,
       tools: { type: 'preset', preset: 'claude_code' },
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['user', 'project'],
       outputSchema: PHASE_AUDIT_OUTPUT_JSON_SCHEMA,
-      hooks:
-        buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+      hooks: buildPathValidationHooks(),
     },
 
     preparePromptInput: (input: PhaseAuditStepInput, _context) => {

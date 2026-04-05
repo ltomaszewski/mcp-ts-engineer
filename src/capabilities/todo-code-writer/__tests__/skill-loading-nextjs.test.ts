@@ -26,7 +26,7 @@ vi.mock('fs', () => ({
 
 const { detectWorkspace } = await import('../workspace-detector.js')
 const { resolveSkillsFromTechnologies, DEPENDENCY_SKILL_MAP } = await import(
-  '../prompts/eng-rules/skill-loading.js'
+  '../../../shared/prompts/eng-rules/skill-loading.js'
 )
 const { phaseEngPromptV2 } = await import('../prompts/phase-eng.v2.js')
 const { phaseAuditPromptV2 } = await import('../prompts/phase-audit.v2.js')

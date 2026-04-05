@@ -136,13 +136,12 @@ describe('phaseAuditStepCapability', () => {
       expect(phaseAuditStepCapability.defaultRequestOptions?.maxTurns).toBe(50)
     })
 
-    it('defaults to $2.0 budget', () => {
-      expect(phaseAuditStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
+    it('defaults to $3.0 budget', () => {
+      expect(phaseAuditStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
     })
 
-    it('has prompt registry with v1 and v2', () => {
+    it('has prompt registry with v2', () => {
       expect(phaseAuditStepCapability.promptRegistry).toBeDefined()
-      expect(phaseAuditStepCapability.promptRegistry.v1).toBeDefined()
       expect(phaseAuditStepCapability.promptRegistry.v2).toBeDefined()
     })
 
@@ -150,35 +149,8 @@ describe('phaseAuditStepCapability', () => {
       expect(phaseAuditStepCapability.currentPromptVersion).toBe('v2')
     })
 
-    it('v1 prompt is still available and not deprecated', () => {
-      const v1 = phaseAuditStepCapability.promptRegistry.v1
-      expect(v1).toBeDefined()
-      expect(v1.deprecated).toBe(false)
-      const result = v1.build({
-        specPath: 'test.md',
-        phaseNumber: 1,
-        filesModified: ['src/test.ts'],
-        engSummary: 'Done',
-      })
-      expect(result.userPrompt).toBeDefined()
-      expect(result.userPrompt.length).toBeGreaterThan(0)
-    })
-
     it('has outputSchema configured', () => {
       expect(phaseAuditStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
-    })
-
-    it('prompt v1 systemPrompt.append contains review context', () => {
-      const prompt = phaseAuditStepCapability.promptRegistry.v1.build({
-        specPath: 'test.md',
-        phaseNumber: 1,
-        filesModified: ['src/test.ts'],
-        engSummary: 'Done',
-      })
-      const append = (prompt.systemPrompt as { append?: string }).append ?? ''
-      expect(append).toContain('Security')
-      expect(append).toContain('Review Checklist')
-      expect(append).toContain('Review Context')
     })
 
     it('prompt v2 systemPrompt.append contains review context', () => {

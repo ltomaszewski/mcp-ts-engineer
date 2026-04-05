@@ -113,16 +113,16 @@ describe('Todo Code Writer Integration', () => {
       expect(orchestrator?.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
 
       const phaseEng = registry.getCapability('todo_code_writer_phase_eng_step')
-      expect(phaseEng?.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+      expect(phaseEng?.defaultRequestOptions?.maxBudgetUsd).toBe(8.0)
 
       const phaseAudit = registry.getCapability('todo_code_writer_phase_audit_step')
-      expect(phaseAudit?.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
+      expect(phaseAudit?.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
 
       const finalAudit = registry.getCapability('todo_code_writer_final_audit_step')
       expect(finalAudit?.defaultRequestOptions?.maxBudgetUsd).toBe(3.0)
 
       const commit = registry.getCapability('todo_code_writer_commit_step')
-      expect(commit?.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+      expect(commit?.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
     })
   })
 })

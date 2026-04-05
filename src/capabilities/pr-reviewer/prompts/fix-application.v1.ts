@@ -27,7 +27,7 @@ ${fileContent}
 \`\`\`
 
 ## Your Task
-Apply the fix described in the issue:
+Apply the fix described in the issue using EDIT OPERATIONS (not full file replacement):
 1. **Minimal changes**: Only modify what's necessary to fix the issue
 2. **Preserve formatting**: Keep existing indentation and style
 3. **No side effects**: Don't introduce new issues
@@ -35,15 +35,27 @@ Apply the fix described in the issue:
 5. **Test compatibility**: Don't break existing tests
 
 ## Output Format
-Return a JSON object with this structure:
+Return a JSON object with an array of edit operations:
 \`\`\`json
 {
-  "fixed_content": "// entire file content with fix applied",
+  "edits": [
+    {
+      "old_string": "// exact text to find in the file",
+      "new_string": "// replacement text"
+    }
+  ],
   "changes_summary": "Brief description of what changed",
-  "verification_needed": true,
   "confidence": 90
 }
 \`\`\`
+
+### Edit Rules
+- Each edit has \`old_string\` (exact match in file) and \`new_string\` (replacement)
+- \`old_string\` must be unique within the file — include enough context lines to disambiguate
+- Preserve surrounding whitespace and indentation exactly
+- Order edits top-to-bottom as they appear in the file
+- Keep edits small and focused — one logical change per edit
+- Set confidence 0-100: how certain the fix is correct without manual review
 
 After applying the fix, verify it doesn't break TypeScript compilation.
 `

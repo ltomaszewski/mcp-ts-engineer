@@ -8,8 +8,7 @@ import type { AnySchema } from '@modelcontextprotocol/sdk/server/zod-compat.js'
 import { SHUTDOWN_COST_WAIT_MAX_MS, SHUTDOWN_COST_WAIT_MS } from '../../config/constants.js'
 import type { AIProvider } from '../ai-provider/ai-provider.types.js'
 import type { CostTracker } from '../cost/cost.tracker.js'
-import type { ChildCostEntry } from '../cost/cost.types.js'
-import type { ChildSessionCostEntry } from '../cost/cost-report.schemas.js'
+import { mapChildCostEntries } from '../cost/map-child-cost-entries.js'
 import type { CostReportWriter } from '../cost/cost-report.writer.js'
 import { CapabilityError } from '../errors.js'
 import type { DiskWriter } from '../logger/disk-writer.js'
@@ -172,7 +171,7 @@ export class CapabilityRegistry {
       try {
         const costSummary = this.deps.costTracker.getSessionSummary(session.id)
         if (costSummary.totalCostUsd > 0) {
-          const childEntries = this.mapChildCostEntries(
+          const childEntries = mapChildCostEntries(
             this.deps.costTracker.getChildCostEntries(session.id),
           )
           await this.deps.costReportWriter.writeSessionToReport(session, costSummary, childEntries)
@@ -186,24 +185,6 @@ export class CapabilityRegistry {
     }
 
     await this.deps.diskWriter.closeAll()
-  }
-
-  /**
-   * Maps ChildCostEntry[] to ChildSessionCostEntry[] for report writing.
-   * @internal
-   */
-  private mapChildCostEntries(entries: ChildCostEntry[]): ChildSessionCostEntry[] {
-    return entries.map((entry) => ({
-      sid: entry.childSessionId || entry.sid,
-      capability: entry.capabilityName,
-      costUsd: entry.costUsd,
-      turns: entry.turns || 0,
-      inputTokens: entry.inputTokens,
-      outputTokens: entry.outputTokens,
-      model: entry.model,
-      status: entry.status || 'success',
-      ...(entry.commitSha ? { commitSha: entry.commitSha } : {}),
-    }))
   }
 
   /**

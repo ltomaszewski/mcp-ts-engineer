@@ -129,11 +129,31 @@ const REVIEW_PROMPT_V3: PromptVersion = {
    - Apply all ALWAYS/NEVER rules and Audit Checklist items from <eng_rules>`
       : '4. **Performance**: N+1 queries, memory leaks, unnecessary re-renders, large bundles'
 
+    const diff = data.diff_content.substring(0, 30000)
+    const truncationNotice = data.diff_content.length > 30000
+      ? `\n<truncation_notice>This diff was truncated from ${data.diff_content.length} to 30,000 characters. Files after the cutoff were NOT reviewed. Flag this in your output.</truncation_notice>\n`
+      : ''
+
     return {
       systemPrompt: { type: 'preset' as const, preset: 'claude_code' as const },
-      userPrompt: `<diff>
-${data.diff_content.substring(0, 30000)}
-</diff>
+      userPrompt: `You are a senior code reviewer with expertise in TypeScript, security analysis, and distributed systems. You have a reputation for catching subtle bugs that pass junior review. Your reviews are thorough but focused — you flag real issues, not style preferences.
+
+<required_investigation>
+You MUST use tools to investigate before giving your review. Do NOT review from the diff alone.
+
+For each changed file:
+1. Use the Read tool to read the FULL file at ${data.worktree_path}/\${file_path} — understand the surrounding context
+2. Check what other code imports or calls the modified functions — are callers affected?
+3. Check if test files exist for the modified code (look for *.test.ts or __tests__/)
+
+Only AFTER reading context for all changed files, analyze the diff and produce your review.
+
+If you complete your review without reading any files, your review is incomplete.
+</required_investigation>
+
+<diff>
+${diff}
+</diff>${truncationNotice}
 
 <context>
 <pr_info>PR #${ctx.pr_number} in ${ctx.repo_owner}/${ctx.repo_name}, branch ${ctx.pr_branch} → ${ctx.base_branch}</pr_info>
@@ -147,11 +167,24 @@ ${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
 Review from these perspectives (skip lint/formatting — handled by daily audit):
 
 1. **Code Quality**: TypeScript anti-patterns, logic errors, missing error handling
-2. **Security**: Input validation, auth bypass, secret exposure, injection risks
+2. **Security (OWASP-informed)**:
+   - **Injection**: SQL/NoSQL injection via string interpolation, user input in queries
+   - **Auth bypass**: Missing @UseGuards, unprotected routes, broken access control
+   - **SSRF**: fetch(userControlledUrl) in API routes or services
+   - **XSS**: Unsanitized user input in React dangerouslySetInnerHTML or DOM APIs
+   - **Secrets**: Hardcoded API keys, tokens, passwords, connection strings
+   - **Prototype pollution**: Object.assign(target, userInput), spread of unvalidated data
+   - **ReDoS**: User-controlled regex patterns, regex with catastrophic backtracking
+   - **Timing attacks**: String === for secret comparison (use timingSafeEqual)
+   - **Missing validation**: Request body/params used without Zod/class-validator
 3. **Architecture**: SOLID violations, circular deps, coupling, design pattern misuse
 ${performanceItem}
-
-Read each changed file in the worktree at ${data.worktree_path} for full context.
+5. **Testing Adequacy**:
+   - Does new/modified code have corresponding test files?
+   - Do tests cover meaningful behavior (not just "it renders without crashing")?
+   - Are edge cases tested (null, empty, boundary values, error paths)?
+   - Are async operations tested with proper await/mock patterns?
+   - If tests are missing for changed code, flag as HIGH severity
 </instructions>
 
 <constraints>
@@ -218,6 +251,7 @@ export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, Revie
     model: 'sonnet',
     maxTurns: 50,
     maxBudgetUsd: 3.0,
+    maxThinkingTokens: 16000,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
@@ -254,7 +288,7 @@ export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, Revie
     _context.logger.debug('XML block not found, trying regex fallback')
 
     // Strategy 3: Regex JSON extraction fallback
-    const parsed = tryParseJson<ReviewStepOutput>(aiResult.content)
+    const parsed = tryParseJson(aiResult.content, ReviewStepOutputSchema)
     if (parsed?.issues && Array.isArray(parsed.issues)) {
       _context.logger.info('Review parsed via regex JSON extraction', {
         issueCount: parsed.issues.length,
@@ -263,6 +297,6 @@ export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, Revie
     }
 
     _context.logger.warn('All review parsing strategies failed, returning empty issues')
-    return FALLBACK
+    return { ...FALLBACK, parsing_failed: true }
   },
 }

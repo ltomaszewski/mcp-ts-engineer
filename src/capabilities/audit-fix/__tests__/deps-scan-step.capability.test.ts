@@ -24,6 +24,10 @@ describe('auditFixDepsScanStepCapability', () => {
       expect(auditFixDepsScanStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
       expect(auditFixDepsScanStepCapability.defaultRequestOptions?.maxTurns).toBe(40)
     })
+
+    it('has outputSchema configured', () => {
+      expect(auditFixDepsScanStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {
@@ -83,7 +87,7 @@ describe('auditFixDepsScanStepCapability', () => {
       ) as import('../audit-fix.schema.js').DepsScanStepResult
 
       expect(result.audit_ran).toBe(false)
-      expect(result.vulnerabilities_found).toBe(0)
+      expect(result.vulnerabilities_found).toBe(-1)
     })
 
     it('returns fallback when JSON parse fails', () => {

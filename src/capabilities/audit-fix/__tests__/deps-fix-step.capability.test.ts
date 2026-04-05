@@ -24,6 +24,10 @@ describe('auditFixDepsFixStepCapability', () => {
       expect(auditFixDepsFixStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
       expect(auditFixDepsFixStepCapability.defaultRequestOptions?.maxTurns).toBe(30)
     })
+
+    it('has outputSchema configured', () => {
+      expect(auditFixDepsFixStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {

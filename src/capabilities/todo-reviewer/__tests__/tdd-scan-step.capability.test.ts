@@ -32,6 +32,14 @@ describe('tddScanStepCapability', () => {
     it('has internal visibility', () => {
       expect(tddScanStepCapability.visibility).toBe('internal')
     })
+
+    it('has maxBudgetUsd of 2.0', () => {
+      expect(tddScanStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(2.0)
+    })
+
+    it('has maxThinkingTokens of 16000', () => {
+      expect(tddScanStepCapability.defaultRequestOptions?.maxThinkingTokens).toBe(16000)
+    })
   })
 
   describe('preparePromptInput', () => {

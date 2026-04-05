@@ -21,6 +21,19 @@ import { TEST_CURRENT_VERSION, testPrompts } from './prompts/index.js'
  * execute npm test commands in workspace directories. Input is validated via Zod
  * schema and this capability is only invoked through the orchestrator's authenticated channel.
  */
+const TEST_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    properties: {
+      passed: { type: 'boolean' },
+      workspaces_tested: { type: 'array', items: { type: 'string' } },
+      summary: { type: 'string' },
+    },
+    required: ['passed', 'workspaces_tested', 'summary'],
+  },
+}
+
 export const finalizeTestStepCapability: CapabilityDefinition<TestStepInput, TestResult> = {
   id: 'finalize_test_step',
   type: 'tool',
@@ -39,6 +52,7 @@ export const finalizeTestStepCapability: CapabilityDefinition<TestStepInput, Tes
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
+    outputSchema: TEST_OUTPUT_JSON_SCHEMA,
   },
 
   preparePromptInput: (input: TestStepInput, _context) => ({
@@ -47,7 +61,15 @@ export const finalizeTestStepCapability: CapabilityDefinition<TestStepInput, Tes
   }),
 
   processResult: (_input: TestStepInput, aiResult, _context) => {
-    // Parse <test_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = TestResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'test_result')
     const fallback = {
       ...TEST_RESULT_FALLBACK,

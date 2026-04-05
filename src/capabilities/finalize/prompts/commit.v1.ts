@@ -1,5 +1,6 @@
 import { getCommitTag } from '../../../config/constants.js'
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { buildCommitPrompt } from '../../../shared/prompts/commit-prompt.js'
 
 /**
  * Commit step prompt for finalize capability.
@@ -12,73 +13,6 @@ interface CommitPromptInput {
   filesAffected: string[]
   sessionId: string
   cwd?: string
-}
-
-const buildCommitUserPrompt = (
-  auditSummary: string,
-  codemapSummary: string,
-  filesAffected: string[],
-  sessionId: string,
-  cwd?: string,
-): string => {
-  const filesAffectedList = filesAffected.map((f) => `  - ${f}`).join('\n')
-  const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
-
-  return `You are the Commit Agent for finalizing cleanup changes.
-
-${cwdContext}Audit Summary:
-${auditSummary}
-
-Codemap Summary:
-${codemapSummary}
-
-Files affected:
-${filesAffectedList}
-
-Your responsibilities:
-1. Check git status to see what changes exist:
-   - Run: git status
-   - Identify modified, added, or deleted files
-
-2. If changes exist, stage and commit them:
-   - Stage all changes: git add .
-   - Create a descriptive commit message following this format:
-     "chore(<scope>): ${getCommitTag()} finalize audit fixes and codemap updates"
-   - Scope should be derived from the files affected (e.g., "capabilities", "core", "docs")
-   - Include a commit body with details if fixes were significant
-
-3. If no changes exist:
-   - Don't create an empty commit
-   - Report that no commit was needed
-
-4. Extract commit information:
-   - Get commit SHA: git rev-parse HEAD
-   - Record the commit message used
-
-5. Output your results in this format:
-
-<finalize_commit_result>
-{
-  "committed": <boolean>,
-  "commit_sha": "<sha or null>",
-  "commit_message": "<message or null>",
-  "files_committed": ["file1.ts", "file2.ts"]
-}
-</finalize_commit_result>
-
-Commit message guidelines:
-- Use conventional commits format: "chore(<scope>): <description>"
-- Keep the subject line under 72 characters
-- Include body with bullet points if multiple types of changes
-- Example: "chore(capabilities): ${getCommitTag()} finalize audit fixes and codemap updates"
-- After the commit body, add a blank line followed by: Session-Id: ${sessionId}
-
-Git trailer format:
-- Add a blank line after the commit body
-- Add the Session-Id trailer: Session-Id: ${sessionId}
-- This trailer enables tracing commits back to their cost report session
-
-Your goal is to create a clean, descriptive commit that captures all finalization changes.`
 }
 
 export const commitPromptV1: PromptVersion = {
@@ -95,13 +29,17 @@ export const commitPromptV1: PromptVersion = {
         type: 'preset' as const,
         preset: 'claude_code' as const,
       },
-      userPrompt: buildCommitUserPrompt(
-        auditSummary,
-        codemapSummary,
-        filesAffected,
+      userPrompt: buildCommitPrompt({
         sessionId,
         cwd,
-      ),
+        scope: '<scope>',
+        files: filesAffected,
+        outputTag: 'finalize_commit_result',
+        defaultMessage: `chore(capabilities): ${getCommitTag()} finalize audit fixes and codemap updates`,
+        changeContext: `Audit Summary:\n${auditSummary}\n\nCodemap Summary:\n${codemapSummary}`,
+        extraRules:
+          '\n- Scope should be derived from the files affected (e.g., "capabilities", "core", "docs")\n- Include a commit body with details if fixes were significant',
+      }),
     }
   },
 }

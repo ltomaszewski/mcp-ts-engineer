@@ -185,6 +185,10 @@ describe('todoCodeWriterCapability', () => {
         true,
       )
     })
+
+    it('has maxThinkingTokens of 8000', () => {
+      expect(todoCodeWriterCapability.defaultRequestOptions?.maxThinkingTokens).toBe(8000)
+    })
   })
 
   describe('preparePromptInput', () => {

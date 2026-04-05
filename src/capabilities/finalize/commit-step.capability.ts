@@ -40,12 +40,25 @@ export const finalizeCommitStepCapability: CapabilityDefinition<
   currentPromptVersion: COMMIT_CURRENT_VERSION,
   defaultRequestOptions: {
     model: 'haiku',
-    maxTurns: 40,
-    maxBudgetUsd: 5.0,
+    maxTurns: 20,
+    maxBudgetUsd: 0.5,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
+    outputSchema: {
+      type: 'json_schema',
+      schema: {
+        type: 'object',
+        properties: {
+          committed: { type: 'boolean' },
+          commit_sha: { type: ['string', 'null'] },
+          commit_message: { type: ['string', 'null'] },
+          files_committed: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['committed', 'commit_sha', 'commit_message', 'files_committed'],
+      },
+    } as Record<string, unknown>,
   },
 
   preparePromptInput: (input: CommitStepInput, context) => ({
@@ -58,7 +71,15 @@ export const finalizeCommitStepCapability: CapabilityDefinition<
   }),
 
   processResult: (_input: CommitStepInput, aiResult, _context) => {
-    // Parse <finalize_commit_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = FinalizeCommitResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'finalize_commit_result')
     const fallback = {
       ...FINALIZE_COMMIT_RESULT_FALLBACK,

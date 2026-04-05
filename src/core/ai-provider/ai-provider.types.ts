@@ -94,6 +94,12 @@ export interface AIQueryRequest {
   maxBudgetUsd?: number
   /** Timeout in milliseconds */
   timeout?: number
+  /** Idle timeout in milliseconds (no SDK message = assume dead) */
+  idleTimeout?: number
+  /** Hard timeout in milliseconds (absolute max per query) */
+  hardTimeout?: number
+  /** Trace level: 'full' captures raw SDK events, 'minimal' (default) skips them */
+  traceLevel?: 'full' | 'minimal'
   /** Permission mode for tool execution */
   permissionMode?: PermissionMode
   /** Working directory */
@@ -161,14 +167,30 @@ export interface MCPServerConfig {
   env?: Record<string, string>
 }
 
-/** Hooks configuration for AI lifecycle events */
+/**
+ * Hook callback for PreToolUse/PostToolUse events.
+ * Receives tool input and returns a decision (continue/block).
+ */
+export type AIHookCallback = (toolInput: Record<string, unknown>) => AIHookResult
+
+/** Result of a hook callback. */
+export interface AIHookResult {
+  decision: 'continue' | 'block'
+  reason?: string
+}
+
+/** Hook matcher — binds callbacks to a tool name pattern. */
+export interface AIHookMatcher {
+  matcher: string
+  hooks: AIHookCallback[]
+}
+
+/**
+ * Hooks configuration for AI execution.
+ * Matches the Claude Agent SDK hook structure (PreToolUse, PostToolUse, etc.).
+ */
 export interface AIHooksConfig {
-  /** Called before each AI request */
-  beforeRequest?: (request: AIQueryRequest) => void | Promise<void>
-  /** Called after each AI response */
-  afterResponse?: (result: AIQueryResult) => void | Promise<void>
-  /** Called on error */
-  onError?: (error: Error) => void | Promise<void>
+  PreToolUse?: AIHookMatcher[]
 }
 
 /** Subagent definition for orchestration */

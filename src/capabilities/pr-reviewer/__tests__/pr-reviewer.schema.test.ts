@@ -19,9 +19,11 @@ import {
   REVERT_OUTPUT_JSON_SCHEMA,
   REVIEW_OUTPUT_JSON_SCHEMA,
   ReviewIssueSchema,
+  ReviewStepOutputSchema,
   TEST_OUTPUT_JSON_SCHEMA,
   VALIDATE_OUTPUT_JSON_SCHEMA,
 } from '../pr-reviewer.schema.js'
+import { prReviewStepCapability } from '../pr-review-step.capability.js'
 
 describe('PrReviewerInputSchema', () => {
   describe('valid inputs', () => {
@@ -593,5 +595,121 @@ describe('JSON Schema constants for structured output', () => {
     expect(severityEnum).toContain('HIGH')
     expect(severityEnum).toContain('MEDIUM')
     expect(severityEnum).toContain('LOW')
+  })
+})
+
+describe('ReviewStepOutputSchema', () => {
+  it('accepts valid output without parsing_failed', () => {
+    const result = ReviewStepOutputSchema.safeParse({
+      agent: 'multi-review',
+      issues: [],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.parsing_failed).toBeUndefined()
+    }
+  })
+
+  it('accepts output with parsing_failed: true', () => {
+    const result = ReviewStepOutputSchema.safeParse({
+      agent: 'multi-review',
+      issues: [],
+      parsing_failed: true,
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.parsing_failed).toBe(true)
+    }
+  })
+
+  it('accepts output with parsing_failed: false', () => {
+    const result = ReviewStepOutputSchema.safeParse({
+      agent: 'multi-review',
+      issues: [],
+      parsing_failed: false,
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.parsing_failed).toBe(false)
+    }
+  })
+
+  it('accepts output with issues and optional error', () => {
+    const result = ReviewStepOutputSchema.safeParse({
+      agent: 'security',
+      issues: [
+        {
+          severity: 'HIGH',
+          title: 'SQL injection',
+          file_path: 'src/db.ts',
+          details: 'Unsanitized input',
+          auto_fixable: false,
+          confidence: 90,
+        },
+      ],
+      error: 'partial failure',
+    })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('prReviewStepCapability.processResult', () => {
+  const mockLogger = {
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }
+  const mockContext = { logger: mockLogger } as never
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns parsing_failed: true when all strategies fail', () => {
+    const input = { pr: '123', agent: 'multi-review' }
+    const aiResult = {
+      content: 'No parseable output here',
+      structuredOutput: undefined,
+    } as never
+
+    const result = prReviewStepCapability.processResult(input, aiResult, mockContext)
+
+    expect(result.parsing_failed).toBe(true)
+    expect(result.agent).toBe('multi-review')
+    expect(result.issues).toEqual([])
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'All review parsing strategies failed, returning empty issues',
+    )
+  })
+
+  it('does not set parsing_failed when structured output succeeds', () => {
+    const input = { pr: '123', agent: 'security' }
+    const aiResult = {
+      content: '',
+      structuredOutput: {
+        agent: 'security',
+        issues: [{ severity: 'HIGH', title: 'XSS', file_path: 'x.ts', details: 'd', auto_fixable: false, confidence: 80 }],
+      },
+    } as never
+
+    const result = prReviewStepCapability.processResult(input, aiResult, mockContext)
+
+    expect(result.parsing_failed).toBeUndefined()
+    expect(result.agent).toBe('security')
+    expect(result.issues).toHaveLength(1)
+  })
+
+  it('does not set parsing_failed when XML parsing succeeds', () => {
+    const input = { pr: '123', agent: 'multi-review' }
+    const aiResult = {
+      content: '<review_result>{"agent":"multi-review","issues":[]}</review_result>',
+      structuredOutput: undefined,
+    } as never
+
+    const result = prReviewStepCapability.processResult(input, aiResult, mockContext)
+
+    expect(result.parsing_failed).toBeUndefined()
+    expect(result.issues).toEqual([])
   })
 })

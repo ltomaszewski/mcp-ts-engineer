@@ -4,6 +4,7 @@
  * @internal Shared across step capabilities for JSON parsing and common operations.
  */
 
+import type { ZodSchema } from 'zod'
 import type { PrContext } from './pr-reviewer.schema.js'
 import { PrContextSchema } from './pr-reviewer.schema.js'
 
@@ -119,18 +120,21 @@ export function getDiffForFiles(
 }
 
 /**
- * Try to parse JSON from AI result content.
+ * Try to parse JSON from AI result content with Zod validation.
  * Handles both raw JSON and markdown-fenced JSON blocks.
  *
  * @param content - AI result content string
- * @returns Parsed object or null on failure
+ * @param schema - Zod schema for validation
+ * @returns Parsed and validated object or null on failure
  */
-export function tryParseJson<T>(content: string): T | null {
+export function tryParseJson<T>(content: string, schema: ZodSchema<T>): T | null {
   try {
     // Try to extract JSON from markdown code block first
     const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/)
     const jsonStr = jsonMatch ? jsonMatch[1] : content
-    return JSON.parse(jsonStr) as T
+    const parsed = JSON.parse(jsonStr) as unknown
+    const result = schema.safeParse(parsed)
+    return result.success ? result.data : null
   } catch {
     return null
   }

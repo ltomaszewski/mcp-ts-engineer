@@ -35,6 +35,17 @@ const PHASE_ENG_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
       status: { type: 'string', enum: ['success', 'failed'] },
       files_modified: { type: 'array', items: { type: 'string' } },
       summary: { type: 'string' },
+      test_files_created: { type: 'array', items: { type: 'string' } },
+      test_run_result: {
+        type: 'object',
+        properties: {
+          ran: { type: 'boolean' },
+          passed: { type: 'number' },
+          failed: { type: 'number' },
+          skipped: { type: 'number' },
+        },
+        required: ['ran', 'passed', 'failed', 'skipped'],
+      },
     },
     required: ['status', 'files_modified', 'summary'],
   },
@@ -62,15 +73,14 @@ export const phaseEngStepCapability: CapabilityDefinition<PhaseEngStepInput, Pha
   defaultRequestOptions: {
     model: 'sonnet', // Default, can be overridden with opus/haiku from orchestrator
     maxTurns: 100,
-    maxBudgetUsd: 5.0,
+    maxBudgetUsd: 8.0,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
     outputSchema: PHASE_ENG_OUTPUT_JSON_SCHEMA,
     appendSystemPrompt: undefined, // Set lazily at merge time via buildDevContext()
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: PhaseEngStepInput, _context) => {
@@ -82,6 +92,7 @@ export const phaseEngStepCapability: CapabilityDefinition<PhaseEngStepInput, Pha
       cwd: input.cwd,
       detectedTechnologies: detection.technologies,
       detectedDependencies: detection.dependencies,
+      auditFeedback: input.audit_feedback,
     }
   },
 

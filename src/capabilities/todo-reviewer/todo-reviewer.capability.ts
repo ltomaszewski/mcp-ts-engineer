@@ -75,9 +75,10 @@ export const todoReviewerCapability: CapabilityDefinition<TodoReviewerInput, Tod
   promptRegistry: REVIEW_PROMPT_VERSIONS,
   currentPromptVersion: REVIEW_CURRENT_VERSION,
   defaultRequestOptions: {
-    model: 'sonnet',
+    model: 'opus',
     maxTurns: 80,
     maxBudgetUsd: 5.0,
+    maxThinkingTokens: 16000,
     tools: { type: 'preset', preset: 'claude_code' },
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,

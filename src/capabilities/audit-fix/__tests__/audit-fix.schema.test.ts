@@ -828,10 +828,26 @@ describe('DepsScanStepResultSchema', () => {
     }
   })
 
-  it('rejects negative vulnerability counts', () => {
+  it('accepts -1 as sentinel for unknown vulnerability count', () => {
+    const scanResult = {
+      audit_ran: false,
+      vulnerabilities_found: -1,
+      vulnerabilities_by_severity: {
+        critical: 0,
+        high: 0,
+        moderate: 0,
+        low: 0,
+      },
+      audit_json: '',
+    }
+    const result = DepsScanStepResultSchema.safeParse(scanResult)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects non-integer vulnerability counts', () => {
     const scanResult = {
       audit_ran: true,
-      vulnerabilities_found: -5,
+      vulnerabilities_found: 2.5,
       vulnerabilities_by_severity: {
         critical: 0,
         high: 0,

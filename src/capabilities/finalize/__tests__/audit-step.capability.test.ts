@@ -128,9 +128,8 @@ describe('finalizeAuditStepCapability', () => {
       ).toBe(true)
     })
 
-    it('has prompt registry with v1 and v2', () => {
+    it('has prompt registry with v2', () => {
       expect(finalizeAuditStepCapability.promptRegistry).toBeDefined()
-      expect(finalizeAuditStepCapability.promptRegistry.v1).toBeDefined()
       expect(finalizeAuditStepCapability.promptRegistry.v2).toBeDefined()
     })
 
@@ -138,9 +137,8 @@ describe('finalizeAuditStepCapability', () => {
       expect(finalizeAuditStepCapability.currentPromptVersion).toBe('v2')
     })
 
-    it('has v1 marked as deprecated', () => {
-      expect(finalizeAuditStepCapability.promptRegistry.v1.deprecated).toBe(true)
-      expect(finalizeAuditStepCapability.promptRegistry.v1.sunsetDate).toBe('2026-03-01')
+    it('has outputSchema configured', () => {
+      expect(finalizeAuditStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
     })
   })
 

@@ -298,7 +298,7 @@ export type DepsScanStepInput = z.infer<typeof DepsScanStepInputSchema>
  */
 export const DepsScanStepResultSchema = z.object({
   audit_ran: z.boolean(),
-  vulnerabilities_found: z.number().int().nonnegative(),
+  vulnerabilities_found: z.number().int(),
   vulnerabilities_by_severity: VulnerabilitiesBySeveritySchema,
   audit_json: z.string(),
 })

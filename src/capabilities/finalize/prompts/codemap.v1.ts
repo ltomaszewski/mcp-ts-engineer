@@ -86,6 +86,23 @@ Important:
 - Keep codemaps focused and concise
 - ALWAYS use the absolute path ${monorepoRoot}/.claude/codemaps/ for reading and writing codemaps
 
+<codemap_decision_examples>
+**UPDATE the codemap when:**
+- A new capability directory is created (e.g., src/capabilities/new-feature/) — add to capability table
+- A new package or app is added to the monorepo — create a new codemap file
+- A module's public API changes (new exports, renamed entry point) — update Key Files table
+- Directory structure changes significantly (moved/renamed directories) — update tree
+- New integration points are added (e.g., a new provider wired into the registry)
+
+**DO NOT update the codemap when:**
+- Bug fix in an existing file (no structural change)
+- Internal refactoring within a module (same public API, same directory structure)
+- Test files added or updated (tests are implementation detail, not architecture)
+- Prompt text or string content changes (no code structure impact)
+- Dependency version bumps or config file tweaks
+- Adding/modifying private helper functions inside an existing module
+</codemap_decision_examples>
+
 Your goal is to keep architecture documentation current and useful.`
 }
 

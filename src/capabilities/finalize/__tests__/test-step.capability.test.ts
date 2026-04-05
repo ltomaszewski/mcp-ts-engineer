@@ -137,6 +137,10 @@ describe('finalizeTestStepCapability', () => {
     it('has current prompt version v2', () => {
       expect(finalizeTestStepCapability.currentPromptVersion).toBe('v2')
     })
+
+    it('has outputSchema configured', () => {
+      expect(finalizeTestStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {

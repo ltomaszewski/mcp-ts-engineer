@@ -151,18 +151,29 @@ export async function processProject(
   const projectStartTime = Date.now()
 
   try {
-    // PHASE 1: DEPS (first - before any other steps)
+    // PHASE 1: DEPS + LINT SCAN in parallel (independent discovery steps)
     // --------------------------------------------------
     checkProjectTimeout(projectStartTime, projectPath)
+    const [depsScanSettled, lintScanSettled] = await Promise.allSettled([
+      invokeDepsScanStep(projectPath, cwd, context),
+      invokeLintScanStep(projectPath, cwd, context),
+    ])
+
     let depsScanResult: DepsScanStepResult = DEPS_SCAN_STEP_RESULT_FALLBACK
-    try {
-      depsScanResult = await invokeDepsScanStep(projectPath, cwd, context)
-    } catch (error) {
-      handleStepError(error, projectPath, 'deps', 'deps_scan', projectStartTime)
-      depsScanResult = DEPS_SCAN_STEP_RESULT_FALLBACK
+    if (depsScanSettled.status === 'fulfilled') {
+      depsScanResult = depsScanSettled.value
+    } else {
+      handleStepError(depsScanSettled.reason, projectPath, 'deps', 'deps_scan', projectStartTime)
     }
 
-    // Only run deps fix if audit ran AND vulnerabilities found
+    let lintScanResult: LintScanResult = LINT_SCAN_RESULT_FALLBACK
+    if (lintScanSettled.status === 'fulfilled') {
+      lintScanResult = lintScanSettled.value
+    } else {
+      handleStepError(lintScanSettled.reason, projectPath, 'lint', 'lint_scan', projectStartTime)
+    }
+
+    // PHASE 1b: DEPS FIX (sequential, depends on scan result)
     if (depsScanResult.audit_ran && depsScanResult.vulnerabilities_found > 0) {
       let depsFixResult: DepsFixStepResult = DEPS_FIX_STEP_RESULT_FALLBACK
       try {
@@ -172,7 +183,6 @@ export async function processProject(
           cwd,
           context,
         )
-        // Track modified files (prefixed with projectPath) and fix count
         allFilesModified.push(...depsFixResult.files_modified.map((f) => `${projectPath}/${f}`))
         depsFixCount += depsFixResult.vulnerabilities_fixed
       } catch (error) {
@@ -180,18 +190,7 @@ export async function processProject(
       }
     }
 
-    // PHASE 2: LINT (after deps, before audit)
-    // --------------------------------------------------
-    checkProjectTimeout(projectStartTime, projectPath)
-    let lintScanResult: LintScanResult = LINT_SCAN_RESULT_FALLBACK
-    try {
-      lintScanResult = await invokeLintScanStep(projectPath, cwd, context)
-    } catch (error) {
-      handleStepError(error, projectPath, 'lint', 'lint_scan', projectStartTime)
-      lintScanResult = LINT_SCAN_RESULT_FALLBACK
-    }
-
-    // Only run lint fix if lint is available AND failed
+    // PHASE 1c: LINT FIX (sequential, depends on scan result)
     if (lintScanResult.lint_available && !lintScanResult.lint_passed) {
       try {
         const lintFixResult = await invokeLintFixStep(

@@ -71,7 +71,7 @@ export const TEST_RESULT_FALLBACK: TestResult = {
 /** Default LintScanResult returned when AI output cannot be parsed. */
 export const LINT_SCAN_RESULT_FALLBACK: LintScanResult = {
   lint_available: false,
-  lint_passed: true,
+  lint_passed: false,
   error_count: 0,
   warning_count: 0,
   lint_report: '',
@@ -88,7 +88,7 @@ export const LINT_FIX_RESULT_FALLBACK: LintFixResult = {
 /** Default DepsScanStepResult returned when AI output cannot be parsed. */
 export const DEPS_SCAN_STEP_RESULT_FALLBACK: DepsScanStepResult = {
   audit_ran: false,
-  vulnerabilities_found: 0,
+  vulnerabilities_found: -1,
   vulnerabilities_by_severity: {
     critical: 0,
     high: 0,

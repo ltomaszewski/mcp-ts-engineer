@@ -10,10 +10,11 @@ import { resolveCwd } from '../../core/utils/cwd.js'
 import { buildTestCommand } from '../test-command.js'
 import { buildDevContext } from './dev-context.js'
 import {
+  buildSkillLoadingSection,
   COMPONENT_CHECK_RULES,
   EXPORT_DESIGN_RULES,
   RACE_CONDITIONS_RULES,
-  resolveSkillsFromTechnologies,
+  REACT_HOOKS_REVIEW_RULES,
   TESTING_REQUIREMENTS_RULES,
 } from './eng-rules/index.js'
 
@@ -36,6 +37,7 @@ interface SpecModeInput {
   detectedTechnologies?: string[]
   detectedDependencies?: string[]
   cwd?: string
+  auditFeedback?: string
   // Fix-mode fields ignored in spec mode
   auditSummary?: string
   filesWithIssues?: string[]
@@ -71,37 +73,6 @@ function buildSystemPromptAppend(): string {
   return `After completing all tool use, provide a brief text summary of the implementation work. Your structured output will be captured automatically via the output schema.
 
 ${buildDevContext()}`
-}
-
-/**
- * Builds the skill loading section with the resolved list of skills to invoke.
- */
-const buildSkillLoadingSection = (
-  detectedTechnologies: string[],
-  detectedDependencies?: string[],
-): string => {
-  const skills = resolveSkillsFromTechnologies(detectedTechnologies, detectedDependencies)
-
-  if (skills.length === 0) {
-    return ''
-  }
-
-  const skillList = skills.map((s) => `  - ${s}`).join('\n')
-
-  return `<skill_loading>
-BEFORE writing ANY code, load engineering skills via the Skill tool.
-Skills provide project-specific patterns, anti-patterns, and best practices
-that MUST be followed during implementation.
-
-Loading process:
-1. Invoke each skill listed below using the Skill tool
-2. Read and absorb the patterns returned by each skill
-3. Apply those patterns throughout implementation
-4. Always load typescript-clean-code for TypeScript quality standards
-
-Skills to load:
-${skillList}
-</skill_loading>`
 }
 
 /**
@@ -142,6 +113,13 @@ const buildEngineeringRulesSection = (technologies: string[]): string => {
     section += '\n</component_check>\n'
   }
 
+  // Conditionally include React hooks review for react/react-native/expo/nextjs
+  if (hasReact) {
+    section += '\n<react_hooks_review>\n'
+    section += REACT_HOOKS_REVIEW_RULES
+    section += '\n</react_hooks_review>\n'
+  }
+
   section += '</engineering_rules>'
 
   return section
@@ -171,8 +149,12 @@ const buildSpecModeUserPrompt = (input: SpecModeInput): string => {
 
   const engineeringRulesSection = buildEngineeringRulesSection(technologies)
 
-  return `You are a senior engineer implementing Phase ${currentPhaseNumber} of a feature spec.
+  const auditFeedbackSection = input.auditFeedback
+    ? `\n<audit_feedback>\nA previous audit of this phase FAILED. You must address these issues:\n${input.auditFeedback}\n</audit_feedback>\n`
+    : ''
 
+  return `You are a senior engineer implementing Phase ${currentPhaseNumber} of a feature spec.
+${auditFeedbackSection}
 <spec_path>${specPath}</spec_path>
 <current_phase>${currentPhaseNumber}</current_phase>
 <phase_purpose>${currentPhase.purpose}</phase_purpose>
@@ -192,10 +174,15 @@ ${skillLoadingSection}
 
 4. Find Phase ${currentPhaseNumber} and follow its step-by-step instructions EXACTLY.
    - The spec contains detailed implementation steps for this phase
-   - Follow TDD: write tests FIRST, then implement to make tests pass
    - Use the file list above as a guide, but follow the spec's actual instructions
 
-5. After implementation, output a summary in the following JSON format inside <phase_eng_result> XML tags:
+5. **TDD Enforcement — Red-Green-Refactor:**
+   a. RED: Create test files FIRST. Run tests — they MUST fail (this proves they test real behavior)
+   b. GREEN: Write implementation to make tests pass
+   c. REFACTOR: Clean up while tests stay green
+   If you skip tests or write implementation first, set test_run_result.ran = false and explain why in summary.
+
+6. After implementation, output a summary in the following JSON format inside <phase_eng_result> XML tags:
 
 <phase_eng_result>
 {
@@ -204,7 +191,9 @@ ${skillLoadingSection}
     "src/capabilities/feature/file1.ts",
     "src/capabilities/feature/file2.ts"
   ],
-  "summary": "Implemented schemas with Zod validation. Created 3 schema files with comprehensive input/output types."
+  "summary": "Implemented schemas with Zod validation. Created 3 schema files with comprehensive input/output types.",
+  "test_files_created": ["src/capabilities/feature/__tests__/file1.test.ts"],
+  "test_run_result": { "ran": true, "passed": 12, "failed": 0, "skipped": 0 }
 }
 </phase_eng_result>
 
@@ -224,6 +213,27 @@ ${skillLoadingSection}
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY run tests but MUST use: cd <workspace> && ${buildTestCommand('jest')} (or Vitest equivalent). Run ONCE per workspace. NEVER re-run. NEVER use bare \`npm test\`.
 </rules>
+
+<exception_handling>
+When the spec does not match reality, apply these rules:
+
+**Wrong file paths**: If the spec references a file that does not exist at the given path:
+  1. Search for the file by name (Glob) — it may have moved.
+  2. If found elsewhere, use the actual path and note the discrepancy in your summary.
+  3. If not found, create it at the spec path (the spec may be defining a new file).
+
+**Missing APIs or imports**: If the spec calls a function/class that does not exist:
+  1. Check if it was renamed (Grep for similar names).
+  2. If it exists under a different name, use the real name.
+  3. If it truly does not exist, implement it as the spec describes.
+
+**Spec contradictions**: If two parts of the spec conflict:
+  1. Prefer the more specific instruction over the general one.
+  2. Prefer the Implementation Phases section over the Overview section.
+  3. Note the contradiction in your summary so it can be corrected.
+
+**Never**: Silently skip a spec requirement. If you cannot fulfill it, set status to "failed" and explain why.
+</exception_handling>
 
 ${engineeringRulesSection}
 

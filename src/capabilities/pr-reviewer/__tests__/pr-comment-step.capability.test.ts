@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCommentBody } from '../pr-comment-step.capability.js'
+import { buildCommentBody, prCommentStepCapability } from '../pr-comment-step.capability.js'
 import type { CommentStepInput, ReviewIssue, ReviewIssueData } from '../pr-reviewer.schema.js'
 
 const makeCommentStepInput = (
@@ -48,6 +48,20 @@ function extractIssuesDataJson(body: string): ReviewIssueData[] {
   if (!match?.[1]) throw new Error('Issues Data section not found in comment body')
   return JSON.parse(match[1]) as ReviewIssueData[]
 }
+
+describe('prCommentStepCapability definition metadata', () => {
+  it('has maxBudgetUsd of 0.5', () => {
+    expect(prCommentStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
+  })
+
+  it('has maxTurns of 1', () => {
+    expect(prCommentStepCapability.defaultRequestOptions?.maxTurns).toBe(1)
+  })
+
+  it('uses haiku model', () => {
+    expect(prCommentStepCapability.defaultRequestOptions?.model).toBe('haiku')
+  })
+})
 
 describe('pr-comment-step: Auto-Fixed Issues detail', () => {
   it('lists fixed issue titles as bullet points', () => {

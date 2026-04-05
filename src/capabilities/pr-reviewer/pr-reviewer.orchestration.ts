@@ -11,6 +11,7 @@
 
 import { getProjectConfig } from '../../config/project-config.js'
 import type { CapabilityContext } from '../../core/capability-registry/capability-registry.types.js'
+import { runWithConcurrency } from '../../core/utils/concurrency.js'
 import { revertDeletedProtectedFiles } from '../../shared/git-safety.js'
 import { generateIssueId } from '../../core/utils/issue-id.js'
 import { parseReviewIssuesFromComment } from '../pr-fixer/pr-fixer.helpers.js'
@@ -545,6 +546,8 @@ async function executeReview(
     projects: projectGroups.size,
   })
 
+  // Build all chunk review tasks across projects
+  const chunkTasks: Array<() => Promise<ReviewStepOutput>> = []
   for (const [_projectDir, projectFiles] of projectGroups) {
     const contextResult = await loadProjectContext(getProjectConfig(), projectFiles)
     const projectContextString = contextResult.context
@@ -558,16 +561,26 @@ async function executeReview(
         files_changed: chunk,
       }
 
-      const result = (await context.invokeCapability('pr_review_step', {
-        pr_context: chunkContext,
-        diff_content: chunkDiff,
-        worktree_path: state.worktreePath,
-        project_context: projectContextString,
-        cwd: input.cwd,
-      })) as ReviewStepOutput
+      chunkTasks.push(async () =>
+        (await context.invokeCapability('pr_review_step', {
+          pr_context: chunkContext,
+          diff_content: chunkDiff,
+          worktree_path: state.worktreePath,
+          project_context: projectContextString,
+          cwd: input.cwd,
+        })) as ReviewStepOutput,
+      )
+    }
+  }
 
-      const results = Array.isArray(result) ? result : [result]
+  // Execute chunk reviews in parallel (max 3 concurrent)
+  const chunkResults = await runWithConcurrency(chunkTasks, 3)
+  for (const settled of chunkResults) {
+    if (settled.status === 'fulfilled') {
+      const results = Array.isArray(settled.value) ? settled.value : [settled.value]
       state.agentResults.push(...results)
+    } else {
+      context.logger.warn('Chunk review failed', { error: settled.reason })
     }
   }
 

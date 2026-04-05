@@ -52,6 +52,13 @@ export const PhaseEngResultSchema = z.object({
   status: z.enum(['success', 'failed']).describe('Engineering step execution status'),
   files_modified: z.array(z.string()).describe('Actual files changed during engineering'),
   summary: z.string().describe('Brief summary of implementation work'),
+  test_files_created: z.array(z.string()).optional().describe('Test files created during TDD'),
+  test_run_result: z.object({
+    ran: z.boolean(),
+    passed: z.number(),
+    failed: z.number(),
+    skipped: z.number(),
+  }).optional().describe('Test execution results after implementation'),
 })
 
 /**
@@ -112,6 +119,7 @@ export const PhaseEngStepInputSchema = z.object({
   phase_plan: PhasePlanSchema.describe('Full phase plan from planner'),
   current_phase_number: z.number().int().min(1).describe('Current phase number to implement'),
   cwd: z.string().optional().describe('Working directory for tool execution'),
+  audit_feedback: z.string().optional().describe('Feedback from a failed audit to address in this retry'),
 })
 
 /**

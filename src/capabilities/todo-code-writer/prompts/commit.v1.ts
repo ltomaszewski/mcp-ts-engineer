@@ -7,6 +7,7 @@
 
 import { getCommitTag } from '../../../config/constants.js'
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { buildCommitRules } from '../../../shared/prompts/commit-prompt.js'
 
 /** Input shape for the commit prompt build function. */
 interface CommitPromptInput {
@@ -71,7 +72,7 @@ Needs investigation before proceeding.
 Session-Id: a9ade0318c43c8803a91cf591782e0c6
 </committer_instructions>`
 
-const COMMIT_USER_PROMPT_TEMPLATE = (
+const buildUserPrompt = (
   specPath: string,
   filesChanged: string[],
   phaseSummaries: string[],
@@ -80,6 +81,8 @@ const COMMIT_USER_PROMPT_TEMPLATE = (
   partialRun?: boolean,
   failureContext?: string,
 ): string => {
+  const tag = getCommitTag()
+
   const partialRunBlock = partialRun
     ? `\n<partial_run>
 IMPORTANT: This is an INCOMPLETE run. Not all phases completed successfully.
@@ -87,6 +90,20 @@ Failure: ${failureContext ?? 'Unknown'}
 The commit message MUST start with "[INCOMPLETE]" prefix.
 </partial_run>\n`
     : ''
+
+  const rules = buildCommitRules({
+    sessionId,
+    scope: 'scope',
+    files: filesChanged,
+    changeContext: '',
+    extraRules: `\n- Follow conventional commits format: type(scope): ${tag} description
+- Common types: feat, fix, refactor, test, docs, chore
+- Include ${tag} tag after the scope in subject line
+- Keep first line under 70 characters
+- Include context in body based on phase summaries
+- Commit ALL files in <files_changed> in a single atomic commit
+- Only mark committed=true if git commit succeeds`,
+  })
 
   return `Create a commit for all implementation changes.
 
@@ -114,27 +131,10 @@ ${phaseSummaries.map((s, i) => `   Phase ${i + 1}: ${s}`).join('\n')}
    - Create commit with the crafted message
    - Output the commit SHA and details
 
-5. Output the commit result in <commit_result>JSON</commit_result> format:
-
-<commit_result>
-{
-  "committed": true,
-  "commit_sha": "abc123...",
-  "commit_message": "The commit message you created",
-  "files_changed": ["array", "of", "committed", "files"]
-}
-</commit_result>
+5. Output the commit result in <commit_result>JSON</commit_result> format
 </instructions>
 
-<rules>
-- Follow conventional commits format: type(scope): ${getCommitTag()} description
-- Common types: feat, fix, refactor, test, docs, chore
-- Include ${getCommitTag()} tag after the scope in subject line
-- Keep first line under 70 characters
-- Include context in body based on phase summaries
-- Commit ALL files in <files_changed> in a single atomic commit
-- Only mark committed=true if git commit succeeds
-</rules>`
+${rules}`
 }
 
 /**
@@ -158,7 +158,7 @@ export const commitPromptV1: PromptVersion = {
         preset: 'claude_code',
         append: COMMIT_SYSTEM_APPEND,
       },
-      userPrompt: COMMIT_USER_PROMPT_TEMPLATE(
+      userPrompt: buildUserPrompt(
         typedInput.specPath,
         typedInput.filesChanged,
         typedInput.phaseSummaries,

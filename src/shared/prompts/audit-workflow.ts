@@ -26,6 +26,10 @@ export interface AuditWorkflowParams {
   projectPath?: string
   /** Working directory context. */
   cwd?: string
+  /** Detected technology tags (e.g., 'nextjs', 'nestjs', 'react-native', 'expo'). */
+  detectedTechnologies?: string[]
+  /** Detected package.json dependency names. */
+  detectedDependencies?: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +128,15 @@ Grep("from.*AsyncStorage", scope)
 Grep("app/api/", scope)
 Find all page.tsx files (Glob "**/page.tsx" in scope) and check if any contain "use client" directive
 Grep("import.*prisma|import.*mongoose", scope)
+
+### Backend Patterns (NestJS/Express)
+Grep("@Controller", scope)
+Grep("catch\\s*\\(.*\\)\\s*\\{\\s*\\}", scope)
+Grep("throw new Error\\(", scope)
+Grep("req\\.body(?!.*validated|.*pipe|.*dto)", scope)
+Grep("\\$\\{.*\\}.*find\\(|\\$\\{.*\\}.*aggregate\\(", scope)
+Grep("process\\.env\\.", scope)
+Grep("@(Get|Post|Put|Delete|Patch).*(?!.*@UseGuards)", scope)
 </scan_patterns>
 
 <matching_process>
@@ -142,6 +155,13 @@ Skip a match if ANY of these apply:
 - The persist() call already has an onFinishHydration handler
 - The pattern is inside a test file (__tests__/, *.test.ts, *.spec.ts)
 - The pattern is inside a comment or disabled code block
+
+Backend-specific false positives:
+- Empty catch: skip if followed by a re-throw or fallback return
+- throw new Error: skip if inside a utility/helper not in a request path
+- req.body: skip if ValidationPipe is applied globally in main.ts
+- process.env: skip if inside a ConfigModule/ConfigService wrapper
+- Missing guard: skip if @Public() decorator is present on route
 </false_positive_filters>
 `.trim()
 
@@ -245,36 +265,85 @@ RECOMMENDATIONS
 - {suggestions}
 `.trim()
 
-// Compose the full workflow from extracted sections
-export const AUDIT_WORKFLOW = [
-  AUDIT_WORKFLOW_HEADER,
-  '---',
-  AUDIT_PHASE_KB_AND_SKILLS,
-  '---',
-  AUDIT_PHASE_2_SCAN,
-  '---',
-  AUDIT_PHASE_3_4,
-  '---',
-  '## Rules',
-  '',
-  RACE_CONDITION_RULES,
-  '',
-  ROUTE_FILE_RULES,
-  '',
-  TYPESCRIPT_RULES,
-  '',
-  NEXTJS_BFF_RULES,
-  '',
-  NESTJS_RULES,
-  '',
-  MAESTRO_RULES,
-  '',
-  '---',
-  '',
-  '## Fix Templates',
-  '',
-  RACE_CONDITION_FIX_TEMPLATES,
-].join('\n')
+// Static workflow for backward compatibility (includes all rules)
+export const AUDIT_WORKFLOW = buildAuditWorkflow()
+
+/**
+ * Builds the audit workflow with conditional rule inclusion based on project type.
+ * Always includes: TypeScript rules, race condition rules.
+ * Conditionally includes: NestJS (if NestJS deps), NextJS BFF (if Next.js),
+ * Maestro (if mobile), Route files (if React Native).
+ *
+ * Uses the same detection pattern as eng-prompt.v2.ts:buildEngineeringRulesSection().
+ */
+export function buildAuditWorkflow(
+  detectedTechnologies?: string[],
+  detectedDependencies?: string[],
+): string {
+  const techs = detectedTechnologies ?? []
+  const deps = detectedDependencies ?? []
+
+  // If no technologies detected, include all rules (backward compat / full audit)
+  const includeAll = techs.length === 0 && deps.length === 0
+
+  const hasNestJS =
+    includeAll || techs.includes('nestjs') || deps.some((d) => d.startsWith('@nestjs/'))
+  const hasNextJS = includeAll || techs.includes('nextjs') || deps.includes('next')
+  const hasMobile =
+    includeAll ||
+    techs.includes('react-native') ||
+    techs.includes('expo') ||
+    deps.includes('react-native') ||
+    deps.includes('expo')
+  const hasReactNative =
+    includeAll ||
+    techs.includes('react-native') ||
+    techs.includes('expo') ||
+    deps.includes('react-native')
+
+  const ruleSections: string[] = [
+    // Always include TypeScript + race conditions
+    RACE_CONDITION_RULES,
+    '',
+    TYPESCRIPT_RULES,
+  ]
+
+  if (hasReactNative) {
+    ruleSections.push('', ROUTE_FILE_RULES)
+  }
+
+  if (hasNextJS) {
+    ruleSections.push('', NEXTJS_BFF_RULES)
+  }
+
+  if (hasNestJS) {
+    ruleSections.push('', NESTJS_RULES)
+  }
+
+  if (hasMobile) {
+    ruleSections.push('', MAESTRO_RULES)
+  }
+
+  return [
+    AUDIT_WORKFLOW_HEADER,
+    '---',
+    AUDIT_PHASE_KB_AND_SKILLS,
+    '---',
+    AUDIT_PHASE_2_SCAN,
+    '---',
+    AUDIT_PHASE_3_4,
+    '---',
+    '## Rules',
+    '',
+    ...ruleSections,
+    '',
+    '---',
+    '',
+    '## Fix Templates',
+    '',
+    RACE_CONDITION_FIX_TEMPLATES,
+  ].join('\n')
+}
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -287,7 +356,7 @@ export const AUDIT_WORKFLOW = [
  * @returns User prompt string with embedded workflow
  */
 export function buildAuditUserPrompt(params: AuditWorkflowParams): string {
-  const { filesChanged, projectPath, cwd } = params
+  const { filesChanged, projectPath, cwd, detectedTechnologies, detectedDependencies } = params
 
   const cwdContext = cwd ? `Working directory: ${cwd}\n\n` : ''
   const workingDirRule = cwd
@@ -315,11 +384,13 @@ Scan all TypeScript files in project: ${projectPathValue}
 Run a comprehensive project-wide audit.`
   }
 
+  const workflow = buildAuditWorkflow(detectedTechnologies, detectedDependencies)
+
   return `${cwdContext}${scopeSection}${workingDirRule}
 
 ---
 
-${AUDIT_WORKFLOW}
+${workflow}
 
 ---
 

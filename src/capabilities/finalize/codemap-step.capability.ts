@@ -42,6 +42,18 @@ export const finalizeCodemapStepCapability: CapabilityDefinition<CodemapStepInpu
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['user', 'project'],
+      outputSchema: {
+        type: 'json_schema',
+        schema: {
+          type: 'object',
+          properties: {
+            updated: { type: 'boolean' },
+            codemaps_changed: { type: 'array', items: { type: 'string' } },
+            summary: { type: 'string' },
+          },
+          required: ['updated', 'codemaps_changed', 'summary'],
+        },
+      } as Record<string, unknown>,
     },
 
     preparePromptInput: (input: CodemapStepInput, _context) => ({
@@ -51,7 +63,15 @@ export const finalizeCodemapStepCapability: CapabilityDefinition<CodemapStepInpu
     }),
 
     processResult: (_input: CodemapStepInput, aiResult, _context) => {
-      // Parse <codemap_result> XML block from AI response
+      // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+      if (aiResult.structuredOutput) {
+        const parsed = CodemapResultSchema.safeParse(aiResult.structuredOutput)
+        if (parsed.success) {
+          return parsed.data
+        }
+      }
+
+      // Strategy 2: Fall back to XML parsing from text content
       const xmlContent = parseXmlBlock(aiResult.content, 'codemap_result')
       const fallback = {
         ...CODEMAP_RESULT_FALLBACK,

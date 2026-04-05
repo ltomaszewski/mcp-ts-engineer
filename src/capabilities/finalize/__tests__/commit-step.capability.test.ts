@@ -99,12 +99,12 @@ describe('finalizeCommitStepCapability', () => {
       expect(finalizeCommitStepCapability.defaultRequestOptions?.model).toBe('haiku')
     })
 
-    it('defaults to 40 maxTurns', () => {
-      expect(finalizeCommitStepCapability.defaultRequestOptions?.maxTurns).toBe(40)
+    it('defaults to 20 maxTurns', () => {
+      expect(finalizeCommitStepCapability.defaultRequestOptions?.maxTurns).toBe(20)
     })
 
-    it('defaults to $5.0 budget', () => {
-      expect(finalizeCommitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+    it('defaults to $0.5 budget', () => {
+      expect(finalizeCommitStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(0.5)
     })
 
     it('has claude_code preset', () => {
@@ -135,6 +135,10 @@ describe('finalizeCommitStepCapability', () => {
 
     it('has current prompt version v1', () => {
       expect(finalizeCommitStepCapability.currentPromptVersion).toBe('v1')
+    })
+
+    it('has outputSchema configured', () => {
+      expect(finalizeCommitStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
     })
   })
 

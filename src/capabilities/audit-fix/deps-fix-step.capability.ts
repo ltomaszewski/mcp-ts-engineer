@@ -17,6 +17,21 @@ import { DEPS_FIX_CURRENT_VERSION, depsFixPrompts } from './prompts/index.js'
  * Internal sub-capability for dependency vulnerability remediation with npm audit fix.
  * Not intended for direct external use — invoked by the audit_fix orchestrator.
  */
+const DEPS_FIX_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    properties: {
+      fix_ran: { type: 'boolean' },
+      vulnerabilities_fixed: { type: 'integer', minimum: 0 },
+      vulnerabilities_remaining: { type: 'integer', minimum: 0 },
+      files_modified: { type: 'array', items: { type: 'string' } },
+      fix_summary: { type: 'string' },
+    },
+    required: ['fix_ran', 'vulnerabilities_fixed', 'vulnerabilities_remaining', 'files_modified', 'fix_summary'],
+  },
+}
+
 export const auditFixDepsFixStepCapability: CapabilityDefinition<
   DepsFixStepInput,
   DepsFixStepResult
@@ -38,8 +53,8 @@ export const auditFixDepsFixStepCapability: CapabilityDefinition<
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    outputSchema: DEPS_FIX_OUTPUT_JSON_SCHEMA,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: DepsFixStepInput, _context) => ({
@@ -49,7 +64,15 @@ export const auditFixDepsFixStepCapability: CapabilityDefinition<
   }),
 
   processResult: (_input: DepsFixStepInput, aiResult, _context) => {
-    // Parse <deps_fix_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = DepsFixStepResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'deps_fix_result')
 
     if (xmlContent) {

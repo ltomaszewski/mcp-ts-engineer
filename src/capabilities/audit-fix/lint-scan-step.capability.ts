@@ -17,6 +17,22 @@ import { LINT_SCAN_CURRENT_VERSION, lintScanPrompts } from './prompts/index.js'
  * Internal sub-capability for project lint script detection and execution.
  * Not intended for direct external use — invoked by the audit_fix orchestrator.
  */
+const LINT_SCAN_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'json_schema',
+  schema: {
+    type: 'object',
+    properties: {
+      lint_available: { type: 'boolean' },
+      lint_passed: { type: 'boolean' },
+      error_count: { type: 'integer', minimum: 0 },
+      warning_count: { type: 'integer', minimum: 0 },
+      lint_report: { type: 'string' },
+      files_with_lint_errors: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['lint_available', 'lint_passed', 'error_count', 'warning_count', 'lint_report', 'files_with_lint_errors'],
+  },
+}
+
 export const auditFixLintScanStepCapability: CapabilityDefinition<LintScanInput, LintScanResult> = {
   id: 'audit_fix_lint_scan_step',
   type: 'tool',
@@ -35,8 +51,8 @@ export const auditFixLintScanStepCapability: CapabilityDefinition<LintScanInput,
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    outputSchema: LINT_SCAN_OUTPUT_JSON_SCHEMA,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: LintScanInput, _context) => ({
@@ -45,7 +61,15 @@ export const auditFixLintScanStepCapability: CapabilityDefinition<LintScanInput,
   }),
 
   processResult: (_input: LintScanInput, aiResult, _context) => {
-    // Parse <lint_scan_result> XML block from AI response
+    // Strategy 1: Use SDK structured output (guaranteed when outputSchema is set)
+    if (aiResult.structuredOutput) {
+      const parsed = LintScanResultSchema.safeParse(aiResult.structuredOutput)
+      if (parsed.success) {
+        return parsed.data
+      }
+    }
+
+    // Strategy 2: Fall back to XML parsing from text content
     const xmlContent = parseXmlBlock(aiResult.content, 'lint_scan_result')
 
     if (xmlContent) {

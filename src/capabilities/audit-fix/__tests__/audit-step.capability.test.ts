@@ -87,6 +87,10 @@ describe('auditFixAuditStepCapability', () => {
       }
       expect(hooks?.PreToolUse).toHaveLength(2)
     })
+
+    it('has outputSchema configured', () => {
+      expect(auditFixAuditStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {

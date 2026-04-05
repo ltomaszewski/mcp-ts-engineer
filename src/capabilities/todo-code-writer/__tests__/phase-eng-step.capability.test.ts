@@ -153,32 +153,17 @@ describe('phaseEngStepCapability', () => {
       expect(phaseEngStepCapability.defaultRequestOptions?.maxTurns).toBe(100)
     })
 
-    it('defaults to $5.0 budget', () => {
-      expect(phaseEngStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(5.0)
+    it('defaults to $8.0 budget', () => {
+      expect(phaseEngStepCapability.defaultRequestOptions?.maxBudgetUsd).toBe(8.0)
     })
 
-    it('has prompt registry with v1 and v2 (AC-4.1)', () => {
+    it('has prompt registry with v2', () => {
       expect(phaseEngStepCapability.promptRegistry).toBeDefined()
-      expect(phaseEngStepCapability.promptRegistry.v1).toBeDefined()
       expect(phaseEngStepCapability.promptRegistry.v2).toBeDefined()
     })
 
-    it('has current prompt version v2 (AC-4.2)', () => {
+    it('has current prompt version v2', () => {
       expect(phaseEngStepCapability.currentPromptVersion).toBe('v2')
-    })
-
-    it('v1 prompt is still available and not deprecated (AC-4.3)', () => {
-      const v1 = phaseEngStepCapability.promptRegistry.v1
-      expect(v1).toBeDefined()
-      expect(v1.deprecated).toBe(false)
-      // v1 should build without error
-      const result = v1.build({
-        specPath: 'test.md',
-        phasePlan: MOCK_PHASE_PLAN,
-        currentPhaseNumber: 1,
-      })
-      expect(result.userPrompt).toBeDefined()
-      expect(result.userPrompt.length).toBeGreaterThan(0)
     })
 
     it('has outputSchema configured', () => {

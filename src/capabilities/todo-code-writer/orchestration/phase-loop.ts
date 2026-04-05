@@ -236,6 +236,71 @@ export async function runPhaseLoop(
       break
     }
 
+    // --- Quality Gate: Block on audit failure, retry eng with feedback ---
+    if (auditStepResult.auditResult!.status === 'fail') {
+      context.logger.warn(
+        `Phase ${phase.phase_number} audit failed, retrying eng step with audit feedback`,
+      )
+
+      // Re-invoke eng step with audit feedback
+      const retryEngResult = (await context.invokeCapability('todo_code_writer_phase_eng_step', {
+        spec_path: input.spec_path,
+        phase_plan: phasePlan,
+        current_phase_number: phase.phase_number,
+        cwd: input.cwd,
+        audit_feedback: auditStepResult.auditResult!.summary,
+      })) as PhaseEngResult
+
+      if (retryEngResult.status === 'failed') {
+        halted = true
+        failedPhase = phase.phase_number
+        failureReason = `Audit failed, eng retry also failed: ${retryEngResult.summary}`
+        phaseStatuses.push({
+          phase_number: phase.phase_number,
+          eng_status: 'failed',
+          audit_status: 'fail',
+          files_modified: [],
+          retry_attempts: 1,
+        })
+        break
+      }
+
+      // Re-run audit on fixed code
+      const reauditResult = await runAuditStepWithRetry(
+        phase,
+        retryEngResult,
+        [...retryEngResult.files_modified],
+        input,
+        context,
+      )
+
+      if (reauditResult.halted || reauditResult.auditResult?.status === 'fail') {
+        halted = true
+        failedPhase = phase.phase_number
+        failureReason = `Phase still failing after audit retry: ${reauditResult.auditResult?.summary ?? reauditResult.failureReason}`
+        phaseStatuses.push({
+          phase_number: phase.phase_number,
+          eng_status: 'success',
+          audit_status: 'fail',
+          files_modified: [],
+          retry_attempts: 1,
+        })
+        break
+      }
+
+      // Retry succeeded — commit retry files
+      allModifiedFiles.push(...retryEngResult.files_modified)
+      phaseStatuses.push({
+        phase_number: phase.phase_number,
+        eng_status: 'success',
+        audit_status: reauditResult.auditResult!.status,
+        files_modified: [...retryEngResult.files_modified],
+        retry_attempts: 1,
+      })
+      phaseResults.push({ eng: retryEngResult, audit: reauditResult.auditResult! })
+      continue
+    }
+
     // Success - commit pending files
     allModifiedFiles.push(...pendingFiles)
     phaseStatuses.push({

@@ -136,6 +136,10 @@ describe('finalizeCodemapStepCapability', () => {
     it('has current prompt version v1', () => {
       expect(finalizeCodemapStepCapability.currentPromptVersion).toBe('v1')
     })
+
+    it('has outputSchema configured', () => {
+      expect(finalizeCodemapStepCapability.defaultRequestOptions?.outputSchema).toBeDefined()
+    })
   })
 
   describe('preparePromptInput', () => {
