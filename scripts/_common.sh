@@ -166,6 +166,15 @@ symlink_file() {
   rel_src="$(relpath "$src" "$dest_dir")"
 
   if [[ -L "$dest" ]]; then
+    # Recreate if symlink is broken or points to wrong target
+    local current_target
+    current_target="$(readlink "$dest")"
+    if [[ "$current_target" == "$rel_src" ]] && [[ -e "$dest" ]]; then
+      return 0
+    fi
+    rm "$dest"
+    ln -s "$rel_src" "$dest"
+    echo "  FIXED: $dest -> $rel_src"
     return 0
   elif [[ -f "$dest" ]] || [[ -d "$dest" ]]; then
     echo "  WARNING: $dest exists as regular file/dir, skipping"
