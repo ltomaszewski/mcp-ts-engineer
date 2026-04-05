@@ -13,6 +13,7 @@ import {
   COMPONENT_CHECK_RULES,
   EXPORT_DESIGN_RULES,
   RACE_CONDITIONS_RULES,
+  REACT_HOOKS_REVIEW_RULES,
   resolveSkillsFromTechnologies,
   TESTING_REQUIREMENTS_RULES,
 } from './eng-rules/index.js'
@@ -36,6 +37,7 @@ interface SpecModeInput {
   detectedTechnologies?: string[]
   detectedDependencies?: string[]
   cwd?: string
+  auditFeedback?: string
   // Fix-mode fields ignored in spec mode
   auditSummary?: string
   filesWithIssues?: string[]
@@ -142,6 +144,13 @@ const buildEngineeringRulesSection = (technologies: string[]): string => {
     section += '\n</component_check>\n'
   }
 
+  // Conditionally include React hooks review for react/react-native/expo/nextjs
+  if (hasReact) {
+    section += '\n<react_hooks_review>\n'
+    section += REACT_HOOKS_REVIEW_RULES
+    section += '\n</react_hooks_review>\n'
+  }
+
   section += '</engineering_rules>'
 
   return section
@@ -171,8 +180,12 @@ const buildSpecModeUserPrompt = (input: SpecModeInput): string => {
 
   const engineeringRulesSection = buildEngineeringRulesSection(technologies)
 
-  return `You are a senior engineer implementing Phase ${currentPhaseNumber} of a feature spec.
+  const auditFeedbackSection = input.auditFeedback
+    ? `\n<audit_feedback>\nA previous audit of this phase FAILED. You must address these issues:\n${input.auditFeedback}\n</audit_feedback>\n`
+    : ''
 
+  return `You are a senior engineer implementing Phase ${currentPhaseNumber} of a feature spec.
+${auditFeedbackSection}
 <spec_path>${specPath}</spec_path>
 <current_phase>${currentPhaseNumber}</current_phase>
 <phase_purpose>${currentPhase.purpose}</phase_purpose>
@@ -192,10 +205,15 @@ ${skillLoadingSection}
 
 4. Find Phase ${currentPhaseNumber} and follow its step-by-step instructions EXACTLY.
    - The spec contains detailed implementation steps for this phase
-   - Follow TDD: write tests FIRST, then implement to make tests pass
    - Use the file list above as a guide, but follow the spec's actual instructions
 
-5. After implementation, output a summary in the following JSON format inside <phase_eng_result> XML tags:
+5. **TDD Enforcement — Red-Green-Refactor:**
+   a. RED: Create test files FIRST. Run tests — they MUST fail (this proves they test real behavior)
+   b. GREEN: Write implementation to make tests pass
+   c. REFACTOR: Clean up while tests stay green
+   If you skip tests or write implementation first, set test_run_result.ran = false and explain why in summary.
+
+6. After implementation, output a summary in the following JSON format inside <phase_eng_result> XML tags:
 
 <phase_eng_result>
 {
@@ -204,7 +222,9 @@ ${skillLoadingSection}
     "src/capabilities/feature/file1.ts",
     "src/capabilities/feature/file2.ts"
   ],
-  "summary": "Implemented schemas with Zod validation. Created 3 schema files with comprehensive input/output types."
+  "summary": "Implemented schemas with Zod validation. Created 3 schema files with comprehensive input/output types.",
+  "test_files_created": ["src/capabilities/feature/__tests__/file1.test.ts"],
+  "test_run_result": { "ran": true, "passed": 12, "failed": 0, "skipped": 0 }
 }
 </phase_eng_result>
 

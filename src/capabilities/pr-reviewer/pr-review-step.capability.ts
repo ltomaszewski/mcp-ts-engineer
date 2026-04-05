@@ -167,9 +167,24 @@ ${ctx.files_changed.map((f) => `- ${f}`).join('\n')}
 Review from these perspectives (skip lint/formatting — handled by daily audit):
 
 1. **Code Quality**: TypeScript anti-patterns, logic errors, missing error handling
-2. **Security**: Input validation, auth bypass, secret exposure, injection risks
+2. **Security (OWASP-informed)**:
+   - **Injection**: SQL/NoSQL injection via string interpolation, user input in queries
+   - **Auth bypass**: Missing @UseGuards, unprotected routes, broken access control
+   - **SSRF**: fetch(userControlledUrl) in API routes or services
+   - **XSS**: Unsanitized user input in React dangerouslySetInnerHTML or DOM APIs
+   - **Secrets**: Hardcoded API keys, tokens, passwords, connection strings
+   - **Prototype pollution**: Object.assign(target, userInput), spread of unvalidated data
+   - **ReDoS**: User-controlled regex patterns, regex with catastrophic backtracking
+   - **Timing attacks**: String === for secret comparison (use timingSafeEqual)
+   - **Missing validation**: Request body/params used without Zod/class-validator
 3. **Architecture**: SOLID violations, circular deps, coupling, design pattern misuse
 ${performanceItem}
+5. **Testing Adequacy**:
+   - Does new/modified code have corresponding test files?
+   - Do tests cover meaningful behavior (not just "it renders without crashing")?
+   - Are edge cases tested (null, empty, boundary values, error paths)?
+   - Are async operations tested with proper await/mock patterns?
+   - If tests are missing for changed code, flag as HIGH severity
 </instructions>
 
 <constraints>

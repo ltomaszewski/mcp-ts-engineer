@@ -153,9 +153,17 @@ ${skillLoadingSection}
 </rules>
 
 <decision_criteria>
-- "pass": All files correct, tests present, no issues (issues_found = 0)
-- "warn": Minor issues like missing edge case tests, minor style issues (issues_found = 1-2)
-- "fail": Missing tests, incorrect implementation, bugs (issues_found >= 3)
+Evaluate based on SEVERITY, not count:
+- "pass": No issues found, OR only INFO-level observations
+- "warn": Only MEDIUM or LOW severity issues (no CRITICAL or HIGH)
+- "fail": Any CRITICAL issue, OR any HIGH severity issue, OR 5+ MEDIUM issues
+
+When reporting issues, always assign severity:
+- CRITICAL: Security vulnerability, data loss risk, crash in production
+- HIGH: Logic error, missing error handling, race condition
+- MEDIUM: Code quality issue, missing test, performance concern
+- LOW: Style issue, minor improvement, documentation gap
+- INFO: Observation, suggestion, no action needed
 </decision_criteria>
 
 <output_format>

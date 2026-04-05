@@ -35,6 +35,17 @@ const PHASE_ENG_OUTPUT_JSON_SCHEMA: Record<string, unknown> = {
       status: { type: 'string', enum: ['success', 'failed'] },
       files_modified: { type: 'array', items: { type: 'string' } },
       summary: { type: 'string' },
+      test_files_created: { type: 'array', items: { type: 'string' } },
+      test_run_result: {
+        type: 'object',
+        properties: {
+          ran: { type: 'boolean' },
+          passed: { type: 'number' },
+          failed: { type: 'number' },
+          skipped: { type: 'number' },
+        },
+        required: ['ran', 'passed', 'failed', 'skipped'],
+      },
     },
     required: ['status', 'files_modified', 'summary'],
   },
@@ -82,6 +93,7 @@ export const phaseEngStepCapability: CapabilityDefinition<PhaseEngStepInput, Pha
       cwd: input.cwd,
       detectedTechnologies: detection.technologies,
       detectedDependencies: detection.dependencies,
+      auditFeedback: input.audit_feedback,
     }
   },
 
