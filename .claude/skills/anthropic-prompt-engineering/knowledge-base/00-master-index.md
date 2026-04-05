@@ -37,6 +37,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 | **12 Skills** | Building skills for Claude | SKILL.md, frontmatter, progressive disclosure, testing |
 | **13 Agent Teams** | Multi-agent orchestration | Agent teams, subagents, shared tasks, messaging |
 | **14 CLAUDE.md Architecture** | Project instruction files | File hierarchy, @include, paths:, cache boundary, memory |
+| **15 Claude Code Patterns** | Production patterns from source | Array composition, redundant reinforcement, anti-rationalization, coordinator synthesis |
 
 ---
 
@@ -77,6 +78,9 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 ### Specialist: Skills & Distribution
 12. [Building Skills](12-skills.md) - SKILL.md structure, frontmatter, testing, distribution
 13. [CLAUDE.md Architecture](14-claude-md.md) - File hierarchy, @include, paths:, cache boundary, memory
+
+### Production Reference
+14. [Claude Code Patterns](15-claude-code-patterns.md) - Battle-tested patterns from Anthropic's own production system
 
 ---
 

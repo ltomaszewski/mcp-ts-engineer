@@ -64,6 +64,7 @@ Load additional context when needed:
 | Building skills (SKILL.md, frontmatter, testing) | [knowledge-base/12-skills.md](knowledge-base/12-skills.md) |
 | Agent teams and multi-agent orchestration | [knowledge-base/13-agent-teams.md](knowledge-base/13-agent-teams.md) |
 | CLAUDE.md architecture, @include, memory | [knowledge-base/14-claude-md.md](knowledge-base/14-claude-md.md) |
+| Production patterns from Claude Code source | [knowledge-base/15-claude-code-patterns.md](knowledge-base/15-claude-code-patterns.md) |
 
 ---
 
