@@ -14,6 +14,7 @@ import type {
   CapabilityContext,
   CapabilityDefinition,
 } from '../../core/capability-registry/capability-registry.types.js'
+import { runWithConcurrency } from '../../core/utils/concurrency.js'
 import { resolveCwd } from '../../core/utils/cwd.js'
 import {
   buildSummary,
@@ -114,27 +115,30 @@ export const auditFixCapability: CapabilityDefinition<AuditFixInput, AuditFixOut
     // Sort by priority
     const sortedProjects = [...plan.projects].sort((a, b) => a.priority - b.priority)
 
-    // Step 4: Process each project
+    // Step 4: Process projects in parallel (max 2 concurrent)
     let totalIterations = 0
     const projectResults: ProjectResult[] = []
 
-    for (const project of sortedProjects) {
-      const remainingCap = input.max_total_cap - totalIterations
-      if (remainingCap <= 0) {
-        break
-      }
-
-      const { result, iterationsUsed } = await processProject(
+    const perProjectCap = Math.ceil(input.max_total_cap / Math.max(sortedProjects.length, 1))
+    const projectTasks = sortedProjects.map((project) => async () => {
+      return processProject(
         project.path,
         input.max_iteration_per_project,
-        remainingCap,
+        perProjectCap,
         resolvedCwd,
         context,
         input.spec_path,
       )
+    })
 
-      projectResults.push(result)
-      totalIterations += iterationsUsed
+    const settled = await runWithConcurrency(projectTasks, 2)
+    for (const entry of settled) {
+      if (entry.status === 'fulfilled') {
+        projectResults.push(entry.value.result)
+        totalIterations += entry.value.iterationsUsed
+      } else {
+        context.logger.warn('Project processing failed', { error: entry.reason })
+      }
     }
 
     // Step 5: Build aggregate output

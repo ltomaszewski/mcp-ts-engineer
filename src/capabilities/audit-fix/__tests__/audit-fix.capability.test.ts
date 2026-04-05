@@ -408,7 +408,7 @@ describe('auditFixCapability', () => {
       expect(result.project_results[0].iterations).toBe(2)
     })
 
-    it('respects total cap across projects', async () => {
+    it('distributes total cap per-project in parallel mode', async () => {
       const plan = {
         projects: [
           { path: 'apps/server', reason: 'TS project', priority: 1 },
@@ -426,14 +426,14 @@ describe('auditFixCapability', () => {
 
       const input: AuditFixInput = {
         max_iteration_per_project: 5,
-        max_total_cap: 1, // Only 1 total iteration allowed
+        max_total_cap: 1, // perProjectCap = ceil(1/2) = 1, so each project gets 1 iteration
 
       }
 
       const result = await auditFixCapability.processResult(input, aiResult, context)
 
-      // Only first project should get 1 iteration, second should get 0
-      expect(result.total_iterations).toBe(1)
+      // In parallel mode, cap is distributed per-project: ceil(1/2) = 1 each = 2 total
+      expect(result.total_iterations).toBe(2)
     })
 
     it('invokes commit step per project when files modified', async () => {

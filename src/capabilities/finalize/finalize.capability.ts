@@ -218,28 +218,22 @@ export const finalizeCapability: CapabilityDefinition<FinalizeInput, FinalizeOut
         ? finalizePlan.workspaces
         : detectWorkspaces(input.files_changed)
 
-    // Step 1: Audit
-    const auditResult = await invokeAuditStep(input, context)
+    // Phase 1: Audit + Test in parallel (independent)
+    const [auditSettled, testSettled] = await Promise.allSettled([
+      invokeAuditStep(input, context),
+      invokeTestStep(workspaces, input.cwd, context),
+    ])
+    const auditResult = auditSettled.status === 'fulfilled'
+      ? auditSettled.value
+      : (() => { context.logger.warn('Audit step failed', { error: auditSettled.reason }); return { status: 'fail' as const, fixes_applied: 0, issues_remaining: 0, tsc_passed: false, summary: 'Audit step failed' } })()
+    const testResult = testSettled.status === 'fulfilled'
+      ? testSettled.value
+      : (() => { context.logger.warn('Test step failed', { error: testSettled.reason }); return { passed: false, workspaces_tested: [] as string[], summary: 'Test step failed' } })()
 
-    // Step 2: Test
-    const testResult = await invokeTestStep(workspaces, input.cwd, context)
-
-    // Step 3: Codemap (conditional)
-    let codemapResult: CodemapResult | null = null
-    if (!input.skip_codemaps) {
-      codemapResult = await invokeCodemapStep(input, context)
-    }
-
-    // Step 3.5: README (conditional)
-    let readmeResult: ReadmeResult | null = null
-    if (!input.skip_readmes) {
-      try {
-        readmeResult = await invokeReadmeStep(input, context)
-      } catch (error) {
-        context.logger.warn('README step failed, continuing', { error })
-        readmeResult = null
-      }
-    }
+    // Phase 2: Codemap + README in parallel (independent, conditional)
+    const codemapPromise = !input.skip_codemaps ? invokeCodemapStep(input, context) : Promise.resolve(null)
+    const readmePromise = !input.skip_readmes ? invokeReadmeStep(input, context).catch((error) => { context.logger.warn('README step failed, continuing', { error }); return null }) : Promise.resolve(null)
+    const [codemapResult, readmeResult] = await Promise.all([codemapPromise, readmePromise])
 
     // Step 3.6: Mark spec as IMPLEMENTED (finalization complete)
     const filesAffected = [

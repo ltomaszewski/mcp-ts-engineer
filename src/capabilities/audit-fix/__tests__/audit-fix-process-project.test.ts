@@ -536,13 +536,23 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
-      invokeSpy
-        .mockResolvedValueOnce(depsScanResult)
-        .mockResolvedValueOnce(depsFixResult)
-        .mockResolvedValueOnce(lintScanResult)
-        .mockResolvedValueOnce(auditResult)
-        .mockResolvedValueOnce(passTestResult)
-        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
+      // Use name-based routing since deps_scan and lint_scan run in parallel
+      const results: Record<string, unknown[]> = {
+        audit_fix_deps_scan_step: [depsScanResult],
+        audit_fix_deps_fix_step: [depsFixResult],
+        audit_fix_lint_scan_step: [lintScanResult],
+        audit_fix_audit_step: [auditResult],
+        audit_fix_test_step: [passTestResult],
+        audit_fix_commit_step: [{ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] }],
+      }
+      const callCounts: Record<string, number> = {}
+      invokeSpy.mockImplementation(async (capId: string) => {
+        callCounts[capId] = (callCounts[capId] || 0) + 1
+        const arr = results[capId]
+        if (!arr) return {}
+        const idx = callCounts[capId] - 1
+        return arr[idx < arr.length ? idx : arr.length - 1]
+      })
 
       const { result } = await processProject(
         'apps/test-project',
@@ -613,17 +623,25 @@ describe('Process Project - Lint Integration', () => {
         summary: 'All clean',
       }
 
-      invokeSpy
-        .mockResolvedValueOnce(depsScanResult)
-        .mockResolvedValueOnce(depsFixResult)
-        .mockResolvedValueOnce(lintScanResult)
-        .mockResolvedValueOnce(lintFixResult)
-        .mockResolvedValueOnce(failAudit)       // iteration 1: audit fails, 3 fixes_applied
-        .mockResolvedValueOnce(failTestResult)   // iteration 1: test fails
-        .mockResolvedValueOnce(engResult)        // iteration 1: eng fix
-        .mockResolvedValueOnce(passAudit)        // iteration 2: audit passes
-        .mockResolvedValueOnce(passTestResult)   // iteration 2: test passes
-        .mockResolvedValueOnce({ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] })
+      // Use name-based routing since deps_scan and lint_scan run in parallel
+      const results: Record<string, unknown[]> = {
+        audit_fix_deps_scan_step: [depsScanResult],
+        audit_fix_deps_fix_step: [depsFixResult],
+        audit_fix_lint_scan_step: [lintScanResult],
+        audit_fix_lint_fix_step: [lintFixResult],
+        audit_fix_audit_step: [failAudit, passAudit],
+        audit_fix_test_step: [failTestResult, passTestResult],
+        audit_fix_eng_step: [engResult],
+        audit_fix_commit_step: [{ committed: true, commit_sha: 'abc', commit_message: 'fix', files_changed: [] }],
+      }
+      const callCounts: Record<string, number> = {}
+      invokeSpy.mockImplementation(async (capId: string) => {
+        callCounts[capId] = (callCounts[capId] || 0) + 1
+        const arr = results[capId]
+        if (!arr) return {}
+        const idx = callCounts[capId] - 1
+        return arr[idx < arr.length ? idx : arr.length - 1]
+      })
 
       const { result } = await processProject(
         'apps/test-project',
@@ -663,11 +681,23 @@ describe('Process Project - Lint Integration', () => {
         files_with_lint_errors: [],
       }
 
-      invokeSpy
-        .mockResolvedValueOnce(depsScanResult)
-        .mockResolvedValueOnce(depsFixResult)
-        .mockResolvedValueOnce(lintScanResult)
-        .mockRejectedValueOnce(new Error('Audit step crashed'))
+      // Use name-based routing since deps_scan and lint_scan run in parallel
+      const results: Record<string, unknown[]> = {
+        audit_fix_deps_scan_step: [depsScanResult],
+        audit_fix_deps_fix_step: [depsFixResult],
+        audit_fix_lint_scan_step: [lintScanResult],
+      }
+      const callCounts: Record<string, number> = {}
+      invokeSpy.mockImplementation(async (capId: string) => {
+        callCounts[capId] = (callCounts[capId] || 0) + 1
+        const arr = results[capId]
+        if (arr) {
+          const idx = callCounts[capId] - 1
+          return arr[idx < arr.length ? idx : arr.length - 1]
+        }
+        // audit_fix_audit_step crashes
+        throw new Error('Audit step crashed')
+      })
 
       const { result } = await processProject(
         'apps/test-project',
