@@ -54,8 +54,7 @@ export const auditFixDepsFixStepCapability: CapabilityDefinition<
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
     outputSchema: DEPS_FIX_OUTPUT_JSON_SCHEMA,
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: DepsFixStepInput, _context) => ({

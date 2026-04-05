@@ -11,6 +11,7 @@
 
 import { getCommitTag } from '../../../config/constants.js'
 import type { PromptVersion } from '../../../core/prompt/prompt.types.js'
+import { buildCommitRules } from '../../../shared/prompts/commit-prompt.js'
 import type { ReviewSummary, TddSummary } from '../todo-reviewer.schema.js'
 
 /** Input shape for the commit step prompt build function. */
@@ -22,12 +23,20 @@ interface CommitPromptInput {
   cwd?: string
 }
 
-const COMMIT_USER_PROMPT_TEMPLATE = (
+const buildUserPrompt = (
   specPath: string,
   reviewSummary: ReviewSummary,
   tddSummary: TddSummary,
   sessionId: string,
 ): string => {
+  const rules = buildCommitRules({
+    sessionId,
+    scope: 'docs',
+    files: [],
+    changeContext: '',
+    defaultMessage: `chore(docs): ${getCommitTag()} update feature spec after review`,
+  })
+
   return `You are a git operations assistant. Check if the spec file has uncommitted changes. If yes, stage and commit. If no changes, report no-op.
 
 <spec_path>${specPath}</spec_path>
@@ -54,30 +63,13 @@ const COMMIT_USER_PROMPT_TEMPLATE = (
 <rules>
 - Only commit the spec file and directly related files
 - Use the exact commit message format specified
-- After the commit message body, add a blank line followed by: Session-Id: ${sessionId}
-- This trailer enables tracing commits back to their cost report session
 - Do NOT commit unrelated changes
 - Do NOT amend existing commits
 - Do NOT push to remote
 - Do NOT call AskUserQuestion, slash commands, or reference .claude/commands/ files
 </rules>
 
-<output_format>
-Output a <commit_result> XML block with this JSON:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| committed | boolean | Whether a commit was created |
-| commit_sha | string or null | Git SHA if committed |
-| commit_message | string or null | Message if committed |
-| files_changed | string[] | List of committed files (empty if no commit) |
-
-<example>
-<commit_result>
-{"committed":true,"commit_sha":"abc1234","commit_message":"chore(docs): ${getCommitTag()} update feature spec after review\n\nSession-Id: a9ade0318c43c8803a91cf591782e0c6","files_changed":["docs/specs/app/feature.md"]}
-</commit_result>
-</example>
-</output_format>`
+${rules}`
 }
 
 /** Version 1: Agnostic conditional git commit with CommitResult output */
@@ -94,7 +86,7 @@ export const v1: PromptVersion = {
         type: 'preset' as const,
         preset: 'claude_code' as const,
       },
-      userPrompt: COMMIT_USER_PROMPT_TEMPLATE(specPath, reviewSummary, tddSummary, sessionId),
+      userPrompt: buildUserPrompt(specPath, reviewSummary, tddSummary, sessionId),
     }
   },
 }

@@ -4,7 +4,7 @@
  */
 
 import type { AIQueryResult } from '../ai-provider/ai-provider.types.js'
-import type { ChildSessionCostEntry } from '../cost/cost-report.schemas.js'
+import { mapChildCostEntries } from '../cost/map-child-cost-entries.js'
 import type { CostEntry } from '../cost/cost.types.js'
 import { extractErrorChain } from '../utils/index.js'
 import type { CapabilityRegistryDeps } from './capability-registry.js'
@@ -62,28 +62,9 @@ export async function finalizeInvocation(
     if (finalSession) {
       const commitSha = (output as Record<string, unknown>)?.commit_sha as string | null | undefined
 
-      const childEntries: ChildSessionCostEntry[] = deps.costTracker
-        .getChildCostEntries(sessionId)
-        .map((entry) => ({
-          sid: entry.childSessionId || entry.sid,
-          capability: entry.capabilityName,
-          costUsd: entry.costUsd,
-          turns: entry.turns || 0,
-          inputTokens: entry.inputTokens,
-          outputTokens: entry.outputTokens,
-          model: entry.model,
-          status: entry.status || 'success',
-          ...(entry.commitSha ? { commitSha: entry.commitSha } : {}),
-          ...(entry.promptCacheWrite !== undefined
-            ? { promptCacheWrite: entry.promptCacheWrite }
-            : {}),
-          ...(entry.promptCacheRead !== undefined
-            ? { promptCacheRead: entry.promptCacheRead }
-            : {}),
-          ...(entry.promptVersion !== undefined ? { promptVersion: entry.promptVersion } : {}),
-          ...(entry.totalTokensIn !== undefined ? { totalTokensIn: entry.totalTokensIn } : {}),
-          ...(entry.totalTokensOut !== undefined ? { totalTokensOut: entry.totalTokensOut } : {}),
-        }))
+      const childEntries = mapChildCostEntries(
+        deps.costTracker.getChildCostEntries(sessionId),
+      )
       await deps.costReportWriter.writeSessionToReport(
         finalSession,
         costSummary,

@@ -127,8 +127,7 @@ export const auditFixAuditStepCapability: CapabilityDefinition<AuditStepInput, A
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
     outputSchema: AUDIT_STEP_OUTPUT_JSON_SCHEMA,
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: AuditStepInput, _context) => ({

@@ -34,8 +34,7 @@ export const auditFixLintFixStepCapability: CapabilityDefinition<LintFixInput, L
     permissionMode: 'bypassPermissions',
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: LintFixInput, _context) => ({

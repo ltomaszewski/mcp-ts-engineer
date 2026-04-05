@@ -66,8 +66,7 @@ export const auditFixDepsScanStepCapability: CapabilityDefinition<
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
     outputSchema: DEPS_SCAN_OUTPUT_JSON_SCHEMA,
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: DepsScanStepInput, _context) => ({

@@ -69,8 +69,7 @@ export const phaseAuditStepCapability: CapabilityDefinition<PhaseAuditStepInput,
       allowDangerouslySkipPermissions: true,
       settingSources: ['user', 'project'],
       outputSchema: PHASE_AUDIT_OUTPUT_JSON_SCHEMA,
-      hooks:
-        buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+      hooks: buildPathValidationHooks(),
     },
 
     preparePromptInput: (input: PhaseAuditStepInput, _context) => {

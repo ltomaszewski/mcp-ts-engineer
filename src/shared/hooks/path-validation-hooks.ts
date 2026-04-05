@@ -5,39 +5,30 @@
  * in Write/Edit operations (e.g., apps/X/apps/X or packages/Y/packages/Y).
  */
 
-/**
- * Hook callback function type.
- * Receives tool input parameters and returns a decision on whether to continue or block.
- */
-export type HookCallback = (toolInput: Record<string, unknown>) => HookResult
+import type { AIHookCallback, AIHookResult, AIHooksConfig } from '../../core/ai-provider/ai-provider.types.js'
 
 /**
- * Result of a hook callback execution.
+ * @deprecated Use AIHookCallback from ai-provider.types.ts
  */
-export interface HookResult {
-  /** Decision on whether to continue or block the operation */
-  decision: 'continue' | 'block'
-  /** Reason for blocking (only when decision is 'block') */
-  reason?: string
-}
+export type HookCallback = AIHookCallback
 
 /**
- * Hook configuration for a specific tool matcher.
+ * @deprecated Use AIHookResult from ai-provider.types.ts
+ */
+export type HookResult = AIHookResult
+
+/**
+ * @deprecated Use AIHookMatcher from ai-provider.types.ts
  */
 export interface HookConfig {
-  /** Tool name to match (e.g., 'Write', 'Edit') */
   matcher: string
-  /** Array of hook callbacks to execute */
-  hooks: HookCallback[]
+  hooks: AIHookCallback[]
 }
 
 /**
- * Collection of hooks organized by hook type.
+ * @deprecated Use AIHooksConfig from ai-provider.types.ts
  */
-export interface HooksCollection {
-  /** Hooks to execute before tool use */
-  PreToolUse: HookConfig[]
-}
+export type HooksCollection = AIHooksConfig
 
 /**
  * Creates a hook callback that detects and blocks path duplications.
@@ -62,8 +53,8 @@ export interface HooksCollection {
  * // result.reason === 'Path duplication detected: "/apps/test/". Use monorepo-rooted path without duplication.'
  * ```
  */
-export function createPathDuplicationBlockerHook(): HookCallback {
-  return (toolInput: Record<string, unknown>): HookResult => {
+export function createPathDuplicationBlockerHook(): AIHookCallback {
+  return (toolInput: Record<string, unknown>): AIHookResult => {
     const filePath = toolInput.file_path as string | undefined
 
     // If no file_path provided, allow operation to continue
@@ -101,7 +92,7 @@ export function createPathDuplicationBlockerHook(): HookCallback {
  * // hooks.PreToolUse contains matchers for 'Write' and 'Edit'
  * ```
  */
-export function buildPathValidationHooks(): HooksCollection {
+export function buildPathValidationHooks(): AIHooksConfig {
   const hook = createPathDuplicationBlockerHook()
 
   return {

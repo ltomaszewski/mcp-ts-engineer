@@ -52,8 +52,7 @@ export const auditFixLintScanStepCapability: CapabilityDefinition<LintScanInput,
     allowDangerouslySkipPermissions: true,
     settingSources: ['user', 'project'],
     outputSchema: LINT_SCAN_OUTPUT_JSON_SCHEMA,
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: LintScanInput, _context) => ({

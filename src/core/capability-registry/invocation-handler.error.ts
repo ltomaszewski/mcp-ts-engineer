@@ -3,7 +3,7 @@
  * Extracted from invocation-handler.ts to keep files under 300 lines.
  */
 
-import type { ChildSessionCostEntry } from '../cost/cost-report.schemas.js'
+import { mapChildCostEntries } from '../cost/map-child-cost-entries.js'
 import { extractCauseChain, extractErrorChain } from '../utils/index.js'
 import type { CapabilityRegistryDeps } from './capability-registry.js'
 import {
@@ -56,28 +56,9 @@ export async function buildErrorResponse(
       const costSummary = deps.costTracker.getSessionSummary(sessionId)
 
       if (costSummary.totalCostUsd > 0) {
-        const childEntries: ChildSessionCostEntry[] = deps.costTracker
-          .getChildCostEntries(sessionId)
-          .map((entry) => ({
-            sid: entry.childSessionId || entry.sid,
-            capability: entry.capabilityName,
-            costUsd: entry.costUsd,
-            turns: entry.turns || 0,
-            inputTokens: entry.inputTokens,
-            outputTokens: entry.outputTokens,
-            model: entry.model,
-            status: entry.status || 'success',
-            ...(entry.commitSha ? { commitSha: entry.commitSha } : {}),
-            ...(entry.promptCacheWrite !== undefined
-              ? { promptCacheWrite: entry.promptCacheWrite }
-              : {}),
-            ...(entry.promptCacheRead !== undefined
-              ? { promptCacheRead: entry.promptCacheRead }
-              : {}),
-            ...(entry.promptVersion !== undefined ? { promptVersion: entry.promptVersion } : {}),
-            ...(entry.totalTokensIn !== undefined ? { totalTokensIn: entry.totalTokensIn } : {}),
-            ...(entry.totalTokensOut !== undefined ? { totalTokensOut: entry.totalTokensOut } : {}),
-          }))
+        const childEntries = mapChildCostEntries(
+          deps.costTracker.getChildCostEntries(sessionId),
+        )
 
         deps.costReportWriter
           .writeSessionToReport(

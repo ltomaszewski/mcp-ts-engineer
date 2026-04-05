@@ -80,8 +80,7 @@ export const phaseEngStepCapability: CapabilityDefinition<PhaseEngStepInput, Pha
     settingSources: ['user', 'project'],
     outputSchema: PHASE_ENG_OUTPUT_JSON_SCHEMA,
     appendSystemPrompt: undefined, // Set lazily at merge time via buildDevContext()
-    hooks:
-      buildPathValidationHooks() as unknown as import('../../core/ai-provider/ai-provider.types.js').AIHooksConfig,
+    hooks: buildPathValidationHooks(),
   },
 
   preparePromptInput: (input: PhaseEngStepInput, _context) => {

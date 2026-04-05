@@ -17,6 +17,7 @@ export {
   resolveWorktreeGitFile,
 } from './git-utils.js'
 export { generateIssueId } from './issue-id.js'
+export { parseCapabilityOutput } from './parse-capability-output.js'
 export { parseJsonSafe } from './parse-json-safe.js'
 export { parseXmlBlock } from './parse-xml-block.js'
 export {
