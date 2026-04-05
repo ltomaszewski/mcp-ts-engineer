@@ -10,11 +10,11 @@ import { resolveCwd } from '../../core/utils/cwd.js'
 import { buildTestCommand } from '../test-command.js'
 import { buildDevContext } from './dev-context.js'
 import {
+  buildSkillLoadingSection,
   COMPONENT_CHECK_RULES,
   EXPORT_DESIGN_RULES,
   RACE_CONDITIONS_RULES,
   REACT_HOOKS_REVIEW_RULES,
-  resolveSkillsFromTechnologies,
   TESTING_REQUIREMENTS_RULES,
 } from './eng-rules/index.js'
 
@@ -73,37 +73,6 @@ function buildSystemPromptAppend(): string {
   return `After completing all tool use, provide a brief text summary of the implementation work. Your structured output will be captured automatically via the output schema.
 
 ${buildDevContext()}`
-}
-
-/**
- * Builds the skill loading section with the resolved list of skills to invoke.
- */
-const buildSkillLoadingSection = (
-  detectedTechnologies: string[],
-  detectedDependencies?: string[],
-): string => {
-  const skills = resolveSkillsFromTechnologies(detectedTechnologies, detectedDependencies)
-
-  if (skills.length === 0) {
-    return ''
-  }
-
-  const skillList = skills.map((s) => `  - ${s}`).join('\n')
-
-  return `<skill_loading>
-BEFORE writing ANY code, load engineering skills via the Skill tool.
-Skills provide project-specific patterns, anti-patterns, and best practices
-that MUST be followed during implementation.
-
-Loading process:
-1. Invoke each skill listed below using the Skill tool
-2. Read and absorb the patterns returned by each skill
-3. Apply those patterns throughout implementation
-4. Always load typescript-clean-code for TypeScript quality standards
-
-Skills to load:
-${skillList}
-</skill_loading>`
 }
 
 /**
@@ -244,6 +213,27 @@ ${skillLoadingSection}
 - NO CD FOR PATHS: Do NOT use \`cd\` to navigate before file operations.
 - VERIFICATION: You MAY run tests but MUST use: cd <workspace> && ${buildTestCommand('jest')} (or Vitest equivalent). Run ONCE per workspace. NEVER re-run. NEVER use bare \`npm test\`.
 </rules>
+
+<exception_handling>
+When the spec does not match reality, apply these rules:
+
+**Wrong file paths**: If the spec references a file that does not exist at the given path:
+  1. Search for the file by name (Glob) — it may have moved.
+  2. If found elsewhere, use the actual path and note the discrepancy in your summary.
+  3. If not found, create it at the spec path (the spec may be defining a new file).
+
+**Missing APIs or imports**: If the spec calls a function/class that does not exist:
+  1. Check if it was renamed (Grep for similar names).
+  2. If it exists under a different name, use the real name.
+  3. If it truly does not exist, implement it as the spec describes.
+
+**Spec contradictions**: If two parts of the spec conflict:
+  1. Prefer the more specific instruction over the general one.
+  2. Prefer the Implementation Phases section over the Overview section.
+  3. Note the contradiction in your summary so it can be corrected.
+
+**Never**: Silently skip a spec requirement. If you cannot fulfill it, set status to "failed" and explain why.
+</exception_handling>
 
 ${engineeringRulesSection}
 

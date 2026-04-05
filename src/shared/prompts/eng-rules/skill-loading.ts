@@ -50,20 +50,27 @@ export const DEPENDENCY_SKILL_MAP: Record<string, string> = {
 export const ALWAYS_LOAD_SKILLS: string[] = ['typescript-clean-code']
 
 /**
- * Base instruction block for skill loading.
- * Prompt builders append the resolved skill list to this.
+ * Consolidated skill loading instructions.
+ * Single source of truth — used by both eng-prompt and audit-prompt builders.
  */
-export const SKILL_LOADING_RULES = `## Skill Loading (MANDATORY)
-
-BEFORE writing ANY code, load engineering skills via the Skill tool.
+export const SKILL_LOADING_INSTRUCTIONS = `BEFORE writing ANY code, load engineering skills via the Skill tool.
 Skills provide project-specific patterns, anti-patterns, and best practices
 that MUST be followed during implementation.
 
-### Loading Process
+Loading process:
 1. Invoke each skill listed below using the Skill tool
 2. Read and absorb the patterns returned by each skill
 3. Apply those patterns throughout implementation
-4. Always load typescript-clean-code for TypeScript quality standards
+4. Always load typescript-clean-code for TypeScript quality standards`
+
+/**
+ * Base instruction block for skill loading.
+ * Prompt builders append the resolved skill list to this.
+ * @deprecated Use SKILL_LOADING_INSTRUCTIONS + buildSkillLoadingSection() instead.
+ */
+export const SKILL_LOADING_RULES = `## Skill Loading (MANDATORY)
+
+${SKILL_LOADING_INSTRUCTIONS}
 
 ### Example Invocation
 To load a skill, call the Skill tool with the skill name:
@@ -80,6 +87,34 @@ To load a skill, call the Skill tool with the skill name:
 - Skip skill loading — skills contain critical project-specific rules
 - Ignore patterns from loaded skills
 - Start coding before skills are loaded`
+
+/**
+ * Builds the <skill_loading> XML section with resolved skills.
+ * Shared by eng-prompt and audit-prompt builders.
+ *
+ * @param detectedTechnologies - Technology tags from project detection
+ * @param detectedDependencies - Raw package.json dependency names
+ * @returns Skill loading prompt section, or empty string if no skills resolved
+ */
+export function buildSkillLoadingSection(
+  detectedTechnologies: string[],
+  detectedDependencies?: string[],
+): string {
+  const skills = resolveSkillsFromTechnologies(detectedTechnologies, detectedDependencies)
+
+  if (skills.length === 0) {
+    return ''
+  }
+
+  const skillList = skills.map((s) => `  - ${s}`).join('\n')
+
+  return `<skill_loading>
+${SKILL_LOADING_INSTRUCTIONS}
+
+Skills to load:
+${skillList}
+</skill_loading>`
+}
 
 /**
  * Resolves detected technologies to a deduplicated list of skill names.

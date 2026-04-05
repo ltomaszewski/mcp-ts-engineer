@@ -33,49 +33,7 @@ export function buildDevContext(config?: ProjectConfig): string {
 
   return `# Development Context
 
-**Mode:** Active implementation
-**Focus:** Writing code, building features, fixing bugs
-
----
-
-${codemapSection}
-
-## Behavior
-
-- Write working code first, optimize later
-- Run tests after changes
-- Keep commits atomic and focused
-- Use TDD for new features
-
-## Priorities
-
-1. **Get it working** - Functional code
-2. **Get it right** - Correct behavior
-3. **Get it clean** - Maintainable code
-
-## Tools to Favor
-
-| Task | Tool |
-|------|------|
-| Code changes | Edit, Write |
-| Running tests/builds | Bash |
-| Finding code | Grep, Glob |
-| Understanding code | Read |
-
-## Workflow
-
-1. Read existing code → Understand patterns
-2. Write tests → Define expected behavior
-3. Implement → Make tests pass
-4. Verify → turbo run build test lint
-5. Commit → Atomic, descriptive commits
-
-## Anti-Patterns to Avoid
-
-- Coding without reading existing patterns
-- Skipping tests
-- Large commits with multiple concerns
-- Ignoring type errors`
+${codemapSection}`
 }
 
 /**

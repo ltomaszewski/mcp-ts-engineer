@@ -82,6 +82,28 @@ const PLANNER_USER_PROMPT_TEMPLATE = (specPath: string, maxPhases: number): stri
 - Each phase MUST have at least one file listed.
 </rules>
 
+<reasoning_guidance>
+Apply these principles when splitting work into phases:
+
+**Dependency chains**: If file B imports from file A, file A must be in an earlier phase.
+  - Schemas/types first → implementations that consume them → tests that exercise them.
+  - Shared utilities before the modules that use them.
+
+**Testable units**: Each phase should produce code that can be tested in isolation.
+  - Avoid phases where tests can only run after a later phase completes.
+  - If a phase creates interfaces, include at least a stub implementation so tests can instantiate.
+
+**Schema-first phasing**: When the spec defines Zod schemas, DTOs, or type definitions, put those in Phase 1.
+  - This lets all subsequent phases import validated types.
+  - Include schema tests in the same phase.
+
+**Common mistakes to avoid**:
+  - Putting all tests in a final phase — tests should accompany the code they verify.
+  - Creating a phase with only type files and no runnable tests.
+  - Splitting tightly coupled files (e.g., a service and its sole caller) across phases.
+  - Forgetting to include barrel exports (index.ts) when downstream phases need them.
+</reasoning_guidance>
+
 <output_format>
 - Wrap the JSON in <phase_plan></phase_plan> XML tags
 - JSON must match the structure shown above

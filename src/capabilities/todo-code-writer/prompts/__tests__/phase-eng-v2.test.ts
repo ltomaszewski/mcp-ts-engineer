@@ -221,7 +221,7 @@ describe('phaseEngPromptV2', () => {
       })
 
       const charCount = result.userPrompt.length
-      expect(charCount).toBeLessThan(9000)
+      expect(charCount).toBeLessThan(10000)
     })
 
     it('should be under 16000 characters for react-native with all rules (AC-2.10b)', () => {
@@ -233,7 +233,7 @@ describe('phaseEngPromptV2', () => {
       })
 
       const charCount = result.userPrompt.length
-      expect(charCount).toBeLessThan(18000)
+      expect(charCount).toBeLessThan(19000)
     })
   })
 

@@ -180,7 +180,6 @@ describe('phaseAuditPromptV2', () => {
 
       const systemPrompt = result.systemPrompt as { append: string }
       expect(systemPrompt.append).toContain('Review Context')
-      expect(systemPrompt.append).toContain('Security')
     })
   })
 

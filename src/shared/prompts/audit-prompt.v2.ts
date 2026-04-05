@@ -5,7 +5,7 @@
  * Originally from: src/capabilities/todo-code-writer/prompts/phase-audit.v2.ts
  */
 
-import { resolveSkillsFromTechnologies, SKILL_LOADING_RULES } from './eng-rules/index.js'
+import { buildSkillLoadingSection } from './eng-rules/index.js'
 import { buildReviewContext } from './review-context.js'
 
 /** Built prompt result. */
@@ -58,30 +58,6 @@ const buildPhaseAuditV2SystemPromptAppend = (): string =>
   `After completing all tool use, provide a brief text summary of the audit findings. Your structured output will be captured automatically via the output schema.
 
 ${buildReviewContext()}`
-
-/**
- * Builds the skill loading section with the resolved list of skills to invoke.
- */
-const buildSkillLoadingSection = (
-  detectedTechnologies: string[],
-  detectedDependencies?: string[],
-): string => {
-  const skills = resolveSkillsFromTechnologies(detectedTechnologies, detectedDependencies)
-
-  if (skills.length === 0) {
-    return ''
-  }
-
-  const skillList = skills.map((s) => `  - ${s}`).join('\n')
-
-  return `<skill_loading>
-${SKILL_LOADING_RULES}
-
-### Skills to Load
-Invoke each of these skills using the Skill tool BEFORE reviewing code:
-${skillList}
-</skill_loading>`
-}
 
 /**
  * Builds spec mode user prompt.
@@ -144,6 +120,17 @@ ${skillLoadingSection}
 
 7. Provide a brief text summary of the audit.
 </workflow>
+
+<file_priority>
+Review files in this priority order:
+1. Entry points (index.ts, main.ts, server.ts) — integration correctness
+2. Routes / Controllers — API surface, guards, validation
+3. Services / Capabilities — business logic, error handling
+4. Utilities / Helpers — shared functions, edge cases
+5. Types / Schemas — type consistency across modules
+
+Skip: test files, generated code (build output), config files (tsconfig, vitest.config).
+</file_priority>
 
 <rules>
 - LOAD SKILLS FIRST: Invoke all skills from <skill_loading> before reviewing code

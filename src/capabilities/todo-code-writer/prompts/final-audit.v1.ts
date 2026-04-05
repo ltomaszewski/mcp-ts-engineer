@@ -60,6 +60,17 @@ ${fileList}
 6. Provide a brief text summary of the final audit.
 </workflow>
 
+<file_priority>
+Review files in this priority order:
+1. Entry points (index.ts, main.ts, server.ts) — integration correctness
+2. Routes / Controllers — API surface, guards, validation
+3. Services / Capabilities — business logic, error handling
+4. Utilities / Helpers — shared functions, edge cases
+5. Types / Schemas — type consistency across modules
+
+Skip: test files, generated code (build output), config files (tsconfig, vitest.config).
+</file_priority>
+
 <rules>
 - Focus on integration, not re-auditing individual files (that was done in phase audits).
 - Sample key files rather than reading every file (too many files to read exhaustively).

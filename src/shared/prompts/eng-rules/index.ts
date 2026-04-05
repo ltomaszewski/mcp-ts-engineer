@@ -10,8 +10,10 @@ export { RACE_CONDITIONS_RULES } from './race-conditions.js'
 export { REACT_HOOKS_REVIEW_RULES } from './react-hooks-review.js'
 export {
   ALWAYS_LOAD_SKILLS,
+  buildSkillLoadingSection,
   DEPENDENCY_SKILL_MAP,
   resolveSkillsFromTechnologies,
+  SKILL_LOADING_INSTRUCTIONS,
   SKILL_LOADING_RULES,
 } from './skill-loading.js'
 export { TESTING_REQUIREMENTS_RULES } from './testing-requirements.js'

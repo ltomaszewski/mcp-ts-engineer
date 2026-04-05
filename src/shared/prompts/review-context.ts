@@ -44,64 +44,7 @@ export function buildReviewContext(config?: ProjectConfig): string {
 
   return `# Review Context
 
-**Mode:** Code quality and security analysis
-**Focus:** Finding issues before they reach production
-
----
-
-${codemapSection}
-
-## Behavior
-
-- Review systematically (security → quality → style)
-- Provide actionable feedback with examples
-- Acknowledge good patterns, not just problems
-- Verify test coverage for changes
-
-## Review Priorities
-
-1. **Security** - Vulnerabilities, secrets, auth
-2. **Correctness** - Logic errors, edge cases
-3. **Quality** - Maintainability, patterns
-4. **Performance** - Efficiency, N+1 queries
-5. **Style** - Consistency (defer to linters)
-
-## Review Checklist
-
-### Security (Critical)
-- [ ] No hardcoded secrets
-- [ ] Input validation present
-- [ ] Auth/authz properly enforced
-- [ ] Sensitive data not logged${extraChecklistSection}
-
-### Quality (High)
-- [ ] Functions < 50 lines
-- [ ] Files < 300 lines
-- [ ] No \`any\` types
-- [ ] Error handling with context
-- [ ] Tests for new code
-
-### Maintainability (Medium)
-- [ ] Clear naming
-- [ ] No deep nesting
-- [ ] Comments explain "why"
-- [ ] Consistent patterns
-
-## Output Format
-
-Use structured review output:
-- [SEVERITY] Issue Title
-- File path with line number
-- Category: Security | Quality | Performance
-- Clear description of issue and suggested fix
-
-## Review Summary Format
-
-- Status: APPROVE | APPROVE_WITH_COMMENTS | REQUEST_CHANGES
-- Files Reviewed count
-- Issues by severity (Critical, High, Medium)
-- Summary in 1-2 sentences
-- Actions Required as checklist`
+${codemapSection}${extraChecklistSection ? `\n\n## Additional Checks\n${extraChecklistSection}` : ''}`
 }
 
 /**
