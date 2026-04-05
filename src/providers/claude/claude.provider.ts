@@ -79,7 +79,7 @@ export class ClaudeProvider implements AIProvider {
   async query(request: AIQueryRequest): Promise<AIQueryResult> {
     const startTime = Date.now()
     const trace = this.createTrace(request)
-    const watchdog = createWatchdog(request.timeout)
+    const watchdog = createWatchdog(request)
 
     try {
       const options = this.mapRequestToOptions(request)
@@ -95,7 +95,9 @@ export class ClaudeProvider implements AIProvider {
         watchdog.resetIdle()
 
         const sdkMsg = message as SDKMessage
-        trace.rawEvents?.push(this.captureRawEvent(message as Record<string, unknown>))
+        if (request.traceLevel === 'full') {
+          trace.rawEvents?.push(this.captureRawEvent(message as Record<string, unknown>))
+        }
 
         if (isAssistantMessage(sdkMsg)) {
           processAssistantMessage(sdkMsg, acc, trace)
@@ -219,14 +221,24 @@ export class ClaudeProvider implements AIProvider {
   }
 
   /**
-   * Estimate trace size in bytes (rough approximation).
+   * Estimate trace size in bytes using a heuristic (avoids JSON.stringify overhead).
+   * Counts turns, blocks, and raw events with average sizes.
    */
   private estimateTraceSize(trace: AIExecutionTrace): number {
-    try {
-      return JSON.stringify(trace).length
-    } catch {
-      return 1000
+    const BASE_SIZE = 500 // trace metadata (tid, timestamps, request summary)
+    const TURN_SIZE = 200 // per-turn overhead (turnNumber, arrays)
+    const BLOCK_SIZE = 300 // average content block size
+    const RAW_EVENT_SIZE = 400 // average raw event size
+    const TOOL_RESULT_SIZE = 500 // average tool result size
+
+    let estimate = BASE_SIZE
+    for (const turn of trace.turns) {
+      estimate += TURN_SIZE
+      estimate += turn.assistantBlocks.length * BLOCK_SIZE
+      estimate += (turn.toolResults?.length ?? 0) * TOOL_RESULT_SIZE
     }
+    estimate += (trace.rawEvents?.length ?? 0) * RAW_EVENT_SIZE
+    return estimate
   }
 
   /** Generate unique trace ID. */
@@ -241,7 +253,7 @@ export class ClaudeProvider implements AIProvider {
       startedAt: new Date().toISOString(),
       request: { ...request },
       turns: [],
-      rawEvents: [],
+      rawEvents: request.traceLevel === 'full' ? [] : undefined,
     }
   }
 
@@ -294,10 +306,10 @@ interface Watchdog {
  * Create idle + hard watchdog timers that abort the controller on timeout.
  * Idle timer resets on every SDK message; hard timer is absolute max.
  */
-function createWatchdog(requestTimeoutMs?: number): Watchdog {
+function createWatchdog(request: AIQueryRequest): Watchdog {
   const controller = new AbortController()
-  const idleMs = requestTimeoutMs || SDK_IDLE_TIMEOUT_MS
-  const hardMs = SDK_HARD_TIMEOUT_MS
+  const idleMs = request.idleTimeout || SDK_IDLE_TIMEOUT_MS
+  const hardMs = request.hardTimeout || request.timeout || SDK_HARD_TIMEOUT_MS
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null
 

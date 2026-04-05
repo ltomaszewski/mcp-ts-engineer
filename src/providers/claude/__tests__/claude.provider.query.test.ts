@@ -542,7 +542,7 @@ describe('ClaudeProvider', () => {
       expect(result.trace.turns[0].toolResults).toBeUndefined()
     })
 
-    it('should capture rawEvents for every SDK message', async () => {
+    it('should capture rawEvents for every SDK message when traceLevel is full', async () => {
       const messages: MockSDKMessage[] = [
         assistantMsg([textBlock('Response')]),
         userMsg('tool output', 'call_1'),
@@ -554,7 +554,7 @@ describe('ClaudeProvider', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const provider = new ClaudeProvider(mockQuery as any)
 
-      const result = await provider.query({ prompt: 'Test' })
+      const result = await provider.query({ prompt: 'Test', traceLevel: 'full' })
 
       // Should have one rawEvent per message
       expect(result.trace.rawEvents).toBeDefined()
@@ -567,7 +567,22 @@ describe('ClaudeProvider', () => {
       expect(result.trace.rawEvents?.[3].type).toBe('result')
     })
 
-    it('should capture rawEvent with timestamp and data fields', async () => {
+    it('should not capture rawEvents when traceLevel is minimal (default)', async () => {
+      const messages: MockSDKMessage[] = [
+        assistantMsg([textBlock('Response')]),
+        successResult(),
+      ]
+
+      const mockQuery = createMockQuery(messages)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const provider = new ClaudeProvider(mockQuery as any)
+
+      const result = await provider.query({ prompt: 'Test' })
+
+      expect(result.trace.rawEvents).toBeUndefined()
+    })
+
+    it('should capture rawEvent with timestamp and data fields when traceLevel is full', async () => {
       const messages: MockSDKMessage[] = [
         assistantMsg([textBlock('Hello')]),
         successResult({ total_cost_usd: 0.001 }),
@@ -577,7 +592,7 @@ describe('ClaudeProvider', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const provider = new ClaudeProvider(mockQuery as any)
 
-      const result = await provider.query({ prompt: 'Test' })
+      const result = await provider.query({ prompt: 'Test', traceLevel: 'full' })
 
       const rawEvent = result.trace.rawEvents?.[0]
       expect(rawEvent?.type).toBe('assistant')
@@ -588,14 +603,14 @@ describe('ClaudeProvider', () => {
       expect(rawEvent?.data).not.toHaveProperty('subtype')
     })
 
-    it('should capture rawEvent subtype from result messages', async () => {
+    it('should capture rawEvent subtype from result messages when traceLevel is full', async () => {
       const messages: MockSDKMessage[] = [assistantMsg([textBlock('Response')]), successResult()]
 
       const mockQuery = createMockQuery(messages)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const provider = new ClaudeProvider(mockQuery as any)
 
-      const result = await provider.query({ prompt: 'Test' })
+      const result = await provider.query({ prompt: 'Test', traceLevel: 'full' })
 
       const resultEvent = result.trace.rawEvents?.find((e) => e.type === 'result')
       expect(resultEvent).toBeDefined()
@@ -703,7 +718,7 @@ describe('ClaudeProvider', () => {
       })
     })
 
-    it('should initialize rawEvents as empty array in trace', async () => {
+    it('should initialize rawEvents as empty array in trace when traceLevel is full', async () => {
       const messages: MockSDKMessage[] = [
         successResult(), // Immediately completes with no assistant messages
       ]
@@ -712,7 +727,7 @@ describe('ClaudeProvider', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const provider = new ClaudeProvider(mockQuery as any)
 
-      const result = await provider.query({ prompt: 'Test' })
+      const result = await provider.query({ prompt: 'Test', traceLevel: 'full' })
 
       expect(result.trace.rawEvents).toBeDefined()
       expect(Array.isArray(result.trace.rawEvents)).toBe(true)

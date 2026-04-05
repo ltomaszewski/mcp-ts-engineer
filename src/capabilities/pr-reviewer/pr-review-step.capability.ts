@@ -288,7 +288,7 @@ export const prReviewStepCapability: CapabilityDefinition<ReviewStepInput, Revie
     _context.logger.debug('XML block not found, trying regex fallback')
 
     // Strategy 3: Regex JSON extraction fallback
-    const parsed = tryParseJson<ReviewStepOutput>(aiResult.content)
+    const parsed = tryParseJson(aiResult.content, ReviewStepOutputSchema)
     if (parsed?.issues && Array.isArray(parsed.issues)) {
       _context.logger.info('Review parsed via regex JSON extraction', {
         issueCount: parsed.issues.length,

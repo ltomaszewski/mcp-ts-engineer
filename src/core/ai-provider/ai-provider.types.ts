@@ -94,6 +94,12 @@ export interface AIQueryRequest {
   maxBudgetUsd?: number
   /** Timeout in milliseconds */
   timeout?: number
+  /** Idle timeout in milliseconds (no SDK message = assume dead) */
+  idleTimeout?: number
+  /** Hard timeout in milliseconds (absolute max per query) */
+  hardTimeout?: number
+  /** Trace level: 'full' captures raw SDK events, 'minimal' (default) skips them */
+  traceLevel?: 'full' | 'minimal'
   /** Permission mode for tool execution */
   permissionMode?: PermissionMode
   /** Working directory */

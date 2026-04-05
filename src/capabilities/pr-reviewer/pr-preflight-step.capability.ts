@@ -148,26 +148,13 @@ export const prPreflightStepCapability: CapabilityDefinition<
     }
 
     // Strategy 3: Regex JSON extraction fallback
-    const parsed = tryParseJson<Record<string, unknown>>(aiResult.content)
+    const parsed = tryParseJson(aiResult.content, PreflightStepOutputSchema)
     if (!parsed) return FALLBACK
 
-    const rawContext = parsed.pr_context
-    const prContext = rawContext ? sanitizePrContext(rawContext) : null
-    if (parsed.proceed && !prContext) {
+    const prCtx = parsed.pr_context ? sanitizePrContext(parsed.pr_context) : null
+    if (parsed.proceed && !prCtx) {
       return { proceed: false, skip_reason: 'Failed to validate pr_context from agent output' }
     }
-    return {
-      proceed: Boolean(parsed.proceed),
-      skip_reason: typeof parsed.skip_reason === 'string' ? parsed.skip_reason : undefined,
-      pr_context: prContext ?? undefined,
-      last_reviewed_sha:
-        typeof parsed.last_reviewed_sha === 'string' && parsed.last_reviewed_sha.trim() !== ''
-          ? parsed.last_reviewed_sha
-          : undefined,
-      head_sha:
-        typeof parsed.head_sha === 'string' && parsed.head_sha.trim() !== ''
-          ? parsed.head_sha
-          : undefined,
-    }
+    return { ...parsed, pr_context: prCtx ?? undefined }
   },
 }

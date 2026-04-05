@@ -148,7 +148,7 @@ export const prContextStepCapability: CapabilityDefinition<ContextStepInput, Con
     if (xmlContent) return parseJsonSafe(xmlContent, ContextStepOutputSchema, FALLBACK)
 
     // Strategy 3: Regex JSON extraction fallback
-    const parsed = tryParseJson<ContextStepOutput>(aiResult.content)
+    const parsed = tryParseJson(aiResult.content, ContextStepOutputSchema)
     return parsed ?? FALLBACK
   },
 }

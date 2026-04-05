@@ -87,7 +87,7 @@ describe('auditFixDepsScanStepCapability', () => {
       ) as import('../audit-fix.schema.js').DepsScanStepResult
 
       expect(result.audit_ran).toBe(false)
-      expect(result.vulnerabilities_found).toBe(0)
+      expect(result.vulnerabilities_found).toBe(-1)
     })
 
     it('returns fallback when JSON parse fails', () => {

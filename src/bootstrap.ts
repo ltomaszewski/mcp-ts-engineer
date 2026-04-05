@@ -12,10 +12,14 @@
  *   bootstrap({ serverName: "MyServer", ... });
  */
 
+import { join } from 'node:path'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerAllCapabilities } from './capabilities/index.js'
+import { getDefaultLogDir } from './config/constants.js'
 import type { ProjectConfig } from './config/index.js'
 import { loadProjectConfig } from './config/load-config.js'
+import { cleanupStaleLocks } from './core/cost/lock-cleanup.js'
+import { resolveLogPath } from './core/logger/path-utils.js'
 import { Logger } from './core/logger/logger.js'
 import { createServer, type ServerContext } from './server.js'
 
@@ -62,7 +66,7 @@ export async function bootstrap(config?: ProjectConfig): Promise<void> {
       forceExitTimer = setTimeout(() => {
         logger.error('Forced exit - shutdown took too long')
         process.exit(1)
-      }, 5000)
+      }, 15000)
       forceExitTimer.unref()
     }
 
@@ -78,6 +82,13 @@ export async function bootstrap(config?: ProjectConfig): Promise<void> {
   try {
     logger.info('MCP server initializing...')
     logger.info('Authentication: Using Claude Code CLI subscription')
+
+    // Clean up stale locks and orphaned temp files from previous runs
+    const reportsDir = join(resolveLogPath(getDefaultLogDir()), 'reports')
+    const cleaned = await cleanupStaleLocks(reportsDir)
+    if (cleaned > 0) {
+      logger.info(`Cleaned up ${cleaned} stale lock/temp files`)
+    }
 
     serverContext = createServer(resolvedConfig)
     const { server, registry } = serverContext

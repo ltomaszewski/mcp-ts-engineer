@@ -88,7 +88,7 @@ export const LINT_FIX_RESULT_FALLBACK: LintFixResult = {
 /** Default DepsScanStepResult returned when AI output cannot be parsed. */
 export const DEPS_SCAN_STEP_RESULT_FALLBACK: DepsScanStepResult = {
   audit_ran: false,
-  vulnerabilities_found: 0,
+  vulnerabilities_found: -1,
   vulnerabilities_by_severity: {
     critical: 0,
     high: 0,

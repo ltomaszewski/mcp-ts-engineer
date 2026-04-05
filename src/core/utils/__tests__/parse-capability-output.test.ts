@@ -42,7 +42,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual({ status: 'ok', count: 42 })
+      expect(result).toEqual({ status: 'ok', count: 42, _parseStrategy: 'structured' })
     })
 
     it('falls through to XML when structuredOutput is absent', () => {
@@ -52,7 +52,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual({ status: 'from-xml', count: 7 })
+      expect(result).toEqual({ status: 'from-xml', count: 7, _parseStrategy: 'xml' })
     })
 
     it('falls through to XML when structuredOutput fails Zod validation', () => {
@@ -63,7 +63,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual({ status: 'xml-fallback', count: 99 })
+      expect(result).toEqual({ status: 'xml-fallback', count: 99, _parseStrategy: 'xml' })
     })
   })
 
@@ -75,7 +75,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'output', TestSchema, fallback)
 
-      expect(result).toEqual({ status: 'done', count: 5 })
+      expect(result).toEqual({ status: 'done', count: 5, _parseStrategy: 'xml' })
     })
 
     it('returns fallback when XML content is invalid JSON', () => {
@@ -85,7 +85,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual(fallback)
+      expect(result).toEqual({ ...fallback, _parseStrategy: 'fallback' })
     })
 
     it('returns fallback when XML content fails Zod validation', () => {
@@ -95,7 +95,7 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual(fallback)
+      expect(result).toEqual({ ...fallback, _parseStrategy: 'fallback' })
     })
   })
 
@@ -107,7 +107,39 @@ describe('parseCapabilityOutput', () => {
 
       const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
 
-      expect(result).toEqual(fallback)
+      expect(result).toEqual({ ...fallback, _parseStrategy: 'fallback' })
+    })
+  })
+
+  describe('_parseStrategy metadata', () => {
+    it('returns "structured" strategy for valid structuredOutput', () => {
+      const aiResult = makeResult({
+        structuredOutput: { status: 'ok', count: 1 },
+      })
+
+      const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
+
+      expect(result._parseStrategy).toBe('structured')
+    })
+
+    it('returns "xml" strategy for valid XML block', () => {
+      const aiResult = makeResult({
+        content: '<result>{"status":"ok","count":1}</result>',
+      })
+
+      const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
+
+      expect(result._parseStrategy).toBe('xml')
+    })
+
+    it('returns "fallback" strategy when all strategies fail', () => {
+      const aiResult = makeResult({
+        content: 'no json here',
+      })
+
+      const result = parseCapabilityOutput(aiResult, 'result', TestSchema, fallback)
+
+      expect(result._parseStrategy).toBe('fallback')
     })
   })
 })
