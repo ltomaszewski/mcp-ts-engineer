@@ -11,6 +11,55 @@ CLAUDE.md files are project-specific instruction files that Claude Code loads in
 
 ---
 
+## Opus 4.7 CLAUDE.md Considerations
+
+Opus 4.7 follows instructions more literally than 4.6. Adjust CLAUDE.md style:
+
+### State Scope Explicitly
+
+```markdown
+❌ "Add tests for new features."
+✅ "Add tests for every new exported function in src/capabilities/, with at least one happy-path case and one edge case."
+```
+
+### Drop 4.6-Era Anti-Over-Engineering Scaffolding
+
+Opus 4.7 self-moderates more than 4.6 — it's less prone to unsolicited refactoring and abstraction sprawl. Remove blanket rules like:
+
+```markdown
+❌ Obsolete on 4.7
+"Do not refactor code that isn't in the task scope."
+"Avoid premature abstraction."
+"Don't add features not requested."
+```
+
+Keep only the most targeted guidance (e.g., codebase-specific invariants like "never mutate state outside Zustand stores").
+
+### Favor Explicit Acceptance Criteria
+
+CLAUDE.md rules that describe acceptance criteria (testable, observable) work better on 4.7 than rules that describe style preferences:
+
+```markdown
+✅ Works well on 4.7
+"Every new file in src/capabilities/ must have a matching .test.ts file with >=80% branch coverage."
+
+⚠️ Weaker on 4.7 (too subjective)
+"Write clean, readable code."
+```
+
+### Tone Calibration
+
+Opus 4.7 has a more direct, opinionated default tone. If your project wants a softer or more validation-forward style, state it explicitly:
+
+```markdown
+## Communication Style
+- Acknowledge edge cases the user raises before proposing solutions
+- When disagreeing, state the disagreement openly then give the user's preference weight
+- Use matter-of-fact language; do not add reassurance phrases
+```
+
+---
+
 ## File Discovery Hierarchy
 
 Claude Code walks from the current working directory to the filesystem root, collecting CLAUDE.md files at each level:

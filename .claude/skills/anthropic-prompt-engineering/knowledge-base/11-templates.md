@@ -608,6 +608,172 @@ Actions:
 
 ---
 
+## Opus 4.7 Templates
+
+Templates tuned for Claude Opus 4.7's defaults: adaptive thinking, literal instruction following, fewer tool calls, higher effort baseline.
+
+---
+
+### Template: Agentic Coding Task (Opus 4.7)
+
+Full request config for long-running coding or refactoring work.
+
+```typescript
+const request = {
+  model: "claude-opus-4-7",
+  system: [
+    {
+      type: "text",
+      text: CODING_SYSTEM_PROMPT,
+      cache_control: { type: "ephemeral" },
+    },
+  ],
+  thinking: {
+    type: "adaptive",
+    display: "summarized",  // default is "omitted" on 4.7
+  },
+  output_config: {
+    effort: "xhigh",  // recommended starting point for coding/agentic on 4.7
+  },
+  max_tokens: 64000,  // minimum at xhigh/max effort
+  tools: [/* ... */],
+  messages,
+};
+
+// Optional: enable task budgets for multi-step traces
+const headers = {
+  "anthropic-beta": "task-budgets-2026-03-13",
+};
+const requestWithBudget = {
+  ...request,
+  task_budget: { total: 200000 },  // minimum 20000
+};
+```
+
+**Prompt shape** (user message for 4.7 literal instruction following):
+
+```markdown
+## Task
+[Single, concrete outcome — one sentence]
+
+## Intent
+[Why this matters — 2-3 sentences of context for edge-case judgment]
+
+## Constraints
+- [Preserve existing behaviors]
+- [Hard limits — performance, API shape, migration compatibility]
+- [Out-of-scope — what NOT to touch]
+
+## Acceptance Criteria
+- [ ] [Testable outcome 1]
+- [ ] [Testable outcome 2]
+- [ ] [Tests pass / lint clean / types check]
+```
+
+---
+
+### Template: Code Review (Opus 4.7)
+
+Opus 4.7 honors "only high-severity" literally, which reduces recall. Reverse the pattern — report everything, filter downstream.
+
+```markdown
+## Review Task
+
+Review the diff below. Report EVERY issue you find, regardless of severity.
+
+For each issue, produce:
+- `severity`: one of "critical", "high", "medium", "low", "nit"
+- `file`: path
+- `line`: line number
+- `category`: one of "bug", "security", "perf", "style", "docs", "test"
+- `description`: what is wrong
+- `suggestion`: concrete fix
+
+Return as JSON array. Do not filter or pre-prioritize — we apply severity thresholds downstream.
+```
+
+---
+
+### Template: Design — Propose Options Before Building (Opus 4.7)
+
+Opus 4.7 has a persistent cream/serif house style default. For variety, request concrete options before implementation.
+
+```markdown
+## Task
+Design the onboarding screen for [product].
+
+## Process
+Before writing any code, propose FOUR distinct visual directions as a table:
+
+| Direction | Palette | Typography | Feel |
+|-----------|---------|------------|------|
+| 1 | [3-5 concrete hex values] | [font family + weight] | [1-2 adjectives] |
+| 2 | [...] | [...] | [...] |
+| 3 | [...] | [...] | [...] |
+| 4 | [...] | [...] | [...] |
+
+Then STOP and wait for my selection. Do not implement until I pick one.
+```
+
+---
+
+### Template: Memory-Tool-Paired Multi-Session Agent (Opus 4.7)
+
+Leverages Opus 4.7's improved memory-tool handling.
+
+```markdown
+## System Prompt
+
+You are a long-horizon engineering agent working on [project]. You have access to the memory tool.
+
+### Session Initialization (run at every session start)
+1. Read `memory://project-state.md` — current state, in-flight work, next steps
+2. Read `memory://open-questions.md` — unresolved decisions
+3. Read `memory://invariants.md` — project-specific rules that persist across sessions
+
+If `memory://project-state.md` does not exist, create it with sections: "Current state", "In-flight work", "Next steps".
+
+### Session Update (run at every session end OR when you commit changes)
+Update `memory://project-state.md`:
+- "Current state": one paragraph summarizing where the project is
+- "In-flight work": bullet list of partially complete tasks
+- "Next steps": 1-3 concrete next actions
+
+Append any unresolved decisions to `memory://open-questions.md`.
+
+### During the Session
+When you encounter a decision that will matter across sessions (architectural choice, naming convention, invariant), write it to `memory://invariants.md`.
+```
+
+---
+
+### Template: Verbosity-Controlled Response (Opus 4.7)
+
+Opus 4.7 calibrates response length to task complexity by default. For UIs with strict length requirements, state them explicitly.
+
+```markdown
+## Output Constraints
+
+- Total response: under 150 words
+- Format: bulleted list, maximum 5 bullets
+- Tone: matter-of-fact, no hedging phrases ("it seems", "I think", "perhaps")
+- Do NOT include: preamble, summary, meta-commentary, trailing acknowledgments
+- Do NOT use emoji
+```
+
+---
+
+**Version**: Claude 4.7 (Opus 4.7)
+
+**Opus 4.7 Sources**:
+- https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
+- https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
+- https://platform.claude.com/docs/en/build-with-claude/effort
+- https://platform.claude.com/docs/en/build-with-claude/task-budgets
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+
+---
+
 **Next**: [12-skills.md](12-skills.md) - Building skills for Claude
 
 For questions or updates, consult Anthropic's official documentation:

@@ -15,6 +15,55 @@ Prompt caching allows you to:
 
 ---
 
+## Opus 4.7 Pricing + Tokenization
+
+| Model | Input $/MTok | Output $/MTok | Cache Write $/MTok | Cache Read $/MTok | Context | Max Output |
+|-------|--------------|---------------|---------------------|-------------------|---------|------------|
+| Opus 4.7 | $5 | $25 | $6.25 | $0.50 | 1M | 128k |
+
+> **Tokenizer change on Opus 4.7**: Opus 4.7 uses a new tokenizer that produces 1.0–1.35× more tokens than Opus 4.6 for the same text. `count_tokens` returns different numbers for identical inputs. Re-benchmark cost and latency; do not reuse old token-budget assumptions. Existing cache entries from 4.6 will not hit on 4.7 due to different tokenization and the model-ID mismatch.
+
+---
+
+## Task Budgets (Opus 4.7 beta)
+
+Task budgets provide an ADVISORY cap across a full agentic loop. They complement `max_tokens` (the per-request hard ceiling).
+
+### Enabling
+
+```typescript
+headers: {
+  "anthropic-beta": "task-budgets-2026-03-13",
+}
+
+// Request
+{
+  model: "claude-opus-4-7",
+  thinking: { type: "adaptive" },
+  task_budget: {
+    total: 100000,  // minimum 20000
+  },
+  max_tokens: 64000,
+}
+```
+
+### Rules
+
+| Rule | Why |
+|------|-----|
+| `total` minimum is 20000 | Below that, the loop cannot make meaningful progress |
+| `max_tokens` remains the hard cap | Task budget is advisory — per-request limit still applies |
+| **Do NOT set `task_budget.remaining` manually** | Server tracks it; mutating it **invalidates prompt cache** |
+| Read `remaining` from responses for compaction-aware loops | When `remaining < threshold`, compact context |
+
+### When to use
+
+- Long-running agentic traces with many tool calls
+- Multi-step workflows where total cost matters more than per-request cost
+- Compaction-aware loops (use `remaining` to trigger summarization)
+
+---
+
 ## How Caching Works
 
 ### Cache Mechanics

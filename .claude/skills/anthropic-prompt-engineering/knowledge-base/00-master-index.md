@@ -38,6 +38,7 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 | **13 Agent Teams** | Multi-agent orchestration | Agent teams, subagents, shared tasks, messaging |
 | **14 CLAUDE.md Architecture** | Project instruction files | File hierarchy, @include, paths:, cache boundary, memory |
 | **15 Claude Code Patterns** | Production patterns from source | Array composition, redundant reinforcement, anti-rationalization, coordinator synthesis |
+| **16 Opus 4.7 Migration** | 4.6 → 4.7 breaking changes and behavior shifts | Adaptive-only thinking, `xhigh` effort, task budgets, sampling removal, tokenizer change, literal instructions |
 
 ---
 
@@ -82,6 +83,9 @@ This knowledge base provides comprehensive guidance for writing prompts that pro
 ### Production Reference
 14. [Claude Code Patterns](15-claude-code-patterns.md) - Battle-tested patterns from Anthropic's own production system
 
+### Model Migration
+15. [Opus 4.7 Migration Guide](16-opus-4-7-migration.md) - Opus 4.6 → 4.7 breaking changes, behavior shifts, full migration checklist
+
 ---
 
 ## Source URLs
@@ -101,8 +105,15 @@ All content sourced from official Anthropic documentation:
 - **Agent Teams**: https://code.claude.com/docs/en/agent-teams
 - **Long-Running Agent Harnesses**: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
 - **Agent Skills (Open Standard)**: https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
-- **Adaptive Thinking**: https://docs.anthropic.com/en/docs/build-with-claude/adaptive-thinking
+- **Adaptive Thinking**: https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
+- **Effort Parameter**: https://platform.claude.com/docs/en/build-with-claude/effort
+- **Task Budgets (beta)**: https://platform.claude.com/docs/en/build-with-claude/task-budgets
+- **What's New in Claude Opus 4.7**: https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
+- **Model Migration Guide**: https://platform.claude.com/docs/en/about-claude/models/migration-guide
+- **Memory Tool**: https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
+- **Prompting Best Practices (Opus 4.7)**: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+- **Best Practices: Claude Opus 4.7 with Claude Code**: https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code
 
 ---
 
-**Last Updated**: March 2026 | **Status**: Production Ready
+**Last Updated**: April 2026 | **Status**: Production Ready | **Current Model**: Claude Opus 4.7

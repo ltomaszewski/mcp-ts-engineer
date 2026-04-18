@@ -18,6 +18,110 @@ Context engineering focuses on:
 
 ---
 
+## Opus 4.7 Agentic Patterns
+
+Opus 4.7 makes different default choices in agentic loops than 4.6. Adapt prompting accordingly.
+
+### 1. Interactive vs Autonomous Coding
+
+**Specify everything upfront.** Every user turn adds reasoning overhead on 4.7. A single well-specified request outperforms back-and-forth.
+
+```markdown
+## Task
+Refactor the auth module to use the new SessionService.
+
+## Intent
+We're consolidating session management. The old AuthGuard should delegate to
+SessionService.create(), SessionService.validate(), and SessionService.revoke().
+
+## Constraints
+- Preserve existing error response shape
+- Keep backward compatibility with /auth/legacy endpoints
+- All tests must pass
+
+## Acceptance Criteria
+- [ ] AuthGuard uses SessionService for all session ops
+- [ ] No direct JWT parsing in AuthGuard
+- [ ] Integration tests in __tests__/auth.integration.test.ts pass
+- [ ] No breaking change to /auth/legacy
+```
+
+### 2. Subagent Fan-Out
+
+Opus 4.7 spawns FEWER subagents by default than 4.6 (4.6 had an "over-spawning" tendency). Be explicit about when fan-out is warranted:
+
+```markdown
+## When to Spawn Subagents
+Spawn a subagent ONLY if all three hold:
+- The work is independent of current context (no back-reference needed)
+- The work requires reading >10 files or making >5 tool calls
+- Multiple branches can run in parallel without merge conflicts
+
+For single-file edits or <5 tool-call tasks, do the work inline.
+```
+
+### 3. Literal Instruction Following
+
+Opus 4.7 does NOT silently generalize. State scope explicitly:
+
+| Ambiguous (4.7 may apply narrowly) | Explicit (4.7 applies as intended) |
+|------------------------------------|------------------------------------|
+| "Add input validation" | "Add Zod input validation to every exported function in `src/capabilities/`" |
+| "Fix the bug" | "Fix the bug in `src/auth/token.ts` AND check for the same pattern in `src/auth/refresh.ts`" |
+| "Update the docs" | "Update every .md file under `docs/specs/auth/` to reflect the new SessionService API" |
+
+### 4. Progress Updates
+
+Opus 4.7 produces progress messages natively during long traces. **Remove** scaffolding like:
+
+```markdown
+❌ Obsolete on 4.7
+"Every 5 tool calls, emit a progress summary."
+"After each phase, tell me what you just did."
+
+✅ Trust the native behavior — no scaffolding needed.
+```
+
+### 5. Memory-Tool Pairing for Multi-Session Work
+
+Opus 4.7 is better at writing and retrieving from the memory tool. Pattern for multi-session agents:
+
+```markdown
+## Session Initializer (run on every session start)
+Read memory://project-state.md and memory://open-questions.md.
+Resume from the "Next steps" section of project-state.md.
+
+## Session Update (run at end of every session or after each commit)
+Write to memory://project-state.md:
+- What was accomplished this session
+- Files touched (with short rationale)
+- Next steps (1-3 concrete actions)
+
+Write unresolved questions to memory://open-questions.md.
+```
+
+### 6. Code-Review Recall vs Precision
+
+Opus 4.7 honors constraints like "only high-severity" literally — which lowers measured recall in review tasks. Use:
+
+```markdown
+## Review Task
+Report EVERY issue you find (critical, high, medium, low, nit).
+Include a `severity` field per issue. We filter downstream.
+```
+
+### 7. Tool-Call Frequency
+
+Opus 4.7 reasons more before acting; fewer tool calls by default. To increase tool usage:
+- Raise effort to `xhigh` or `max`
+- State explicit preference: "Prefer running the test suite after each change over batching"
+
+### 8. Response Length
+
+Opus 4.7 calibrates response length to task complexity. For strict length/format requirements, state them explicitly — 4.7 will not default to a fixed verbosity.
+
+---
+
 ## The Three Pillars of Agent Design
 
 ### 1. System Prompt Foundation

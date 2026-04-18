@@ -16,6 +16,27 @@ Claude can call external functions (tools) to:
 
 ---
 
+## Opus 4.7 Tool-Use Behavior
+
+Claude Opus 4.7 makes different default choices than 4.6:
+
+- **Fewer tool calls by default.** The model reasons more before acting. Raise effort to `xhigh` or `max` to increase tool usage when needed.
+- **Fewer subagents spawned by default.** 4.7 is more conservative about fan-out. Explicitly describe when subagents are warranted in your system prompt.
+- **Built-in progress updates.** 4.7 produces progress messages during long agentic traces natively. Remove scaffolding prompts that forced "give me an update every N steps."
+- **Interleaved thinking between tool calls** is automatic when adaptive thinking is enabled — no beta header needed (previously `interleaved-thinking-2025-05-14`).
+- **High-resolution vision**: images up to 2576px / 3.75MP. **1:1 pixel-to-coordinate mapping** — no scale factor applied. Critical for computer-use and screenshot analysis where pixel-precise targeting matters.
+- **Improved memory-tool usage.** 4.7 is better at writing and retrieving from the memory tool — pair with memory for long-horizon multi-session work.
+- **Sampling parameters rejected** (`temperature`, `top_p`, `top_k`). Behavior tuning happens through tool descriptions and system prompt only.
+
+### Beta headers now GA on 4.7 — REMOVE
+
+These three headers are no longer needed (and sending them is a cleanup flag):
+- `effort-2025-11-24`
+- `fine-grained-tool-streaming-2025-05-14`
+- `interleaved-thinking-2025-05-14`
+
+---
+
 ## Tool Definition Structure
 
 ### Required Fields

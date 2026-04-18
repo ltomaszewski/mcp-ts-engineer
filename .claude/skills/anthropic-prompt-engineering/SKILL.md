@@ -34,12 +34,19 @@ when_to_use: "Use when designing prompts, writing SKILL.md, building agents, cre
 4. Use system prompts for role setting — Most powerful way to set Claude's behavior and establish expertise
 5. Use XML tags for structure — Clearly delineate different parts of prompts (context, instructions, examples) to reduce errors
 6. Give Claude space to think with `<thinking>` tags — Dramatically improves performance on complex tasks like research, analysis, or problem-solving
+7. On Opus 4.7: set `thinking: { type: "adaptive" }` explicitly — thinking is OFF by default on 4.7
+8. On Opus 4.7: set `max_tokens >= 64000` when using `xhigh` or `max` effort
+9. On Opus 4.7: state instruction scope explicitly — 4.7 follows instructions literally and does not silently generalize
 
 **NEVER:**
 1. Assume Claude has context about your norms/guidelines — Must provide explicit instructions for every aspect
 2. Skip examples for complex tasks — Abstract instructions alone produce inconsistent results; show, don't just tell
 3. Place queries before long documents — Reduces response quality significantly; always put documents first
 4. Use vague output requirements — Say "output 3-5 bullet points" not "summarize"; be specific about format
+5. On Opus 4.7: do not set `temperature`, `top_p`, or `top_k` — sampling parameters are rejected with 400
+6. On Opus 4.7: do not use manual `thinking: { type: "enabled", budget_tokens: N }` — rejected with 400 (adaptive only)
+7. On Opus 4.7: do not use prefill (pre-filling the assistant response) — rejected with 400
+8. On Opus 4.7: do not mutate `task_budget.remaining` in requests — invalidates the prompt cache
 
 ---
 
@@ -65,6 +72,7 @@ Load additional context when needed:
 | Agent teams and multi-agent orchestration | [knowledge-base/13-agent-teams.md](knowledge-base/13-agent-teams.md) |
 | CLAUDE.md architecture, @include, memory | [knowledge-base/14-claude-md.md](knowledge-base/14-claude-md.md) |
 | Production patterns from Claude Code source | [knowledge-base/15-claude-code-patterns.md](knowledge-base/15-claude-code-patterns.md) |
+| Opus 4.6 → 4.7 migration guide | [knowledge-base/16-opus-4-7-migration.md](knowledge-base/16-opus-4-7-migration.md) |
 
 ---
 
@@ -207,22 +215,43 @@ Extract product names and prices from customer emails.
 | Optimize cost | Prompt caching | Cache system prompts and long documents |
 | Adaptive thinking | Set effort parameter | Use `effort: "high"` for complex, `"medium"` for standard |
 | Improve prompts | Anthropic Console | Use built-in prompt improver tool |
+| `xhigh` effort (Opus 4.7) | Start here for coding/agentic | `output_config: { effort: "xhigh" }` + `max_tokens >= 64000` |
+| Task budgets (Opus 4.7 beta) | Advisory cap across agentic loop | Header `task-budgets-2026-03-13`; `task_budget.total >= 20000` |
+| Thinking display (Opus 4.7) | Opt into visible reasoning | `thinking: { type: "adaptive", display: "summarized" }` (default is `"omitted"`) |
+| High-res vision (Opus 4.7) | 1:1 pixel coordinates | Up to 2576px / 3.75MP; no scale factor applied |
 
 ---
 
-## Claude 4.6 Enhancements
+## Claude Opus 4.7 Enhancements
 
-Claude 4.6 models (Opus 4.6, Sonnet 4.6) and Haiku 4.5 have significant improvements:
+Claude Opus 4.7 (model ID: `claude-opus-4-7`) introduces breaking changes and behavioral shifts vs Opus 4.6. Full migration guide: [16-opus-4-7-migration.md](knowledge-base/16-opus-4-7-migration.md).
 
-- **Adaptive thinking**: `thinking: {type: "adaptive"}` replaces manual `budget_tokens` — Claude decides when and how much to think. Control depth with `effort` parameter (low/medium/high/max)
-- **More proactive**: Claude 4.6 takes action by default; dial back aggressive tool-triggering language from older prompts ("CRITICAL: MUST use" → "Use when...")
-- **Context awareness**: Model tracks remaining context window, enabling better state management across long sessions
-- **Prefill deprecated**: Use structured outputs, XML tags, or direct instructions instead
-- **Anti-overengineering**: Add explicit guidance to prevent extra files, unnecessary abstractions, defensive coding for impossible scenarios
-- **Subagent orchestration**: Claude 4.6 spawns subagents proactively; add guidance on when direct work is better
-- **LaTeX default**: Opus 4.6 defaults to LaTeX for math; explicitly request plain text if needed
-- **More concise**: May skip verbal summaries after tool calls; request summaries explicitly if desired
+**Breaking changes (return 400 if misused):**
+- **Adaptive thinking only**: `thinking: { type: "adaptive" }` is the sole supported mode. Manual `thinking: { type: "enabled", budget_tokens: N }` is rejected
+- **Thinking OFF by default**: must explicitly enable with `{ type: "adaptive" }`
+- **Display default is `"omitted"`** (was `"summarized"` on 4.6) — opt into `"summarized"` for streaming UIs that show reasoning
+- **Sampling parameters removed**: no `temperature`, `top_p`, or `top_k` — prompting is the only behavior lever
+- **Prefill rejected**: use Structured Outputs, XML tags, or `output_config.format` for format control
+
+**New capabilities:**
+- **`xhigh` effort level**: recommended starting point for coding and agentic tasks. Order: `low`, `medium`, `high`, `xhigh`, `max`. Set `max_tokens >= 64000` at `xhigh`/`max`
+- **Task budgets (beta)**: `task-budgets-2026-03-13` header enables advisory cap across full agentic loops (`task_budget.total >= 20000`). `max_tokens` remains the hard per-request ceiling. Never mutate `task_budget.remaining` — invalidates cache
+- **1M context baseline** at standard pricing ($5/$25 per MTok, $6.25 cache write, $0.50 cache read); 128k max output
+- **High-resolution vision**: up to 2576px / 3.75MP; 1:1 pixel-to-coordinate mapping (no scale factor) — critical for computer-use and screenshot analysis
+- **Improved memory-tool usage**: pair with the memory tool for long-horizon multi-session work
+
+**Behavioral shifts (prompt-adjust required):**
+- **Literal instruction following**: 4.7 does not silently generalize. State scope explicitly ("apply to every section, not just the first")
+- **Fewer tool calls by default**: raise effort (`xhigh`/`max`) to increase tool usage
+- **Fewer subagents by default**: explicitly specify when fan-out is warranted
+- **Built-in progress updates**: remove scaffolding that forced interim status messages
+- **Response length calibrates to complexity**: state explicit verbosity rules if product depends on it
+- **More direct tone, less validation**: specify softer style explicitly if desired
+- **New tokenizer**: 1.0–1.35× more tokens than 4.6 for same text — re-budget `max_tokens` and re-benchmark cost
+- **Interleaved thinking** automatic inside thinking blocks when adaptive mode is on (previously `interleaved-thinking-2025-05-14` beta — now GA)
+
+**Beta headers now GA — remove:** `effort-2025-11-24`, `fine-grained-tool-streaming-2025-05-14`, `interleaved-thinking-2025-05-14`.
 
 ---
 
-**Version:** Claude 4.6 (Opus 4.6, Sonnet 4.6, Haiku 4.5) | **Source:** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices, [Building Skills Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf)
+**Version:** Claude 4.7 (Opus 4.7, Sonnet 4.6, Haiku 4.5) | **Source:** https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices, https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7, https://platform.claude.com/docs/en/about-claude/models/migration-guide
