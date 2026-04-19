@@ -9,9 +9,9 @@
 **mcp-ts-engineer** provides AI-powered software development capabilities via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It integrates the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) to coordinate specialized agents (reviewer, implementer, auditor, finalizer) for feature development with proper planning, TDD execution, and quality gates.
 
 When added as a git submodule, it provides:
-- **MCP tools**: `todo_reviewer`, `todo_code_writer`, `finalize`, `audit_fix`, `pr_reviewer`
-- **Claude Code commands**: `/worktree-add`, `/issue-capture`, `/issue-implement`, `/issue-to-todo`
-- **Claude Code skills**: 35+ reusable skills (NestJS, React Native, Expo, Next.js, TypeScript, etc.)
+- **MCP tools**: `todo_reviewer`, `todo_code_writer`, `finalize`, `audit_fix`, `pr_reviewer`, `pr_fixer`
+- **Claude Code commands**: 12 commands including `/create-app`, `/worktree-add`, `/issue-capture`, `/issue-implement`, `/issue-shape`, `/health-check`, `/deep-review`, `/doc-audit`, `/prompt-engineer`
+- **Claude Code skills**: 52+ reusable skills (NestJS, React Native, Expo, Next.js, TypeScript, etc.)
 - **Claude Code rules**: Coding style, git workflow, testing, security, performance
 - **Bootstrap script**: Scaffolds entire monorepo + Claude Code environment in one command
 
@@ -19,8 +19,12 @@ When added as a git submodule, it provides:
 
 - **Node.js** >= 22.0.0
 - **npm** (with workspaces support)
-- **Claude Code CLI** — [install](https://docs.anthropic.com/en/docs/claude-code/overview) and authenticate with `claude login`
+- **Claude Code CLI** — [install](https://code.claude.com/docs/en/overview) and authenticate with `claude login`
 - **GitHub CLI** (`gh`) — required for PR review and issue management tools
+
+> **Note**: Some app templates (`expo-app`, `nestjs-server`, `mcp-server`) currently pin Node 24 in their `.nvmrc`. If you scaffold these, use Node 24 to avoid `EBADENGINE` warnings.
+
+**Bootstrap installs (auto)**: Bootstrap will additionally install (if missing): **Bun** runtime (via curl-pipe-bash from bun.sh, also appends PATH to `~/.zprofile`), **mcpmon** (global npm install for hot-reload).
 
 ## Quick Start
 
@@ -39,6 +43,8 @@ bash packages/mcp-ts-engineer/scripts/bootstrap.sh
 git add -A && git commit -m "chore: initial monorepo setup"
 ```
 
+> Review staged files with `git status` first — `.claude/settings.local.json` may be present and is typically gitignored.
+
 ## Architecture
 
 ```
@@ -46,7 +52,7 @@ your-monorepo/
 ├── packages/mcp-ts-engineer/     ← git submodule
 │   ├── src/capabilities/         ← MCP tool implementations
 │   ├── .claude/commands/         ← command source files
-│   ├── .claude/skills/           ← 35+ skill directories
+│   ├── .claude/skills/           ← 52+ skill directories
 │   ├── .claude/rules/            ← coding guidelines
 │   ├── scripts/                  ← bootstrap, create-app, update scripts
 │   └── templates/
@@ -69,7 +75,11 @@ The bootstrap script auto-detects project name, repo owner/name, and discovered 
 - **Root monorepo files**: `package.json` (turbo + npm workspaces), `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `biome.json`, `.gitignore`
 - **MCP configuration**: `.mcp.json` (server registration), `ts-engineer.config.json` (server settings)
 - **Claude Code environment**: `CLAUDE.md`, symlinked commands/skills/rules
+- **Claude Code permissions**: writes `.claude/settings.local.json` with MCP tool permissions
+- **Additional symlinks**: `.claude/{contexts,hooks,knowledge-base,agents}` directories
 - **Project infrastructure**: `.claude/codemaps/` (per project), `docs/specs/` (spec directories)
+- **GitHub labels**: runs `setup-issue-labels.sh` to create issue labels (when `gh` is authenticated)
+- **Global tooling**: installs **Bun** and **mcpmon** globally if missing; appends Bun PATH lines to `~/.zprofile`
 - **Submodule build**: `npm install && npm run build` in the submodule
 
 **Idempotency**: Config files are skipped if they exist. `.mcp.json` is merged (adds entry without overwriting). Symlinks are skipped if present. Safe to run multiple times.
@@ -100,7 +110,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
 
 | Type | Label | Test Runner | Key Stack |
 |------|-------|-------------|-----------|
-| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 54, NativeWind, Expo Router, Zustand, TanStack Query |
+| `expo-app` | React Native (Expo) | Jest (`jest-expo`) | Expo SDK 55, NativeWind v5, Expo Router, Zustand, TanStack Query |
 | `nestjs-server` | NestJS Backend | Vitest (`unplugin-swc`) | NestJS v11, GraphQL (Yoga), MongoDB (Mongoose), JWT auth |
 | `mcp-server` | MCP Server | Vitest | Claude Agent SDK, MCP SDK, ESM, Zod |
 | `next-app` | Next.js Web App | Vitest (`jsdom`) | Next.js 15, React 19, TanStack Query, Better Auth, shadcn/ui, Tailwind v4 |
@@ -140,6 +150,7 @@ The template system is fully registry-driven — **no script changes needed**:
 | `finalize` | Post-implementation: audit, test, codemap update, commit |
 | `audit_fix` | Fix lint, type, test, and dependency violations |
 | `pr_reviewer` | Comprehensive PR review with auto-fix capabilities |
+| `pr_fixer` | Resolve `pr_reviewer` findings via two-tier fix strategy (mechanical fixes + spec pipeline); posts per-issue status to PR comment |
 | `echo_agent` | Test agent connectivity (proof-of-concept) |
 
 ### Spec-Driven Workflow
@@ -157,28 +168,37 @@ finalize               READY → IMPLEMENTED
 | Command | Purpose |
 |---------|---------|
 | `/create-app [type] [name]` | Scaffold a new app from a template |
-| `/worktree-add <purpose>` | Create isolated git worktree |
-| `/issue-capture` | Capture session context as a GitHub issue |
+| `/worktree-add <purpose>` | Create isolated git worktree (auto-cleans merged ones) |
+| `/issue-capture` | Capture session context as a structured GitHub issue |
 | `/issue-implement <number>` | End-to-end: import → worktree → review → implement → finalize → PR |
-| `/issue-to-todo <number>` | Import GitHub issue to local spec file |
+| `/issue-to-todo <number>` | Import GitHub issue to a local spec file (no implementation) |
+| `/issue-shape` | Shape a rough idea into implementation-ready GitHub issues with dependencies |
+| `/doc-audit <path>` | Multi-specialist documentation audit and rewrite |
+| `/health-check` | Autonomous monorepo audit + auto-fix + PR review pipeline |
+| `/deep-review <prompt>` | Multi-perspective agent-team review of any change, design, or decision |
+| `/skills-rn` | Load all React Native and Expo skills into context |
+| `/prompt-engineer` | Author prompts, skills, commands, and agents using Anthropic best practices |
+| `/update-skills` | Sync skill knowledge bases to template-system versions |
 
 ## Available Skills
 
+52+ specialized skills, auto-loaded based on task context. Grouped by domain:
+
 **Backend**: `nestjs-core`, `nestjs-auth`, `nestjs-graphql`, `nestjs-mongoose`
 
-**Frontend (Web)**: `nextjs-core`, `nextjs-seo`, `nextjs-testing`, `shadcn-ui`, `tailwind-v4`, `better-auth`
+**Frontend (Web)**: `nextjs-core`, `nextjs-seo`, `nextjs-testing`, `shadcn-ui`, `tailwind-v4`, `better-auth`, `lucide-react`, `next-themes`, `sonner`
 
-**Mobile (React Native / Expo)**: `react-native-core`, `expo-core`, `expo-router`, `expo-notifications`, `reanimated`, `keyboard-controller`, `nativewind`, `flash-list`, `react-hook-form`
+**Mobile (React Native / Expo)**: `react-native-core`, `expo-core`, `expo-router`, `expo-notifications`, `reanimated`, `gesture-handler`, `keyboard-controller`, `nativewind`, `flash-list`, `rn-screens`, `safe-area-context`, `react-hook-form`, `maestro`
 
 **State & Data**: `react-query`, `zustand`, `mmkv`, `graphql-request`
 
-**Validation & Quality**: `zod`, `class-validator`, `biome`, `typescript-clean-code`, `rn-testing-library`, `maestro`
+**Validation & Quality**: `zod`, `class-validator`, `biome`, `typescript-clean-code`, `rn-testing-library`, `patterns`
 
-**AI & Engineering**: `ai-engineering`, `claude-agent-sdk`, `anthropic-prompt-engineering`, `mcp-sdk`
+**AI & Engineering**: `ai-engineering`, `claude-agent-sdk`, `anthropic-prompt-engineering`, `mcp-sdk`, `agent-browser`
 
 **Utilities**: `date-fns`, `netinfo`, `sentry-react-native`, `graphql-curl-testing`
 
-**Workflow**: `codemap-updater`, `session-manager`, `continuous-learning`, `design-system`
+**Workflow**: `codemap-updater`, `session-manager`, `continuous-learning`, `design-system`, `doc-prd`, `hooks`
 
 **Deployment**: `azure-deployment`
 
@@ -188,6 +208,7 @@ finalize               READY → IMPLEMENTED
 git clone --recurse-submodules https://github.com/your-org/your-project.git
 cd your-project
 npm install
+bash packages/mcp-ts-engineer/scripts/update.sh   # sync codemaps + symlinks
 ```
 
 ## Updating the Submodule
@@ -221,7 +242,7 @@ git add -A && git commit -m "chore: update mcp-ts-engineer"
 npm install          # Install dependencies
 npm run build        # Build TypeScript
 npm start            # Start MCP server
-npm run dev          # Development with auto-reload
+npm run dev          # Run server with tsx (single shot)
 npm test             # Run tests
 npm run test:watch   # Watch mode
 npm run test:coverage # Coverage report
@@ -244,8 +265,8 @@ All constants in `src/config/constants.ts`:
 | Category | Examples |
 |----------|----------|
 | Budgets | `MAX_SESSION_BUDGET_USD` (10.0), `MAX_DAILY_BUDGET_USD` (500.0) |
-| Sessions | `SESSION_MAX_DEPTH` (5), `MAX_SESSION_DURATION_MS` (30 min) |
-| Security | `MAX_TURNS` (100), `MAX_PROMPT_LENGTH` (50k) |
+| Sessions | `SESSION_MAX_DEPTH` (5), `MAX_SESSION_DURATION_MS` (45 min) |
+| Security | `MAX_TURNS` (100), `MAX_PROMPT_LENGTH` (200k) |
 | Logging | Log rotation, sensitive data redaction |
 
 ### CI/CD

@@ -13,6 +13,7 @@ Guidelines for effective use of MCP tools from `mcp-ts-engineer`.
 | `mcp__ts-engineer__finalize` | Audit, test, codemap, commit | After implementation, final quality gate |
 | `mcp__ts-engineer__audit_fix` | Fix lint/type/test violations | Code quality cleanup |
 | `mcp__ts-engineer__pr_reviewer` | Comprehensive PR review | Before merging PRs |
+| `mcp__ts-engineer__pr_fixer` | Resolve pr_reviewer findings via two-tier fix strategy (direct mechanical fixes + spec pipeline for complex changes) | After `pr_reviewer` surfaces fixable issues |
 | `mcp__ts-engineer__echo_agent` | Test agent connectivity | Verify MCP server is working |
 
 ---
@@ -28,6 +29,7 @@ Guidelines for effective use of MCP tools from `mcp-ts-engineer`.
 | Code just written | `finalize` | Audit, test, update codemaps, commit |
 | Lint/type/test failures | `audit_fix` | Auto-fix violations |
 | PR ready for review | `pr_reviewer` | Comprehensive code review |
+| `pr_reviewer` surfaced fixable findings | `pr_fixer` | Auto-resolve flagged issues, commit, post per-issue status to PR |
 
 ---
 
@@ -73,6 +75,11 @@ finalize
 - `pr` (required): PR number or URL
 - `mode` (optional): "review-only" or "review-fix" (default "review-only")
 - `budget` (optional): Cost budget limit
+
+### `pr_fixer`
+- `pr` (required): PR number or URL
+- `budget` (optional): Cost budget limit
+- `cwd` (optional): Working directory for fix execution
 
 ---
 
