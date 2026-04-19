@@ -221,6 +221,7 @@ describe('Config templates', () => {
     'vitest.config.ts.template',
     'gitignore.template',
     'mcp.json.template',
+    'node-version.template',
     'ts-engineer.config.json.template',
     'CLAUDE.md.template',
   ] as const

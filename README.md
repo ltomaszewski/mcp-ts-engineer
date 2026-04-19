@@ -17,12 +17,16 @@ When added as a git submodule, it provides:
 
 ## Prerequisites
 
-- **Node.js** >= 22.0.0
+- **Node.js** >= 22.0.0 — see Node version management below
 - **npm** (with workspaces support)
 - **Claude Code CLI** — [install](https://code.claude.com/docs/en/overview) and authenticate with `claude login`
 - **GitHub CLI** (`gh`) — required for PR review and issue management tools
 
-> **Note**: Some app templates (`expo-app`, `nestjs-server`, `mcp-server`) currently pin Node 24 in their `.nvmrc`. If you scaffold these, use Node 24 to avoid `EBADENGINE` warnings.
+### Node version management
+
+Each workspace ships a `.node-version` file (universal format read by [fnm](https://github.com/Schniz/fnm), [Volta](https://volta.sh), [mise](https://mise.jdx.dev), [asdf](https://asdf-vm.com), and `actions/setup-node`). The monorepo root pins **22** (LTS); some app templates require higher (`expo-app`, `nestjs-server`, `mcp-server` pin **24**).
+
+Install one of fnm / Volta / mise / asdf and your shell auto-switches versions when you `cd` between workspaces — no manual `nvm use`, no `EBADENGINE` surprises. Without a version manager, install the highest version any of your scaffolded apps requires.
 
 **Bootstrap installs (auto)**: Bootstrap will additionally install (if missing): **Bun** runtime (via curl-pipe-bash from bun.sh, also appends PATH to `~/.zprofile`), **mcpmon** (global npm install for hot-reload).
 
@@ -72,7 +76,7 @@ The MCP server key is always `ts-engineer` — tools are invoked as `mcp__ts-eng
 
 The bootstrap script auto-detects project name, repo owner/name, and discovered workspaces. It generates:
 
-- **Root monorepo files**: `package.json` (turbo + npm workspaces), `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `biome.json`, `.gitignore`
+- **Root monorepo files**: `package.json` (turbo + npm workspaces), `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `biome.json`, `.gitignore`, `.node-version`
 - **MCP configuration**: `.mcp.json` (server registration), `ts-engineer.config.json` (server settings)
 - **Claude Code environment**: `CLAUDE.md`, symlinked commands/skills/rules
 - **Claude Code permissions**: writes `.claude/settings.local.json` with MCP tool permissions
@@ -283,7 +287,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       - run: npx turbo run build test lint format:check type-check

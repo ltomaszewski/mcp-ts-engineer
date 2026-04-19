@@ -115,8 +115,8 @@ describe('create-app.sh specifics', () => {
     expect(content).toContain('.env.example')
   })
 
-  it('handles nvmrc.template dot-prefix', () => {
-    expect(content).toContain('.nvmrc')
+  it('handles node-version.template dot-prefix', () => {
+    expect(content).toContain('.node-version')
   })
 
   it('creates spec directory', () => {

@@ -104,6 +104,14 @@ else
   echo "  Exists, skipping: .gitignore"
 fi
 
+# .node-version (universal format read by fnm, Volta, mise, asdf, setup-node)
+if [[ ! -f ".node-version" ]]; then
+  cp "$TEMPLATE_DIR/node-version.template" ".node-version"
+  echo "  Created: .node-version"
+else
+  echo "  Exists, skipping: .node-version"
+fi
+
 # vitest.config.ts
 scaffold_file "vitest.config.ts" "$TEMPLATE_DIR/vitest.config.ts.template"
 

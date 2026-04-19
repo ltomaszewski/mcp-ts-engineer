@@ -45,7 +45,7 @@ bash packages/mcp-ts-engineer/scripts/create-app.sh \
 4. Derive placeholders: `APP_NAME`, `PACKAGE_NAME`, `PASCAL_NAME`, `EXPO_SLUG`, `BUNDLE_ID`, `PORT`
 5. Walk `templates/apps/<type>/` recursively:
    - `.template` files → copy with suffix stripped, run `sed` placeholder replacement
-   - `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`, `nvmrc.template` → `.nvmrc`
+   - `swcrc.template` → `.swcrc`, `env.example.template` → `.env.example`, `node-version.template` → `.node-version`
    - Other files (`.gitkeep`) → copy as-is
 6. Create `docs/specs/<name>/todo/`
 7. Run `npm install` + `update.sh`
